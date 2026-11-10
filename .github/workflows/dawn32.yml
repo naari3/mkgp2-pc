@@ -70,6 +70,16 @@ jobs:
         with:
           arch: amd64_x86
 
+      # Dawn at this revision assigns its own null handle (a nullptr wrapper)
+      # to a raw Vulkan handle, which is a pointer on 64-bit targets and a
+      # 64-bit integer on 32-bit ones. Value-initialise it instead.
+      - name: Patch for 32-bit
+        shell: bash
+        run: |
+          sed -i 's/dedicatedInfo.buffer = VK_NULL_HANDLE;/dedicatedInfo.buffer = {};/' \
+            src/dawn/native/vulkan/ResourceMemoryAllocatorVk.cpp
+          git diff --stat
+
       - name: Configure
         run: >-
           cmake -S . -B build -G Ninja
@@ -80,7 +90,7 @@ jobs:
           -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
       - name: Build
-        run: cmake --build build --config Release
+        run: cmake --build build --config Release -- -k 0
 
       - name: Install
         run: cmake --install build --config Release --prefix install
