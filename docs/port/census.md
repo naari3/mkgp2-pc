@@ -134,3 +134,21 @@ Known traps recorded on the way:
 `operator new` now takes `size_t` upstream (`include/game/types/size_t.h`), so
 the plain 32-bit target gives the same result and `--size-t-long` is no
 longer needed: 2713 / 2848 files accepted on `i686-pc-linux-gnu`.
+
+## 7. First run without graphics (2026-11-10)
+
+`python3 port/tools/link_census.py --link` (Linux, needs `gcc-multilib`)
+compiles every accepted game file with `-O0 -g`, generates one stub per
+missing symbol (2575 functions that log their first call and return 0, 937
+zero-filled objects sized from `symbols.txt`), takes the C library from the
+host, and links `build/pc-census/mkgp2-nogfx`, a 32-bit executable whose
+entry is the game's own `main`.
+
+It starts: `main` calls `BootDispatcher`, which runs through the first SDK
+calls (all stubs) and then crashes at `BootDispatcher.cpp:377` copying a
+`BootState` from a pointer a stub returned as 0. gdb shows source lines.
+
+This is the loop for the next stage: run, look at the first crash or the
+stub log, replace the stub that matters with a real implementation in
+`port/sdk` or `port/platform`, repeat. `mkgp2pc_frsqrte` is a placeholder
+(`port/compat/ppc_math.c`), accurate but not bit-exact.
