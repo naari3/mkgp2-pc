@@ -45,7 +45,10 @@ DATA_OBJECTS = mwcc_data_layout.original_objects(ROOT)
 
 def compile_one(path, target):
     obj = os.path.join(OUT, path.replace(os.sep, "__") + ".o")
-    cmd = ["clang", "-target", target, "-c", "-O0", "-g", "-fno-exceptions", "-fno-rtti", "-fcommon"] + cc.base_flags(path)[1:]
+    # -fshort-wchar: the game's wchar_t has 16 bits (card names, panel
+    # labels); with the host's 32 the structs that hold such text grow and
+    # no longer fit the sizes other units allocate for them.
+    cmd = ["clang", "-target", target, "-c", "-O0", "-g", "-fno-exceptions", "-fno-rtti", "-fcommon", "-fshort-wchar"] + cc.base_flags(path)[1:]
     cmd += ["-include", cc.COMPAT]
     # -Dinline=: in C, MWCC also emits an `inline` function as an ordinary
     # one where it is called without being inlined. C99 leaves the caller of
@@ -313,6 +316,37 @@ def cxx_renames(built):
                 if len(head) >= 2 and head[-1] == head[-2]:
                     target = ("mkgp2pc_ct__" if m.group(2) == "1" else "mkgp2pc_ct2__") + target
             lines.append(f"{sym} {target}\n")
+        # MWCC folds identical functions, so the table can give two classes'
+        # functions one name (a derived class's empty destructor and its
+        # base's: `__dt__13WarpInitValueFv` and `__dt__13WarpZoneValueFv`
+        # are both dtor_800A9CC8). Here they are two functions, one calling
+        # the other; under one name the call would reach itself. Only the
+        # one that calls none of the others takes the name.
+        groups = collections.defaultdict(lambda: collections.defaultdict(list))
+        for line in lines:
+            sym, target = line.split()
+            groups[re.sub(r"^mkgp2pc_(ct2?|dt[012])__", "", target)][re.sub(r"[CD][0-2]E", "XE", sym)].append(line)
+        shared = {t: g for t, g in groups.items() if len(g) > 1}
+        if shared and os.path.exists(obj[:-2] + ".ll"):
+            text = open(obj[:-2] + ".ll", encoding="utf-8", errors="replace").read()
+            calls = {}
+            for m in re.finditer(r"^define [^@]*@([\w.$]+)\(.*?^}", text, re.M | re.S):
+                calls[m.group(1)] = set(re.findall(r"@([\w.$]+)\(", m.group(0))) - {m.group(1)}
+            drop = set()
+            for t, g in shared.items():
+                # (references to functions defined elsewhere are not part of this)
+                members = {k: {l.split()[0] for l in ls} & set(calls) for k, ls in g.items()}
+                members = {k: v for k, v in members.items() if v}
+                if len(members) < 2:
+                    continue
+                leaves = [k for k in members
+                          if not any(calls.get(sym, set()) & other
+                                     for sym in members[k] for k2, other in members.items() if k2 != k)]
+                keep = leaves[0] if len(leaves) == 1 else sorted(members)[0]
+                for k, ls in g.items():
+                    if k != keep and k in members:
+                        drop.update(ls)
+            lines = [l for l in lines if l not in drop]
         if lines:
             f = obj + ".cxxsyms"
             open(f, "w").writelines(lines)
