@@ -17,6 +17,13 @@ C++ names are followed through the rename the link census applied
 (`*.cxxsyms`). The third list is the reverse, calls with more arguments
 than the definition takes: harmless unless the function forwards them. A `()` declaration in C tells nothing and is skipped.
 
+The fourth list is calls whose result is a float where the definition
+returns something else, or the reverse. A float comes back on the x87
+register stack on 32-bit x86: a caller that takes the function for `void`
+never pops it, and after eight such calls every float load in the thread
+is NaN; a caller that expects a float from a function that returns none
+pops an empty stack, NaN as well.
+
     python3 port/tools/arg_order_census.py            # report
 """
 import collections
@@ -70,6 +77,10 @@ def main():
     cdefs = {}
     calls = collections.defaultdict(dict)     # name -> {unit: fewest arguments}
     call_re = re.compile(r"\bcall [^@\n]*?@([\w.$]+)\(")
+    FP = ("float", "double", "x86_fp80")
+    ret_re = re.compile(r"\b(?:call|define)\b((?: [\w()]+)*?) (void|float|double|x86_fp80|i\d+|ptr|%[\w.\":]+|\{[^}]*\}|<[^>]*>|\[[^\]]*\])(?: \([^)]*\))? @")
+    rdefs = {}
+    rcalls = collections.defaultdict(dict)    # name -> {unit: returns a float}
     for ll in sorted(glob.glob(os.path.join(OUT, "*.ll"))):
         unit = os.path.basename(ll)[:-3].replace("__", "/")
         for line in open(ll, encoding="utf-8", errors="replace"):
@@ -80,12 +91,18 @@ def main():
                         continue  # called through an explicit function type: `()` declaration
                     n = len(split_params(line[m.end():line.rindex(")")]))
                     name = renamed[unit].get(m.group(1), m.group(1))
+                    r = ret_re.search(line)
+                    if r:
+                        rcalls[name].setdefault(unit, r.group(2) in FP)
                     calls[name][unit] = min(n, calls[name].get(unit, 99))
                 continue
             if line.startswith("define "):
                 m = re.match(r"define .*?@([\w.$]+)\((.*)\)[^)]*$", line.rstrip())
                 if m:
                     name = renamed[unit].get(m.group(1), m.group(1))
+                    r = ret_re.search(line)
+                    if r:
+                        rdefs.setdefault(name, (r.group(2) in FP, unit))
                     if not name.startswith("_Z"):
                         cdefs.setdefault(name, (len(split_params(m.group(2))), unit, "..." in m.group(2)))
             m = re.match(r"(define|declare) .*?@([\w.$]+)\((.*)\)[^)]*$", line.rstrip())
@@ -137,6 +154,18 @@ def main():
             for u, k in sorted(bad.items()):
                 print(f"    called with {k} in {u}")
     print(f"{n} functions called with more arguments than they take")
+    n = 0
+    for name in sorted(rcalls):
+        if name not in rdefs:
+            continue
+        fp, dunit = rdefs[name]
+        bad = sorted(u for u, k in rcalls[name].items() if k != fp)
+        if bad:
+            n += 1
+            print(f"{name}: {'returns a float' if fp else 'returns no float'} in {dunit}")
+            for u in bad:
+                print(f"    called {'for a float' if not fp else 'without taking a float'} in {u}")
+    print(f"{n} functions called with another kind of result (float or not) than they return")
     return 0
 
 

@@ -1,3 +1,4 @@
+0 functions declared with another parameter order
 AudioChannel_DtorWithSeStop: takes 2 in src/game/AudioChannel_DtorWithSeStop.c
     called with 1 in src/game/AI_KartInit.cpp
     called with 1 in src/game/fn_801E81D8.cpp
@@ -713,3 +714,8 @@ get_title_name_global: takes 0 in src/game/RankLog.c
     called with 1 in src/game/TitleNameHud_nm1.cpp
     called with 1 in src/game/resultscene/resultscene_nm1.cpp
 126 functions called with more arguments than they take
+KartEffectFadeTransit_GetActiveValue: returns no float in src/game/KartEffectFadeTransit_GetActiveValue.c
+    called for a float in src/game/auto_ONKARTHIT_block.c
+fn_8019EA8C: returns a float in src/game/kartmove/carobject.cpp
+    called without taking a float in src/game/kartmove/KartMovement_PhysicsStep.cpp
+2 functions called with another kind of result (float or not) than they return
