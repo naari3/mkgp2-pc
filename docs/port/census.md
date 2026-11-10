@@ -233,3 +233,38 @@ inside a `src/game` unit that does not define that name, 2 in `jvsio.c`
 
 Next stop: `acLib_tail.cpp:98` spins on `fn_8028BAD0() == 5`, waiting for the
 amjvs worker thread. `OSCreateThread` and friends are still stubs.
+
+## 12. The boot sequence completes (2026-11-10, upstream `0f0bec5`)
+
+`mkgp2-nogfx` now runs the game's whole `BootDispatcher` (about 4,200
+frames of the boot screens, nothing drawn) and returns to `main`, which goes
+on to build the first scene. What it took, in the order the run stopped:
+
+| Stop | Cause | Answer |
+| --- | --- | --- |
+| `acLib_tail.cpp:98` spins | am* worker threads never ran | `port/nogfx/os_thread.c`: OS threads, semaphores, message queues, alarms on host threads; "interrupts disabled" is one global lock (a state, not a nesting count) |
+| JVS init state 3 | sense line never reported | `jvs_si.c`: status bit 0 = a node without an address |
+| `ScopedTimer` divides by zero | bus clock read at 0x800000F8 | low-memory globals filled in `os_min.c` |
+| amsys state 0, later the wait for the network version | no media board; the game needs board 0x29 with network board 0xA9 | `port/platform/triforce/mediaboard.c`: registers, two mailboxes, interrupt bits; address / version / serial commands answered, every socket command answered "error". Replaces `src/triforce/dvdcmd.c` |
+| `fn_80288574` reads garbage | call with fewer arguments than the definition | upstream request 11; `port/tools/arity_census.py` found 130 pairs, fixed upstream |
+| write to `lbl_806D2EB8` faults | written object defined `const` (.sdata2) | image made writable at start (bring-up); the console has no read-only memory |
+| 1,008 C++ names undefined | constructors / destructors / methods are C functions in other units | `link_census.py` applies `tools/extab_user_renames.json` to the host objects (`mwcc_names.py` pairs MWCC and Itanium names) and generates bridges: Itanium C1/C2, D0/D1/D2 against MWCC's one constructor returning `this` and one destructor with a flag. Function stubs 1,943 -> 460 |
+| `PCBComm_Init` wrong branch | bit-field order | upstream request 12, fixed upstream (`BITFIELDS` macros) |
+| `lbl_806D11B8` was a function stub | address-named leftover of a merged unit | resolved to the `symbols.txt` symbol at that address (79 names) |
+| text drawing | ROM font, write-gather pipe at 0xCC008000, no disc | bring-up stand-ins in `port/nogfx`: blank font, plain memory at 0xCC000000, files read from the disc image (`MKGP2_ISO`), VI retrace and GX draw-done callbacks |
+
+Run it: `MKGP2_ISO=/path/to/disc.iso build/pc-census/mkgp2-nogfx`.
+
+Where it stops now: `main` -> `FlowDispatcher_Create` -> first scene
+constructor -> `TEXLoadPalette("tpl2_JP_sp_joutyuu_a.tpl")` retries forever.
+The file starts with a little-endian size that the game byte-swaps by hand
+(correct on PowerPC, wrong here), and everything after it (TPL headers,
+sprite and animation tables, HSD archives) is big-endian data that the game
+reads through native structs. This is the next layer of the port: data byte
+order. `MainGameLoop` is the call right after `FlowDispatcher_Create`.
+
+Known gaps behind this run, not yet problems: vtables written by hand in C
+(MWCC layout: RTTI pointer and offset first, functions from +8) against
+compiler-made Itanium vtables; `throw` in two units (built with
+`-fno-exceptions`); thread priorities are not modelled; the 12-byte MWCC
+pointer-to-member.
