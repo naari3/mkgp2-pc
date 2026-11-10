@@ -209,3 +209,15 @@ kept for reference. Item 10 is open.
     `clFlowClass_Update_rodata_8039A5A0` (1,128), `ClSound_rodata_80379100`
     (1,108). List them with
     `grep -c "char .*\[[0-9]*\] = {" src/game/autodata/*.c`.
+16. `src/game/TransitionEffect.cpp` (added 2026-11-10; open; new with
+    upstream `6b7996e`). The destructors of `teSingleton<clScreenEffect>`
+    and `TransitionOwner<...>` are explicit specializations defined at the
+    end of the unit (lines 319 onwards), after `clScreenEffect` has already
+    used them (line 112). Standard C++ rejects a specialization that is first
+    declared after its implicit instantiation, so the unit does not compile
+    with clang and the screen transitions fall back to generated stubs.
+    Wanted: the specializations declared before the first use, for example
+    `template <> teSingleton<clScreenEffect>::~teSingleton();` and the
+    `TransitionOwner` ones right after the templates, with the definitions
+    staying where they are, if that keeps the unit matching.
+
