@@ -19,9 +19,12 @@
  * this.
  */
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <mkgp2pc/platform.h>
+#include <mkgp2pc/triforce.h>
 
 typedef void (*SICallbackMin)(int32_t chan, uint32_t err, void* context);
 
@@ -170,6 +173,9 @@ static int jvs_reports(const uint8_t* in, int n, uint8_t* out) {
       out[o++] = 1;
       break;
     case 0x32: case 0x34: /* output bytes: count, data */
+      if (c == 0x32 && in[i] >= 1) {
+        mkgp2pc_jvs_outputs(in[i + 1]);
+      }
       i += 1 + in[i];
       out[o++] = 1;
       break;
@@ -241,11 +247,24 @@ static int jvs_packet(uint8_t node, const uint8_t* payload, int len, uint8_t* rx
   return o;
 }
 
+/* The answer of a JVS node comes back one baseboard frame after its request:
+ * the baseboard forwards the packet to the bus and hands over what it has
+ * received by the next transfer. jvsio.c depends on it: it matches the
+ * packets of a frame against the requests of the frame before (two request
+ * banks, switched after each parse). */
+static uint8_t s_pending[0x80];
+static int s_pendingLen;
+
 static void baseboard_frame(const uint8_t* tx, uint8_t* rx) {
   int end = tx[1] + 2;
   int o = 2;
+  uint8_t answers[0x80];
+  int answersLen = 0;
   memset(rx, 0, 0x80);
   rx[0] = 1;
+  memcpy(&rx[o], s_pending, (size_t)s_pendingLen);
+  o += s_pendingLen;
+  s_pendingLen = 0;
   for (int i = 2; i + 1 < end && i < 0x7F;) {
     uint8_t c = tx[i];
     uint8_t len = tx[i + 1];
@@ -255,7 +274,9 @@ static void baseboard_frame(const uint8_t* tx, uint8_t* rx) {
       break;
     }
     if ((c & 0xE0) == 0x40) {
-      o += jvs_packet(c & 0x1F, p, len, &rx[o]);
+      if (answersLen < 0x40) {
+        answersLen += jvs_packet(c & 0x1F, p, len, &answers[answersLen]);
+      }
       continue;
     }
     switch (c) {
@@ -280,10 +301,21 @@ static void baseboard_frame(const uint8_t* tx, uint8_t* rx) {
     case 0x15: case 0x16: /* version / status words */
       rx[o++] = c, rx[o++] = 2, rx[o++] = 0, rx[o++] = 0;
       break;
-    default: /* settings and serial port traffic: accepted, no reply */
+    case 0x31: case 0x32: { /* serial port 0 / 1: bytes to send; received bytes come back */
+      mkgp2pc_serial_write(c - 0x31, p, len);
+      int got = mkgp2pc_serial_read(c - 0x31, &rx[o + 2], 16);
+      if (got > 0) {
+        rx[o] = c, rx[o + 1] = (uint8_t)got;
+        o += 2 + got;
+      }
+      break;
+    }
+    default: /* settings: accepted, no reply */
       break;
     }
   }
+  memcpy(s_pending, answers, (size_t)answersLen);
+  s_pendingLen = answersLen;
   rx[1] = (uint8_t)o;
   uint8_t sum = 0;
   for (int i = 0; i < 0x7F; i++) {
@@ -306,6 +338,26 @@ int SITransfer(int32_t chan, void* out, uint32_t outBytes, void* in, uint32_t in
   memset(rx, 0, sizeof(rx));
   if (outBytes >= 2 && tx[0] == 0x70) {
     baseboard_frame(tx, rx);
+    /* MKGP2PC_TRACE_JVS=n: print the first n frames that carry a JVS packet */
+    static int trace = -1;
+    if (trace < 0) {
+      const char* e = getenv("MKGP2PC_TRACE_JVS");
+      trace = e ? atoi(e) : 0;
+    }
+    if (trace > 0) {
+      int jvs = 0;
+      for (int i = 2; i + 1 < tx[1] + 2 && i < 0x7F; i += 2 + tx[i + 1]) {
+        jvs |= (tx[i] & 0xE0) == 0x40 || getenv("MKGP2PC_TRACE_JVS_ALL") != NULL;
+      }
+      if (jvs) {
+        trace--;
+        fprintf(stderr, "jvs tx:");
+        for (int i = 0; i < tx[1] + 2 && i < 0x80; i++) fprintf(stderr, " %02x", tx[i]);
+        fprintf(stderr, "\njvs rx:");
+        for (int i = 0; i < 0x40; i++) fprintf(stderr, " %02x", rx[i]);
+        fprintf(stderr, "\n");
+      }
+    }
   } else if (outBytes == 1 && tx[0] == 0x00) {
     /* SI device type probe. amjvs init (fn_8028BFD4) requires first byte
      * 0x10 and the high nibble of the second byte to be 1. */

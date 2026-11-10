@@ -19,6 +19,14 @@ int mkgp2pc_mediaboard_irq(void); /* baseboard status bits: 4 main board, 0x10 n
  * channel, as the interrupt would. */
 void mkgp2pc_baseboard_raise_exi(int channel);
 
+/* Devices on the baseboard's two serial ports (jvs_si.c forwards the
+ * traffic). Port 0 is the steering drive board (drive_board.c). */
+void mkgp2pc_serial_write(int port, const uint8_t* data, int n);
+int mkgp2pc_serial_read(int port, uint8_t* out, int max);
+/* First byte of the I/O board's general purpose outputs, as the game last
+ * wrote it. Bit 0x80 enables the drive board; the others are lamps. */
+void mkgp2pc_jvs_outputs(uint8_t bits);
+
 #ifdef __cplusplus
 }
 #endif
