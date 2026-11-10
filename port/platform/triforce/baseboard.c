@@ -15,6 +15,8 @@
  * names them, rename here too (link_census.py reports them as missing).
  */
 #include <stdint.h>
+
+#include "mkgp2pc/triforce.h"
 #include <string.h>
 
 #include <mkgp2pc/platform.h>
@@ -77,8 +79,8 @@ void fn_802876F4(int32_t chan) { (void)chan; }
  * and interrupt control. No media board here: reads give 0, writes are
  * dropped. */
 int fn_8028772C(int32_t chan, uint32_t dev, uint16_t* data) {
-  (void)chan, (void)dev;
-  *data = 0;
+  /* interrupt status: bit 2 = the media board has an answer (amnet_nm3.c) */
+  *data = (chan == 0 && dev == 2 && mkgp2pc_mediaboard_irq()) ? 2 : 0;
   return 1;
 }
 int fn_802878B4(int32_t chan, uint32_t dev, uint16_t data) {
@@ -99,7 +101,13 @@ int fn_80287CCC(int32_t chan, uint32_t dev, uint16_t data) {
   return 1;
 }
 
-/* EXISetExiCallback: kept, never raised */
+void mkgp2pc_baseboard_raise_exi(int channel) {
+  if (channel >= 0 && channel < 3 && s_exiCallback[channel]) {
+    s_exiCallback[channel](channel, 0);
+  }
+}
+
+/* EXISetExiCallback */
 void fn_80287E14(int32_t chan, void (*callback)(int32_t, void*)) {
   if (chan >= 0 && chan < 3) {
     s_exiCallback[chan] = callback;
