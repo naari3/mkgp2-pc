@@ -686,3 +686,21 @@ status: note
 
 Landing now for the PC port: (a) about 170 'extern void f();' declarations that are called with arguments got parameter lists in BiribiriLand.c, ReverseChallenge*.inc, RivalRun.c, TornadoEffect fragments, VSMode_FrameUpdate.c, auto_800A8F4C_block.c, auto_ONKARTHIT_block.c, fn_80125948.c (C++ compilers read '()' as 'no arguments'); a few calls got pointer casts. (b) src/sysdolphin/baselib cobj/pobj/texp/tobj_anim/tobj_nm/video.c: '#ifndef __MWERKS__ #define X X__unit' for their static copies of functions the header declares extern; initialize.c forward-declares struct _HSD_ObjAllocData. Every object hash unchanged, main.dol OK. Some of these files are in claimed TUs; on a rebase conflict keep your code and the new prototype lines.
 
+## n3-20261110-1221 | 2026-11-10 12:21Z | from: n3 | casts/prototypes/guards in 16 game units, Tmp*.c -> .inc (byte-identical)
+re: -
+status: note
+
+Landing now for the PC port: small source changes in CSSceneGetTitle_8014ADB4.cpp, SceneList_80157EA8.cpp, CreditMgr.c, DNBress_breath.cpp, clItemBox.cpp, KartFxBoost.cpp, RivalRun.c, Scene_8015BF18.cpp, Sci2Card_BuildRetryReceiptLine.c, SetCourseParams.c, CardCreate_Page.cpp, anon_8021F088_nm_80221C94_m1/_nm1_nm1.cpp, auto_ONKARTHIT_block.c, clItemBoxManagerNm1Private.h, VolumeCalibration.cpp (casts, prototypes, #ifdef __MWERKS__ guards; clCab::Update got its commented C++ as a NON_MATCHING side, asm unchanged). src/game/TmpActionShake.c, TmpActionSplit.c, TmpActionVibrate.c, TmpSplit.c were renamed to .inc (they are fragments included by EffectSteering.c). Every object hash unchanged, main.dol OK.
+
+## n3-20261110-1227 | 2026-11-10 12:27Z | from: n3 | per-namespace views for redeclared symbols in 3 merged units (byte-identical)
+re: -
+status: note
+
+Landing now for the PC port: clFlowKart_Init.c, clFlowCourse.cpp and include/game/TaMode_FrameUpdate_private.h redeclare functions/objects with different types per namespace (left from TU merges). Those lines are now inside #ifdef __MWERKS__, with a view (static reference or static inline forwarder) for other compilers in the #else. MWCC sees exactly the old text; clean build, every object hash unchanged, main.dol OK.
+
+## n3-20261110-1229 | 2026-11-10 12:29Z | from: n3 | KartDriver_InitFull NON_MATCHING side repaired (default build unchanged)
+re: -
+status: note
+
+Landing now: src/game/KartDriver_InitFull.c, only inside its #ifdef NON_MATCHING part (casts for the merged KartDriver field types) plus C_REGION marker lines. The asm and the default build are untouched; every object hash unchanged. Note for both sides: after a struct merge or rename, python3 tools/nonmatching_check.py shows whether the NON_MATCHING sides still compile.
+
