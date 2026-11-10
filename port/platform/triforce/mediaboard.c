@@ -1,47 +1,45 @@
 /*
- * Triforce media board ("GC-AM", device id 0x21), seen from the game.
+ * Triforce media board with its network board, seen from the game.
  *
  * The decompiled amnet / amsock code (src/triforce) stays as it is; this file
- * is the board underneath it. Everything here was read off those sources:
+ * is the hardware underneath it. Everything here was read off those sources
+ * (amnet_setup_nm.c, amnet_nm3.c, amnet_init.c, amsock.c, amsys.c):
  *
  *  - The board is reached through the DVD interface. Command 0x65 returns the
  *    board id, 0x67 selects a priority, 0x66 writes a block to a board
  *    address, and an ordinary absolute read (DVDReadAbsAsyncPrio) of a board
  *    address reads one. src/triforce/dvdcmd.c issued 0x65-0x67 through dvd.c's
- *    queue; it is replaced by the three functions at the bottom.
- *  - Addresses from 0x80000000 are registers: 0x80000000 hardware flags,
- *    0x80000040 a 32-byte header with "GCAM" at +4 and the base of the
- *    board's memory window in the first four bytes.
- *  - Inside the window, base - 0x01000000 + 0x900000 and + 0x900020 are two
- *    32-byte mailboxes. The game writes a request packet to the second and
- *    the board answers in the first, raising the media board interrupt
- *    (baseboard register bit 2). The game clears the first mailbox when it
- *    has taken the answer.
+ *    queue; it is replaced by the three functions at the bottom. All board
+ *    addresses used are 0x80000000 and up, so they cannot be mistaken for
+ *    disc offsets.
+ *  - Board id 0x29 is the kind that carries a network board (0xA9). The game
+ *    does not finish booting without one: BootDispatcher waits for the
+ *    network board's version bytes.
+ *  - Registers: 0x80000120 hardware flags, 0x80000140 bit 0 "main firmware
+ *    running", 0x80000160 bit 0 "network board busy".
+ *  - Each board has two 32-byte mailboxes: main 0x84000000 / 0x84000020,
+ *    network 0x89000000 / 0x89000200. The game writes a request packet to the
+ *    second and the board answers in the first, raising its interrupt
+ *    (baseboard status register: bit 2 main, bit 4 network). The game clears
+ *    the first mailbox when it has taken the answer.
  *  - Packet: u8 id, u8 sub, u16 command, u32 result, u32 arg[6]. The game
  *    stores the fields the way a big-endian CPU would, so on this host the
  *    command a request carries is the byte-swapped value of what amsock.c
  *    calls it; an answer is the request with 0x80 set in the raw command, and
  *    raw 0x0080 alone means "error".
  *
- * Implemented: what amsys needs to finish booting (base query, version,
- * serial number). Every network command is answered with "error", which the
- * game treats as "no network".
- *
- * The window base is placed above any disc offset so that media board reads
- * and disc reads through the same DVD call cannot be confused.
+ * Implemented: what amsys needs to finish booting (address query, version,
+ * serial number, for both boards). Every other command, the socket calls
+ * included, is answered with "error", which the game treats as a network
+ * failure. Values marked "guess" are not known from the sources.
  */
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "mkgp2pc/triforce.h"
 
-#define BOARD_ID 0x21u
-#define WINDOW_BASE 0x71000000u /* what the header reports */
-#define WINDOW_OFF (WINDOW_BASE - 0x01000000u)
-#define WINDOW_LO (WINDOW_OFF + 0x00800000u)
-#define WINDOW_HI (WINDOW_OFF + 0x00E00000u)
-#define MAILBOX_ANSWER (WINDOW_OFF + 0x00900000u)
-#define MAILBOX_REQUEST (WINDOW_OFF + 0x00900020u)
+#define BOARD_ID 0x29u
 
 typedef struct {
   uint8_t id;
@@ -51,74 +49,112 @@ typedef struct {
   uint32_t arg[6];
 } Packet;
 
-static uint8_t s_window[WINDOW_HI - WINDOW_LO];
-static int s_answerPending;
+typedef struct {
+  uint32_t answer, request; /* mailbox addresses */
+  int pending;              /* an answer waits */
+  uint32_t address;         /* answer to command 0x0100 */
+  uint8_t version[2];
+  const char* serial;
+} Board;
+
+static Board s_boards[2] = {
+    {0x84000000u, 0x84000020u, 0, 0xC0A81D02u /* guess: 192.168.29.2 */, {0x01, 0x00}, "PCMB000000000000"},
+    {0x89000000u, 0x89000200u, 0, 0xC0A81D02u, {0x01, 0x01} /* both bytes must be non-zero */, "PCNB000000000000"},
+};
+
+/* Board memory, allocated in 64 KB pages on first write. */
+#define PAGE 0x10000u
+static uint8_t* s_pages[0x8000];
+
+static uint8_t* page(uint32_t address, int create) {
+  uint32_t i = (address - 0x80000000u) / PAGE;
+  if (!s_pages[i] && create) {
+    s_pages[i] = (uint8_t*)calloc(1, PAGE);
+  }
+  return s_pages[i];
+}
+
+static void store(uint32_t address, const uint8_t* data, uint32_t length) {
+  while (length) {
+    uint32_t off = address % PAGE;
+    uint32_t n = PAGE - off < length ? PAGE - off : length;
+    memcpy(page(address, 1) + off, data, n);
+    address += n, data += n, length -= n;
+  }
+}
+
+static void load(uint32_t address, uint8_t* data, uint32_t length) {
+  while (length) {
+    uint32_t off = address % PAGE;
+    uint32_t n = PAGE - off < length ? PAGE - off : length;
+    uint8_t* p = page(address, 0);
+    if (p) {
+      memcpy(data, p + off, n);
+    } else {
+      memset(data, 0, n);
+    }
+    address += n, data += n, length -= n;
+  }
+}
 
 static uint32_t swap32(uint32_t v) { return (v << 24) | ((v << 8) & 0xFF0000) | ((v >> 8) & 0xFF00) | (v >> 24); }
 
-int mkgp2pc_mediaboard_owns(uint32_t address) { return address >= WINDOW_LO; }
-int mkgp2pc_mediaboard_irq(void) { return s_answerPending; }
+int mkgp2pc_mediaboard_owns(uint32_t address) { return address >= 0x80000000u; }
+int mkgp2pc_mediaboard_irq(void) { return (s_boards[0].pending ? 4 : 0) | (s_boards[1].pending ? 0x10 : 0); }
 
-static void request(const Packet* in) {
+static void request(Board* b, const Packet* in) {
   Packet out = *in;
   out.command = (uint16_t)(in->command | 0x80);
   switch (in->command) {
-  case 0x0100: /* window base; amsys stores the answer as base[0] */
-    out.result = swap32(WINDOW_BASE);
+  case 0x0100: /* amsys stores this as the board's address */
+    out.result = swap32(b->address);
     break;
-  case 0x0101: { /* version: two 16-bit numbers */
-    static const uint8_t ver[4] = {0x01, 0x00, 0x00, 0x00};
-    memcpy(&out.result, ver, 4);
+  case 0x0101: /* version: two 16-bit numbers, high byte first */
+    memset(&out.result, 0, 4);
+    memcpy(&out.result, b->version, 2);
     break;
-  }
   case 0x0301: /* serial number: 16 characters, amsys inserts the '-' at 4 */
-    memcpy(&out.result, "PC00000000000000", 16);
+    memcpy(&out.result, b->serial, 16);
     break;
   default:
     out.command = 0x0080;
     break;
   }
-  memcpy(&s_window[MAILBOX_ANSWER - WINDOW_LO], &out, sizeof(out));
-  s_answerPending = 1;
+  store(b->answer, (const uint8_t*)&out, sizeof(out));
+  b->pending = 1;
   mkgp2pc_baseboard_raise_exi(2);
 }
 
 void mkgp2pc_mediaboard_read(uint32_t address, void* buffer, uint32_t length) {
-  memset(buffer, 0, length);
-  if (address >= 0x80000000u) {
-    if (address == 0x80000040u && length >= 8) {
-      /* The game rebuilds the base as (b2 << 24) | (b3 << 16) | (b0 << 8) | b1. */
-      uint8_t* b = (uint8_t*)buffer;
-      b[0] = (uint8_t)(WINDOW_BASE >> 8);
-      b[1] = (uint8_t)WINDOW_BASE;
-      b[2] = (uint8_t)(WINDOW_BASE >> 24);
-      b[3] = (uint8_t)(WINDOW_BASE >> 16);
-      memcpy(b + 4, "GCAM", 4);
-    }
-    return; /* other registers, hardware flags included, read 0 */
-  }
-  if (address >= WINDOW_LO && address < WINDOW_HI) {
-    uint32_t n = WINDOW_HI - address;
-    memcpy(buffer, &s_window[address - WINDOW_LO], length < n ? length : n);
-  }
-}
-
-void mkgp2pc_mediaboard_write(uint32_t address, const void* buffer, uint32_t length) {
-  if (address == MAILBOX_REQUEST && length >= sizeof(Packet)) {
-    Packet p;
-    memcpy(&p, buffer, sizeof(p));
-    if (p.command != 0) {
-      request(&p); /* taken at once: the request mailbox always reads empty */
+  if (address < 0x84000000u) { /* registers; the game reads them byte-swapped */
+    memset(buffer, 0, length);
+    if (address == 0x80000140u && length >= 4) {
+      ((uint8_t*)buffer)[3] = 1; /* main firmware running */
     }
     return;
   }
-  if (address >= WINDOW_LO && address < WINDOW_HI) {
-    uint32_t n = WINDOW_HI - address;
-    memcpy(&s_window[address - WINDOW_LO], buffer, length < n ? length : n);
-    if (address == MAILBOX_ANSWER) {
-      s_answerPending = 0; /* the game cleared the answer */
+  load(address, (uint8_t*)buffer, length);
+}
+
+void mkgp2pc_mediaboard_write(uint32_t address, const void* buffer, uint32_t length) {
+  if (address < 0x84000000u) {
+    return;
+  }
+  for (int i = 0; i < 2; i++) {
+    Board* b = &s_boards[i];
+    if (address == b->request && length >= sizeof(Packet)) {
+      Packet p;
+      memcpy(&p, buffer, sizeof(p));
+      if (p.command != 0) {
+        request(b, &p); /* taken at once: the request mailbox always reads empty */
+      }
+      return;
+    }
+    if (address == b->answer) {
+      b->pending = 0; /* the game cleared the answer */
     }
   }
+  store(address, (const uint8_t*)buffer, length);
 }
 
 /* ---- replaces src/triforce/dvdcmd.c ------------------------------------- */

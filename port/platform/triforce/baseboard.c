@@ -79,8 +79,8 @@ void fn_802876F4(int32_t chan) { (void)chan; }
  * and interrupt control. No media board here: reads give 0, writes are
  * dropped. */
 int fn_8028772C(int32_t chan, uint32_t dev, uint16_t* data) {
-  /* interrupt status: bit 2 = the media board has an answer (amnet_nm3.c) */
-  *data = (chan == 0 && dev == 2 && mkgp2pc_mediaboard_irq()) ? 2 : 0;
+  /* interrupt status: which media board has an answer (amnet_nm3.c) */
+  *data = (chan == 0 && dev == 2) ? (uint16_t)mkgp2pc_mediaboard_irq() : 0;
   return 1;
 }
 int fn_802878B4(int32_t chan, uint32_t dev, uint16_t data) {
