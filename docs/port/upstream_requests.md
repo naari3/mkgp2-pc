@@ -233,7 +233,8 @@ kept for reference. Item 10 is open.
     read elsewhere, e.g. `PORT_BE16(p)`, `PORT_BE_F32(p)` in a shared header.
     Everything else in `pobj.c` and all of `fobj.c` already reads byte by
     byte and needs nothing.
-18. `include/game/GpPleaseInitPrivate.h` (added 2026-11-10; open). This is
+18. `include/game/GpPleaseInitPrivate.h` (added 2026-11-10; done upstream in
+    `c72769e`). This is
     the next stop of the menu: the scene after the round select (flow 37,
     `clFlowGpPlease`) is a generated stub because `GpPleaseInit.cpp` fails
     its own size check on the host. `GpPanelBase` ends with two `unsigned
@@ -242,4 +243,23 @@ kept for reference. Item 10 is open.
     0x88. Wanted: the padding spelled as a member, `unsigned char
     pad86[2];` at the end of `GpPanelBase` (the rule now in
     `docs/notes/rtti_classes.md`).
+19. Functions defined `void` whose callers use a return value (added
+    2026-11-10; open). On the console the value is whatever the function
+    left in r3; on the host it is garbage. First failure: the attract-mode
+    race loads its course, `CECollision::CECollision` stores the result of
+    `CollisionFile_FixupPointers(self->data)` (defined
+    `void CollisionFile_FixupPointers(unsigned int file_base)`, declared
+    `void *` by the caller) and `Collision_RegisterSpecialFaces` then follows
+    a garbage pointer. Fifteen such functions in the units the port links
+    (definition `void`, some caller declares a result):
+    `Allocator_Identity_VoidVoid`, `CollisionFile_FixupPointers`,
+    `CourseData_GetDefaultPathKey_Safe` (4 callers), `DrawEffect_SetU32CC`,
+    `HSD_MemCallback4`, `NamCam_LoadImage`, `TCPConn_LogError` (8 callers),
+    `Vtable_CallSlot2` (the scene update result in `MainGameLoop`),
+    `fn_8014D4F0`, `fn_80169DF0`, `fn_801A1128`, `fn_801A1174`,
+    `fn_801E6594`, `fn_801E93A0`, `fn_80241C08`.
+    Wanted: the definition returning the value the callers read (often the
+    first argument or the result of its last call), in whatever form keeps
+    the match (a macro that is empty under MWCC is fine), or the callers
+    corrected where the value is not really used.
 

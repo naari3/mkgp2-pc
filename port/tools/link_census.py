@@ -38,6 +38,9 @@ REPLACED = {
 }
 
 
+DATA_OBJECTS = mwcc_data_layout.original_objects(ROOT)
+
+
 def compile_one(path, target):
     obj = os.path.join(OUT, path.replace(os.sep, "__") + ".o")
     cmd = ["clang", "-target", target, "-c", "-O0", "-g", "-fno-exceptions", "-fno-rtti", "-fcommon"] + cc.base_flags(path)[1:]
@@ -58,7 +61,7 @@ def compile_one(path, target):
             return path, None
         notes = []
         text, _ = mwcc_cxx_abi.rewrite(open(ll, encoding="utf-8", errors="surrogateescape").read(), notes.append)
-        text, _ = mwcc_data_layout.rewrite(text)
+        text, _ = mwcc_data_layout.rewrite(text, DATA_OBJECTS)
         open(ll, "w", encoding="utf-8", errors="surrogateescape").write(text)
         if notes:
             with open(obj[:-2] + ".abi-notes", "w") as f:
@@ -75,12 +78,8 @@ def compile_one(path, target):
     r = subprocess.run([c for c in cmd if c != "-c"] + ["-S", "-emit-llvm", path, "-o", ll], cwd=ROOT, capture_output=True, text=True, errors="replace")
     if r.returncode != 0:
         return path, None
-    section = None
-    if "/autodata/" in path.replace(os.sep, "/"):
-        section = "mw." + os.path.splitext(os.path.basename(path))[0]
-    text, n = mwcc_data_layout.rewrite(open(ll, encoding="utf-8", errors="surrogateescape").read(), section)
-    if n or section:
-        open(ll, "w", encoding="utf-8", errors="surrogateescape").write(text)
+    text, n = mwcc_data_layout.rewrite(open(ll, encoding="utf-8", errors="surrogateescape").read(), DATA_OBJECTS)
+    open(ll, "w", encoding="utf-8", errors="surrogateescape").write(text)
     r = subprocess.run(["clang", "-target", target, "-c", "-Wno-override-module", ll, "-o", obj], cwd=ROOT, capture_output=True, text=True, errors="replace")
     return path, (obj if r.returncode == 0 else None)
 
@@ -538,7 +537,36 @@ def main():
         rsp = os.path.join(OUT, "objects.rsp")
         with open(rsp, "w") as f:
             f.write("\n".join(objs) + "\n")
-        cmd = ["clang", "-m32", "-O0", "-g", "-fcommon", "-no-pie", "-o", exe, stubs, thunks] + port_objs + [
+        # original data layout (port/tools/mwcc_data_layout.py)
+        inputs = collections.defaultdict(list)
+        for i in range(0, len(objs), 200):
+            rr = subprocess.run(["readelf", "-SW"] + objs[i:i + 200], capture_output=True, text=True)
+            for line in rr.stdout.splitlines():
+                m = re.match(r"\s*\[\s*\d+\] mw\.\w+\.(\w+)\s+\w+\s+[0-9a-f]+ [0-9a-f]+ ([0-9a-f]+) .* (\d+)$", line)
+                if m:
+                    inputs[m.group(1)].append((int(m.group(2), 16), int(m.group(3))))
+        lnotes = []
+        script = os.path.join(OUT, "data_layout.ld")
+        with open(script, "w") as f:
+            f.write(mwcc_data_layout.linker_script(DATA_OBJECTS, inputs, lnotes))
+        with open(os.path.join(OUT, "data_layout.notes"), "w") as f:
+            f.write("\n".join(lnotes) + "\n")
+        host_sizes = {}
+        for i in range(0, len(objs), 200):
+            rr = subprocess.run(["nm", "-S", "--defined-only", "--format=posix"] + objs[i:i + 200] + ([stubs] if False else []), capture_output=True, text=True)
+            for line in rr.stdout.splitlines():
+                q = line.split()
+                if len(q) == 4 and q[1] in "BbCcDdRr":
+                    host_sizes[q[0]] = max(host_sizes.get(q[0], 0), int(q[3], 16))
+        bnotes = []
+        bss_ld = os.path.join(OUT, "bss_layout.ld")
+        with open(bss_ld, "w") as f:
+            f.write(mwcc_data_layout.bss_script(mwcc_data_layout.original_bss(ROOT), host_sizes, bnotes))
+        with open(os.path.join(OUT, "bss_layout.notes"), "w") as f:
+            f.write("\n".join(bnotes) + "\n")
+        print(f"zero-initialised objects kept out of the original layout (larger here): {len(bnotes)} (build/pc-census/bss_layout.notes)")
+        print(f"data objects placed at their original distances: {len(inputs) - len(lnotes)} of {len(inputs)} (rest: build/pc-census/data_layout.notes)")
+        cmd = ["clang", "-m32", "-O0", "-g", "-fcommon", "-no-pie", "-Wl,-T," + script, "-Wl,-T," + bss_ld, "-o", exe, stubs, thunks] + port_objs + [
                "@" + rsp] + defsyms + ["-lm", "-lpthread", "-lstdc++"] + (["-lz"] if os.path.exists("/usr/lib32/libz.so") else []) + [ "-Wl,--allow-multiple-definition", "-Wl,--no-warn-rwx-segments"]
         r = subprocess.run(cmd, capture_output=True, text=True)
         errs = [l for l in r.stderr.splitlines() if "error" in l or "undefined" in l]

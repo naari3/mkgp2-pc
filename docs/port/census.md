@@ -478,4 +478,22 @@ MusyX files (10), stream headers (11).
 - Stop: flow 37 is `clFlowGpPlease`, a generated stub, because
   `GpPleaseInit.cpp` does not compile (base class tail padding, upstream
   request 18). The first draw of the uninitialised object crashes.
+- Request 18 landed (`c72769e`); flow 37 then failed in `card_pack`, which
+  reads strings 0x12A4 and more bytes after `lbl_8039C718`: an anchor in one
+  source file, the targets two units further on. The host link now
+  reproduces the original data layout as a whole instead of per unit:
+  - initialised data: every object of `symbols.txt` gets an input section
+    of its own (`mw.<section>.<name>`, set in the IR) and a generated linker
+    script puts it at its original offset in `.mw_rodata`, `.mw_data`,
+    `.mw_sdata`, `.mw_sdata2` (26,828 of 26,908 placed; the rest are larger
+    on the host than the room they have, `build/pc-census/data_layout.notes`);
+  - zero-initialised data: one block per original section, and the script
+    assigns every object's name to its original offset in it (the game
+    clears 0x1EC00 bytes of `g_itemObjectManager`, which `symbols.txt`
+    gives 0x1E4CB bytes; on the host this used to wipe the neighbours).
+  This only holds for the 32-bit build, where object sizes match.
+- With that the attract mode goes further by itself: it starts the demo
+  race, loads the item models, the course model (`dn_stadium_long_a.dat`)
+  and the collision file. Stop: a `void` function whose caller uses the
+  result (upstream request 19).
 
