@@ -14,7 +14,8 @@ takes. The console leaves an argument register alone until somebody writes
 it, so `Derived_Init(self)` can call `Base_Init(self)` and the base still
 finds the caller's other four arguments; a host does not. Definitions under
 C++ names are followed through the rename the link census applied
-(`*.cxxsyms`). A `()` declaration in C tells nothing and is skipped.
+(`*.cxxsyms`). The third list is the reverse, calls with more arguments
+than the definition takes: harmless unless the function forwards them. A `()` declaration in C tells nothing and is skipped.
 
     python3 port/tools/arg_order_census.py            # report
 """
@@ -120,6 +121,22 @@ def main():
             for u, k in sorted(bad.items()):
                 print(f"    called with {k} in {u}")
     print(f"{n} functions called with fewer arguments than they take")
+    # The other direction is harmless by itself, but not when the function
+    # hands its caller's extra arguments on in the registers
+    # (clItemBoxResponder_CmdGetWorldPos(self) calls self->GetWorldPos(),
+    # which stores through r4..r6): every entry needs a look at its body.
+    n = 0
+    for name in sorted(calls):
+        if name not in cdefs or cdefs[name][2]:
+            continue
+        want, dunit, _ = cdefs[name]
+        bad = {u: k for u, k in calls[name].items() if k > want and k != 99}
+        if bad:
+            n += 1
+            print(f"{name}: takes {want} in {dunit}")
+            for u, k in sorted(bad.items()):
+                print(f"    called with {k} in {u}")
+    print(f"{n} functions called with more arguments than they take")
     return 0
 
 

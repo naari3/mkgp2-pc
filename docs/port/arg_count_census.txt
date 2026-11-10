@@ -6,9 +6,6 @@ Clear: takes 2 in src/game/bitread/fn_8018B248.c
 CourseEnvironment_Dtor: takes 2 in src/game/CourseEnvironment.cpp
     called with 1 in src/game/CoinChallenge.cpp
     called with 1 in src/game/anon_802124FC_m1.cpp
-EnemyRun_BaseInit: takes 6 in src/game/EnemyRun_BaseInit.cpp
-    called with 1 in src/game/EnemyRunType1_Init.c
-    called with 1 in src/game/EnemyRunType2_Init.c
 ItemObject_GetGroundTypeAt: takes 5 in src/game/ItemObjectManager_RenderImpl.c
     called with 3 in src/game/BananaTriple_OnImpactTick.c
     called with 3 in src/game/BananaTriple_Tick_HeldAndHoming.c
@@ -125,8 +122,6 @@ PathCursor_Free: takes 2 in src/game/PathCursor_Free.c
 RankReached: takes 4 in src/game/fn_801D5970.c
     called with 3 in src/game/fn_801D680C.c
     called with 3 in src/game/fn_801D6DF0.c
-SoundDriver_GetOrCreate: takes 1 in src/game/clItemBoxManager_nm1.cpp
-    called with 0 in src/game/DbgMenu.cpp
 SpriteAnimHandle_Destroy: takes 2 in src/game/SpriteAnimHandleDestroy.cpp
     called with 1 in src/game/anon_8021B568_exact2.cpp
     called with 1 in src/game/clFlowItemSelect_Dtor.c
@@ -155,8 +150,6 @@ Sprite_Destroy: takes 2 in src/game/Sprite_Destroy.c
     called with 1 in src/game/clFlowCourse.cpp
     called with 1 in src/game/fn_801C5C34.cpp
     called with 1 in src/game/fn_801CE1EC.cpp
-TitleStats_MarkAllCoursesClearedIfDistance: takes 3 in src/game/RankLog.c
-    called with 2 in src/game/auto_ONKARTHIT_block.c
 TweenInterp_Dtor: takes 2 in src/game/HitMessageOverlay_Init.c
     called with 1 in src/game/RaceDigitHudDtor.cpp
     called with 1 in src/game/RaceDigitLap.cpp
@@ -262,19 +255,461 @@ fn_80141A24: takes 2 in src/game/LogoAnim.c
 fn_8016C634: takes 2 in src/sound/SoundMgr_Weather.c
     called with 1 in src/game/CoinChallenge.cpp
     called with 1 in src/game/anon_802124FC_m1.cpp
-fn_8019A4E0: takes 2 in src/game/kartmove/fn_8019A4E0.cpp
-    called with 1 in src/game/auto_ONKARTHIT_block.c
-fn_801B7C1C: takes 1 in src/game/fn_801B7C1C.c
-    called with 0 in src/game/fn_801BAA88.cpp
-fn_801B7C40: takes 1 in src/game/fn_801B7C40.c
-    called with 0 in src/game/fn_801BAA88.cpp
 fn_801D9F88: takes 2 in src/game/fn_801D9F88.c
     called with 1 in src/game/CardPrintFlowLifetime.cpp
-fn_8022FCA8: takes 2 in src/game/EnmyFaceEffect.cpp
-    called with 1 in src/game/EnemyFace_exact5.cpp
 fn_802406A4: takes 2 in src/game/JointTracks.cpp
     called with 1 in src/game/DNBress_breath.cpp
     called with 1 in src/game/DNStartDino_tail.cpp
-fn_80253294: takes 3 in src/game/HudManager.cpp
-    called with 2 in src/game/HUD_RegisterOverlay.c
-52 functions called with fewer arguments than they take
+44 functions called with fewer arguments than they take
+AI_CalcItemSpeedBonus: takes 2 in src/game/AI_CalcItemSpeedBonus.c
+    called with 4 in src/game/AI_CalcGPTargetSpeed.c
+Allocator_DestroyEntry_Noop: takes 0 in src/game/Allocator_DestroyEntry_Noop.c
+    called with 2 in src/game/AssocTree_FreeAll.c
+Allocator_DestroyKey_Noop: takes 0 in src/game/AssocTree.c
+    called with 1 in src/game/AssocTree_FreeAll.c
+Allocator_DestroyValue_Noop: takes 0 in src/game/AssocTree.c
+    called with 1 in src/game/AssocTree_FreeAll.c
+AssocTree_Init: takes 2 in src/game/AssocTree.c
+    called with 3 in src/game/cLNormal3DWrap.cpp
+Backup_PublishShadowCopy: takes 0 in src/game/Backup_PublishShadowCopy.c
+    called with 1 in src/game/Sci2Card_WaitCleaningComplete.c
+Backup_PublishShadowCopy_Inline: takes 0 in src/game/Backup_PublishShadowCopy_Inline.c
+    called with 1 in src/game/Sci2Card_WaitResetComplete.c
+BananaField_CheckCollision: takes 2 in src/game/BananaField_CheckCollision.c
+    called with 3 in src/game/ReverseChallenge.c
+CardPrintJob_TickFontTransfer: takes 0 in src/game/CardPrintJob_TickFontTransfer.c
+    called with 1 in src/game/CardTaskChecks.cpp
+CmdSize: takes 1 in src/game/dlistutil/fn_80182ED0.c
+    called with 2 in src/game/dlistutil/fn_80183CC4.c
+    called with 2 in src/game/dlistutil/fn_80184374.c
+CourseData_GetPath: takes 2 in src/game/CourseData_Lookup.c
+    called with 3 in src/game/PathData_GetByContext.c
+CreditMgr_GetCoinCount: takes 1 in src/game/CreditMgr.c
+    called with 2 in src/game/AttractJoinInput.cpp
+    called with 2 in src/game/BattleContinueScene.cpp
+    called with 2 in src/game/CardCreditFlow.cpp
+    called with 2 in src/game/ContinueScene.cpp
+    called with 2 in src/game/ContinueSceneTick.cpp
+    called with 2 in src/game/anon_801FC1E0.cpp
+    called with 2 in src/game/anon_801FC1E0_nm1.cpp
+    called with 2 in src/game/anon_80205DCC_nm2.cpp
+    called with 2 in src/game/anon_8020D1C0.cpp
+    called with 2 in src/game/anon_80218B80.cpp
+    called with 2 in src/game/clFlowAttract_Init.cpp
+    called with 2 in src/game/fn_801B7CD0.cpp
+    called with 2 in src/game/fn_801BAA88.cpp
+    called with 2 in src/game/fn_801FB778.cpp
+    called with 2 in src/game/fn_801FBE14.cpp
+CreditMgr_ResetState: takes 0 in src/game/CreditMgr.c
+    called with 1 in src/game/GameBoot_Init.cpp
+Empty_NokoNokoHook: takes 0 in src/game/RankLog.c
+    called with 3 in src/game/NokoNokoChallenge.c
+GetDisplayBufferIndex: takes 0 in src/game/SetCourseParams.c
+    called with 1 in src/game/EnemyFace_nm3.cpp
+GetEnemyParam: takes 0 in src/game/GetEnemyParam.c
+    called with 1 in src/game/EnemyRunType1_CalcSteering.c
+GetPlayerCarObject: takes 0 in src/game/SetCourseParams.c
+    called with 1 in src/game/KartItem_BroadcastParamToCarAndISE.c
+HSD_CObjEndCurrent: takes 0 in src/sysdolphin/baselib/cobj.c
+    called with 1 in src/game/CObj_GlobalProjPushFrame.c
+HeapStats_DumpForTag: takes 1 in src/game/HeapStats.c
+    called with 2 in src/game/FlowDispatcher_ScopedTimer.c
+    called with 2 in src/game/Flow_TransitionTo.cpp
+    called with 2 in src/game/KartDriver_Init.c
+    called with 2 in src/game/KartDriver_InitFull.c
+    called with 2 in src/game/RaceScene_Init.cpp
+InputCmd_Dtor: takes 1 in src/game/InputCmdLifetime.cpp
+    called with 2 in src/game/CGameCoin_8012BF5C.cpp
+ItemEffectBus_ArmTornadoAndQuery: takes 1 in src/game/ItemEffectBus.c
+    called with 2 in src/game/auto_ONKARTHIT_block.c
+    called with 2 in src/game/fn_801E68B4.cpp
+ItemHitRegistry_AddEntry: takes 1 in src/game/ItemHitRegistry.c
+    called with 2 in src/game/GabyouTripleChild.c
+    called with 2 in src/game/PowItem.c
+ItemHit_CommonKnockdown: takes 1 in src/game/KartMovement_Reset.c
+    called with 2 in src/game/ItemCollision_Check.cpp
+    called with 2 in src/game/KartItem_ApplyEffectToTarget.c
+ItemSelectState_Dtor: takes 1 in src/game/ItemSelectState.cpp
+    called with 2 in src/game/clFlowItem.c
+Item_BounceOffWall: takes 6 in src/game/ItemMotion.c
+    called with 8 in src/game/TaruItem_Tick_HeldAndHoming_25.c
+Item_TickFall: takes 2 in src/game/fn_801109A0.c
+    called with 4 in src/game/fn_80113728.c
+Item_TickFallFade: takes 2 in src/game/fn_80109AB8.c
+    called with 4 in src/game/fn_8010FA60.c
+JvsInput_DtorAndFree: takes 1 in src/game/JvsInputLifetime.cpp
+    called with 2 in src/game/InputObj_Ctor.c
+JvsInput_TickPoll: takes 0 in src/game/JvsInput_TickPoll.c
+    called with 1 in src/game/InputObj_TickAndDispatch.cpp
+KartDriver_Render: takes 2 in src/game/KartDriver_Render.c
+    called with 3 in src/game/KartDriver_RenderTimed.c
+KartFxParam_GetConst1p5: takes 0 in src/game/KartCharacterParam.c
+    called with 1 in src/game/BombExplosion_UpdateShockwaveVfx.c
+    called with 1 in src/game/BombItem_Tick.c
+    called with 1 in src/game/DrawEffect_Cb_KartVfx_Bind1_Damage.c
+    called with 1 in src/game/DrawEffect_Cb_KartVfx_Bind4or5_Variant.c
+    called with 1 in src/game/DrawEffect_Cb_KartVfx_Bind6_YawZ.c
+    called with 1 in src/game/EffectKartJoint15.c
+    called with 1 in src/game/FinalLapCoinJump_Tick.c
+    called with 1 in src/game/GabyouItemHeld.cpp
+    called with 1 in src/game/GabyouItemReturn.cpp
+    called with 1 in src/game/HandOverItem_HandToHandTick.c
+    called with 1 in src/game/ItemObject_Teresa_TrackToKart_Sub.c
+    called with 1 in src/game/ItemObject_Tick_DispatchShellGroup.c
+    called with 1 in src/game/ItemObject_Tick_DispatchcTo15.c
+    called with 1 in src/game/ItemObject_Tick_Kind28_BananaTrioChild.c
+    called with 1 in src/game/ItemObject_Tick_Kind28_BananaTrioSpawner.c
+    called with 1 in src/game/KartDriver_BuildJoint12EulerTransform.c
+    called with 1 in src/game/MukadeItem.c
+    called with 1 in src/game/OnchiSpeaker_State2_Active.c
+    called with 1 in src/game/StarItem.c
+    called with 1 in src/game/fn_80100F64.c
+    called with 1 in src/game/fn_80101A58.c
+    called with 1 in src/game/fn_801046C4.c
+    called with 1 in src/game/fn_80108484.c
+    called with 1 in src/game/fn_8010A384.c
+    called with 1 in src/game/fn_8010C110.c
+KartItem_RenderPipelinedWithEffects: takes 1 in src/game/auto_ONKARTHIT_block.c
+    called with 2 in src/game/BiribiriLand.c
+    called with 2 in src/game/BtMode_RenderFrame.c
+    called with 2 in src/game/CoinChallenge.cpp
+    called with 2 in src/game/NokoNoko_801287F8.cpp
+    called with 2 in src/game/RaceScene_RenderFrame.cpp
+    called with 2 in src/game/RaceScene_RenderPass.cpp
+    called with 2 in src/game/ReverseChallenge.c
+    called with 2 in src/game/RivalRun.c
+    called with 2 in src/game/Scene_80163C68.cpp
+    called with 2 in src/game/SuikaBall_801313D0.cpp
+    called with 2 in src/game/anon_80211B10.cpp
+KartItem_Stub_Returns0: takes 0 in src/game/KartItem_Stub_Returns0.c
+    called with 2 in src/game/auto_ONKARTHIT_block.c
+KartMovement_CalcCurrentSpeed: takes 1 in src/game/kartmove/KartMovement_CalcCurrentSpeed.c
+    called with 2 in src/game/auto_ONKARTHIT_block.c
+KartMovement_CalcMaxSpeed: takes 1 in src/game/kartmove/KartMovement_CalcMaxSpeed.c
+    called with 2 in src/game/auto_ONKARTHIT_block.c
+KartTireFX_Dtor: takes 1 in src/game/KartTireFX.cpp
+    called with 2 in src/game/KartDriver_Dtor.c
+    called with 2 in src/game/fn_8012B394.c
+MemoryManager_AllocTagged: takes 2 in src/game/MemoryManager_Alloc.cpp
+    called with 3 in src/game/EffectSpeed_Init.cpp
+    called with 3 in src/game/ShadowBillboard.c
+NokoNokoChallenge_TransitionToResult: takes 0 in src/game/NokoNokoChallenge_TransitionToResult.c
+    called with 1 in src/game/BiribiriLand.c
+    called with 1 in src/game/CGameCoin_8012BF5C.cpp
+    called with 1 in src/game/CoinChallenge.cpp
+    called with 1 in src/game/JumpDistanceMode_Update.c
+    called with 1 in src/game/NokoNoko_801287F8.cpp
+    called with 1 in src/game/ReverseChallenge.c
+    called with 1 in src/game/RivalRun.c
+    called with 1 in src/game/SuikaBall_801313D0.cpp
+PlayerData_RefreshDerivedStats: takes 0 in src/game/RankLog.c
+    called with 1 in src/game/GameMode_DispatchSceneInit.c
+ProcessSystemTick: takes 0 in src/game/SetCourseParams.c
+    called with 1 in src/game/AI_SystemInit.cpp
+    called with 1 in src/game/BiribiriLand.c
+    called with 1 in src/game/CGameCoin_8012BF5C.cpp
+    called with 1 in src/game/CSSceneGetTitle_8014ADB4.cpp
+    called with 1 in src/game/ChallengeDemoObj.cpp
+    called with 1 in src/game/ChallengeDemoShell.cpp
+    called with 1 in src/game/ChallengeDemoTornado.cpp
+    called with 1 in src/game/ChallengeDemoUra.cpp
+    called with 1 in src/game/CoinChallenge.cpp
+    called with 1 in src/game/CourseEnvironment.cpp
+    called with 1 in src/game/JumpDistanceMode_Init.c
+    called with 1 in src/game/KartChoiceFinish.cpp
+    called with 1 in src/game/NokoNoko_801287F8.cpp
+    called with 1 in src/game/RaceScene_Dtor.cpp
+    called with 1 in src/game/RaceScene_Init.cpp
+    called with 1 in src/game/ReverseChallenge.c
+    called with 1 in src/game/RivalRun.c
+    called with 1 in src/game/Scene_801638B4.cpp
+    called with 1 in src/game/Scene_80164614.cpp
+    called with 1 in src/game/SuikaBall_801313D0.cpp
+    called with 1 in src/game/TaMode_FrameUpdate.cpp
+    called with 1 in src/game/VSMode_FrameUpdate.c
+    called with 1 in src/game/anon_8020F44C.cpp
+    called with 1 in src/game/anon_80210078.cpp
+    called with 1 in src/game/clCGameDemoWC/Ctor.c
+    called with 1 in src/game/fn_80125948.c
+    called with 1 in src/game/resultscene/resultscene.cpp
+RankLog_OnRoundComplete: takes 0 in src/game/RankLog.c
+    called with 1 in src/game/BattleContinueScene.cpp
+    called with 1 in src/game/ContinueScene.cpp
+    called with 1 in src/game/Scene_80162D90.cpp
+    called with 1 in src/game/anon_802253EC.cpp
+    called with 1 in src/game/anon_80226670.cpp
+RankLog_UpdatePerFrame: takes 0 in src/game/RankLog_UpdatePerFrame.c
+    called with 1 in src/game/GameModeBase.cpp
+ReplayRandCursor_Advance: takes 2 in src/game/ReplayRandCursor.c
+    called with 3 in src/game/AI_PerKartUpdate.cpp
+    called with 3 in src/game/fn_801E9CBC.cpp
+SceneFlow_DefaultGetZero: takes 0 in src/game/SceneFlow.c
+    called with 1 in src/game/Flow_TransitionTo.cpp
+Sci2Card_Singleton_GetOrCreate: takes 0 in src/game/Sci2Card.cpp
+    called with 1 in src/game/BootDispatcher.cpp
+StrPcb_DrainInputBuffer: takes 0 in src/game/StrPcb_Commands.c
+    called with 1 in src/game/BootDispatcher.cpp
+    called with 1 in src/game/CardTaskChecks.cpp
+Stub_NoOp_38f54: takes 0 in src/game/NoOpStubs_38f54.c
+    called with 1 in src/game/STLContainer.cpp
+Stub_NoOp_38f58: takes 0 in src/game/NoOpStubs_38f54.c
+    called with 1 in src/game/STLContainer.cpp
+Stub_NoOp_38f80: takes 0 in src/game/Stub_NoOp_38f80.c
+    called with 2 in src/game/STLContainer.cpp
+Stub_NoOp_80030aec: takes 0 in src/game/Stub_NoOp_80030aec.c
+    called with 1 in src/game/BtMode_RenderFrame.c
+    called with 1 in src/game/RaceScene_RenderFrame.cpp
+    called with 1 in src/game/RaceScene_RenderPass.cpp
+    called with 1 in src/game/Scene_80163C68.cpp
+TitleStats_FinalizeRace_PlayCountThenTitle: takes 0 in src/game/RankLog.c
+    called with 1 in src/game/TaMode_FrameUpdate.cpp
+TitleStats_FinalizeRace_WithRankSnapshot: takes 0 in src/game/RankLog.c
+    called with 1 in src/game/RaceScene_FrameUpdate.cpp
+TitleStats_IncCurrentRaceScore: takes 2 in src/game/RankLog.c
+    called with 3 in src/game/auto_ONKARTHIT_block.c
+TitleStats_IncPerfectCount: takes 2 in src/game/RankLog.c
+    called with 3 in src/game/auto_ONKARTHIT_block.c
+TitleTracker_Empty_PreFinalizeHook: takes 0 in src/game/RankLog.c
+    called with 2 in src/game/auto_ONKARTHIT_block.c
+TitleTracker_OnAttract_Stub: takes 0 in src/game/TitleTracker_Stubs.c
+    called with 1 in src/game/Scene_8014E0C4.cpp
+TransparentDraw_DestroyEntry: takes 1 in src/game/TransparentDraw.c
+    called with 2 in src/game/SceneDrawList.cpp
+UpdateParticles: takes 1 in src/game/objview/fn_8018DAD0.c
+    called with 2 in src/game/objview/fn_801972E0.c
+VoiceQueue_Clear: takes 0 in src/game/sprite/fn_801A1798.c
+    called with 1 in src/game/RaceScene_Init.cpp
+card_pack: takes 2 in src/game/card_pack.cpp
+    called with 3 in src/game/anon_80209330_nm2_tail.cpp
+clCGameDemoWC_StubBlr_800adda0: takes 0 in src/game/clCGameDemoWC_Stubs.c
+    called with 1 in src/game/fn_801F27B4.cpp
+clCGameDemoWC_StubBlr_800adda8: takes 0 in src/game/clCGameDemoWC_Stubs.c
+    called with 1 in src/game/fn_801F27B4.cpp
+clEnemyParam_FillItemListIds: takes 0 in src/game/clEnemyParam_FillItemListIds.c
+    called with 4 in src/game/RaceScene_Init.cpp
+    called with 4 in src/game/Scene_80164614.cpp
+clItemBoxResponder_SpawnDebris: takes 3 in src/game/clItemBoxResponder_SpawnDebris.c
+    called with 7 in src/game/DebrisArray.cpp
+clRom_DtorForce: takes 1 in src/game/clRomDtor.c
+    called with 2 in src/game/ClRomTable_PurgeAll.c
+    called with 2 in src/game/CourseEnvironment.cpp
+dtor_80038E30: takes 1 in src/game/STLContainer.cpp
+    called with 2 in src/game/RankPanel_80144430.cpp
+dtor_80122FD8: takes 1 in src/game/MiniGameBase.cpp
+    called with 2 in src/game/BiribiriLand.c
+    called with 2 in src/game/CGameCoin_8012BF5C.cpp
+    called with 2 in src/game/NokoNoko_801287F8.cpp
+    called with 2 in src/game/ReverseChallenge.c
+    called with 2 in src/game/RivalRun.c
+    called with 2 in src/game/SuikaBall_801313D0.cpp
+dtor_801FD32C: takes 1 in src/game/anon_801FD320.cpp
+    called with 2 in src/game/CardCreditFlow.cpp
+    called with 2 in src/game/fn_801FB6C0.c
+dtor_801FD958: takes 1 in src/game/anon_801FD924.cpp
+    called with 2 in src/game/RaceHudDestroy.cpp
+dtor_80209180: takes 1 in src/game/anon_80208E30_exact2.cpp
+    called with 2 in src/game/auto_ONKARTHIT_block.c
+fn_80089C30: takes 2 in src/game/fn_80089C30.c
+    called with 3 in src/game/AssocTree_FreeAll.c
+fn_8012347C: takes 0 in src/game/ZoneList.c
+    called with 1 in src/game/mapeffect/mapeffect.cpp
+fn_80123B48: takes 1 in src/game/ZoneList.c
+    called with 2 in src/game/CGameCoin_8012BF5C.cpp
+    called with 2 in src/game/Scene_8016AABC.cpp
+    called with 2 in src/game/Scene_801709FC.cpp
+    called with 2 in src/game/mapeffect/Cave16ACtor.cpp
+    called with 2 in src/game/objtable/fn_80190660.cpp
+    called with 2 in src/game/objview/fn_80197C84.c
+fn_8013B87C: takes 1 in src/game/csAnim.c
+    called with 2 in src/game/RankPanelBase_801461B0.cpp
+fn_80140810: takes 1 in src/game/ConfettiField.c
+    called with 2 in src/game/CSSceneGetTitle_8014ADB4.cpp
+    called with 2 in src/game/RaceHud_80147470.cpp
+    called with 2 in src/game/Scene_8014E0C4.cpp
+    called with 2 in src/game/resultscene/resultscene.cpp
+fn_8014205C: takes 1 in src/game/PushPrompt.c
+    called with 2 in src/game/RaceHud_80147470.cpp
+fn_8014CFA0: takes 0 in src/game/CSSceneGetTitle_8014ADB4.cpp
+    called with 1 in src/game/anon_8020AF08.cpp
+fn_8014D2AC: takes 0 in src/game/CSSceneGetTitle_8014ADB4.cpp
+    called with 1 in src/game/anon_8020AF08.cpp
+fn_80161F28: takes 1 in src/game/resultscene/resultscene_nm1.cpp
+    called with 2 in src/game/BattleContinueScene.cpp
+    called with 2 in src/game/CardCreditFlow.cpp
+    called with 2 in src/game/ContinueScene.cpp
+    called with 2 in src/game/anon_801FC1E0.cpp
+    called with 2 in src/game/anon_8020DAA0.cpp
+    called with 2 in src/game/anon_802253EC_tail.cpp
+    called with 2 in src/game/clFlowEntry_Update.cpp
+    called with 2 in src/game/fn_801BA6A4.c
+fn_80173550: takes 1 in src/game/Scene_801734B0.cpp
+    called with 2 in src/game/CGameCoin_8012BF5C.cpp
+fn_80173CC4: takes 1 in src/game/Scene_801734B0.cpp
+    called with 2 in src/game/KartDriver_Dtor.c
+    called with 2 in src/game/Scene_8014E0C4.cpp
+fn_80174090: takes 1 in src/game/ZoneVisibility.cpp
+    called with 2 in src/game/CourseEnvironment.cpp
+fn_80174C30: takes 1 in src/game/ShadowCaster.cpp
+    called with 2 in src/game/CourseEnvironment.cpp
+fn_8017AD54: takes 1 in src/game/mapobject/fn_8017AD54.cpp
+    called with 2 in src/game/mapobject/fn_8017ACF4.c
+fn_801957AC: takes 1 in src/game/objview/fn_801957AC.cpp
+    called with 2 in src/game/objview/fn_8019571C.c
+fn_8019A9BC: takes 1 in src/game/kartmove/fn_8019A9BC.cpp
+    called with 4 in src/game/auto_ONKARTHIT_block.c
+fn_801B129C: takes 0 in src/game/sprite/fn_801A1798.c
+    called with 1 in src/game/EggItem.c
+    called with 1 in src/game/GabyouItemFlight.cpp
+    called with 1 in src/game/GabyouItemHeld.cpp
+    called with 1 in src/game/GreenShell_State1_Held.c
+    called with 1 in src/game/ItemObject_ChainShell_GrabAndArc_Sub.c
+    called with 1 in src/game/ItemObject_Teresa_GrabAndArc_Sub.c
+    called with 1 in src/game/KuppaShell_State1_Held.c
+    called with 1 in src/game/MukadeItem.c
+    called with 1 in src/game/ShellItem.c
+    called with 1 in src/game/StarItem.c
+    called with 1 in src/game/TaruItem_Tick_HeldAndHoming_25.c
+    called with 1 in src/game/TornadoItem.c
+    called with 1 in src/game/fn_801025C0.c
+    called with 1 in src/game/fn_80103144.c
+    called with 1 in src/game/fn_80105180.c
+    called with 1 in src/game/fn_80105EB4.c
+    called with 1 in src/game/fn_8010ACF0.c
+    called with 1 in src/game/fn_8010CC40.c
+    called with 1 in src/game/fn_8010DCAC.c
+    called with 1 in src/game/fn_8010F40C.c
+    called with 1 in src/game/fn_8011136C.c
+    called with 1 in src/game/fn_80113114.c
+    called with 1 in src/game/fn_80115894.c
+    called with 1 in src/game/fn_80116960.c
+    called with 1 in src/game/fn_8011A184.c
+    called with 1 in src/game/fn_8011B244.c
+fn_801BB940: takes 1 in src/game/fn_801BAA88.cpp
+    called with 2 in src/game/CardSetupFlowReceipt.cpp
+fn_801C64DC: takes 1 in src/game/clFlowFigure_Unlocks.c
+    called with 2 in src/game/clFlowCup.c
+fn_801DB8BC: takes 0 in src/game/fn_801DB8BC.c
+    called with 1 in src/game/fn_801DEE38.cpp
+fn_801DC510: takes 0 in src/game/fn_801DC510.c
+    called with 2 in src/game/fn_801EB91C.c
+fn_801DD1B0: takes 0 in src/game/fn_801DD1B0.c
+    called with 1 in src/game/fn_801E6C10.c
+fn_801DDD6C: takes 0 in src/game/fn_801DDD6C.c
+    called with 1 in src/game/AI_CalcItemSpeedBonus.c
+fn_801DDDF4: takes 0 in src/game/fn_801DDD6C.c
+    called with 1 in src/game/AI_CalcItemSpeedBonus.c
+fn_801DDE7C: takes 0 in src/game/fn_801DDD6C.c
+    called with 1 in src/game/AI_CalcItemSpeedBonus.c
+fn_801DDF04: takes 0 in src/game/fn_801DDD6C.c
+    called with 1 in src/game/AI_CalcItemSpeedBonus.c
+fn_801DE000: takes 0 in src/game/fn_801DDD6C.c
+    called with 1 in src/game/AI_CalcItemSpeedBonus.c
+fn_801DE0E8: takes 0 in src/game/fn_801DDD6C.c
+    called with 1 in src/game/AI_CalcItemSpeedBonus.c
+fn_801DE6E0: takes 0 in src/game/AI_GetItemList.c
+    called with 1 in src/game/KartController_Update.cpp
+fn_801F7CD8: takes 1 in src/game/fn_801F7604.cpp
+    called with 2 in src/game/Scene_8014E0C4.cpp
+    called with 2 in src/game/fn_801F27B4.cpp
+fn_801FE390: takes 0 in src/game/UISeHelpers.c
+    called with 1 in src/game/RaceHud_80147470.cpp
+fn_801FE584: takes 0 in src/game/dtor_801FE870.cpp
+    called with 1 in src/game/anon_8020C974_misc.cpp
+    called with 1 in src/game/anon_8020C974_nm2.cpp
+    called with 1 in src/game/fn_801FAFFC.cpp
+fn_801FE858: takes 0 in src/game/dtor_801FE870.cpp
+    called with 1 in src/game/anon_801FC1E0_nm1.cpp
+    called with 1 in src/game/fn_801FB418.cpp
+fn_80208E2C: takes 0 in src/game/anon_80207E3C_tail.cpp
+    called with 1 in src/game/RaceScene_RenderFrame.cpp
+    called with 1 in src/game/RaceScene_RenderPass.cpp
+    called with 1 in src/game/Scene_80163C68.cpp
+fn_80208FE4: takes 1 in src/game/anon_80208E30.cpp
+    called with 2 in src/game/RaceScene_Dtor.cpp
+    called with 2 in src/game/RivalRun.c
+    called with 2 in src/game/Scene_801638B4.cpp
+fn_8020AF08: takes 1 in src/game/anon_8020AF08.cpp
+    called with 2 in src/game/DbgMenu.cpp
+    called with 2 in src/game/RaceScene_Dtor.cpp
+    called with 2 in src/game/RaceScene_FrameUpdate.cpp
+fn_80218D98: takes 1 in src/game/anon_80218D98.cpp
+    called with 2 in src/game/HudModeDestroy.cpp
+    called with 2 in src/game/MenuModeLane.cpp
+fn_80227B98: takes 1 in src/game/DNBress_nm3.cpp
+    called with 2 in src/game/mapeffect/mapeffect.cpp
+fn_80228884: takes 1 in src/game/DNFlash_tail.cpp
+    called with 2 in src/game/anon_8020F44C.cpp
+    called with 2 in src/game/mapeffect/mapeffect.cpp
+fn_8022B39C: takes 2 in src/game/EnemyFace_exact2.cpp
+    called with 3 in src/game/KartVariantBindings.cpp
+fn_802300C8: takes 0 in src/game/fn_802300C8.c
+    called with 1 in src/game/EnemyFace_exact2.cpp
+fn_80230400: takes 0 in src/game/fn_80230400.c
+    called with 1 in src/game/EnemyFace_exact2.cpp
+fn_80230ED4: takes 1 in src/game/FaceEffect.cpp
+    called with 2 in src/game/KartChoiceOtherUpdate.cpp
+    called with 2 in src/game/fn_80242E04.c
+fn_80231D4C: takes 0 in src/game/FaceEffect.cpp
+    called with 1 in src/game/KartDriver_Render.c
+fn_80232550: takes 1 in src/game/TimerDisp.cpp
+    called with 2 in src/game/HudModeDestroy.cpp
+    called with 2 in src/game/RaceHudDestroy.cpp
+    called with 2 in src/game/clFlowItem.c
+fn_8023CFE0: takes 1 in src/game/SpritePairOwnerLife.cpp
+    called with 2 in src/game/BattleContinueScene.cpp
+    called with 2 in src/game/CSSceneGetTitle_8014ADB4.cpp
+    called with 2 in src/game/CardCreditFlow.cpp
+    called with 2 in src/game/ContinueScene.cpp
+    called with 2 in src/game/RaceHud_80147470.cpp
+    called with 2 in src/game/anon_801FC1E0.cpp
+    called with 2 in src/game/clFlowItemSelect_Dtor.c
+fn_8023D2B4: takes 0 in src/game/fn_8023D2B4.c
+    called with 1 in src/game/ItemSelectChildSpriteMethods.cpp
+fn_8023E808: takes 1 in src/game/ItemSelectChildSpriteDtor.cpp
+    called with 2 in src/game/ItemSelect.c
+    called with 2 in src/game/MenuModeLane.cpp
+    called with 2 in src/game/TaMode_FrameUpdate.cpp
+fn_80245700: takes 0 in src/game/fn_80245700.c
+    called with 1 in src/game/KartDriver_Render.c
+fn_8024E244: takes 1 in src/game/ContinueScene.cpp
+    called with 2 in src/game/BattleContinueScene.cpp
+    called with 2 in src/game/CardCreditFlow.cpp
+    called with 2 in src/game/anon_801FC1E0.cpp
+fn_8024F588: takes 0 in src/game/RoundResult_nm1.cpp
+    called with 1 in src/game/anon_8020C974_nm2.cpp
+fn_80253EB8: takes 0 in src/game/fn_80253EB8.c
+    called with 2 in src/game/RaceScene_Init.cpp
+    called with 2 in src/game/TaMode_FrameUpdate.cpp
+fn_80253EBC: takes 0 in src/game/fn_80253EB8.c
+    called with 2 in src/game/BiribiriLand.c
+    called with 2 in src/game/CoinChallenge.cpp
+    called with 2 in src/game/JumpDistanceMode_Update.c
+    called with 2 in src/game/NokoNoko_801287F8.cpp
+    called with 2 in src/game/RaceScene_FrameUpdate.cpp
+    called with 2 in src/game/ReverseChallenge.c
+    called with 2 in src/game/SuikaBall_801313D0.cpp
+    called with 2 in src/game/TaMode_FrameUpdate.cpp
+fn_80253EC0: takes 0 in src/game/fn_80253EB8.c
+    called with 2 in src/game/BiribiriLand.c
+    called with 2 in src/game/CoinChallenge.cpp
+    called with 2 in src/game/JumpDistanceMode_Update.c
+    called with 2 in src/game/NokoNoko_801287F8.cpp
+    called with 2 in src/game/RaceScene_FrameUpdate.cpp
+    called with 2 in src/game/ReverseChallenge.c
+    called with 2 in src/game/SuikaBall_801313D0.cpp
+    called with 2 in src/game/TaMode_FrameUpdate.cpp
+fn_80254134: takes 1 in src/game/HudManagerLife.cpp
+    called with 2 in src/game/BiribiriLand.c
+    called with 2 in src/game/CGameCoin_8012BF5C.cpp
+    called with 2 in src/game/NokoNoko_801287F8.cpp
+    called with 2 in src/game/RaceScene_Dtor.cpp
+    called with 2 in src/game/ReverseChallenge.c
+    called with 2 in src/game/RivalRun.c
+    called with 2 in src/game/SuikaBall_801313D0.cpp
+    called with 2 in src/game/TaMode_FrameUpdate.cpp
+get_title_name_global: takes 0 in src/game/RankLog.c
+    called with 1 in src/game/FlowCardCheck_nm2.cpp
+    called with 1 in src/game/SceneList_80157EA8.cpp
+    called with 1 in src/game/TitleNameHud_nm1.cpp
+    called with 1 in src/game/resultscene/resultscene_nm1.cpp
+126 functions called with more arguments than they take

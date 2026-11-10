@@ -357,7 +357,16 @@ kept for reference. Item 10 is open.
     called without their flag and `ItemObject_GetGroundTypeAt` (five
     parameters, three passed in about sixty units).
 27. A scalar local whose address goes to a callee that writes a vector
-    (added 2026-11-10; open). `PathManager_UpdateAll.c` declares
+    (added 2026-11-10; done, upstream 22e9c48). `PathManager_UpdateAll.c` declares
     `float u, t;` and passes `&u` as the `outPos` of
     `Math_Segment2DIntersect`, which writes `outPos[0..2]`. On the host
     the two extra floats land on the local `finish`.
+28. Definitions that take fewer parameters than their callers pass and
+    forward the rest in the registers (added 2026-11-10; open).
+    `clItemBoxResponder_CmdGetWorldPos(clItemBoxResponder *self)` calls
+    `self->GetWorldPos()`; its caller passes `(responder, &x, &y, &z)` and
+    the virtual function stores through those three pointers. The third
+    list of `port/tools/arg_order_census.py` (in
+    `docs/port/arg_count_census.txt`) has every function called with more
+    arguments than it takes; each needs a look at whether its body forwards
+    them.
