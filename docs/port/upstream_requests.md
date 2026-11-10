@@ -106,6 +106,15 @@ kept for reference. Item 10 is open.
     prototype with fewer parameters than the definition). The same sweep
     would catch the reverse (more arguments than the definition takes), which
     is harmless on PowerPC and on cdecl x86 but not on every ABI.
+    Tool: `python3 port/tools/arity_census.py` (compiles every unit to LLVM
+    IR and compares each direct call with the definition). At upstream
+    `0ba4382` it lists 130 caller/callee pairs with fewer arguments than the
+    definition (53 callees, 110 calling files), e.g.
+    `PCBCheckRecv.c: DisplayContext_Init()` right after `buf = Alloc(0xD8)`
+    (the argument is whatever r3 holds), `SoundMgr_PlaySE_Positional` called
+    with 3 of 5, `Terrain_RaycastWall` with 0 of 4. For each pair either the
+    call lacks arguments or the definition has parameters it never had;
+    both need the real signature in one shared prototype.
 12. Bit-fields (added 2026-11-10, upstream `0ba4382`). MWCC on PowerPC
     allocates bit-fields from the most significant bit, x86 compilers from
     the least significant. 144 bit-field members in 18 files of `src/game` /

@@ -467,6 +467,27 @@ def main():
         # A call that only fails to meet its definition because of C vs C++
         # linkage is wired to that definition instead of a stub (same calling
         # convention on this target).
+        # A name that ends in an address (`lbl_806D11B8`, left over when a
+        # merged unit's `_pN` name is folded back) is the symbols.txt symbol
+        # at that address under its current name.
+        at = {}
+        for line in open(os.path.join(ROOT, "config", "GNLJ82", "symbols.txt"), encoding="utf-8"):
+            m = re.match(r"(\S+) = \S+:0x([0-9A-Fa-f]+);", line)
+            if m:
+                at.setdefault(int(m.group(2), 16), m.group(1))
+        info = symbol_info()
+        by_addr = 0
+        for n in sorted(missing):
+            m = re.search(r"_(8[0-9A-Fa-f]{7})$", n)
+            if not m or n in info or n in alias:
+                continue
+            c = at.get(int(m.group(1), 16))
+            if c and c != n:
+                alias[n] = c
+                by_addr += 1
+                if c not in defined and c not in weak and c not in ours:
+                    missing.setdefault(c, set())
+        print(f"address-named references resolved to the symbol at that address: {by_addr}")
         defsyms = [f"-Wl,--defsym={n}={t}" for n, t in sorted(alias.items()) if n in missing] + thunk_defsyms
         missing = {n: u for n, u in missing.items() if n not in alias}
         print(f"wired to an existing definition (linkage or prototype mismatch): {len(defsyms)}")
