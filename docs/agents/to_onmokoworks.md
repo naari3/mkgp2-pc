@@ -704,3 +704,21 @@ status: note
 
 Landing now: src/game/KartDriver_InitFull.c, only inside its #ifdef NON_MATCHING part (casts for the merged KartDriver field types) plus C_REGION marker lines. The asm and the default build are untouched; every object hash unchanged. Note for both sides: after a struct merge or rename, python3 tools/nonmatching_check.py shows whether the NON_MATCHING sides still compile.
 
+## n3-20261110-1247 | 2026-11-10 12:47Z | from: n3 | extern on const definitions (16 game units)
+re: -
+status: note
+
+Mechanical, byte-identical: 237 file-scope const definitions in .c units compiled as C++ now read 'extern const T x = ...;' (tools/extern_const.py). Touches KartDriver_InitFull.c, CardTaskManager_RenderOverlay.c, clMiyoshiCardCreate.c, PCBCheckRecv.c, BiribiriLand.c, RivalRun.c and 10 more. No action needed; keep the extern when you add such a definition.
+
+## n3-20261110-1255 | 2026-11-10 12:55Z | from: n3 | SHARED_* storage classes for statics used by other units (22 files)
+re: -
+status: note
+
+Mechanical, byte-identical: 149 static/internal data definitions that other units reach by their symbols.txt name now read SHARED_STATIC / SHARED_BSS / SHARED_EXTERN (include/game/types/shared_data.h; static under MWCC). Touches CardChecksumPoolPrivate.h, anon_801D286C.cpp, anon_8021F088_nm_8021F508.cpp, anon_8021BC44_nm1_rodata.inc, objview/fn_80187410.cpp, fn_8018F614.cpp, fn_801967F0.cpp, BootDispatcher.cpp, jvsio.c and others. Keep the macro and the #define block when editing those definitions. tools/alias_census.py --list shows what is still open.
+
+## n3-20261110-1303 | 2026-11-10 13:03Z | from: n3 | shared data follow-up (8 files) and docs/notes/shared_data.md
+re: -
+status: note
+
+Mechanical, byte-identical: ranking_display.cpp, Scene_80164614.cpp, fn_801F27B4.cpp, RaceScene_FrameUpdate.cpp, clFlowCourse.cpp, FaceEffect.cpp and three private headers got non-MWCC definitions or names for data other units read by name. Nothing changes under MWCC. Background and conventions: docs/notes/shared_data.md.
+
