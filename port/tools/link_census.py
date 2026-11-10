@@ -208,6 +208,28 @@ def main():
         print(f"  {len(groups[g]):>5}  {g}")
     print(f"of those, same function under the other language linkage (C vs C++): {len(linkage)}")
     if args.link:
+        # Real implementations written for the port win over generated stubs.
+        port_objs = []
+        for sub in ("sdk", "platform", "compat"):
+            for base, _, names in os.walk(os.path.join(ROOT, "port", sub)):
+                for n in sorted(names):
+                    if n.endswith(".c"):
+                        src = os.path.join(base, n)
+                        obj = os.path.join(OUT, "port__" + os.path.relpath(src, ROOT).replace(os.sep, "__") + ".o")
+                        r = subprocess.run(["clang", "-m32", "-O0", "-g", "-c", src, "-o", obj,
+                                            "-I" + os.path.join(ROOT, "port", "sdk", "include"),
+                                            "-I" + os.path.join(ROOT, "port", "platform", "include")],
+                                           capture_output=True, text=True)
+                        if r.returncode != 0:
+                            print(r.stderr[:2000])
+                            return 1
+                        port_objs.append(obj)
+        r = subprocess.run(["llvm-nm", "-g", "--defined-only", "--format=posix"] + port_objs,
+                           capture_output=True, text=True)
+        ours = {l.split()[0] for l in r.stdout.splitlines() if len(l.split()) >= 2}
+        replaced = sorted(n for n in missing if n in ours)
+        missing = {n: u for n, u in missing.items() if n not in ours}
+        print(f"implemented under port/: {len(replaced)} of the missing symbols")
         stubs = os.path.join(OUT, "stubs.c")
         nfun, nobj = write_stubs(missing, groups, stubs)
         print(f"stubs generated: {nfun} functions, {nobj} objects")
@@ -215,10 +237,7 @@ def main():
         rsp = os.path.join(OUT, "objects.rsp")
         with open(rsp, "w") as f:
             f.write("\n".join(objs) + "\n")
-        cmd = ["clang", "-m32", "-O0", "-g", "-fcommon", "-no-pie", "-o", exe, stubs,
-               os.path.join(ROOT, "port", "sdk", "src", "stub_log.c"),
-               os.path.join(ROOT, "port", "compat", "ppc_math.c"),
-               "-I" + os.path.join(ROOT, "port", "sdk", "include"),
+        cmd = ["clang", "-m32", "-O0", "-g", "-fcommon", "-no-pie", "-o", exe, stubs] + port_objs + [
                "@" + rsp, "-lm", "-Wl,--allow-multiple-definition", "-Wl,--no-warn-rwx-segments"]
         r = subprocess.run(cmd, capture_output=True, text=True)
         errs = [l for l in r.stderr.splitlines() if "error" in l or "undefined" in l]
