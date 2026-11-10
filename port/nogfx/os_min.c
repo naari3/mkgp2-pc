@@ -15,7 +15,11 @@
  */
 #define MEM1_BASE 0x80000000u
 #define MEM1_SIZE 0x01800000u
-#define ARENA_LO 0x80800000u /* the DOL image would end near 0x806DD000 */
+/* The arena starts where it does on the console: the end of the image's
+ * last section (.sbss2 ends at 0x806DCF90) plus the 64 KB stack, rounded up
+ * to 32 bytes. The race scenes need the heap to be as large as it was; with
+ * the arena 1.1 MB shorter the first real race ran out of memory. */
+#define ARENA_LO 0x806ECFA0u
 #define ARENA_HI 0x81700000u
 
 static void* s_arenaLo = (void*)ARENA_LO;

@@ -28,6 +28,7 @@ import compile_census as cc  # noqa: E402
 import mwcc_cxx_abi
 import mwcc_data_layout  # noqa: E402
 import mwcc_int_div  # noqa: E402
+import mwcc_struct_return  # noqa: E402
 
 ROOT = cc.ROOT
 OUT = os.path.join(ROOT, "build", "pc-census")
@@ -74,6 +75,7 @@ def compile_one(path, target):
         text, _ = mwcc_cxx_abi.rewrite(open(ll, encoding="utf-8", errors="surrogateescape").read(), notes.append)
         text, _ = mwcc_data_layout.rewrite(text, DATA_OBJECTS)
         text, _ = mwcc_int_div.rewrite(text)
+        text, _ = mwcc_struct_return.rewrite(text)
         open(ll, "w", encoding="utf-8", errors="surrogateescape").write(text)
         if notes:
             with open(obj[:-2] + ".abi-notes", "w") as f:
@@ -92,6 +94,7 @@ def compile_one(path, target):
         return path, None
     text, n = mwcc_data_layout.rewrite(open(ll, encoding="utf-8", errors="surrogateescape").read(), DATA_OBJECTS)
     text, _ = mwcc_int_div.rewrite(text)
+    text, _ = mwcc_struct_return.rewrite(text)
     open(ll, "w", encoding="utf-8", errors="surrogateescape").write(text)
     r = subprocess.run(["clang", "-target", target, "-c", "-Wno-override-module", ll, "-o", obj], cwd=ROOT, capture_output=True, text=True, errors="replace")
     return path, (obj if r.returncode == 0 else None)
