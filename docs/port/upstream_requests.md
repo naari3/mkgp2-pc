@@ -220,4 +220,15 @@ kept for reference. Item 10 is open.
     `template <> teSingleton<clScreenEffect>::~teSingleton();` and the
     `TransitionOwner` ones right after the templates, with the definitions
     staying where they are, if that keeps the unit matching.
+17. CPU reads of vertex buffers in `src/sysdolphin/baselib/pobj.c` (added
+    2026-11-10; open; low priority, needed once models are drawn). The port
+    leaves vertex buffers, display lists and index lists in the console's
+    byte order because the GX layer reads them that way. Three helpers read
+    vertex data on the CPU for shape animation: `get_shape_vertex_xyz`,
+    `get_shape_normal_xyz`, `get_shape_nbt_xyz` (`memcpy` of `f32`s and
+    `((u16 *) src_base)[i]`, `((s16 *) src_base)[i]`). Wanted: those reads
+    through macros that are the plain read under MWCC and a byte-swapping
+    read elsewhere, e.g. `PORT_BE16(p)`, `PORT_BE_F32(p)` in a shared header.
+    Everything else in `pobj.c` and all of `fobj.c` already reads byte by
+    byte and needs nothing.
 

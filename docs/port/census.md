@@ -448,4 +448,14 @@ MusyX files (10), stream headers (11).
   Left: the course BGM table (7; the hook has no size and no reader of the
   records is decompiled by name yet) and the MusyX files (10; only useful
   together with a sound back end).
+- HSD CPU-side reads checked: `fobj.c` assembles every value from single
+  bytes, so key frame data needs no conversion. `pobj.c` reads display lists
+  and index lists byte by byte; only the three shape animation helpers read
+  16-bit and float vertex data directly (upstream request 17).
+- Graphics in the 32-bit process: Aurora takes Dawn as a prebuilt package,
+  and those exist for 64-bit targets only (`AuroraDawnProvider.cmake`).
+  Building Dawn from source needs `chromium.googlesource.com`, which the
+  cloud environment cannot reach. So a 32-bit Dawn has to be built somewhere
+  else (GitHub Actions or the Windows machine) before real GX can be wired
+  into the 32-bit game.
 
