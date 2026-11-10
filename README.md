@@ -1,3 +1,44 @@
+# mkgp2-pc
+
+Native PC port of **Mario Kart Arcade GP2** (Triforce, JP, `GNLJ82`), built on
+the matching decompilation [naari3/mkgp2-decomp](https://github.com/naari3/mkgp2-decomp).
+
+This repository started as a full-history copy of mkgp2-decomp `main`
+(at `a66588b`, 2026-11-10). Decompilation and matching work stays in
+mkgp2-decomp; port work happens here, and decomp progress is merged in from
+there. No port code exists yet. Start with:
+
+- [`docs/port/README.md`](docs/port/README.md): what belongs in this repo and what does not
+- [`docs/port/readiness.md`](docs/port/readiness.md): how far the decomp is from a port (measured 2026-11-10)
+
+## Syncing with upstream (mkgp2-decomp)
+
+mkgp2-decomp is the `upstream` remote. GitHub does not allow forking a
+repository into the account that owns it, so this is a plain repository that
+shares history with upstream instead of a GitHub fork.
+
+```sh
+git remote add upstream https://github.com/naari3/mkgp2-decomp   # once per clone
+git fetch upstream
+git checkout main
+git merge upstream/main        # merge, do not rebase: main here is shared
+git push origin main
+```
+
+Keep port changes out of files that upstream edits all the time
+(`config/GNLJ82/symbols.txt`, `splits.txt`, `configure.py`, matched sources)
+where possible, so these merges stay cheap. Fixes that are also right for the
+decomp (names, types, shared headers) should go to mkgp2-decomp first and
+arrive here through the merge.
+
+No game assets, disc images, compiler binaries or Metrowerks headers are
+committed here, same as upstream.
+
+Everything below this line is the upstream mkgp2-decomp README, kept as is so
+that merges do not conflict.
+
+---
+
 # mkgp2-decomp
 
 [![Build](https://github.com/naari3/mkgp2-decomp/actions/workflows/build.yml/badge.svg)](https://github.com/naari3/mkgp2-decomp/actions/workflows/build.yml)

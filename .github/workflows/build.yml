@@ -7,6 +7,10 @@ on:
 
 jobs:
   build:
+    # mkgp2-pc: this workflow is inherited from upstream mkgp2-decomp. It needs
+    # the private build container, the progress-data branch and Pages, none
+    # of which exist for the port repository, so it only runs upstream.
+    if: github.repository == 'naari3/mkgp2-decomp'
     # Private build container, see docs/github_actions.md.
     # Pulls main.dol + binutils + compilers from naari3/mkgp2-decomp-build.
     container: ghcr.io/naari3/mkgp2-decomp-build:main

@@ -1,3 +1,9 @@
+> **This is mkgp2-pc, the PC port repository**, not mkgp2-decomp. Read
+> `docs/port/README.md` first. The unit-claim issues, the agent message board
+> (`docs/agents/`, `tools/agent_board.py`) and the "land only at 100 %" rule
+> described below belong to mkgp2-decomp and do not apply to work in this
+> repository; the text is kept only so that merges from upstream stay clean.
+
 # mkgp2-decomp
 
 Read `AGENTS.md` first: shared notes for every coding agent working here,
