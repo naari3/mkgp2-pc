@@ -322,3 +322,47 @@ Data byte order status: converters exist for kinds 1 (TPL) and 6 (sprite
 animation). HSD archives (kind 3, 1,918 `.dat` files) are the big one: the
 converter has to walk the object graph from the roots with the standard
 sysdolphin descriptor layouts.
+
+## 14. The main loop runs (2026-11-10, upstream `d0d86cd`)
+
+`build/pc-census/mkgp2-nogfx` now gets through the boot sequence and keeps
+running `MainGameLoop`: 300 iterations (scene draw, scene update, per-frame
+state) were counted with a breakpoint at `MainGameLoop.cpp:73`, the scene
+state is 4, and nothing crashes for as long as it was left running (about a
+minute). Nothing is drawn: every GX call is a counted stub.
+
+What it took after section 13:
+
+- C++ virtual calls: `port/tools/mwcc_cxx_abi.py` rewrites the LLVM IR of
+  each C++ unit so that objects point at the start of the vtable and a
+  virtual destructor has one slot (frozen in this scope until the C++ ABI
+  decision in `docs/port/cxx_abi_decision.md`).
+- Pointers to member functions: upstream `include/game/types/pmf.h`
+  (request 14).
+- Once virtual calls reached their targets, the boot-time checks really ran,
+  and the hardware stand-ins had to be right:
+  - the baseboard's operator switch byte is active low; with it reading 0
+    the game went into the test menu;
+  - a JVS node's answer comes back one baseboard frame after the request
+    (`jvsio.c` matches packets against the requests of the frame before);
+    with same-frame answers the bus enumerated zero nodes and the steering
+    check failed with E20;
+  - the steering drive board on serial port 0
+    (`port/platform/triforce/drive_board.c`): answers "C01" while output
+    bit 0x80 is high and "C06" while it is low, which is what the power-on
+    check waits for. Inferred from `src/game/StrPcb_Tick.c` only;
+  - the baseboard DIP switch 0x01 is on by default: the game then skips the
+    card reader, printer and camera checks (`BootDispatcher.cpp`). Without
+    it the printer check waits for the test button.
+  `MKGP2PC_TRACE_JVS=n` prints the first n baseboard frames with JVS
+  packets.
+
+All hardware facts so far come from the decompiled game and am* libraries;
+nothing was taken from Dolphin.
+
+Known wrong but not yet in the way: vtable pointer position for the classes
+whose data members come before their first virtual function (MWCC puts the
+pointer at that position, measured with GC/1.3.2; about 17 base-less classes
+in `src` and `include`), data files other than TPL and sprite animation
+(HSD archives first), `AnimState_Init(self, 0.0f)` (upstream
+`docs/notes/port_abi.md`).

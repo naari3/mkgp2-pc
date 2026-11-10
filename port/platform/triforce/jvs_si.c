@@ -32,7 +32,11 @@ typedef void (*SICallbackMin)(int32_t chan, uint32_t err, void* context);
 static uint8_t s_switch[1 + 2 * 2]; /* system byte, then 2 bytes per player */
 static uint16_t s_analog[8] = {0x8000, 0, 0, 0x8000, 0x8000, 0x8000, 0x8000, 0x8000};
 static uint16_t s_coins[2];
-static uint8_t s_operator; /* baseboard switches, 1 = pressed */
+/* Baseboard switches, 1 = on: 0x80 service button, 0x40 test button, 0x01 a
+ * DIP switch the game reads at boot (BootDispatcher.cpp: when it is on, the
+ * card reader, printer and camera checks are skipped and the card service is
+ * disabled). On by default until those devices exist here. */
+static uint8_t s_operator = 0x01;
 static uint8_t s_address; /* JVS node address assigned by F1, 0 = none yet */
 
 void mkgp2pc_jvs_set_switches(const uint8_t* bytes, int count) {
