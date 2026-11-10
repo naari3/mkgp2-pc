@@ -289,6 +289,20 @@ def cxx_renames(built):
     for unit, t in table.items():
         seen = collections.Counter(loose(c) for c in t)
         table2[unit] = {loose(c): (c, v) for c, v in t.items() if seen[loose(c)] == 1}
+    # The C written for a function that does not match yet may declare a
+    # constructor's pointer parameters with other pointee types than the
+    # matching side the table was made from (`Normal3D(void *, int)` for
+    # `__ct__8Normal3DFPCci`). Third lookup: every pointer parameter alike.
+    def ptrs(c):
+        m = re.match(r"(.*)\((.*)\)(.*)$", c)
+        if not m:
+            return c
+        ps = ["ptr" if x.rstrip("const").endswith(("*", "&")) else x for x in m.group(2).split(",")]
+        return "%s(%s)%s" % (m.group(1), ",".join(ps), m.group(3))
+    table3 = {}
+    for unit, t in table.items():
+        seen = collections.Counter(ptrs(c) for c in t)
+        table3[unit] = {ptrs(c): (c, v) for c, v in t.items() if seen[ptrs(c)] == 1}
     jobs = [(u, built[u]) for u in table if built.get(u)]
     done = [0, 0]
 
@@ -300,11 +314,15 @@ def cxx_renames(built):
             return 0, len(table[unit])
         dem = subprocess.run(["c++filt"], input="\n".join(syms) + "\n", capture_output=True, text=True).stdout.splitlines()
         lines, hit = [], set()
+        # table entries that have their exact counterpart in this object
+        table_hit = {mwcc_names.canon_itanium(d) for d in dem} & set(table[unit])
         for sym, d in zip(syms, dem):
             c = mwcc_names.canon_itanium(d)
             target = table[unit].get(c)
             if not target and c and loose(c) in table2[unit]:
                 c, target = table2[unit][loose(c)]
+            if not target and c and ptrs(c) in table3[unit] and table3[unit][ptrs(c)][0] not in table_hit:
+                c, target = table3[unit][ptrs(c)]
             if not target:
                 continue
             hit.add(c)
