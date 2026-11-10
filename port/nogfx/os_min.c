@@ -30,6 +30,14 @@ __attribute__((constructor)) static void map_mem1(void) {
     fprintf(stderr, "nogfx: cannot map MEM1 at 0x%08X\n", MEM1_BASE);
     exit(2);
   }
+  /* The console has no read-only memory: the game writes to objects that the
+   * decompiled sources define as const (.sdata2 pointers and the like). */
+  {
+    extern char __executable_start[], _end[];
+    uintptr_t lo = (uintptr_t)__executable_start & ~0xFFFu;
+    uintptr_t hi = ((uintptr_t)_end + 0xFFFu) & ~0xFFFu;
+    mprotect((void*)lo, hi - lo, PROT_READ | PROT_WRITE | PROT_EXEC);
+  }
   /* Low-memory globals the game reads directly (host byte order). */
   *(uint32_t*)(MEM1_BASE + 0x28) = MEM1_SIZE;   /* physical memory size */
   *(uint32_t*)(MEM1_BASE + 0xF0) = MEM1_SIZE;   /* simulated memory size */
