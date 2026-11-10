@@ -43,9 +43,41 @@ build/pc/mkgp2-pc
 `build/` is already git-ignored, and `build/pc` does not collide with the
 matching build's `build/GNLJ82`.
 
-On Windows run the same commands from a "x64 Native Tools Command Prompt for
-VS 2022" (or open `port/` as a CMake folder in Visual Studio). Dawn and SDL3
-come as prebuilt DLLs there and are copied next to `mkgp2-pc.exe`.
+### Windows
+
+Checked 2026-11-10 on Windows with Visual Studio Community 2022 17.14
+(MSVC 19.44), CMake 3.31.6 and Ninja 1.12.1 as shipped with Visual Studio:
+configure about 95 s including downloads, build about 55 s, no source changes
+needed.
+
+Run the same commands from an "x64 Native Tools Command Prompt for VS 2022"
+(that is, after `vcvars64.bat`):
+
+```bat
+cmake -S port -B build/pc -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake --build build/pc
+ctest --test-dir build/pc --output-on-failure
+build\pc\mkgp2-pc.exe
+```
+
+Pitfall: `vcvars64.bat` appends Visual Studio's own CMake and Ninja to the
+END of `PATH`. If an older CMake (below 3.25) is installed elsewhere it wins
+and configure stops with "CMake 3.25 or higher is required". Check with
+`where cmake`, and if needed put Visual Studio's copies first:
+
+```bat
+set "VSCMAKE=%VSINSTALLDIR%Common7\IDE\CommonExtensions\Microsoft\CMake"
+set "PATH=%VSCMAKE%\CMake\bin;%VSCMAKE%\Ninja;%PATH%"
+```
+
+Dawn, SDL3 and nod come as prebuilt packages. Their DLLs (`webgpu_dawn.dll`,
+`SDL3.dll`, `nod.dll`, `dxcompiler.dll`, `dxil.dll`, `libpng16.dll`,
+`zlib1.dll`) are copied next to `mkgp2-pc.exe`, which then starts from any
+shell. Aurora picks D3D12. The user directory is `%APPDATA%\mkgp2-pc`.
+
+Not tried: the Visual Studio generator, clang-cl, the VS 2026 toolset.
+Dependencies print a few warnings (C4819 on Japanese-locale systems, C4244,
+C4834); the port's own code prints none.
 
 Options of the executable:
 
