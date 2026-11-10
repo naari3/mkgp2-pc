@@ -405,3 +405,30 @@ host yet.
 Also converted now: course path tables (kind 4), ghost recordings (5), demo
 input recordings (9). Not yet: course BGM table (7), collision files (8),
 MusyX files (10), stream headers (11).
+
+## 16. Past the card flow, into the class select (2026-11-10)
+
+- MSL containers: `port/compat/include/{vector,list,deque}` are stand-ins
+  with MSL's object layout (vector `{capacity, size, data}`, list `{size,
+  end node}`, deque 28 bytes), enough for the six units written against the
+  MSL headers. The real headers do not compile with clang.
+- Exceptions: the units that contain `throw` or `try` (nine) are compiled
+  with exceptions on and the link takes the host C++ runtime. Nothing is
+  expected to throw. The IR pass passes the destructor flag on `invoke` as
+  well as `call`; nothing else about it changed.
+- Generated stubs went from 385 to 300 functions.
+- Scripted input: entries must lie inside the repeat period
+  (`"500 coin; 1000 an1=ffff; 1100 an1=0; 1500 sw=00,00,20; 1600
+  sw=00,00,00; period 2000"`); entries beyond the period never fire.
+- With a coin the menu goes attract -> card flow (9) at retrace 5001 ->
+  class select (11) at retrace 5221. The card flow is real code now; with
+  the DIP switch for "no card devices" it finishes at once.
+- The class select stays in its first state. Cause: its rodata is a byte
+  array and the code reads ints out of it (upstream request 15); 877 such
+  objects exist.
+- Layout difference found on the way: the Itanium ABI lets a derived class
+  put its members into the tail padding of a non-POD base, MWCC does not.
+  `GpLabelPanel` is 0x94 bytes under MWCC and smaller on the host, so
+  `GpPleaseInit.cpp` fails its own size check. Not handled; belongs with the
+  class layout work upstream (`docs/port/cxx_classes.md`).
+

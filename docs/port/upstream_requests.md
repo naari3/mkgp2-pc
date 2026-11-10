@@ -165,7 +165,8 @@ kept for reference. Item 10 is open.
       `CourseData_LoadPathTable.cpp`, `TEXLoadPalette.cpp`, plus the
       sysdolphin archive loader. On the disc: 5,358 `.tpl`, 1,918 `.dat`
       (215 MB), 684 `.dsp`, 640 `.bin`, MusyX `pool/proj/samp/sdir`.
-14. Pointers to member functions (added 2026-11-10; open). MWCC's are 12
+14. Pointers to member functions (added 2026-11-10; done upstream in
+    `d0d86cd`, `include/game/types/pmf.h`). MWCC's are 12
     bytes, `{ long thisDelta; long vtableOffset; union { void *func; long
     vptrOffset; } }` with `vtableOffset == -1` for a non-virtual function
     (the layout `__ptmf_scall` in `src/Runtime` reads). Clang's and GCC's are
@@ -188,3 +189,23 @@ kept for reference. Item 10 is open.
       start of MWCC-layout vtables in the port build, see census section 13);
     - the constant: `PMF_OF(&Class::Method)`; off MWCC it can be built at run
       time from the host's own `{ ptr, adj }` for non-virtual functions.
+15. Byte-array data read as wider types (added 2026-11-10; open). The
+    generated data units define 877 objects (37 KB) as `unsigned char
+    name[N] = { 0x3F, 0x80, ... }`, and the code reads floats, ints and
+    structs out of them through casts. The bytes are in the console's order,
+    so every such read is wrong on a little-endian host. First failure:
+    `clFlowClass_Update` copies `ClassAnims { int ids[3]; }` from
+    `clFlowClass_Update_rodata_8039A5A0 + 0x3FC` (`rodata_80399830.c:702`);
+    the animation ids come out byte-swapped, fail the `id < 0x1ec` check in
+    `Sprite_SetupAnim`, the sprites lose their animation and the class
+    select screen never leaves state 0. The same blob starts with floats
+    (1.0, 0.7, 0.9, ...).
+    Wanted: these objects defined with the element types the code reads
+    (`float`/`int`/`short` arrays or a struct), as was done for the other
+    initialised data. Where only the element width is known, an array of
+    32-bit words written as numbers is already enough for the port. The
+    largest ones: `lbl_80331698` (1,344), `lbl_802EB4E0` (1,284),
+    `ItemObject_Tick_rodata_8032E060` (1,236), `lbl_80330D10` (1,216),
+    `clFlowClass_Update_rodata_8039A5A0` (1,128), `ClSound_rodata_80379100`
+    (1,108). List them with
+    `grep -c "char .*\[[0-9]*\] = {" src/game/autodata/*.c`.

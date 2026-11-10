@@ -60,3 +60,15 @@ port yet because it uses `std::vector` from the MSL C++ headers.
 `fn_801E5454.cpp`. (`GpPleaseInit.cpp` fails for another reason: a size
 check in `GpPleaseInitPrivate.h`.) The headers are fetched, not committed
 (`tools/fetch_msl.py`), and do not compile with clang as they are.
+
+## Base class tail padding
+
+The Itanium ABI places the first member of a derived class inside the tail
+padding of a base that is not a POD; MWCC starts after the full size of the
+base. Found through `GpLabelSizeCheck` in
+`include/game/GpPleaseInitPrivate.h:98` (`GpLabelPanel`, 0x94 bytes under
+MWCC). No list of affected classes yet; candidates are derived classes whose
+base ends in padding (a base whose last member is narrower than its
+alignment). A member or attribute that fills the base to its full size keeps
+both compilers in step.
+

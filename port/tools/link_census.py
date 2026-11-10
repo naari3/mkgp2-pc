@@ -37,7 +37,7 @@ REPLACED = {
 }
 
 
-USES_EH = re.compile(r"\\btry\\s*\\{|\\bthrow\\s+\\w|\\bthrow\\s*;")
+USES_EH = re.compile(r"\btry\s*\{|\bthrow\s+\w|\bthrow\s*;")
 
 
 def compile_one(path, target):
