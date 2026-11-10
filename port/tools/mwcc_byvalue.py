@@ -16,7 +16,7 @@ by value).
 """
 import re
 
-HOST = re.compile(r"GX[A-Z]\w*$")
+HOST = re.compile(r"GX[A-Z][A-Za-z0-9]*$")
 _T = r'(?:%"[^"]*"|%[\w.$:]+|\{[^{}]*\}|\[[^\[\]]*\])'
 _BYVAL = re.compile(r" byval\((" + _T + r")\)")
 _PARAM = re.compile(r"ptr((?: \w+(?:\(\d+\))?)*?) byval\((" + _T + r")\)((?: \w+(?:\(\d+\))?)*?)(?: align (\d+))? (%[\w.$]+|%\"[^\"]*\")")
