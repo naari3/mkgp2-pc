@@ -128,3 +128,9 @@ Known traps recorded on the way:
 - `include/libc/math.h` declares `float sqrt(float)`; renamed `sqrt_f32` in
   the PC copy.
 - `__frsqrte` must be implemented with the PowerPC estimate table.
+
+## 6. Update: upstream `393e3ab` merged
+
+`operator new` now takes `size_t` upstream (`include/game/types/size_t.h`), so
+the plain 32-bit target gives the same result and `--size-t-long` is no
+longer needed: 2713 / 2848 files accepted on `i686-pc-linux-gnu`.

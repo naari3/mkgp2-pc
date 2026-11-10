@@ -78,7 +78,7 @@ def main():
     ap.add_argument("--list", metavar="GROUP", help="print the undefined symbols owned by this group")
     ap.add_argument("--dups", action="store_true", help="print symbols defined more than once")
     args = ap.parse_args()
-    target = cc.TARGET_SIZE_T_LONG
+    target = cc.TARGET
     os.makedirs(OUT, exist_ok=True)
 
     files = []
