@@ -347,7 +347,7 @@ kept for reference. Item 10 is open.
     (second parameter a pointer, declared float in two units). The first
     stops the race scene while it builds the player's kart.
 26. Calls that pass fewer arguments than the definition takes (added
-    2026-11-10; open). The console leaves an argument register alone until
+    2026-11-10; done, upstream f294028). The console leaves an argument register alone until
     it is written, so `EnemyRunType1_Init(void **self)` calls
     `EnemyRun_BaseInit(self)` and the base constructor still finds the four
     further arguments its own caller put in r4 to r8; a host reads stack
@@ -356,3 +356,8 @@ kept for reference. Item 10 is open.
     `docs/port/arg_count_census.txt`: 52 functions, among them destructors
     called without their flag and `ItemObject_GetGroundTypeAt` (five
     parameters, three passed in about sixty units).
+27. A scalar local whose address goes to a callee that writes a vector
+    (added 2026-11-10; open). `PathManager_UpdateAll.c` declares
+    `float u, t;` and passes `&u` as the `outPos` of
+    `Math_Segment2DIntersect`, which writes `outPos[0..2]`. On the host
+    the two extra floats land on the local `finish`.

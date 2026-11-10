@@ -86,6 +86,48 @@ Options of the executable:
 | `--headless` | no window; render offscreen with the null GPU back end |
 | `--frames N` | exit after N presented frames |
 
+## The game code (bring-up build, no graphics)
+
+The decompiled game does not go through CMake yet. `port/tools/link_census.py`
+compiles every unit of the listed `src/` directories as a 32-bit program,
+applies the MWCC conventions (docs/port/census.md) and links it with the
+stand-ins under `port/nogfx/` and `port/platform/`:
+
+```sh
+python3 port/tools/link_census.py game sound ui util resource triforce sysdolphin --link
+MKGP2_ISO=/path/to/the.iso build/pc-census/mkgp2-nogfx
+```
+
+Linux needs clang, `gcc-multilib` and `lib32z1-dev`. No window and no sound;
+the log goes to stderr. `MKGP2PC_SCRIPT` feeds inputs
+(docs/port/census.md section 16).
+
+### 32-bit Windows
+
+```sh
+python3 port/tools/link_census.py game sound ui util resource triforce sysdolphin --os windows --link
+```
+
+cross-builds `build/pc-census-win/mkgp2-nogfx.exe` on Linux (clang with the
+i686 MinGW-w64 runtime: `gcc-mingw-w64-i686-win32 g++-mingw-w64-i686-win32`).
+The executable is static and large-address-aware; on Windows run it with
+`MKGP2_ISO` set. What the mode does differently is described in
+docs/port/census.md section 20. It has been linked but not run yet.
+
+## 32-bit Dawn packages
+
+Aurora takes Dawn as a prebuilt package and upstream publishes 64-bit ones
+only. `.github/workflows/dawn32.yml` (manual) builds the same Dawn revision
+for 32-bit Windows and Linux and, with `publish`, attaches the packages to a
+prerelease of this repository. For `AURORA_DAWN_REF`
+`1155e0ed531126f33a1279afa029349651ca1c93`:
+
+- https://github.com/naari3/mkgp2-pc/releases/download/dawn32-1155e0ed531126f33a1279afa029349651ca1c93/dawn-windows-x86.tar.gz
+- https://github.com/naari3/mkgp2-pc/releases/download/dawn32-1155e0ed531126f33a1279afa029349651ca1c93/dawn-linux-i686.tar.gz
+
+Pass the one for the target as `-DAURORA_DAWN_PACKAGE_URL=<url>` when
+configuring a 32-bit build. Not wired into the presets yet.
+
 ## Test
 
 ```sh

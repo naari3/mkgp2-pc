@@ -595,3 +595,68 @@ The scene change to the race (flow 42, retrace 9236) now loads the course
 and constructs the player's kart. Open: `fn_802090F0` and five more
 functions are declared with their float and integer parameters in another
 order than they are defined (upstream request 25).
+
+## 20. The real race runs; a 32-bit Windows build links (2026-11-10, upstream `f294028`)
+
+The scripted session (coin, menus, section 16) now builds the whole race
+scene (course, player kart, AI karts, HUD) and the race itself runs about
+430 frames (retrace 9236 to 9665) before the first finish-line check stops
+it.
+
+What it took:
+
+- Float and integer parameters declared in another order than defined
+  (upstream request 25) and calls that pass fewer arguments than the
+  definition takes, relying on argument registers passing through a wrapper
+  (request 26). `port/tools/arg_order_census.py` lists both from the host
+  IR; run it after every merge. Its second list also shows destructors
+  "called with one argument": those go through the constructor / destructor
+  bridges and are fine.
+- `__dynamic_cast` of the MWCC runtime (`fn_80271340`) is implemented in
+  `port/platform/runtime/mwcc_runtime.c`. One class can have several
+  type_info objects in the image, so types are compared by name.
+- `cos(double)` / `sin(double)` declared inside C++ regions were stubs that
+  returned 0 (`port/compat/cxx_math.c`).
+
+Open: `PathManager_UpdateAll` passes the address of one `float` to
+`Math_Segment2DIntersect`, which writes three through it (request 27).
+
+### `--os windows`
+
+`link_census.py --os windows --link` builds the same program for
+`i686-w64-windows-gnu`. Everything after compilation works on names, so
+the mode makes a COFF object look like the ELF one first:
+
+- COFF puts an underscore before every C name. It is taken off again in
+  each object (`win_plain_names`); the few names the game takes from the C
+  and C++ runtimes get a one-instruction bridge (`memcpy: jmp _memcpy`) in
+  the generated stubs. The port's own objects are renamed only where they
+  define a name or use one of the game's.
+- An inline function is a COMDAT section there, and GNU ld keeps one such
+  section per section name whatever its symbol is called by then. The
+  rename tables are per unit, so the copy that survived could carry the
+  wrong name. In the IR they become ordinary definitions and the link
+  takes the first (`--allow-multiple-definition`), like the weak symbols
+  of the ELF build.
+- `x86_thiscallcc` is removed: member functions are called through C
+  declarations all over the decompiled code.
+- A name that begins with `L` is an assembler-local label in COFF assembly,
+  also when it comes from an `__asm__("...")` label (clang 18 crashes on
+  `LObjList_Destroy`). Generated code spells such a name
+  `mkgp2pc_asmL_<name>` and the object is renamed afterwards.
+- GNU ld gives every `NOLOAD` section of a PE image the same address; the
+  blocks for the original `.bss` / `.sbss` / `.sbss2` layout are ordinary
+  zero-filled sections there.
+- COFF symbols have no size; the sizes the `.bss` layout needs come from
+  the distance to the next symbol (`win_bss_sizes`).
+- `-mno-ms-bitfields`, so that bit-fields are laid out as on Linux.
+- Main memory at 0x80000000 needs `--large-address-aware` and
+  `VirtualAlloc`; the image is made writable with `VirtualProtect`
+  (`port/nogfx/os_min.c`). `pread` is replaced in `port/nogfx/dvd_min.c`.
+
+The data layout of the executable agrees with the Linux one object for
+object. Differences that remain: `double` and 64-bit integers are aligned
+to 8 bytes inside structures on Windows (as on the console) and to 4 on
+Linux; zlib is not linked (`inflate` is a stub). Not run yet: there is no
+way to run a Windows program in the build container.
+
