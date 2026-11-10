@@ -13,7 +13,10 @@ agree. See docs/port/census.md section 13. What this pass changes:
    (complete, deleting); MWCC has one function with a flag (>0: destroy and
    delete, 0: destroy as a base, <0: destroy). Emitted vtables get one slot
    with a small wrapper, calls through the slot pass the flag, and later
-   slots move down by one.
+   slots move down by one. The deleting destructor of an abstract class,
+   which clang emits as a trap, gets its real body: the sources model some
+   instantiated classes with a pure virtual slot, and MWCC's one destructor
+   does not tell abstract classes apart.
 
 Input must be produced with
     -S -emit-llvm -g -fstandalone-debug -fno-discard-value-names
@@ -131,6 +134,19 @@ def rewrite(text, warn=None):
     # member functions by their MWCC names, so the game needs one convention
     # for both: member functions become plain C-convention functions.
     text, n_cc = re.subn(r"\bx86_thiscallcc ", "", text)
+
+    # deleting destructors of abstract classes: destroy and delete
+    def untrap(m):
+        name = m.group(1)
+        d1 = name[:-4] + "D1Ev"
+        if not re.search(r"^(define|declare) [^@\n]*@%s\(|^@%s = " % (re.escape(d1), re.escape(d1)), text, re.M):
+            d1 = name[:-4] + "D2Ev"
+        return (m.group(0)[:m.start(2) - m.start(0)]
+                + "call void @%s(ptr noundef %%this1)\n  call void @_ZdlPv(ptr noundef %%this1)\n  ret void" % d1)
+    text, n_trap = re.subn(r"^define [^@\n]*@(\w+D0Ev)\([^\n]*\{\n(?:(?!^\}).*\n)*?  (call void @llvm\.trap\(\)[^\n]*\n  unreachable[^\n]*)",
+                           untrap, text, flags=re.M)
+    if n_trap and not re.search(r"^declare [^@\n]*@_ZdlPv\(", text, re.M):
+        text += "\ndeclare void @_ZdlPv(ptr noundef)\n"
 
     # drop the module summary (stale after the edits)
     text = re.sub(r"^\^\d+ = .*\n", "", text, flags=re.M)
