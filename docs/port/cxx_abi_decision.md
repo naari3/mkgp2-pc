@@ -78,6 +78,21 @@ tables and about 1,400 alias names to fold; some classes will not come out
 byte-identical on the first try and stay as they are for a while; it cannot
 be finished before the port needs to run.
 
+B is really three steps of very different cost, and the pilot has to price
+each:
+
+- B1, one definition per class: fold the per-unit alias classes into one
+  header definition. Mechanical and tool-driven like the struct merges
+  (MWCC's code depends only on the layout and the slot numbers), and needed
+  by every option, 64-bit included.
+- B2, real constructors and member functions in place of C functions that
+  store the table by hand. Usually the same code, checked per function.
+- B3, MWCC itself emits the table. This is matching-grade work: the owning
+  unit needs `-RTTI on`, often `-inline deferred` (which reverses function
+  order), and the right data order (matching_rules section 6). If B3 turns
+  out slow, the bridge can still be retired earlier by generating the host's
+  tables from the hand-written arrays once B1 and B2 are done for a class.
+
 **C. Make the object model explicit in the source for other compilers**
 (plain structs with a vtable-pointer member, `VCALL` macros at every virtual
 call, under `#ifndef __MWERKS__`). Compiler-independent and solves the
