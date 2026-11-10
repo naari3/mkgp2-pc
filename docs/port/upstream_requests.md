@@ -276,8 +276,8 @@ kept for reference. Item 10 is open.
     both ends come from the same compiler), or the allocation side written
     with the explicit `__construct_new_array` as well.
 21. Text stored as numbers inside word and pointer arrays (added
-    2026-11-10; first landing upstream `2d64875`, `TEXT_WORD`; rest to
-    follow). The mirror image of request 15: objects typed as
+    2026-11-10; done upstream `2d64875` and `ff5aee2`, `TEXT_WORD(...)` in
+    `include/game/types/text_word.h`). The mirror image of request 15: objects typed as
     `void *[]`, `int[]` or `unsigned int[]` (usually because some of their
     words are relocated pointers) that also hold strings, written as 32-bit
     numbers. On the host the bytes of each word come out reversed. First
@@ -293,7 +293,9 @@ kept for reference. Item 10 is open.
     `lbl_803DB630` (12), `DebugOverlay_GetDaytimeLabel_data_8040E1C4` (11),
     `lbl_8039DFC4` (10); some hits are floats that happen to look like text.
 22. Constructor called with its float and integer arguments in another
-    order than the definition (added 2026-11-10; open). `RaceSceneC` does
+    order than the definition (added 2026-11-10; done upstream `31f6a3c`,
+    `ARGS_ORDER((mwcc), (host))` in `include/game/types/arg_order.h`; the
+    port's rename lookup ignores parameter order for these). `RaceSceneC` does
     `new RaceCamera(lbl_806D80C0, 0x200, lbl_806D8184, 0x200, lights)`
     (`Scene_8014E0C4.cpp:4965`, float, int, float, int, pointer); the
     function behind it is `clShadow::clShadow(int width, int height,
@@ -303,4 +305,19 @@ kept for reference. Item 10 is open.
     caller's class declared with the definition's order, and the earlier
     argument-order sweep extended to constructors that reach their
     definition through `tools/extab_user_renames.json`.
-
+23. Built-in HSD descriptors typed as words, and arguments passed through
+    r3 between two calls (added 2026-11-10; open).
+    (a) `g_courseDataInstance` (`src/game/autodata/data_8040E780.c`) is the
+    light descriptor that `GetCourseDataPtr()` returns and
+    `HSD_LObjLoadDesc()` reads. It is a `void *[7]` whose third and fourth
+    words are really `u16 flags = 0x000D; u16 attnflags; GXColor color`. On
+    a little-endian host `flags` reads 0, the shadow camera
+    (`Camera_Create.cpp:95`) cannot tell what kind of light it has and
+    asserts. Wanted: the object as a struct with those field widths, and a
+    look at other static HSD descriptors typed the same way.
+    (b) Six callers write `GetCourseDataPtr(); renderTarget =
+    HSD_LObjLoadDesc();` with no argument (`BiribiriLand.c:827`,
+    `RivalRun.c:1984`, `JumpDistanceMode_Init.c:366`,
+    `ReverseChallenge_Init.inc:172`, `NokoNoko_801287F8.cpp:1001`,
+    `SuikaBall_801313D0.cpp:1154`); the console keeps the first call's
+    result in r3, a host does not. Wanted: the nested call, or a host form.

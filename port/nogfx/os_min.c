@@ -107,3 +107,11 @@ void HSD_Panic(const char* file, int line, const char* msg) {
   fprintf(stderr, "HSD_Panic: %s:%d: %s\n", file ? file : "?", line, msg ? msg : "");
   abort();
 }
+
+/* sysdolphin's assert handler (baselib/debug.c, which holds PowerPC assembly
+ * and is not built here). Without this definition the game's calls bind to
+ * the C library's __assert, which takes (expression, file, line). */
+void __assert(const char* file, uint32_t line, const char* expr) {
+  fprintf(stderr, "assertion \"%s\" failed\n", expr ? expr : "");
+  HSD_Panic(file, (int)line, "");
+}
