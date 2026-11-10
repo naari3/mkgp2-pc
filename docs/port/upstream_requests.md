@@ -382,7 +382,8 @@ kept for reference. Item 10 is open.
     read as `unsigned int`) and `lbl_802EB4E0` (1,284 bytes, `NamCamPool`).
     Wanted: the definition in the type its users read.
 30. Float-returning functions declared `void` by a caller, and the
-    reverse (added 2026-11-10; open). On 32-bit x86 a float result is
+    reverse (added 2026-11-10; done upstream in `1f1cec5`, `7459791`,
+    tool `tools/port_abi/return_class.py`). On 32-bit x86 a float result is
     returned on the x87 register stack. A caller that takes the function
     for `void` never pops it; after eight such calls the stack is full and
     every float load produces NaN. `fn_8019EA8C`
@@ -392,3 +393,11 @@ kept for reference. Item 10 is open.
     it the race camera (no 3D picture in the race).
     `KartEffectFadeTransit_GetActiveValue` is the reverse (integer result,
     declared `float` in `auto_ONKARTHIT_block.c`).
+
+31. A struct passed by value through a function-pointer cast to a function
+    whose definition takes a pointer (added 2026-11-10; the one instance,
+    `StlList_RemoveByValueField`, done upstream in `8cfa617`). The census
+    `tools/port_abi/byvalue_struct.py` found 369 more places of the same
+    kind in plain prototypes. Those are NOT converted upstream: the port
+    passes every struct argument by address (`port/tools/mwcc_byvalue.py`),
+    which is what MWCC does, so both spellings meet.

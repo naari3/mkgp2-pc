@@ -704,3 +704,43 @@ How the rendering executable differs from the bring-up one
 Not done: the 129 functions still stubbed in this build (`GXPeekZ`,
 `PSMTX44Identity` and others show up in the log), CPU-side reads of
 big-endian vertex data, sound, input from the window, Windows.
+
+## 22. A whole play, rendered (2026-11-10, upstream `8cfa617`)
+
+With rendering the scripted session now goes once around: coin, menus, the
+real race drawn (course, kart, HUD, minimap, items, coins), time-up, the
+Mario coin tally, the logo, the attract demo and the character select of the
+next play. Without rendering the same session runs to the script limit.
+What stood in the way after the first pictures:
+
+- **Data read wider than defined** (request 29) and **float results declared
+  void** (request 30): the second left a value on the x87 register stack at
+  every call, until every float load gave NaN and the kart's position with
+  it. Both fixed upstream with a census tool each.
+- **Inline functions other units call.** MWCC emits an inline C++ function
+  whose address the exception tables take; the host needs
+  `-fkeep-inline-functions` for C++ units.
+- **Vtables with two groups written as data** (CarObject): the constructor
+  stored Itanium address points. `mwcc_cxx_abi.py` step 2b maps group 0 to
+  the table start and group 1 to its MWCC offset.
+- **std::deque members called by address name** (`fn_801E2C40`,
+  `fn_801E2DF0`, `fn_801E2F28`, `fn_801E2FD4`, `fn_801E3260`,
+  `fn_801E40C0`): the AI waypoint queue. As stubs they left the queue
+  uninitialised and the scene teardown freed a stale pointer.
+  `port/compat/deque_bridge.c` implements them on the layout of
+  `port/compat/include/deque`.
+- **Deleting destructors of abstract classes.** clang emits a trap; some
+  instantiated classes are modelled with a pure virtual slot (clFAllDisp).
+  `mwcc_cxx_abi.py` gives them the real body.
+- **Struct arguments** (request 31): MWCC passes the address of a copy, so
+  the sources spell the same parameter `T` in one place and `T *` in
+  another. `port/tools/mwcc_byvalue.py` drops `byval` on game definitions,
+  declarations and calls; a definition copies on entry. Aurora's GX
+  functions (GXColor by value) keep the host convention.
+- Aurora: vertex array extents come from the archive conversion
+  (`mkgp2pc_array_extent`), the texture cache is dropped when data is
+  reloaded, `PSMTX44Copy` / `PSMTX44Identity` are in `port/compat`.
+
+Still open: sound, window input, data kinds 7 and 10, zlib on Windows, the
+remaining stubs, and the Windows executables have not been run.
+
