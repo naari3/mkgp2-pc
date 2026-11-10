@@ -152,3 +152,22 @@ This is the loop for the next stage: run, look at the first crash or the
 stub log, replace the stub that matters with a real implementation in
 `port/sdk` or `port/platform`, repeat. `mkgp2pc_frsqrte` is a placeholder
 (`port/compat/ppc_math.c`), accurate but not bit-exact.
+
+## 8. Two ways to replace the Triforce libraries (measured, not decided)
+
+The game calls 65 functions of the `am*` / `ac*` / `jvs*` libraries.
+
+- Replace at that API: 65 functions to write in `port/platform/triforce`,
+  each from the decompiled C in `src/triforce` (boot info, coin, backup,
+  JVS input, sockets, card UART).
+- Or compile `src/triforce` as it is (70 of 71 files already compile; add
+  `triforce` to the `link_census.py` directories) and emulate the hardware
+  underneath. The missing set then becomes 12 EXI functions, `SITransfer` /
+  `SIIsChanBusy`, 18 DVD functions and 37 OS functions (threads, alarms,
+  semaphores, message queues, which Aurora's OS does not have). The original
+  coin, backup and JVS logic is kept, at the price of emulating the baseboard
+  and media board protocols on EXI and JVS frames on SI.
+
+Both link today. The second keeps more original behaviour and has the smaller
+surface; whether its state machines come up without real boards has to be
+tried.
