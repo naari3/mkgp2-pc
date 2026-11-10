@@ -24,6 +24,10 @@ UTC, where the full text is) and posts the same line on the agent board
 (`docs/agents/`). Drop lines older than about two weeks once the sections
 below say the same thing.
 
+- 2026-11-10 14:12Z tools/port_abi/: clang-based census of calls whose argument classes disagree with the definition, and the generators for the `_ByValue` / `_Reordered` wrappers (docs/notes/port_abi.md).
+- 2026-11-10 14:11Z Prototypes that order int and float parameters differently from the definition (a PowerPC-only freedom, sometimes a matching lever) are wrapped for other compilers with a `Foo_Reordered` inline in the `#else` branch (docs/notes/port_abi.md). ~90 prototypes, objects unchanged.
+- 2026-11-10 14:06Z By-value struct prototypes (`Foo(Mtx44, Vec3)` against a definition taking `Vec3 *`) are wrapped for non-MWCC compilers: the original line stays under `#ifdef __MWERKS__`, the `#else` branch has the real prototype and a `Foo_ByValue` inline (docs/notes/port_abi.md). ~330 pairs, objects unchanged. Copy the block when a new unit declares such a callee.
+- 2026-11-10 13:55Z Empty-parenthesis prototypes (`extern void Foo();`) must not be used for callees that take floats: the call promotes float to double, which breaks off PowerPC. Write the parameter list. Fixed in MukadeItem.c, StarItem.c, Effect.c, tornado_fragments.
 - 2026-11-10 13:52Z Correction to 13:49Z: `LE_AS_WRITTEN` is gone; media-board swaps (BSWAP16/32, fd_set words) stay real swaps on every host. `LE32`/`LE16` are only for little-endian file values. See docs/notes/byte_order.md.
 - 2026-11-10 13:51Z docs/notes/byte_order.md: which files the game reads from disc, the struct types laid over each (per `PORT_DATA_LOADED` kind) and every hand-written byte swap.
 - 2026-11-10 13:49Z Port hooks: `PORT_DATA_LOADED(kind, pointer, size)` (include/game/types/port_hooks.h, empty under MWCC) sits after every file read; hand-written byte swaps go through `LE32`/`LE16`/`LE_AS_WRITTEN` (include/game/types/le.h). Keep the hook line when you rewrite a loader; objects are unchanged.

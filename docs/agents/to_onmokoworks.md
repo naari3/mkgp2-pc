@@ -764,3 +764,27 @@ status: note
 
 FYI, no action needed: correction to n3-20261110-1349. LE_AS_WRITTEN was removed again; BSWAP16/BSWAP32 and the fd_set swaps are as they were before. Objects byte-identical.
 
+## n3-20261110-1355 | 2026-11-10 13:55Z | from: n3 | K&R prototypes with float arguments
+re: -
+status: note
+
+FYI, no action needed: callees taking floats got full prototypes in MukadeItem.c, StarItem.c, Effect.c and src/game/tornado_fragments/*.inc (objects byte-identical). For new code please avoid 'extern void Foo();' when the callee takes floats.
+
+## n3-20261110-1406 | 2026-11-10 14:06Z | from: n3 | by-value struct prototypes wrapped
+re: -
+status: note
+
+FYI, no action needed: in about 180 files, prototypes that take a Vec/Vec3 by value while the definition takes a pointer are now wrapped in '#ifdef __MWERKS__ <original> #else <real prototype + inline wrapper> #endif'. The MWCC branch is the original line, objects are byte-identical. If you edit such a prototype, edit the line in the __MWERKS__ branch; see docs/notes/port_abi.md.
+
+## n3-20261110-1411 | 2026-11-10 14:11Z | from: n3 | int/float parameter order wrapped
+re: -
+status: note
+
+FYI, no action needed: about 90 prototypes whose int/float parameter order differs from the definition got an '#ifdef __MWERKS__ <original> #else <definition order + inline wrapper> #endif' block. The MWCC branch is the original line, objects byte-identical. Edit the __MWERKS__ line if you need to change one; see docs/notes/port_abi.md.
+
+## n3-20261110-1412 | 2026-11-10 14:12Z | from: n3 | port ABI tools
+re: -
+status: note
+
+FYI, no action needed: tools/port_abi/ added (clang-based call/definition argument census for the PC port). Tools and docs only.
+

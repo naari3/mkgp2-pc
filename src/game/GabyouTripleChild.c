@@ -132,7 +132,14 @@ extern void Item_BounceOffWall(void *self, Vec3 *normal, int a, int b, float f1,
 extern float Item_ProbeForwardGroundPitch(Vec3 *pos, float yaw, float a, float b);
 extern float Item_ProbeLateralGroundPitch(Vec3 *pos, float yaw, float a, float b);
 extern float AngleStepForward_OrSnap(float current, float target, float step);
+/* The definition takes three floats. Declaring `target` as double is what
+ * makes MWCC pass the double pitch values below without rounding them first; on
+ * PowerPC both travel in the same register, elsewhere they do not. */
+#ifdef __MWERKS__
 extern float AngleStepTowards_Shortest(float current, double target, float step);
+#else
+extern float AngleStepTowards_Shortest(float current, float target, float step);
+#endif
 extern double atan(double x);
 extern double sin(double x);
 extern void DrawEffect_ItemHitOriented_Spawn(Vec3 *pos, Vec3 *vel, int mode);
@@ -141,7 +148,14 @@ extern void DrawEffect_Free(void *effect);
 extern void EffectVfx7F_PulseFan_Tick(void);
 extern void ItemObject_DecrementCategoryBudget(void *self);
 extern int Item_AdvanceTetherToJoint13(void *self, float *time, float scale, float a, float b);
+#ifdef __MWERKS__
 extern int Item_OrbitAnchorKart(void *self, Vec3 *anchor, float a, float b, int timer);
+#else
+/* The definition orders its int and float parameters differently; see docs/notes/port_abi.md. */
+extern int Item_OrbitAnchorKart(void *, Vec3 *, int, float, float);
+static inline int Item_OrbitAnchorKart_Reordered(void *self, Vec3 *anchor, float a, float b, int timer) { return Item_OrbitAnchorKart(self, anchor, timer, a, b); }
+#define Item_OrbitAnchorKart Item_OrbitAnchorKart_Reordered
+#endif
 extern void Matrix4_Identity(Mtx44 m);
 extern void Mtx44_Scale_Uniform(Mtx44 dst, const Mtx44 src, float scale);
 extern void Matrix4_PreMultiplyRotZ(Mtx44 dst, const Mtx44 src, float angle);
@@ -150,7 +164,14 @@ extern void Matrix4_PreMultiplyRotY(Mtx44 dst, const Mtx44 src, float angle);
 extern void Mtx44_Translate(Mtx44 dst, const Mtx44 src, const Vec3 *offset);
 extern void DbgScene_CopyMatrix3x4Transpose(float *dst, const Mtx44 src);
 extern void Mtx_TransposeToMtx44(Mtx44 dst, const float *src);
+#ifdef __MWERKS__
 extern void Mtx44_TransformVec3(Vec3 *out, const Mtx44 m, Vec3 in);
+#else
+/* The definition takes these structs by address; see docs/notes/port_abi.md. */
+extern void Mtx44_TransformVec3(Vec3 *, const Mtx44, Vec3 *);
+static inline void Mtx44_TransformVec3_ByValue(Vec3 *out, const Mtx44 m, Vec3 in) { Mtx44_TransformVec3(out, m, &in); }
+#define Mtx44_TransformVec3 Mtx44_TransformVec3_ByValue
+#endif
 
 /* Manual exception metadata for Update (compiled with exceptions off).
  * postprocess_extab_user.py renames .extab_user/.extabindex_user sections

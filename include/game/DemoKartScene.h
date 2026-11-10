@@ -210,14 +210,28 @@ void CObj_DebugVizPathFlush(DemoSceneBase *scene);
 void CObj_LoadProjMatrix(DemoSceneBase *scene, Vec *out);
 void CObj_ApplyScissor(DemoSceneBase *scene, Vec *out);
 void fn_8016B0C4(void);
+#ifdef __MWERKS__
 void fn_80181790(DemoSceneBase *scene, int a, float f, int b, int c, unsigned char alpha, int d);
+#else
+/* The definition orders its int and float parameters differently; see docs/notes/port_abi.md. */
+extern void fn_80181790(DemoSceneBase *, int, int, int, unsigned char, float, int);
+static inline void fn_80181790_Reordered(DemoSceneBase *scene, int a, float f, int b, int c, unsigned char alpha, int d) { fn_80181790(scene, a, b, c, alpha, f, d); }
+#define fn_80181790 fn_80181790_Reordered
+#endif
 void KartDriver_RenderTimed(DemoDriver *driver, int a, int b);
 void KartDriver_Dtor(DemoDriver *driver, int del);
 void RenderObj_ItemStateMachine_Timed(DemoDriver *driver, int a, float b, float c);
 void TornadoEffect_Tick(DemoTornado *t, int disp);
 void VisualEffectHolder_Dtor(DemoTornado *t, int del);
 void DrawEffect_TickAndCull(void);
+#ifdef __MWERKS__
 void VfxSlotMgr_Update(Vec eye, Vec target);
+#else
+/* The definition takes these structs by address; see docs/notes/port_abi.md. */
+extern void VfxSlotMgr_Update(Vec *, Vec *);
+static inline void VfxSlotMgr_Update_ByValue(Vec eye, Vec target) { VfxSlotMgr_Update(&eye, &target); }
+#define VfxSlotMgr_Update VfxSlotMgr_Update_ByValue
+#endif
 void VfxSlotMgr_Shutdown(void);
 void ClRomTable_PurgeAll(void);
 void clRom_PurgeAll(void);
