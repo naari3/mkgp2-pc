@@ -1,0 +1,9 @@
+/* PC stand-in for the MSL <new> header: placement new only. */
+#ifndef MKGP2PC_NEW
+#define MKGP2PC_NEW
+#include <stddef.h>
+inline void *operator new(size_t, void *p) throw() { return p; }
+inline void *operator new[](size_t, void *p) throw() { return p; }
+inline void operator delete(void *, void *) throw() {}
+inline void operator delete[](void *, void *) throw() {}
+#endif

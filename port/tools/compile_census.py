@@ -33,7 +33,7 @@ BASE = [
     "-funsigned-char",   # PowerPC EABI char is unsigned
 ]
 # 32-bit little-endian, the first PC target (docs/port/readiness.md).
-TARGET = "i686-pc-linux-gnu"
+TARGET = os.environ.get("MKGP2PC_CENSUS_TARGET", "i686-pc-linux-gnu")
 # Same, but with size_t = unsigned long as on CodeWarrior. Used to look past
 # the `operator new(unsigned long)` declarations until upstream spells them
 # with size_t.

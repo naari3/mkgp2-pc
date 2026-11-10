@@ -29,5 +29,17 @@ double mkgp2pc_frsqrte(double x);
 #define __frsqrte(x) mkgp2pc_frsqrte(x)
 #define __fabs(x) __builtin_fabs(x)
 
+/* rlwimi: rotate `src` left by `sh` and insert bits mb..me (IBM numbering,
+ * bit 0 = most significant) into `dst`. */
+static inline unsigned int mkgp2pc_rlwimi(unsigned int dst, unsigned int src, int sh, int mb, int me)
+{
+    unsigned int rot = sh ? (src << sh) | (src >> (32 - sh)) : src;
+    unsigned int hi = 0xFFFFFFFFu >> mb;
+    unsigned int lo = 0xFFFFFFFFu << (31 - me);
+    unsigned int mask = mb <= me ? (hi & lo) : (hi | lo);
+    return (dst & ~mask) | (rot & mask);
+}
+#define __rlwimi(dst, src, sh, mb, me) mkgp2pc_rlwimi((unsigned int)(dst), (unsigned int)(src), (sh), (mb), (me))
+
 #endif /* !__MWERKS__ */
 #endif
