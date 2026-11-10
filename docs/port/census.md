@@ -74,12 +74,15 @@ Reading it:
 - `game` and `(no split: auto unit)` are the game's own symbols: definitions
   in the files that did not compile, and objects that only exist as
   `symbols.txt` entries (mostly `.bss`) with no C definition yet.
-- `(C++ mangled, host ABI)` and the linkage line are one problem: MWCC lets a
-  `.c` file turn C++ on half way, so the same function is declared with C
-  linkage in one file and C++ linkage in another, and under MWCC the names
-  still meet (address-named symbols, link order). On PC they do not. Needs a
-  rule (for example: everything the game defines gets C linkage unless it is
-  a class member) and probably upstream header work.
+- `(C++ mangled, host ABI)` (895) is not broken down yet: it mixes C++
+  functions defined in the files that did not compile with a real problem,
+  language linkage. MWCC lets a `.c` file turn C++ on half way, so the same
+  function can be declared with C linkage in one file and C++ linkage in
+  another; under MWCC the matching build still links (symbol names are forced
+  by `symbols.txt`), on PC it cannot. The tool confirms 66 such functions by
+  name; the true number is somewhere between 66 and about 900. Needs a rule
+  (for example: every free function the game defines gets C linkage) and
+  probably upstream header work.
 - Only three symbols are defined twice, so per-TU duplicate definitions are
   not a link problem.
 
