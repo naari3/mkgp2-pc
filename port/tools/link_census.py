@@ -34,7 +34,7 @@ DEFAULT_DIRS = ["game", "sound", "ui", "util", "resource"]
 def compile_one(path, target):
     obj = os.path.join(OUT, path.replace(os.sep, "__") + ".o")
     cmd = ["clang", "-target", target, "-c", "-O0", "-fno-exceptions", "-fno-rtti", "-fcommon"] + cc.BASE[1:]
-    cmd += ["-Iport/compat/include", "-include", cc.COMPAT]
+    cmd += ["-include", cc.COMPAT]
     cmd += ["-x", "c++", "-std=gnu++98"] if cc.is_cxx(path, target) else ["-x", "c", "-std=gnu99"]
     r = subprocess.run(cmd + [path, "-o", obj], cwd=ROOT, capture_output=True, text=True, errors="replace")
     return path, (obj if r.returncode == 0 else None)

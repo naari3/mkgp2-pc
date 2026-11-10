@@ -26,7 +26,8 @@ COMPAT = os.path.join(ROOT, "port", "compat", "mwcc_compat.h")
 BASE = [
     "-fsyntax-only", "-nostdinc", "-w",
     "-ferror-limit=0", "-fno-caret-diagnostics", "-fno-diagnostics-fixit-info",
-    "-Iinclude", "-Iinclude/libc", "-Isrc", "-Isrc/game",
+    "-Iport/compat/include",  # ahead of include/libc: PC versions of stdarg.h, math.h
+    "-Iinclude", "-Iinclude/libc", "-Isrc", "-Isrc/game", "-Isrc/zlib", "-I.",
     "-DVERSION_GNLJ82", "-DNDEBUG=1", "-DBUILD_VERSION=0",
     "-DNON_MATCHING",    # take the C side of functions that are asm in the matching build
     "-funsigned-char",   # PowerPC EABI char is unsigned
@@ -73,7 +74,7 @@ def normalise(msg):
 def check(path, use_compat, target):
     cmd = ["clang", "-target", target] + BASE
     if use_compat:
-        cmd += ["-Iport/compat/include", "-include", COMPAT]
+        cmd += ["-include", COMPAT]
     cmd += ["-x", "c++", "-std=gnu++98"] if is_cxx(path, target) else ["-x", "c", "-std=gnu99"]
     r = subprocess.run(cmd + [path], cwd=ROOT, capture_output=True, text=True, errors="replace")
     errs = []

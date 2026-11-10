@@ -94,3 +94,37 @@ Reading it:
 - Behaviour. The C sides taken through `NON_MATCHING` were never executed.
 - Aurora's prebuilt Dawn exists for x86_64 and aarch64 only (checked
   2026-11-10); a 32-bit executable needs Dawn built from source.
+
+## 4. Update, same day (port-side fixes only)
+
+`port/compat/include/stdarg.h` and `math.h` (PC versions ahead of
+`include/libc`), plus `-I.` and `-Isrc/zlib`: 2713 / 2848 files accepted
+(`src/game` 2587 / 2664, `src/musyx` 23 / 27).
+
+Reachability: starting from `main` and following symbol references between
+the host objects reaches 1981 of 2589 objects. The scene and object tables
+pull in nearly the whole game, so there is no small subset that boots: the
+first runnable build is "everything links, missing parts stubbed".
+
+## 5. Plan from here
+
+1. Get the remaining game files through the compiler (77 in `src/game`; a
+   long tail, each needs a look). Port-side where possible; real source
+   errors go upstream.
+2. Decide the C / C++ linkage rule and apply it (section 2).
+3. Generate stubs for every symbol still undefined (`link_census.py` already
+   has the list) so the game links as a 32-bit executable with no graphics,
+   then run it and fix what breaks first: this is where 32-bit and
+   big-endian assumptions show up.
+4. Put Aurora underneath (needs 32-bit Dawn, or the move to 64-bit) and
+   replace stubs group by group: OS, DVD, MTX, GX, HSD, then audio and the
+   Triforce services.
+
+Known traps recorded on the way:
+
+- `std::list` / `std::deque` (three files) were matched against the MSL
+  layout; host STL containers have other sizes, which matters wherever they
+  sit inside objects with a fixed allocation size.
+- `include/libc/math.h` declares `float sqrt(float)`; renamed `sqrt_f32` in
+  the PC copy.
+- `__frsqrte` must be implemented with the PowerPC estimate table.
