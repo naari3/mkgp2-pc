@@ -25,7 +25,8 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import compile_census as cc  # noqa: E402
-import mwcc_cxx_abi  # noqa: E402
+import mwcc_cxx_abi
+import mwcc_data_layout  # noqa: E402
 
 ROOT = cc.ROOT
 OUT = os.path.join(ROOT, "build", "pc-census")
@@ -57,6 +58,7 @@ def compile_one(path, target):
             return path, None
         notes = []
         text, _ = mwcc_cxx_abi.rewrite(open(ll, encoding="utf-8", errors="surrogateescape").read(), notes.append)
+        text, _ = mwcc_data_layout.rewrite(text)
         open(ll, "w", encoding="utf-8", errors="surrogateescape").write(text)
         if notes:
             with open(obj[:-2] + ".abi-notes", "w") as f:
@@ -67,7 +69,19 @@ def compile_one(path, target):
                 f.write(r.stderr)
             return path, None
         return path, obj
-    r = subprocess.run(cmd + [path, "-o", obj], cwd=ROOT, capture_output=True, text=True, errors="replace")
+    # C: through LLVM IR as well, for MWCC's data alignment
+    # (port/tools/mwcc_data_layout.py)
+    ll = obj[:-2] + ".ll"
+    r = subprocess.run([c for c in cmd if c != "-c"] + ["-S", "-emit-llvm", path, "-o", ll], cwd=ROOT, capture_output=True, text=True, errors="replace")
+    if r.returncode != 0:
+        return path, None
+    section = None
+    if "/autodata/" in path.replace(os.sep, "/"):
+        section = "mw." + os.path.splitext(os.path.basename(path))[0]
+    text, n = mwcc_data_layout.rewrite(open(ll, encoding="utf-8", errors="surrogateescape").read(), section)
+    if n or section:
+        open(ll, "w", encoding="utf-8", errors="surrogateescape").write(text)
+    r = subprocess.run(["clang", "-target", target, "-c", "-Wno-override-module", ll, "-o", obj], cwd=ROOT, capture_output=True, text=True, errors="replace")
     return path, (obj if r.returncode == 0 else None)
 
 
