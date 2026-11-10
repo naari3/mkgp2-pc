@@ -744,3 +744,36 @@ What stood in the way after the first pictures:
 Still open: sound, window input, data kinds 7 and 10, zlib on Windows, the
 remaining stubs, and the Windows executables have not been run.
 
+## 23. Names that did not meet, sound survey (2026-11-10, upstream `b210d84`)
+
+Stubs that the rendered play actually called, and what they were:
+
+- **Non-virtual thunks.** A host compiler emits `this -= N` thunks only in
+  the unit that defines the virtual functions; the sources often model the
+  class there without its second base. `link_census.py` generates the 16
+  missing ones at link time; the AI controller's five, which a vtable written
+  as data names by address, are in `port/compat/ai_thunks.c`.
+- **C names in the rename table.** `tools/extab_user_renames.json` also maps
+  descriptive C names to address names (`SceneListInsert` -> `fn_801F4DF0`,
+  the menu task list's insert); those entries are applied now.
+- **Other spellings**: `name_extN` private prototypes, member functions named
+  the MWCC way in data vtables (`Draw__10MinimapHudFv`), weak plain
+  definitions, and two explicit aliases (`PORT_ALIASES`).
+- **C-linkage inline functions**: clang has no `-fkeep-inline-functions`
+  (section 22 was wrong about that); such units are compiled through a
+  wrapper that takes the functions' addresses.
+
+Generated stub functions: 207 -> 173 (no-graphics build). Several whole plays
+in a row run in the scripted session.
+
+Keyboard controls are in `port/gfx/video_aurora.c` (docs/port/build.md).
+
+Sound, not started: all 27 units of `src/musyx` compile on the host (request
+32). On the console the DSP mixes; github.com/AxioDL/musyx (CC0, the project
+our MusyX sources come from) has a PC target for MusyX 2.0.2 with a software
+mixer, raw GC asset loading and an optional SDL adapter
+(`include/musyx/pc.h`: `sndPCConfigure`, `sndPCRender`). Plan: build it as a
+library (`MUSYX_ENABLE_SDL=OFF`, `MUSYX_VERSION_PATCH=2`), leave `snd*`
+unstubbed, wrap `sndInit` in `port/gfx` and feed an SDL audio stream from
+`sndPCRender`. Adding it as a submodule waits for the owner's go-ahead.
+
