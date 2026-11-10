@@ -16,6 +16,9 @@ extern float KartFxParam_GetConst1p5();
 extern void KartItem_ApplyEffectToTarget();
 extern int KartItem_QueryEffectStateFromIse();
 extern void Mtx44_GetTranslation_RowMajor();
+#ifndef __MWERKS__ /* this unit passes the position as the address of its own copy (SoundMgr_PlaySE_Positional.c) */
+#define SoundMgr_PlaySE_Positional SoundMgr_PlaySE_Positional_ByAddress
+#endif
 extern void SoundMgr_PlaySE_Positional();
 extern void Vec3_Add_DestFirst();
 extern void Vec3_Copy();
@@ -51,7 +54,12 @@ extern void Item_BounceOffWall();
 extern int Item_CheckWallCollision();
 extern void Item_HomingScanAndSteer();
 extern void Item_InitLaunchFromKart();
+#ifdef __MWERKS__
 extern void Item_RenderCharacterScaledFromJoint12();
+#else /* this unit passes the two vectors as addresses of its own copies (ItemCharacterRender.c) */
+#define Item_RenderCharacterScaledFromJoint12 Item_RenderCharacterScaledFromJoint12_ByAddress
+extern void Item_RenderCharacterScaledFromJoint12(void *item, const void *offset, const void *euler, int mode, float scale);
+#endif
 extern float KartCharacterParam_GetVfxBindHeightOffset();
 extern void KartDriver_TransformWorldToLocalY0();
 extern void SpriteSlot_SetMatrixSourceEnabled_WithReseed();
