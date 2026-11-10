@@ -260,6 +260,16 @@ def cxx_renames(built):
             c = mwcc_names.canon_mwcc(k)
             if c and not v.startswith("@"):
                 table[unit][c] = v
+    # Upstream writes a few constructors with ARGS_ORDER (the MWCC order in
+    # the table key, the definition's order on the host), so a second lookup
+    # ignores the order of the parameters.
+    def loose(c):
+        m = re.match(r"(.*)\((.*)\)(.*)$", c)
+        return c if not m else "%s(%s)%s" % (m.group(1), ",".join(sorted(m.group(2).split(","))), m.group(3))
+    table2 = {}
+    for unit, t in table.items():
+        seen = collections.Counter(loose(c) for c in t)
+        table2[unit] = {loose(c): (c, v) for c, v in t.items() if seen[loose(c)] == 1}
     jobs = [(u, built[u]) for u in table if built.get(u)]
     done = [0, 0]
 
@@ -274,6 +284,8 @@ def cxx_renames(built):
         for sym, d in zip(syms, dem):
             c = mwcc_names.canon_itanium(d)
             target = table[unit].get(c)
+            if not target and c and loose(c) in table2[unit]:
+                c, target = table2[unit][loose(c)]
             if not target:
                 continue
             hit.add(c)
