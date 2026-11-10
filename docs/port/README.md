@@ -7,10 +7,17 @@ the matching decompilation, [naari3/mkgp2-decomp](https://github.com/naari3/mkgp
 It began as a full-history copy of mkgp2-decomp `main` at `a66588b`
 (2026-11-10) and merges from it regularly (steps in the top-level README).
 
-Status: no port code yet. The only port-specific content is this directory.
+Status (2026-11-10): build skeleton only. `port/` holds a CMake project that
+links Aurora and opens a window; SDK stub and platform back end directories
+exist with their conventions but only `null` back ends. No game source is
+compiled for PC yet, and no file under `src/` or `include/` has been changed
+for the port: that starts after upstream finishes its struct and data-name
+clean-up.
 
 | Document | Content |
 |---|---|
+| [`build.md`](build.md) | How to build, run and test the PC executable; updating Aurora |
+| [`layout.md`](layout.md) | Directory map, which SDK library comes from where, stub and back end conventions, open questions |
 | [`readiness.md`](readiness.md) | Assessment of how far the decomp is from a port: measured gaps, comparable projects, staged plan (estimates) |
 
 ## What goes where

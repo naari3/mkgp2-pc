@@ -1,0 +1,3 @@
+[submodule "port/extern/aurora"]
+	path = port/extern/aurora
+	url = https://github.com/encounter/aurora

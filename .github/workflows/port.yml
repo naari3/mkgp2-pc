@@ -1,0 +1,53 @@
+name: Port build
+
+# PC port skeleton (port/). Runs only in mkgp2-pc; the matching build is the
+# separate, upstream-only "Build" workflow.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "port/**"
+      - ".gitmodules"
+      - ".github/workflows/port.yml"
+  pull_request:
+    paths:
+      - "port/**"
+      - ".gitmodules"
+      - ".github/workflows/port.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: port-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    if: github.repository == 'naari3/mkgp2-pc'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Checkout Aurora
+        run: git submodule update --init --depth 1 port/extern/aurora
+
+      - name: Install packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential pkg-config cmake ninja-build \
+            libasound2-dev libpulse-dev libx11-dev libxext-dev libxrandr-dev \
+            libxcursor-dev libxfixes-dev libxi-dev libxss-dev libxtst-dev \
+            libxkbcommon-dev libdrm-dev libgbm-dev libgl1-mesa-dev libegl1-mesa-dev \
+            libdbus-1-dev libibus-1.0-dev libudev-dev libpipewire-0.3-dev \
+            libwayland-dev libdecor-0-dev liburing-dev
+
+      - name: Configure
+        run: cmake -S port -B build/pc -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build/pc
+
+      - name: Test
+        run: ctest --test-dir build/pc --output-on-failure
