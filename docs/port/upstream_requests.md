@@ -16,7 +16,10 @@ Strike an item out when it has been merged from upstream.
   Off MWCC `__DSPRegs[]` / `__DIRegs[]` in `CardCreate_Page.cpp` are `extern`
   and need storage from the port if anything uses them.
 
-## Open (2026-11-10, upstream `393e3ab`)
+## Open
+
+Items 1 to 9 were all merged on 2026-11-10 (upstream `da0081e`); the text is
+kept for reference. Item 10 is open.
 
 1. Absolute-address variables written `T name : 0xCC008000;`
    (`CardCreate_Page.cpp`, `ConfettiField.c`, `SpriteHandlePool.c`,
@@ -72,3 +75,20 @@ Strike an item out when it has been merged from upstream.
      declaration.
    - `debug.c`: `HSD_SaveContext` is PowerPC asm; the port will supply its
      own `debug.c`, nothing to do upstream unless a guard is easy.
+10. Objects one unit owns but other units reach through a second,
+    address-derived name (added 2026-11-10, upstream `da0081e`). Example:
+    `src/triforce/jvsio.c` has `static JvsTx tx;` and
+    `src/triforce/jvsio_access.c` returns `&jvsio_bss_80683280.result`. Under
+    MWCC both are address 0x80683280. On PC they are two objects, the second
+    one never written, and the JVS state machine reads zeros. The bring-up
+    link currently stubs 317 such names (315 in `src/game`, mostly
+    `<Unit>_rodata_<ADDR>` / `_data_` / `_bss_` externs that land inside
+    another unit's range, plus the two jvsio ones). List them with
+    `python3 port/tools/link_census.py ... --link` and the classification
+    snippet in `docs/port/census.md` section 11. Each needs one real
+    definition with one name (non-static, declared in a header) or, for
+    string and constant pools, a named array that both units use. Until then
+    the port keeps a hand table (`STATIC_ALIASES` in `link_census.py`).
+    The other 705 stubbed objects are `.bss` / `.sbss` that no C file
+    defines at all; zero-filled storage of the `symbols.txt` size is the
+    right definition for those, so they are not a problem for now.

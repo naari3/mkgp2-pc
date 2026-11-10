@@ -213,3 +213,23 @@ runs (arena, `GXInit`, disc ID from `port/nogfx/os_min.c`) and stops at
 `initialize.c:99` because the render mode pointer is NULL: `fn_80255640`
 (acLib init) reports failure, since nothing answers on EXI where the Triforce
 baseboard should be. Next step is that device.
+
+## 11. Baseboard and JVS up (2026-11-10, upstream `da0081e`)
+
+- `port/platform/triforce/baseboard.c` replaces `src/triforce/amexi.c`
+  (EXI backup store; the original reads EXI bytes as big-endian words, so it
+  must not be compiled on PC). `ambackup` initialises against it.
+- `port/platform/triforce/jvs_si.c` implements `SITransfer` /
+  `SIIsChanBusy`: the baseboard's SI frame protocol and one JVS I/O board
+  with neutral inputs, written from `src/triforce/jvsio.c`. `jvsio.c`,
+  `amjvs*.c` run unchanged on top.
+- `amsys` init (`fn_80294810`) now returns 0.
+
+New class of problem found here: statics reached from other units through an
+address-named extern (`upstream_requests.md` item 10). Classification of the
+1025 stubbed objects: 705 are unowned `.bss` (fine as zero storage), 315 lie
+inside a `src/game` unit that does not define that name, 2 in `jvsio.c`
+(aliased by hand), 3 belong to dolphin libraries.
+
+Next stop: `acLib_tail.cpp:98` spins on `fn_8028BAD0() == 5`, waiting for the
+amjvs worker thread. `OSCreateThread` and friends are still stubs.

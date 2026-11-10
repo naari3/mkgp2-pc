@@ -118,6 +118,28 @@ def write_stubs(missing, groups, path):
     return nfun, nobj
 
 
+# A unit's file-local object that other units reach through an address-named
+# extern (the matching build only needs the addresses to agree). On PC the
+# static is made global under the extern's name. Hand-kept until a tool
+# derives the pairs from the MWCC objects; see docs/port/upstream_requests.md.
+STATIC_ALIASES = {
+    # extern name: (defining file, name of the static there)
+    "jvsio_bss_80683280": ("src/triforce/jvsio.c", "tx"),
+    "jvsio_bss_8067E2A0": ("src/triforce/jvsio.c", "cmd"),
+}
+
+
+def expose_statics(built):
+    n = 0
+    for ext, (src, local) in STATIC_ALIASES.items():
+        obj = built.get(src)
+        if obj:
+            subprocess.run(["llvm-objcopy", "--globalize-symbol=" + local,
+                            "--redefine-sym", f"{local}={ext}", obj], check=True)
+            n += 1
+    return n
+
+
 def unsuffix(sym):
     """`Foo_p17` -> `Foo`, also inside Itanium names (`_Z7Foo_p17v` -> `_Z3Foov`).
 
@@ -203,6 +225,7 @@ def main():
     objs = [o for o in built.values() if o]
 
     renamed = unsuffix_objects(objs)
+    expose_statics(built)
 
     defined = collections.defaultdict(list)
     undefined = collections.defaultdict(set)
