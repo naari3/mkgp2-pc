@@ -224,11 +224,23 @@ def compile_one(path, target):
     # -fshort-wchar: the game's wchar_t has 16 bits (card names, panel
     # labels); with the host's 32 the structs that hold such text grow and
     # no longer fit the sizes other units allocate for them.
-    # -fkeep-inline-functions (C++): MWCC emits an inline function whose
+    # C-linkage inline functions (C++): MWCC emits an inline function whose
     # address the unit's exception tables take, and other units call those
-    # (fn_80120A08 in SpriteHandle.cpp). A host compiler drops an inline
-    # function its own unit does not use.
-    cmd = ["clang", "-target", target, "-c", "-O0", "-g", "-fno-exceptions", "-fno-rtti", "-fcommon", "-fshort-wchar"] + (["-mno-ms-bitfields"] if WIN else ["-malign-double"]) + (["-DMKGP2PC_GFX"] if GFX else []) + (["-fkeep-inline-functions"] if path.endswith(".cpp") else []) + cc.base_flags(path)[1:]
+    # by name (fn_80120A08 in SpriteHandle.cpp). A host compiler drops an
+    # inline function its own unit does not use (clang has no
+    # -fkeep-inline-functions), so the unit is compiled through a wrapper
+    # that takes their addresses.
+    cmd = ["clang", "-target", target, "-c", "-O0", "-g", "-fno-exceptions", "-fno-rtti", "-fcommon", "-fshort-wchar"] + (["-mno-ms-bitfields"] if WIN else ["-malign-double"]) + (["-DMKGP2PC_GFX"] if GFX else []) + cc.base_flags(path)[1:]
+    src_in = path
+    if path.endswith(".cpp"):
+        keep = sorted(set(re.findall(r'^extern "C" inline [\w \*]+?\b(\w+)\(', open(os.path.join(ROOT, path), encoding="utf-8", errors="replace").read(), re.M)))
+        if keep:
+            wrap = obj[:-2] + ".keep.cpp"
+            with open(wrap, "w") as f:
+                f.write(f'#include "{os.path.join(ROOT, path)}"\n')
+                for i, n in enumerate(keep):
+                    f.write(f"static void *const mkgp2pc_keep_{i} __attribute__((used)) = (void *)&{n};\n")
+            src_in = wrap
     cmd += ["-include", cc.COMPAT]
     # -Dinline=: in C, MWCC also emits an `inline` function as an ordinary
     # one where it is called without being inlined. C99 leaves the caller of
@@ -244,12 +256,12 @@ def compile_one(path, target):
         # default in C++ is a trap instruction there (card_pack does this).
         irflags = ["-S", "-emit-llvm", "-fstandalone-debug", "-fno-discard-value-names", "-flto", "-fwhole-program-vtables",
                    "-fno-strict-return"]
-        r = subprocess.run([c for c in cmd if c != "-c"] + irflags + [path, "-o", ll], cwd=ROOT, capture_output=True, text=True, errors="replace")
+        r = subprocess.run([c for c in cmd if c != "-c"] + irflags + [src_in, "-o", ll], cwd=ROOT, capture_output=True, text=True, errors="replace")
         if r.returncode != 0 and "with exceptions disabled" in r.stderr:
             # the few units that throw or catch (also through headers) are
             # compiled with exceptions on; the host C++ runtime unwinds
             cmd = ["-fexceptions" if c == "-fno-exceptions" else c for c in cmd]
-            r = subprocess.run([c for c in cmd if c != "-c"] + irflags + [path, "-o", ll], cwd=ROOT, capture_output=True, text=True, errors="replace")
+            r = subprocess.run([c for c in cmd if c != "-c"] + irflags + [src_in, "-o", ll], cwd=ROOT, capture_output=True, text=True, errors="replace")
         if r.returncode != 0:
             return path, None
         notes = []
@@ -767,8 +779,32 @@ def main():
     alias = {n: plain[n] for n in missing if not n.startswith("_Z") and n in plain}
     for n in missing:
         m = re.match(r"_Z(\d+)", n)
-        if m and n[m.end():m.end() + int(m.group(1))] in defined:
+        if m and (n[m.end():m.end() + int(m.group(1))] in defined or n[m.end():m.end() + int(m.group(1))] in weak):
             alias[n] = n[m.end():m.end() + int(m.group(1))]
+    # `name_extN`: a unit's private prototype of `name` under a macro name
+    # (the per-function files merged into one unit keep them apart that way)
+    for n in missing:
+        m = re.match(r"(\w+?)_ext\d+$", n)
+        if m and n not in alias and (m.group(1) in defined or m.group(1) in weak):
+            alias[n] = m.group(1)
+    # A member function named the MWCC way in a vtable written as data
+    # (`Draw__10MinimapHudFv`): the one member of that class with that name.
+    for n in missing:
+        m = re.match(r"([A-Za-z]\w*?)__(\d+)(\w+)$", n)
+        if not m or n in alias:
+            continue
+        k = int(m.group(2))
+        cls, rest = m.group(3)[:k], m.group(3)[k:]
+        if len(cls) == k and rest.startswith(("F", "CF")):
+            head = f"_ZN{'K' if rest.startswith('C') else ''}{k}{cls}{len(m.group(1))}{m.group(1)}E"
+            cands = [d for d in list(defined) + list(weak) if d.startswith(head)]
+            if len(cands) == 1:
+                alias[n] = cands[0]
+    # The race context's constructor is written under its address name
+    # (RaceContext_InitDefaults, src/game/SetCourseParams.c); the unit's
+    # second view of the class calls it as a constructor.
+    if "_ZN11RaceContextC1Ev" in missing and "RaceContext_InitDefaults" in defined:
+        alias["_ZN11RaceContextC1Ev"] = "RaceContext_InitDefaults"
     linkage = list(alias)
     # Same free function declared with other parameter types in the calling
     # file (per-file prototypes): the mangled names differ only after the
@@ -916,8 +952,29 @@ def main():
         defsyms = [f"-Wl,--defsym={n}={t}" for n, t in sorted(alias.items()) if n in missing] + thunk_defsyms
         missing = {n: u for n, u in missing.items() if n not in alias}
         print(f"wired to an existing definition (linkage or prototype mismatch): {len(defsyms)}")
+        # Non-virtual thunks (`this -= N`, then the function): the host
+        # compiler emits them only in the unit that defines the function, and
+        # that unit often models the class without its second base.
+        renamed = {}
+        for f in glob.glob(os.path.join(OUT, "*.cxxsyms")):
+            for line in open(f):
+                a, b = line.split()
+                renamed[a] = b
+        this_thunks = []
+        for n in sorted(missing):
+            m = re.match(r"_ZThn(\d+)_(.+)$", n)
+            if not m:
+                continue
+            t = renamed.get("_Z" + m.group(2), "_Z" + m.group(2))
+            if t in defined or t in weak or t.startswith("mkgp2pc_"):
+                this_thunks.append((n, int(m.group(1)), t))
+        missing = {n: u for n, u in missing.items() if n not in {t[0] for t in this_thunks}}
+        print(f"non-virtual thunks generated: {len(this_thunks)}")
         stubs = os.path.join(OUT, "stubs.c")
         nfun, nobj = write_stubs(missing, groups, stubs)
+        with open(stubs, "a") as f:
+            for n, off, t in this_thunks:
+                f.write(f'__asm__(".text\\n.globl {n}\\n{n}:\\n subl ${off}, 4(%esp)\\n jmp {t}\\n");\n')
         print(f"stubs generated: {nfun} functions, {nobj} objects")
         exe = os.path.join(OUT, "mkgp2-nogfx.exe" if WIN else "mkgp2-nogfx")
         rsp = os.path.join(OUT, "objects.rsp")
