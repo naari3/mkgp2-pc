@@ -31,28 +31,23 @@ static __thread int s_depth;
 
 int OSDisableInterrupts(void) {
   int was = s_depth == 0;
-  if (s_depth++ == 0) {
+  if (was) {
     pthread_mutex_lock(&s_lock);
+    s_depth = 1;
   }
   return was; /* "interrupts were enabled" */
 }
+/* Interrupts are a state, not a count: a nested disable returns 0 and its
+ * restore changes nothing; the outermost restore (1) unlocks. */
 int OSRestoreInterrupts(int wasEnabled) {
   int was = s_depth == 0;
-  if (wasEnabled) {
-    if (s_depth > 0 && --s_depth == 0) {
-      pthread_mutex_unlock(&s_lock);
-    }
-  }
-  return was;
-}
-int OSEnableInterrupts(void) {
-  int was = s_depth == 0;
-  if (s_depth > 0) {
+  if (wasEnabled && s_depth > 0) {
     s_depth = 0;
     pthread_mutex_unlock(&s_lock);
   }
   return was;
 }
+int OSEnableInterrupts(void) { return OSRestoreInterrupts(1); }
 
 /* Sleep until `*done` becomes true; called with any lock depth. */
 static void wait_for(int (*done)(void*), void* arg) {
