@@ -17,6 +17,7 @@ clean-up.
 | Document | Content |
 |---|---|
 | [`build.md`](build.md) | How to build, run and test the PC executable; updating Aurora |
+| [`census.md`](census.md) | Measured: how much of the source a host compiler accepts, and what a link would need |
 | [`layout.md`](layout.md) | Directory map, which SDK library comes from where, stub and back end conventions, open questions |
 | [`readiness.md`](readiness.md) | Assessment of how far the decomp is from a port: measured gaps, comparable projects, staged plan (estimates) |
 
