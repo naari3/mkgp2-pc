@@ -371,3 +371,13 @@ kept for reference. Item 10 is open.
     `docs/port/arg_count_census.txt`) has every function called with more
     arguments than it takes; each needs a look at whether its body forwards
     them.
+29. Initialized data defined as bytes and read through a wider type
+    (added 2026-11-10; open). `lbl_806D97E8` is `const unk8[6]` in
+    `src/game/autodata/sdata2_806D7998.c` and
+    `src/game/sprite/fn_801A1798.c` reads it as a structure of three
+    `short`; the bytes keep the console's order, so the race queued voice
+    id 0x6E02 for 0x026E (frame 1411 of the scripted race). A scan of the
+    byte-typed, non-zero autodata objects against the `extern` declarations
+    of other units also finds `VSMode_FrameUpdate_data_806CF148` (one byte,
+    read as `unsigned int`) and `lbl_802EB4E0` (1,284 bytes, `NamCamPool`).
+    Wanted: the definition in the type its users read.
