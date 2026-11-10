@@ -1,6 +1,6 @@
-# C++ object model: where the port should end up (proposal, 2026-11-10)
+# C++ object model: where the port should end up (decided 2026-11-10)
 
-Status: **proposal, waiting for naari3's decision.** Background is
+Status: **accepted by naari3 on 2026-11-10 14:56Z (the recommendation below).** Background is
 `census.md` section 13 and `upstream_requests.md` item 14.
 
 ## The problem in one paragraph
