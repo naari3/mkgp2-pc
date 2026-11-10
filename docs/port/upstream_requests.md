@@ -11,6 +11,10 @@ Strike an item out when it has been merged from upstream.
 ## Done
 
 - `operator new(unsigned long)` to `size_t` (upstream `393e3ab`, 2026-11-10).
+- Items 1 to 4 below (upstream `fe3eca4`, 2026-11-10), except
+  `VolumeCalibration.cpp:145`: `clCab::Update` is asm with no C side at all.
+  Off MWCC `__DSPRegs[]` / `__DIRegs[]` in `CardCreate_Page.cpp` are `extern`
+  and need storage from the port if anything uses them.
 
 ## Open (2026-11-10, upstream `393e3ab`)
 
