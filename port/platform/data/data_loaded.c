@@ -187,6 +187,15 @@ void mkgp2pc_data_loaded(int kind, void* data, uint32_t size) {
   case MKGP2PC_DATA_DEMO_INPUT: /* TraceInput163: three floats, an int */
     records16((uint8_t*)data, size, 4);
     break;
+  case MKGP2PC_DATA_COLLISION:
+    /* Course collision grid: a 0x2C-byte header (cell counts, cell size,
+     * bounds, origin, offset of the cell table), 16-byte cells {triangle
+     * offset, count, wall offset, count}, 0x70-byte triangles and 0x20-byte
+     * walls. Every field is a 32-bit float or integer; checked on the 35
+     * files of the disc, where these records and their zero terminators
+     * account for every byte. */
+    swap32n((uint8_t*)data, (int)(size / 4));
+    break;
   case MKGP2PC_DATA_STREAM_HEADER: {
     /* DSP ADPCM header (StreamInfo): samples, nibbles, rate; loop flag,
      * format; loop start, loop end, current address; then 16-bit fields

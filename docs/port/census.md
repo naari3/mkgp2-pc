@@ -441,4 +441,11 @@ MusyX files (10), stream headers (11).
   convention off member functions, after which the counts match the Linux
   build (440 destructor calls, 35 wrappers). Still to do on a real Windows
   machine: link and run.
+- Data kinds: the stream header (11) and the course collision files (8) are
+  converted now. A collision file is 32-bit words throughout: header 0x2C,
+  16-byte cells, 0x70-byte triangles, 0x20-byte walls; on the 35 files of
+  the disc these records and their zero terminators account for every byte.
+  Left: the course BGM table (7; the hook has no size and no reader of the
+  records is decompiled by name yet) and the MusyX files (10; only useful
+  together with a sound back end).
 
