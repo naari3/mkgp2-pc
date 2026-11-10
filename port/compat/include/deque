@@ -1,0 +1,118 @@
+/* PC stand-in for the MSL C++ <deque>: the subset the game uses. The object
+ * has the size and member order of the Metrowerks one (block size; the block
+ * map as capacity, size, start, data; start; size), so that objects
+ * containing a deque keep their offsets. Unlike MSL's, the block map is a
+ * plain array (its `start` stays 0), not a circular buffer. */
+#ifndef MKGP2PC_DEQUE
+#define MKGP2PC_DEQUE
+#include <stddef.h>
+#include <new>
+
+namespace std {
+
+template <class T> class deque {
+public:
+    typedef T value_type;
+    typedef size_t size_type;
+    typedef T &reference;
+    typedef const T &const_reference;
+
+    deque() { init(); }
+    explicit deque(size_type n, const T &value = T()) {
+        init();
+        while (n--) push_back(value);
+    }
+    deque(const deque &o) {
+        init();
+        for (size_type i = 0; i < o.size_; i++) push_back(o[i]);
+    }
+    ~deque() {
+        clear();
+        ::operator delete((void *)map_);
+    }
+    deque &operator=(const deque &o) {
+        if (this != &o) {
+            clear();
+            for (size_type i = 0; i < o.size_; i++) push_back(o[i]);
+        }
+        return *this;
+    }
+
+    size_type size() const { return size_; }
+    bool empty() const { return size_ == 0; }
+    reference operator[](size_type i) { return *at(start_ + i); }
+    const_reference operator[](size_type i) const { return *at(start_ + i); }
+    reference front() { return *at(start_); }
+    const_reference front() const { return *at(start_); }
+    reference back() { return *at(start_ + size_ - 1); }
+    const_reference back() const { return *at(start_ + size_ - 1); }
+
+    void push_back(const T &value) {
+        if (start_ + size_ == mapSize_ * bufsize_) add_block(mapSize_);
+        new (at(start_ + size_)) T(value);
+        size_++;
+    }
+    void push_front(const T &value) {
+        if (start_ == 0) {
+            add_block(0);
+            start_ = bufsize_;
+        }
+        start_--;
+        new (at(start_)) T(value);
+        size_++;
+    }
+    void pop_front() {
+        at(start_)->~T();
+        start_++;
+        size_--;
+        if (start_ >= bufsize_ && mapSize_ > 1) { /* give the first block back */
+            ::operator delete((void *)map_[0]);
+            for (size_type i = 1; i < mapSize_; i++) map_[i - 1] = map_[i];
+            mapSize_--;
+            start_ -= bufsize_;
+        }
+    }
+    void pop_back() {
+        at(start_ + size_ - 1)->~T();
+        size_--;
+    }
+    void clear() {
+        while (size_) pop_back();
+        for (size_type i = 0; i < mapSize_; i++) ::operator delete((void *)map_[i]);
+        mapSize_ = 0;
+        start_ = 0;
+    }
+
+private:
+    void init() {
+        bufsize_ = sizeof(T) * 8 < 512 ? 512 / sizeof(T) : 8;
+        mapCapacity_ = mapSize_ = mapStart_ = 0;
+        map_ = 0;
+        start_ = size_ = 0;
+    }
+    T *at(size_type i) const { return map_[i / bufsize_] + i % bufsize_; }
+    void add_block(size_type where) {
+        if (mapSize_ == mapCapacity_) {
+            size_type cap = mapCapacity_ ? mapCapacity_ * 2 : 4;
+            T **m = static_cast<T **>(::operator new(cap * sizeof(T *)));
+            for (size_type i = 0; i < mapSize_; i++) m[i] = map_[i];
+            ::operator delete((void *)map_);
+            map_ = m;
+            mapCapacity_ = cap;
+        }
+        for (size_type i = mapSize_; i > where; i--) map_[i] = map_[i - 1];
+        map_[where] = static_cast<T *>(::operator new(bufsize_ * sizeof(T)));
+        mapSize_++;
+    }
+
+    size_type bufsize_;
+    size_type mapCapacity_;
+    size_type mapSize_;
+    size_type mapStart_;
+    T **map_;
+    size_type start_;
+    size_type size_;
+};
+
+} // namespace std
+#endif

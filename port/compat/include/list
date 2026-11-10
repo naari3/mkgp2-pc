@@ -1,0 +1,104 @@
+/* PC stand-in for the MSL C++ <list>: the subset the game uses, with the
+ * member layout of the Metrowerks one (size, then the end node's prev and
+ * next; a node is prev, next, value). */
+#ifndef MKGP2PC_LIST
+#define MKGP2PC_LIST
+#include <stddef.h>
+#include <new>
+
+namespace std {
+
+template <class T> class list {
+    struct node_base {
+        node_base *prev_;
+        node_base *next_;
+    };
+    struct node : node_base {
+        T data_;
+        node(const T &v) : data_(v) {}
+    };
+
+public:
+    typedef T value_type;
+    typedef size_t size_type;
+
+    class iterator {
+    public:
+        iterator() : node_(0) {}
+        T &operator*() const { return static_cast<node *>(node_)->data_; }
+        T *operator->() const { return &static_cast<node *>(node_)->data_; }
+        iterator &operator++() { node_ = node_->next_; return *this; }
+        iterator operator++(int) { iterator t(*this); node_ = node_->next_; return t; }
+        iterator &operator--() { node_ = node_->prev_; return *this; }
+        iterator operator--(int) { iterator t(*this); node_ = node_->prev_; return t; }
+        bool operator==(const iterator &o) const { return node_ == o.node_; }
+        bool operator!=(const iterator &o) const { return node_ != o.node_; }
+
+    private:
+        friend class list;
+        explicit iterator(node_base *n) : node_(n) {}
+        node_base *node_;
+    };
+    typedef iterator const_iterator;
+
+    list() : size_(0) { end_.prev_ = end_.next_ = &end_; }
+    list(const list &o) : size_(0) {
+        end_.prev_ = end_.next_ = &end_;
+        for (iterator i = o.begin(); i != o.end(); ++i) push_back(*i);
+    }
+    ~list() { clear(); }
+    list &operator=(const list &o) {
+        if (this != &o) {
+            clear();
+            for (iterator i = o.begin(); i != o.end(); ++i) push_back(*i);
+        }
+        return *this;
+    }
+
+    iterator begin() const { return iterator(end_.next_); }
+    iterator end() const { return iterator(const_cast<node_base *>(&end_)); }
+    size_type size() const { return size_; }
+    bool empty() const { return size_ == 0; }
+    T &front() { return *begin(); }
+    T &back() { return *--end(); }
+
+    iterator insert(iterator pos, const T &value) {
+        node *n = new (::operator new(sizeof(node))) node(value);
+        n->next_ = pos.node_;
+        n->prev_ = pos.node_->prev_;
+        pos.node_->prev_->next_ = n;
+        pos.node_->prev_ = n;
+        size_++;
+        return iterator(n);
+    }
+    iterator erase(iterator pos) {
+        node_base *n = pos.node_;
+        iterator next(n->next_);
+        n->prev_->next_ = n->next_;
+        n->next_->prev_ = n->prev_;
+        static_cast<node *>(n)->~node();
+        ::operator delete((void *)n);
+        size_--;
+        return next;
+    }
+    void push_back(const T &value) { insert(end(), value); }
+    void push_front(const T &value) { insert(begin(), value); }
+    void pop_back() { erase(--end()); }
+    void pop_front() { erase(begin()); }
+    void remove(const T &value) {
+        for (iterator i = begin(); i != end();) {
+            if (*i == value) i = erase(i);
+            else ++i;
+        }
+    }
+    void clear() {
+        while (size_) erase(begin());
+    }
+
+private:
+    size_type size_;
+    mutable node_base end_;
+};
+
+} // namespace std
+#endif

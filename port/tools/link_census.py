@@ -37,12 +37,19 @@ REPLACED = {
 }
 
 
+USES_EH = re.compile(r"\\btry\\s*\\{|\\bthrow\\s+\\w|\\bthrow\\s*;")
+
+
 def compile_one(path, target):
     obj = os.path.join(OUT, path.replace(os.sep, "__") + ".o")
     cmd = ["clang", "-target", target, "-c", "-O0", "-g", "-fno-exceptions", "-fno-rtti", "-fcommon"] + cc.base_flags(path)[1:]
     cmd += ["-include", cc.COMPAT]
     cmd += ["-x", "c++", "-std=gnu++98"] if cc.is_cxx(path, target) else ["-x", "c", "-std=gnu99", "-Wno-error=implicit-function-declaration", "-Wno-error=implicit-int", "-Wno-error=int-conversion", "-Wno-error=incompatible-pointer-types"]
     if cc.is_cxx(path, target):
+        # the few units that throw or catch are compiled with exceptions on
+        # (the host C++ runtime does the unwinding)
+        if USES_EH.search(open(os.path.join(ROOT, path), encoding="utf-8", errors="replace").read()):
+            cmd = ["-fexceptions" if c == "-fno-exceptions" else c for c in cmd]
         # C++: through LLVM IR, rewritten to MWCC's vtable conventions
         # (port/tools/mwcc_cxx_abi.py, docs/port/census.md section 13)
         ll = obj[:-2] + ".ll"
@@ -520,7 +527,7 @@ def main():
         with open(rsp, "w") as f:
             f.write("\n".join(objs) + "\n")
         cmd = ["clang", "-m32", "-O0", "-g", "-fcommon", "-no-pie", "-o", exe, stubs, thunks] + port_objs + [
-               "@" + rsp] + defsyms + ["-lm", "-lpthread"] + (["-lz"] if os.path.exists("/usr/lib32/libz.so") else []) + [ "-Wl,--allow-multiple-definition", "-Wl,--no-warn-rwx-segments"]
+               "@" + rsp] + defsyms + ["-lm", "-lpthread", "-lstdc++"] + (["-lz"] if os.path.exists("/usr/lib32/libz.so") else []) + [ "-Wl,--allow-multiple-definition", "-Wl,--no-warn-rwx-segments"]
         r = subprocess.run(cmd, capture_output=True, text=True)
         errs = [l for l in r.stderr.splitlines() if "error" in l or "undefined" in l]
         print(f"link: {'ok -> ' + os.path.relpath(exe, ROOT) if r.returncode == 0 else 'FAILED'}")

@@ -191,10 +191,10 @@ def rewrite(text, warn=None):
         m = re.match(r"\s*(%[\w.]+) = load ptr, ptr (%vfn[\w.]*),", line)
         if m and vfn_info.get(m.group(2)) is not None:
             dtor_fn[m.group(1)] = vfn_info[m.group(2)]
-        m = re.match(r"(\s*)call void (%[\w.]+)\((ptr [^,]*)\)((?:, !\w+ !\d+)*)$", line)
-        if m and m.group(2) in dtor_fn:
-            ind, fn, arg, rest = m.groups()
-            out.append("%s%%mw.dt.%d = call ptr %s(%s, i32 noundef %d)%s" % (ind, len(out), fn, arg, dtor_fn[fn], rest))
+        m = re.match(r"(\s*)(call|invoke) void (%[\w.]+)\((ptr [^,]*)\)((?:, !\w+ !\d+)*)$", line)
+        if m and m.group(3) in dtor_fn:
+            ind, op, fn, arg, rest = m.groups()
+            out.append("%s%%mw.dt.%d = %s ptr %s(%s, i32 noundef %d)%s" % (ind, len(out), op, fn, arg, dtor_fn[fn], rest))
             continue
         # pointer to member function, virtual case: offsets count from +8
         m = re.match(r"(\s*%[\w.]+) = sub i32 (%memptr\.ptr[\w.]*), 1((?:, !\w+ !\d+)*)$", line)
