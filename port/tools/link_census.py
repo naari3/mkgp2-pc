@@ -504,6 +504,7 @@ def cxx_renames(built):
     if not os.path.exists(path):
         return 0, 0
     table = collections.defaultdict(dict)
+    plain_table = collections.defaultdict(dict)
     for unit, entries in json.load(open(path), object_pairs_hook=lambda p: p):
         if not isinstance(entries, list):
             continue
@@ -511,6 +512,11 @@ def cxx_renames(built):
             c = mwcc_names.canon_mwcc(k)
             if c and not v.startswith("@"):
                 table[unit][c] = v
+            elif not c and re.fullmatch(r"[A-Za-z]\w*", k) and "__" not in k and re.fullmatch(r"(global:)?[A-Za-z]\w*", v):
+                # a C-linkage function or object the unit writes under a
+                # descriptive name (`SceneListInsert` -> `fn_801F4DF0`)
+                plain_table[unit][k] = v.split(":")[-1]
+                table[unit]  # (the unit takes part even with no C++ entry)
     # Upstream writes a few constructors with ARGS_ORDER (the MWCC order in
     # the table key, the definition's order on the host), so a second lookup
     # ignores the order of the parameters.
@@ -535,15 +541,20 @@ def cxx_renames(built):
     for unit, t in table.items():
         seen = collections.Counter(ptrs(c) for c in t)
         table3[unit] = {ptrs(c): (c, v) for c, v in t.items() if seen[ptrs(c)] == 1}
-    jobs = [(u, built[u]) for u in table if built.get(u)]
+    jobs = [(u, built[u]) for u in sorted(set(table) | set(plain_table)) if built.get(u)]
     done = [0, 0]
 
     def one(job):
         unit, obj = job
         out = subprocess.run(["llvm-nm", "--format=posix", obj], capture_output=True, text=True).stdout
         syms = sorted({l.split()[0] for l in out.splitlines() if l.startswith("_Z")})
+        plain_lines = [f"{k} {v}\n" for k, v in sorted(plain_table[unit].items())
+                       if re.search(r"^%s [A-Za-z] " % re.escape(k), out, re.M) and not re.search(r"^%s [A-Za-z] " % re.escape(v), out, re.M)]
         if not syms:
-            return 0, len(table[unit])
+            if plain_lines:
+                open(obj + ".cxxsyms", "w").writelines(plain_lines)
+                subprocess.run(["llvm-objcopy", "--redefine-syms=" + obj + ".cxxsyms", obj], check=True)
+            return len(plain_lines), len(table[unit])
         dem = subprocess.run(["c++filt"], input="\n".join(syms) + "\n", capture_output=True, text=True).stdout.splitlines()
         lines, hit = [], set()
         # table entries that have their exact counterpart in this object
@@ -597,6 +608,7 @@ def cxx_renames(built):
                     if k != keep and k in members:
                         drop.update(ls)
             lines = [l for l in lines if l not in drop]
+        lines += plain_lines
         if lines:
             f = obj + ".cxxsyms"
             open(f, "w").writelines(lines)
