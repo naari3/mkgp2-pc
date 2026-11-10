@@ -794,3 +794,33 @@ status: note
 
 FYI, no action needed: pointer-to-member-function typedefs, calls and constants in 17 files now use PMF_TYPE / PMF_CALL / PMF_OF / PMF_IS_SET from include/game/types/pmf.h. Under MWCC these expand to the plain C++ forms; objects are byte-identical. Please use the macros for new ones (CardTaskChecks, DNBress_*, clItemBox, fn_801F27B4, ItemEffectMgr_TickPickLowestTimer, CardTaskPrintJob_IsRunning_Thunk).
 
+## n3-20261110-1418 | 2026-11-10 14:18Z | from: n3 | notes: HSD headers, vptr position
+re: -
+status: note
+
+FYI, no action needed: two documentation corrections for the PC port (docs/notes/byte_order.md, docs/notes/port_abi.md). No source change.
+
+## n3-20261110-1457 | 2026-11-10 14:57Z | from: naari3/claude ABI decision thread | C++ object model is fixed in the source (naari3, 14:56Z)
+re: -
+status: note
+
+naari3 decided for the PC port: vtables and pointer-to-member tables stop being hand-written data. Destination is one real class definition per class with compiler-generated vtables (255 of 300 are hand-written arrays today, 1,483 class names alias them). Work lands class by class, byte-identical; a pilot of about ten scene classes comes first. For new code: no new hand-written vtable arrays and no new per-unit copies of a polymorphic class. Text: docs/matching_rules.md section 0 and mkgp2-pc docs/port/cxx_abi_decision.md.
+
+## n3-20261110-1503 | 2026-11-10 15:03Z | from: naari3/claude real-classes thread | tools/rtti_classes.py: real class names and hierarchy from RTTI
+re: -
+status: note
+
+FYI, no source change: `python3 tools/rtti_classes.py` lists every vtable of the game with the class name and ancestors that MWCC's RTTI records keep in main.dol (416 vtables, 388 classes), plus the functions in each slot. Example: `TripletFaderOwner_vtable_804EECDC` is really `clRnkDisp : clCDispInterface`. `--class <name or symbol>` shows one. Useful when naming classes, deciding which unit owns a vtable, or finding the destructor of a class. Notes: docs/notes/rtti_classes.md.
+
+## n3-20261110-1523 | 2026-11-10 15:23Z | from: naari3/claude real-classes thread | TransitionEffect.cpp + TransitionEffect_Dtor.cpp merged into one real class (clScreenEffect)
+re: -
+status: note
+
+FYI: src/game/TransitionEffect_Dtor.cpp is merged into src/game/TransitionEffect.cpp, which now defines `clScreenEffect : teSingleton<clScreenEffect>` as a real class with compiler-emitted vtables and RTTI (`-inline deferred,auto -RTTI on`). The autodata units around it were shortened or split (data_803FDF28, data_803FE3C0 removed, rodata_80311CA0 + rodata_80311DB0, sdata_806CEDA0 + sdata_806CEFB8). main.dol unchanged. If you have work in flight on those files, rebase before continuing. Recipe: docs/notes/rtti_classes.md.
+
+## n3-20261110-1530 | 2026-11-10 15:30Z | from: naari3/claude real-classes thread | clMenuInput.cpp replaces five small units
+re: -
+status: note
+
+FYI: src/game/clMenuInput.cpp (real class `clMenuInput : teSingleton<clMenuInput>`, compiler-emitted vtables) replaces SmallObj_Dtor_VtableA.c, ServiceMenu.c, PostRace_StartScoreEntryFlow.c, PostRace_StartScoreEntryFlow_WithCardSave.c and the function SmallObj_Dtor_VtableB of PcbIdToIpAndModify.c. Autodata units around it were split (data_803FDF50, sdata_806CEF68, rodata_80310DE0 are new names). main.dol unchanged.
+

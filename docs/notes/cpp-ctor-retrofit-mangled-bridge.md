@@ -2199,3 +2199,18 @@ c25_u109 acLib fn_80255154: 94.37168 -> 97.76106%, 908 -> 904 B (target exact si
 Source: Codex worker c25_u115_20261110 (gpt-6.1-sol/medium) + coordinator acceptance (independent main build, DOL SHA-1 OK, actual main.elf ranges). Native gain: 0 fn / 0 B.
 
 c25_u115 DNStartDino Spawn 80229998: direct objdiff 90.020134 -> 95.48993 (584B vs target596). Retained float vz = scale*(Rand()-half)+dir[i].z; then sx/sy/sz snapshots; then embers[k].vel.z=vz before position writes. This places scale XYZ loads before vel.z stfs as target. Early-continue search guard invariant90.020134. Small inline InitEmberPosition including snapshots/Z store invariant95.48993. Named half refinement93.66443 regressed. Residual outer-loop initial jump/continuation island plus FPR webs/address r9/r10; exact target instruction ordering improved but no100/no native gain. Rule temp-to-local. No compiler-source rule verified because source/debugger unavailable; do not treat as a traced diagnosis.
+
+## c26_u23_20261110
+Source: Codex worker c26_u23_20261110 (gpt-6.1-sol/medium) + coordinator acceptance (independent main build, DOL SHA-1 OK, actual main.elf ranges). Native gain: 0 fn / 0 B.
+
+c26_u23 WallCollisionCheck99.15187->99.252335/1712B. Default scaled plus memberwise Z/Y/X copy from corner table, and default push plus X/Z/Y copy from normal, retain XYZ multiplication. This fixes raw corner x/z and complete push load/product FPR webs; two stores per copy still reordered. EH92.30769/index66.66667 unchanged; strong EH payload unchanged. Caller-owned rotation row shared by yaw writes/multiplyRows invariant; setter product and named copy inline rejected. Rotation SP+A0 targetr22 vs sourcer7 and table/endpoint r30/r31 swap remain. Six hypotheses stopped; singleton NM, zero gain; coordinator fallback DOL SHA1 exact. Future lead: docs/gave_up.md KartMovement_Init row says its early saved rotation base came from nested 2D MatrixIdentity zero loop, see src/game/kartmove/carobject.cpp:30; unlike explicit pointer naming, backend row-IV survives across cos/sin. Not tested in this batch because six-hypothesis cap reached.
+
+## c26_u26_20261110
+Source: Codex worker c26_u26_20261110 (gpt-6.1-sol/medium) + coordinator acceptance (independent main build, DOL SHA-1 OK, actual main.elf ranges). Native gain: 0 fn / 0 B.
+
+c26_u26 fn_8018B31C: EncodeNameChar unsigned-char-returning inline around wchar_to_card_char replaces call-site byte cast; rule nested-inline-level/return narrowing (24/71). Direct94.35414->94.4005, report94.41471->94.46106,6472B unchanged. First writer width/start/payload/counter r9/r8/r10/r7 now exact;11 aligned rows fixed,zero new mismatching rows. Extra writer wrapper93.64339; outer counter by pointer byte-invariant94.35414, both reverted. All non-text sections unchanged. Single function cannot B,pools owned,no A. Honest NonMatching,zero nativegain. Coordinator full build SHA1ea30f3b1cd90b133ce9affa3ffe3bb26408e7e65 OK.
+
+## c26_u41_20261110
+Source: Codex worker c26_u41_20261110 (gpt-6.1-sol/medium) + coordinator acceptance (independent main build, DOL SHA-1 OK, actual main.elf ranges). Native gain: 0 fn / 0 B.
+
+c26_u41 EnemyFace8022ACE4: raw98.579506->98.98586 by moving the existing vertex loop verbatim into static inline DrawTireVertices(s,color,u,v), declared before inherited opt_lifetimes-off region. First fadds now precedes uv[1] load. FPR homes, cursor r4/r5 swap and uv[2]/uv[3] load order remain. In-place UV load/add96.36042 rejected; function-scope tu/tv invariant98.579506. text1132B; rodata/extab/index100. Onefn NonMatching, no A/B/no native gain; object-only verified, no new full link.
