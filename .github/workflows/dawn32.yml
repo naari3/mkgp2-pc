@@ -1,0 +1,128 @@
+name: Dawn 32-bit packages
+
+# Aurora takes Dawn (WebGPU) as a prebuilt package, and upstream publishes
+# those for 64-bit targets only. The game runs as a 32-bit process for now
+# (docs/port/README.md), so this builds the same Dawn revision for 32-bit
+# Windows and Linux, in the layout Aurora's AURORA_DAWN_PACKAGE_URL expects.
+# Manual only; set "publish" to attach the packages to a prerelease.
+on:
+  workflow_dispatch:
+    inputs:
+      dawn_ref:
+        description: "Commit of github.com/encounter/dawn (AURORA_DAWN_REF in port/extern/aurora)"
+        default: "1155e0ed531126f33a1279afa029349651ca1c93"
+        required: true
+      publish:
+        description: "Attach the packages to a prerelease"
+        type: boolean
+        default: false
+
+env:
+  SCCACHE_GHA_ENABLED: "true"
+
+jobs:
+  build:
+    if: github.repository == 'naari3/mkgp2-pc'
+    name: Build ${{ matrix.tarball }}
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            tarball: dawn-windows-x86.tar.gz
+          - os: ubuntu-24.04
+            tarball: dawn-linux-i686.tar.gz
+            extra_cmake_args: >-
+              -DCMAKE_C_FLAGS=-m32
+              -DCMAKE_CXX_FLAGS=-m32
+              -DCMAKE_SYSTEM_PROCESSOR=i686
+              -DCMAKE_LIBRARY_ARCHITECTURE=i386-linux-gnu
+    steps:
+      - name: Checkout Dawn
+        uses: actions/checkout@v6
+        with:
+          repository: encounter/dawn
+          ref: ${{ inputs.dawn_ref }}
+
+      - name: Setup CMake & Ninja
+        uses: lukka/get-cmake@v4.2.3
+
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.9
+
+      - name: Install dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt-get update
+          sudo apt-get install -y gcc-multilib g++-multilib \
+            libwayland-dev:i386 libxkbcommon-dev:i386 libxrandr-dev:i386 \
+            libxinerama-dev:i386 libxcursor-dev:i386 libx11-xcb-dev:i386 \
+            libgl-dev:i386 libegl-dev:i386 wayland-protocols libwayland-bin
+          echo "PKG_CONFIG_LIBDIR=/usr/lib/i386-linux-gnu/pkgconfig:/usr/share/pkgconfig" >> "$GITHUB_ENV"
+
+      - name: Setup MSVC
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1.13.0
+        with:
+          arch: amd64_x86
+
+      - name: Configure
+        run: >-
+          cmake -S . -B build -G Ninja
+          ${{ matrix.extra_cmake_args }}
+          -C .github/workflows/dawn-ci.cmake
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_C_COMPILER_LAUNCHER=sccache
+          -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Install
+        run: cmake --install build --config Release --prefix install
+
+      - name: Copy DXC DLLs
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          cp build/dxcompiler.dll install/bin/
+          cp "${WindowsSdkDir}bin/${WindowsSDKVersion}x86/dxil.dll" install/bin/
+
+      - name: Package
+        run: tar -czf ${{ matrix.tarball }} -C install .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.tarball }}
+          path: ${{ matrix.tarball }}
+
+  release:
+    name: Publish
+    if: inputs.publish
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v8
+        with:
+          merge-multiple: true
+
+      - name: Create prerelease
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: dawn32-${{ inputs.dawn_ref }}
+          name: Dawn 32-bit packages (${{ inputs.dawn_ref }})
+          prerelease: true
+          body: |
+            Dawn built from https://github.com/encounter/dawn at `${{ inputs.dawn_ref }}`
+            for 32-bit Windows and Linux, for the PC port's Aurora build
+            (`AURORA_DAWN_PACKAGE_URL`). Dawn is BSD 3-Clause licensed; see the
+            source repository for the licence texts of Dawn and its dependencies.
+          files: "*.tar.gz"
