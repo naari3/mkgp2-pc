@@ -16,6 +16,7 @@ linked or run). From the objects' symbol tables it reports
     python3 port/tools/link_census.py --list dolphin/gx   # undefined symbols owned by src/dolphin/gx
 """
 import argparse
+import glob
 import collections
 import concurrent.futures
 import os
@@ -29,6 +30,7 @@ import mwcc_cxx_abi
 import mwcc_data_layout  # noqa: E402
 import mwcc_int_div  # noqa: E402
 import mwcc_struct_return  # noqa: E402
+import mwcc_fifo  # noqa: E402
 
 ROOT = cc.ROOT
 OUT = os.path.join(ROOT, "build", "pc-census")
@@ -44,6 +46,15 @@ DATA_OBJECTS = mwcc_data_layout.original_objects(ROOT)
 # --os windows: 32-bit Windows objects (COFF, MinGW runtime). Set in main().
 WIN = False
 WIN_TARGET = "i686-w64-windows-gnu"
+# --gfx: objects for the rendering executable, which CMake links with Aurora
+# (port/gfx/CMakeLists.txt). Set in main().
+GFX = False
+# port/nogfx files that port/gfx replaces
+GFX_REPLACED = ("video_min.c", "gx_min.c")
+# GX functions whose objects the game sizes differently from Aurora; the
+# link sends the game's calls to port/gfx/gx_shim.cpp (ld --wrap).
+GFX_WRAPPED = ("GXInitTexObj", "GXInitTexObjCI", "GXInitTexObjLOD", "GXLoadTexObj",
+               "GXInitTlutObj", "GXLoadTlut", "GXSetArray")
 
 
 def asm_name(name):
@@ -135,7 +146,7 @@ def compile_one(path, target):
     # -fshort-wchar: the game's wchar_t has 16 bits (card names, panel
     # labels); with the host's 32 the structs that hold such text grow and
     # no longer fit the sizes other units allocate for them.
-    cmd = ["clang", "-target", target, "-c", "-O0", "-g", "-fno-exceptions", "-fno-rtti", "-fcommon", "-fshort-wchar"] + (["-mno-ms-bitfields"] if WIN else ["-malign-double"]) + cc.base_flags(path)[1:]
+    cmd = ["clang", "-target", target, "-c", "-O0", "-g", "-fno-exceptions", "-fno-rtti", "-fcommon", "-fshort-wchar"] + (["-mno-ms-bitfields"] if WIN else ["-malign-double"]) + (["-DMKGP2PC_GFX"] if GFX else []) + cc.base_flags(path)[1:]
     cmd += ["-include", cc.COMPAT]
     # -Dinline=: in C, MWCC also emits an `inline` function as an ordinary
     # one where it is called without being inlined. C99 leaves the caller of
@@ -168,6 +179,8 @@ def compile_one(path, target):
         text, _ = mwcc_struct_return.rewrite(text)
         if WIN:
             text = win_ir(text)
+        if GFX:
+            text, _ = mwcc_fifo.rewrite(text)
         open(ll, "w", encoding="utf-8", errors="surrogateescape").write(text)
         if notes:
             with open(obj[:-2] + ".abi-notes", "w") as f:
@@ -189,6 +202,8 @@ def compile_one(path, target):
     text, n = mwcc_data_layout.rewrite(open(ll, encoding="utf-8", errors="surrogateescape").read(), DATA_OBJECTS)
     text, _ = mwcc_int_div.rewrite(text)
     text, _ = mwcc_struct_return.rewrite(text)
+    if GFX:
+        text, _ = mwcc_fifo.rewrite(text)
     open(ll, "w", encoding="utf-8", errors="surrogateescape").write(text)
     r = subprocess.run(["clang", "-target", target, "-c", "-Wno-override-module", ll, "-o", obj], cwd=ROOT, capture_output=True, text=True, errors="replace")
     if WIN and r.returncode == 0:
@@ -309,6 +324,12 @@ def expose_statics(built):
     return n
 
 
+GAME_NEW_DELETE = {
+    "_Znwj": "mkgp2pc_game_new", "_Znaj": "mkgp2pc_game_new_array",
+    "_ZdlPv": "mkgp2pc_game_delete", "_ZdaPv": "mkgp2pc_game_delete_array",
+}
+
+
 def unsuffix(sym):
     """`Foo_p17` -> `Foo`, also inside Itanium names (`_Z7Foo_p17v` -> `_Z3Foov`).
 
@@ -351,8 +372,12 @@ def unsuffix_objects(objs):
                 names.add(f[0])
     table = {n: unsuffix(n) for n in names}
     table = {a: b for a, b in table.items() if a != b}
-    if not table:
-        return 0
+    renamed = len(table)
+    # The game's global operator new / delete (its own allocator) get names
+    # of their own. Under the C++ names they would also serve every C++
+    # library in the executable (libstdc++, Aurora), before the game's heap
+    # exists and with memory the game then frees behind their back.
+    table.update(GAME_NEW_DELETE)
     path = os.path.join(OUT, "unsuffix.syms")
     with open(path, "w") as f:
         for a, b in sorted(table.items()):
@@ -362,7 +387,7 @@ def unsuffix_objects(objs):
         subprocess.run(["llvm-objcopy", "--redefine-syms=" + path, obj], check=True)
     with concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count()) as ex:
         list(ex.map(one, objs))
-    return len(table)
+    return renamed
 
 
 def cxx_renames(built):
@@ -571,9 +596,15 @@ def main():
     ap.add_argument("--os", choices=("linux", "windows"), default="linux",
                     help="windows: 32-bit Windows objects and executable in build/pc-census-win "
                          "(needs the i686 MinGW-w64 toolchain)")
+    ap.add_argument("--gfx", action="store_true",
+                    help="objects and link inputs for the rendering executable in build/pc-gfx "
+                         "(Linux; needs Aurora's libraries in build/aurora32, see docs/port/build.md)")
     args = ap.parse_args()
     target = cc.TARGET
-    global OUT, WIN
+    global OUT, WIN, GFX
+    if args.gfx:
+        GFX = True
+        OUT = os.path.join(ROOT, "build", "pc-gfx")
     if args.os == "windows":
         WIN, target = True, WIN_TARGET
         OUT = os.path.join(ROOT, "build", "pc-census-win")
@@ -686,10 +717,14 @@ def main():
         # structures, as on the console and on 32-bit Windows (the i386 Linux
         # default is 4)
         HOSTCC = ["-target", WIN_TARGET] if WIN else ["-m32", "-malign-double"]
+        if GFX:
+            HOSTCC.append("-DMKGP2PC_GFX")
         port_objs = []
         for sub in ("sdk", "platform", "compat", "nogfx"):
             for base, _, names in os.walk(os.path.join(ROOT, "port", sub)):
                 for n in sorted(names):
+                    if GFX and sub == "nogfx" and n in GFX_REPLACED:
+                        continue
                     if n.endswith(".c"):
                         src = os.path.join(base, n)
                         obj = os.path.join(OUT, "port__" + os.path.relpath(src, ROOT).replace(os.sep, "__") + ".o")
@@ -733,6 +768,17 @@ def main():
         r = subprocess.run(["llvm-nm", "-g", "--defined-only", "--format=posix"] + port_objs,
                            capture_output=True, text=True)
         ours = {l.split()[0] for l in r.stdout.splitlines() if len(l.split()) >= 2}
+        if GFX:
+            # what Aurora's libraries and port/gfx provide is not stubbed
+            libs = [f for f in (os.path.join(ROOT, "build", "aurora32", f"libaurora_{n}.a") for n in ("core", "gx", "vi"))
+                    if os.path.exists(f)]   # the ones port/gfx/CMakeLists.txt links
+            if not libs:
+                print("build/aurora32 has no Aurora libraries; build them first (docs/port/build.md)")
+                return 1
+            r = subprocess.run(["llvm-nm", "-g", "--defined-only", "--format=posix"] + libs, capture_output=True, text=True)
+            ours |= {l.split()[0] for l in r.stdout.splitlines() if len(l.split()) >= 2 and l.split()[1] in "TDBR"}
+            for src in sorted(glob.glob(os.path.join(ROOT, "port", "gfx", "*.c*"))):
+                ours |= set(re.findall(r"^[A-Za-z_][\w \*]*?\b(\w+)\([^;{]*\)\s*\{", open(src).read(), re.M))
         # Aurora has the portable C_ functions only; the paired-single PS
         # names (and the names this game gives five of them,
         # src/dolphin/mtx/__mtx_names.h) are the same functions here.
@@ -835,6 +881,22 @@ def main():
             "wcslen", "wcscpy", "wcsncpy", "wcscmp", "wcschr", "wmemset"]  # port/compat/wchar16.c
         with open(private, "w") as f:
             f.write("{ local: %s };\n" % " ".join(n + ";" for n in host_names))
+        if GFX:
+            gen = []
+            for src in (stubs, thunks):
+                o = src[:-2] + ".o"
+                r = subprocess.run(["clang", "-m32", "-O0", "-g", "-fcommon", "-c", src, "-o", o], capture_output=True, text=True)
+                if r.returncode != 0:
+                    print(r.stderr[:2000])
+                    return 1
+                gen.append(o)
+            link = os.path.join(OUT, "gfx_link.rsp")
+            with open(link, "w") as f:
+                f.write("\n".join(["-no-pie", "-fcommon", "-Wl,--version-script=" + private, "-Wl,-T," + script, "-Wl,-T," + bss_ld]
+                                  + gen + port_objs + objs + defsyms + ["-Wl,--wrap=" + n for n in GFX_WRAPPED + ("main",)]
+                                  + ["-lz", "-lm", "-lpthread", "-Wl,--allow-multiple-definition", "-Wl,--no-warn-rwx-segments"]) + "\n")
+            print(f"link inputs for CMake: {os.path.relpath(link, ROOT)}")
+            return 0
         if WIN:
             # the host C++ runtime's names carry the COFF underscore
             with open(stubs, "a") as f:

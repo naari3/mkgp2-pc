@@ -142,20 +142,21 @@ int64_t __mod2i(int64_t a, int64_t b) { return b != 0 ? a % b : 0; }
 uint64_t __div2u(uint64_t a, uint64_t b) { return b != 0 ? a / b : 0; }
 uint64_t __mod2u(uint64_t a, uint64_t b) { return b != 0 ? a % b : 0; }
 
-/* global operator delete / delete[] as the host compiler names them */
-void mkgp2pc_operator_delete(void* p) __asm__("_ZdlPv");
+/* The game's global operator delete / delete[] / new[], under the names
+ * port/tools/link_census.py gives the game's uses of them (GAME_NEW_DELETE). */
+void mkgp2pc_operator_delete(void* p) __asm__("mkgp2pc_game_delete");
 void mkgp2pc_operator_delete(void* p) {
   if (p != NULL) {
     MemoryManager_TimedFree(p);
   }
 }
-void mkgp2pc_operator_delete_array(void* p) __asm__("_ZdaPv");
+void mkgp2pc_operator_delete_array(void* p) __asm__("mkgp2pc_game_delete_array");
 void mkgp2pc_operator_delete_array(void* p) {
   if (p != NULL) {
     MemoryManager_TimedFree(p);
   }
 }
-void* mkgp2pc_operator_new_array(unsigned int n) __asm__("_Znaj");
+void* mkgp2pc_operator_new_array(unsigned int n) __asm__("mkgp2pc_game_new_array");
 void* mkgp2pc_operator_new_array(unsigned int n) { return Alloc(n); }
 
 /*

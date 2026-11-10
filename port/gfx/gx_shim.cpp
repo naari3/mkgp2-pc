@@ -1,0 +1,143 @@
+/*
+ * GX calls whose objects the game and Aurora size differently.
+ *
+ * The game allocates the SDK's own GXTexObj (32 bytes) and GXTlutObj
+ * (12 bytes), inside its structures and on its stacks. Aurora's are 64 and
+ * 40 bytes on PC. The link sends the game's calls here (ld --wrap, see
+ * GFX_WRAPPED in port/tools/link_census.py); the game's object only records
+ * what it was initialised with, and Aurora's object is made when the
+ * texture is loaded.
+ *
+ * Aurora tells textures apart by an id it assigns on GXInitTexObj, so its
+ * objects are kept, keyed by what describes the texture. GXInvalidateTexAll
+ * (the game calls it after changing texture memory) starts a new generation
+ * of them.
+ *
+ * GXSetArray: the SDK call has no size, Aurora's needs one. Indices are at
+ * most 16 bits, so the size is 65536 elements, cut at the end of main
+ * memory. (To be refined: it is the amount Aurora uploads.)
+ */
+#include <dolphin/gx.h>
+
+#include <cstdint>
+#include <cstring>
+#include <map>
+#include <tuple>
+
+extern "C" {
+void __real_GXInitTexObj(GXTexObj*, const void*, u16, u16, GXTexFmt, GXTexWrapMode, GXTexWrapMode, GXBool);
+void __real_GXInitTexObjCI(GXTexObj*, const void*, u16, u16, GXCITexFmt, GXTexWrapMode, GXTexWrapMode, GXBool, u32);
+void __real_GXInitTexObjLOD(GXTexObj*, GXTexFilter, GXTexFilter, float, float, float, GXBool, GXBool, GXAnisotropy);
+void __real_GXLoadTexObj(GXTexObj*, GXTexMapID);
+void __real_GXInitTlutObj(GXTlutObj*, const void*, GXTlutFmt, u16);
+void __real_GXLoadTlut(const GXTlutObj*, u32);
+void __real_GXSetArray(GXAttr, const void*, u32, u8, bool);
+}
+
+namespace {
+struct GameTexObj {
+  const void* data;
+  uint16_t width, height;
+  uint8_t format, wrapS, wrapT, flags;
+  uint8_t minFilt, magFilt, aniso, pad;
+  float minLod, maxLod, lodBias;
+  uint32_t tlut;
+};
+static_assert(sizeof(GameTexObj) == 32, "the SDK's GXTexObj is 32 bytes");
+enum : uint8_t { kMipmap = 1, kIndexed = 2, kLod = 4, kBiasClamp = 8, kEdgeLod = 16 };
+
+struct GameTlutObj {
+  const void* data;
+  uint16_t format, entries;
+  uint32_t pad;
+};
+static_assert(sizeof(GameTlutObj) == 12, "the SDK's GXTlutObj is 12 bytes");
+
+using Key = std::tuple<const void*, uint16_t, uint16_t, uint8_t, uint8_t, uint32_t>;
+std::map<Key, GXTexObj> sTextures;
+} // namespace
+
+extern "C" {
+void __wrap_GXInitTexObj(GameTexObj* o, const void* data, u16 width, u16 height, u32 format, u32 wrapS, u32 wrapT,
+                         u8 mipmap) {
+  std::memset(o, 0, sizeof(*o));
+  o->data = data;
+  o->width = width;
+  o->height = height;
+  o->format = static_cast<uint8_t>(format);
+  o->wrapS = static_cast<uint8_t>(wrapS);
+  o->wrapT = static_cast<uint8_t>(wrapT);
+  o->flags = mipmap ? kMipmap : 0;
+}
+
+void __wrap_GXInitTexObjCI(GameTexObj* o, const void* data, u16 width, u16 height, u32 format, u32 wrapS, u32 wrapT,
+                           u8 mipmap, u32 tlut) {
+  __wrap_GXInitTexObj(o, data, width, height, format, wrapS, wrapT, mipmap);
+  o->flags |= kIndexed;
+  o->tlut = tlut;
+}
+
+void __wrap_GXInitTexObjLOD(GameTexObj* o, u32 minFilt, u32 magFilt, float minLod, float maxLod, float lodBias,
+                            u8 biasClamp, u8 edgeLod, u32 aniso) {
+  o->flags |= kLod;
+  o->flags = static_cast<uint8_t>((o->flags & ~(kBiasClamp | kEdgeLod)) | (biasClamp ? kBiasClamp : 0) |
+                                  (edgeLod ? kEdgeLod : 0));
+  o->minFilt = static_cast<uint8_t>(minFilt);
+  o->magFilt = static_cast<uint8_t>(magFilt);
+  o->aniso = static_cast<uint8_t>(aniso);
+  o->minLod = minLod;
+  o->maxLod = maxLod;
+  o->lodBias = lodBias;
+}
+
+void __wrap_GXLoadTexObj(GameTexObj* o, u32 id) {
+  const Key key{o->data, o->width, o->height, o->format, static_cast<uint8_t>(o->flags & (kMipmap | kIndexed)), o->tlut};
+  auto it = sTextures.find(key);
+  if (it == sTextures.end()) {
+    GXTexObj real;
+    const bool mip = (o->flags & kMipmap) != 0;
+    if (o->flags & kIndexed) {
+      __real_GXInitTexObjCI(&real, o->data, o->width, o->height, static_cast<GXCITexFmt>(o->format),
+                            static_cast<GXTexWrapMode>(o->wrapS), static_cast<GXTexWrapMode>(o->wrapT), mip, o->tlut);
+    } else {
+      __real_GXInitTexObj(&real, o->data, o->width, o->height, static_cast<GXTexFmt>(o->format),
+                          static_cast<GXTexWrapMode>(o->wrapS), static_cast<GXTexWrapMode>(o->wrapT), mip);
+    }
+    it = sTextures.emplace(key, real).first;
+  }
+  GXTexObj* real = &it->second;
+  GXInitTexObjWrapMode(real, static_cast<GXTexWrapMode>(o->wrapS), static_cast<GXTexWrapMode>(o->wrapT));
+  if (o->flags & kLod) {
+    __real_GXInitTexObjLOD(real, static_cast<GXTexFilter>(o->minFilt), static_cast<GXTexFilter>(o->magFilt), o->minLod,
+                           o->maxLod, o->lodBias, (o->flags & kBiasClamp) != 0, (o->flags & kEdgeLod) != 0,
+                           static_cast<GXAnisotropy>(o->aniso));
+  }
+  __real_GXLoadTexObj(real, static_cast<GXTexMapID>(id));
+}
+
+void __wrap_GXInitTlutObj(GameTlutObj* o, const void* data, u32 format, u16 entries) {
+  o->data = data;
+  o->format = static_cast<uint16_t>(format);
+  o->entries = entries;
+  o->pad = 0;
+}
+
+void __wrap_GXLoadTlut(const GameTlutObj* o, u32 idx) {
+  GXTlutObj real;
+  __real_GXInitTlutObj(&real, o->data, static_cast<GXTlutFmt>(o->format), o->entries);
+  __real_GXLoadTlut(&real, idx);
+}
+
+void __wrap_GXSetArray(u32 attr, const void* base, u8 stride) {
+  const uintptr_t end = 0x81800000u;
+  uint32_t size = 65536u * stride;
+  const uintptr_t at = reinterpret_cast<uintptr_t>(base);
+  if (at < end && at + size > end) {
+    size = static_cast<uint32_t>(end - at);
+  }
+  __real_GXSetArray(static_cast<GXAttr>(attr), base, size, stride, false);
+}
+
+/* The game changes texture memory in place and says so with this call. */
+void mkgp2pc_gx_forget_textures(void) { sTextures.clear(); }
+}

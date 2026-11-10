@@ -127,12 +127,14 @@ void* OSAllocFromArenaHi(uint32_t size, uint32_t align) {
 /* The disc ID lives at the very start of main memory on the console. */
 void* DVDGetCurrentDiskID(void) { return (void*)MEM1_BASE; }
 
+#ifndef MKGP2PC_GFX /* the rendering executable has Aurora's */
 /* GXInit hands back the FIFO object; nothing reads its fields here. */
 void* GXInit(void* base, uint32_t size) {
   static char fifo[0x80];
   (void)base, (void)size;
   return fifo;
 }
+#endif
 
 void HSD_Panic(const char* file, int line, const char* msg) {
   fprintf(stderr, "HSD_Panic: %s:%d: %s\n", file ? file : "?", line, msg ? msg : "");
