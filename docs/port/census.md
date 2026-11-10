@@ -580,6 +580,18 @@ which starts loading its course. What that needed:
 - The arena starts at 0x806ECFA0 as on the console (it started at
   0x80800000, 1.1 MB less heap).
 
-Open: the race scene runs out of heap while loading its course
-(`YI_land_short_a.dat`, 1.3 MB wanted, 2 MB free in pieces, although 11 MB
-were free when the scene change began).
+- `wchar_t` is 16 bits (`-fshort-wchar`, with the wide string functions the
+  game uses in `port/compat/wchar16.c`). With 32 bits every structure that
+  holds a name was larger than the size the game allocates for it, and the
+  writes past the end broke the heap; that was the "out of memory" while
+  the race scene loaded `YI_land_short_a.dat`.
+- Functions that MWCC folded into one share one entry of the rename table;
+  only the leaf among the ones a unit defines takes the name.
+- The rename table is also searched without regard to parameter order and
+  to what pointers point at (NON_MATCHING sources spell some constructor
+  parameters differently).
+
+The scene change to the race (flow 42, retrace 9236) now loads the course
+and constructs the player's kart. Open: `fn_802090F0` and five more
+functions are declared with their float and integer parameters in another
+order than they are defined (upstream request 25).

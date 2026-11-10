@@ -306,7 +306,7 @@ kept for reference. Item 10 is open.
     argument-order sweep extended to constructors that reach their
     definition through `tools/extab_user_renames.json`.
 23. Built-in HSD descriptors typed as words, and arguments passed through
-    r3 between two calls (added 2026-11-10; open).
+    r3 between two calls (added 2026-11-10; done, upstream 08f7eb7).
     (a) `g_courseDataInstance` (`src/game/autodata/data_8040E780.c`) is the
     light descriptor that `GetCourseDataPtr()` returns and
     `HSD_LObjLoadDesc()` reads. It is a `void *[7]` whose third and fourth
@@ -322,7 +322,8 @@ kept for reference. Item 10 is open.
     `SuikaBall_801313D0.cpp:1154`); the console keeps the first call's
     result in r3, a host does not. Wanted: the nested call, or a host form.
 24. Shift-JIS patterns of the card name check typed as words and as byte
-    strings (added 2026-11-10; open). `NameCheck_ScanBannedWords`
+    strings (added 2026-11-10; done, upstream b5862a5, which also adds
+    `NAMECODE_STRCMP` and friends for the port to define). `NameCheck_ScanBannedWords`
     (`src/game/NameCheck_CardName.c:3445`) holds names as `NameCode`
     (`unsigned short`, one Shift-JIS character each) and searches them with
     the byte functions `strstr` / `strcmp`. Its patterns in
@@ -334,3 +335,14 @@ kept for reference. Item 10 is open.
     operand that is compared with `NameCode` data as a `NameCode` array.
     Left for the port side: names with codes below 0x100, whose byte view
     starts with a zero on the console only.
+25. Float and integer parameters declared in another order than defined,
+    C names (added 2026-11-10; open). Same class as item 22, found with
+    `port/tools/arg_order_census.py`, which compares every declaration in
+    the host IR with the definition. I = integer or pointer, F = float:
+    `fn_802090F0` (defined IFFFII in `anon_80208E30_nm1.cpp`, declared
+    IIIFFF in `auto_ONKARTHIT_block.c`), `CarObject_ApplyInput` (IIFFF,
+    declared IFFFI in eight units), `CarObject_ApplyDriftBoost` (IFI, IIF
+    in three), `InputCmd_PushSample` (IFFFI, IIFFF in one),
+    `KartMovement_PhysicsStep` (IIFFF, IFFFI in one), and `AnimState_Init`
+    (second parameter a pointer, declared float in two units). The first
+    stops the race scene while it builds the player's kart.
