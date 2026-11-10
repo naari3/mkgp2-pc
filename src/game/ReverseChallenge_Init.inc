@@ -1,3 +1,5 @@
+#include "game/types/c_region.h"
+C_REGION_BEGIN
 /* === extracted from auto_ReverseChallenge_Ini_text === */
 /* Copy into the TU between forward decls and function bodies; */
 /* keep emit order = target section layout (do not sort). */
@@ -29,10 +31,10 @@ extern void RankingTable_Init();
 extern int HSD_LObjLoadDesc(void);
 extern void Scene3D_GetCameraPos(void *scene, float *a, float *b);
 extern void Scene3D_SetupProjection(void *scene, float a, float b);
-extern void SetActiveCamera();
+extern void SetActiveCamera(int, void *);
 extern void SetCourseScene3D(void *scene);
-extern void SetPlayerCarObject();
-extern void SetResourceLoadingFlag();
+extern void SetPlayerCarObject(void *);
+extern void SetResourceLoadingFlag(int);
 extern void SoundChannels_ClearAll();
 extern void SoundDriver_GetOrCreate(int arg);
 extern void TransitionEffect_GetOrCreate();
@@ -69,6 +71,7 @@ extern unsigned int lbl_8048E144[];
  */
 
 /* --- native C++ ctor (same shape as JumpDistanceMode_Init.c) --- */
+C_REGION_END
 #pragma cplusplus on
 void *operator new(size_t size);
 void operator delete(void *p);

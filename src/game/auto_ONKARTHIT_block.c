@@ -1,3 +1,5 @@
+#include "game/types/c_region.h"
+C_REGION_BEGIN
 
 /* sdata symbols referenced from asm */
 #include "game/types/size_t.h"
@@ -30,10 +32,10 @@ extern float *CObj_GetViewMatrix_Cached(void *scene);
 extern void CameraEffect_Apply(void *cam, int kind, float v);
 extern void Camera_RotateByYaw(void *cam, float yaw);
 extern void CarObject_Dtor();
-extern void CoinSystem_RemoveCoins();
+extern void CoinSystem_RemoveCoins(void *, int);
 extern float CollisionTest_CalcPenetration(void *checker, void *a, void *b);
 extern int DashZone_ProcessAutoRun(void *ctx, float x, float y, float z, float yaw);
-extern void DebugPrintf();
+extern void DebugPrintf(void *);
 extern void EffectSpeed_ApplySpeedScale(void *req, float a, float b);
 extern void EffectSpeed_Init();
 #ifdef NON_MATCHING
@@ -41,20 +43,20 @@ extern float EffectSpeed_TickAndGet(void *obj);
 #else
 extern void EffectSpeed_TickAndGet();
 #endif
-extern void EffectSpeed_TickTimer();
+extern void EffectSpeed_TickTimer(void *);
 extern unsigned char EffectState_HasContent(void *effectState);
-extern void EffectState_ReleaseAndClear();
+extern void EffectState_ReleaseAndClear(void *);
 extern void EffectSteering_Ctor();
 extern void EffectSteering_Dtor();
-extern void EffectSteering_InitForDelay();
-extern void EffectSteering_InitForLock();
-extern void EffectSteering_InitForScale();
-extern void EffectSteering_InitForShake();
-extern void EffectSteering_InitForSplit();
+extern void EffectSteering_InitForDelay(void *, int, float);
+extern void EffectSteering_InitForLock(void *, float, float);
+extern void EffectSteering_InitForScale(void *, float, float);
+extern void EffectSteering_InitForShake(void *, float, float, float, float);
+extern void EffectSteering_InitForSplit(void *, int, float);
 extern void EffectSteering_InitForVibrate(void *steer, float a, float b, float c);
-extern void EffectSteering_InitForVibrate_Sub();
-extern void EffectSteering_InitForViscosity();
-extern void EffectSteering_InitForViscosity_Uniform();
+extern void EffectSteering_InitForVibrate_Sub(void *, float, float);
+extern void EffectSteering_InitForViscosity(void *, float, float, float, float, float, float);
+extern void EffectSteering_InitForViscosity_Uniform(void *, float, float, float);
 extern void EffectSteering_InputViscosity_SetFieldC(void *steer, float v);
 extern void *FUN_8003b120(unsigned long);
 extern unsigned char Field4NotMinusOne(void *ctx);
@@ -66,7 +68,7 @@ extern void *GetInputManager(void);
 extern void GetInputManager();
 #endif
 extern void GetKartParamBlock();
-extern int GetKartStartSlot();
+extern int GetKartStartSlot(int);
 extern void InputCmd_Dtor();
 #ifdef NON_MATCHING
 extern unsigned char InputCmd_GetDetectedFlag(void *cmd);
@@ -74,25 +76,25 @@ extern unsigned char InputCmd_GetDetectedFlag(void *cmd);
 extern void InputCmd_GetDetectedFlag();
 #endif
 extern void InputCmd_Init();
-extern void InputCmd_PushSample();
-extern void InputCmd_SetCooldown();
-extern void InputCmd_TickAndDetectAndClear();
-extern void InputMgr_GetPlayer();
-extern void InterpolationStep();
+extern void InputCmd_PushSample(void *, int, float, float, float);
+extern void InputCmd_SetCooldown(void *, int);
+extern void InputCmd_TickAndDetectAndClear(void *);
+extern void InputMgr_GetPlayer(void *, int);
+extern void InterpolationStep(void *, float, float);
 extern unsigned char IsAudioMutedItem(void *soundCtrl, int channel);
 extern unsigned char IsRaceStarted(void);
 extern int ItemClass_GetFlagByte1(int id);
-extern void ItemEffectBus_ApplyItemConfirm();
-extern void ItemEffectBus_ApplyItemEventClear();
-extern void ItemEffectBus_ApplyItemEventSet();
+extern void ItemEffectBus_ApplyItemConfirm(void *, int);
+extern void ItemEffectBus_ApplyItemEventClear(void *, int);
+extern void ItemEffectBus_ApplyItemEventSet(void *, int, int);
 extern unsigned char ItemEffectBus_ArmTornadoAndQuery(void *bus, int id);
-extern void ItemEffectBus_ClearByTable8();
+extern void ItemEffectBus_ClearByTable8(void *, int);
 extern void ItemEffectBus_ClearMask(void *bus, unsigned long long mask);
 extern void ItemEffectBus_OrMask(void *bus, unsigned long long mask);
-extern void ItemEffectBus_RegisterBonkPosition();
-extern void ItemEffectBus_SnapshotAndClearSpawnFlags();
-extern void ItemEffectBus_SnapshotAndFullReset();
-extern void ItemEffectBus_TickTornadoCooldown();
+extern void ItemEffectBus_RegisterBonkPosition(void *, float, float, float);
+extern void ItemEffectBus_SnapshotAndClearSpawnFlags(void *);
+extern void ItemEffectBus_SnapshotAndFullReset(void *);
+extern void ItemEffectBus_TickTornadoCooldown(void *);
 extern void ItemEffectDamp_TryArm(void *guard, float *vec, int mode, float accel, float scale, float k);
 extern void ItemEffectImpact_TryArm(void *guard, float *vec, float *mtx, int mode);
 extern void ItemEffect_BossGrab(void *guard, float *mtx, void *arg, int param);
@@ -100,46 +102,46 @@ extern void ItemEffect_TornadoLift(void *guard, float *mtx);
 extern int ItemObject_GetByteAt0xEC(void *itemObj, int idx);
 extern unsigned char ItemSelect_GiveItemOrQueueDrop(void *itemSelect, void *driver, int count, int flag);
 extern unsigned char ItemSelect_OnDropAllCancel(void *itemSelect, void *driver);
-extern int ItemSelect_StartRouletteSpin();
+extern int ItemSelect_StartRouletteSpin(void *, void *, int, int);
 extern unsigned char ItemStateGuard_IsActive(void *guard);
 #ifdef NON_MATCHING
 extern unsigned char ItemStateGuard_PruneIfDeadAndReport(void *guard);
 #else
 extern void ItemStateGuard_PruneIfDeadAndReport();
 #endif
-extern void ItemStateSlotC_TryArm();
+extern void ItemStateSlotC_TryArm(void *, void *, void *, void *);
 extern void KartAudioChannel_Init();
 extern void KartAudioChannel_PlayColorMatchSE(void *snd, int a, int b, float spd);
 extern void KartAudioChannel_PlayJumpSE(void *snd, int mode);
-extern void KartAudioChannel_Set24WithSeStop();
+extern void KartAudioChannel_Set24WithSeStop(void *, int);
 extern void KartAudioChannel_StopSE8a(void *snd, int a);
 extern void KartBody_SetWarpTransitFlag(void *body, int flag);
 extern void KartDriver_Dtor();
 extern void *KartDriver_GetKartRootMtx(void *driver);
 extern void KartDriver_New_Full();
-extern void KartDriver_RenderTimed();
-extern void KartDriver_SetJointPosY_Slot3a();
-extern void KartDriver_SetJointPosY_Slot3b();
-extern void KartDriver_SetJointPosY_Slot3c();
-extern void KartDriver_SetJointPosY_Slot3d();
-extern void KartDriver_TickAction_79260();
-extern void KartDriver_TickAction_79268_AndSetSlot5aEulerZ();
+extern void KartDriver_RenderTimed(void *, int, int);
+extern void KartDriver_SetJointPosY_Slot3a(void *, float);
+extern void KartDriver_SetJointPosY_Slot3b(void *, float);
+extern void KartDriver_SetJointPosY_Slot3c(void *, float);
+extern void KartDriver_SetJointPosY_Slot3d(void *, float);
+extern void KartDriver_TickAction_79260(void *, float);
+extern void KartDriver_TickAction_79268_AndSetSlot5aEulerZ(void *, float);
 extern void KartEffectFadeTransit_Dtor();
-extern float KartEffectFadeTransit_GetActiveValue();
+extern float KartEffectFadeTransit_GetActiveValue(void *);
 extern void KartEffectFadeTransit_Init();
 extern unsigned char KartEffectFadeTransit_IsActive(void *obj);
-extern void KartEffectFadeTransit_Tick();
-extern void KartItemAudio_PlayHitConfirmSE();
-extern void KartItemAudio_PlayThrowConfirmSE();
-extern void KartItemAudio_StopSEByItemId();
+extern void KartEffectFadeTransit_Tick(void *);
+extern void KartItemAudio_PlayHitConfirmSE(void *, int);
+extern void KartItemAudio_PlayThrowConfirmSE(void *, int);
+extern void KartItemAudio_StopSEByItemId(void *, int);
 extern void KartItemSubObject_Ctor();
 extern void KartItemSubObject_Dtor(void *self, short flag);
 extern int KartItem_CancelIfNotForced(void *driver);
-extern void KartItem_DispatchEffectRenderByState();
-extern void KartItem_FlushPendingRender();
-extern void KartItem_FlushPendingRender_v2();
-extern void KartItem_FlushRenderIfReady();
-extern void KartItem_SetVec3At338();
+extern void KartItem_DispatchEffectRenderByState(void *);
+extern void KartItem_FlushPendingRender(void *);
+extern void KartItem_FlushPendingRender_v2(void *);
+extern void KartItem_FlushRenderIfReady(void *);
+extern void KartItem_SetVec3At338(void *, void *);
 #ifdef NON_MATCHING
 extern unsigned char KartItem_Stub_Returns0(void *obj, float t);
 #else
@@ -150,47 +152,47 @@ extern float KartMovement_CalcMaxSpeed(void *mov, int flag);
 extern float KartMovement_CalcSpeedWithCoinBonus(void *mv, int flag);
 extern int KartMovement_GetCurrentItemId(void *driver);
 extern void KartMovement_Init();
-extern void KartMovement_PhysicsStep();
+extern void KartMovement_PhysicsStep(void *, float, float, float, int);
 extern void KartMovement_RotateByYaw(void *mv, float yaw);
 extern void KartMovement_SetPosition(void *mv, void *pos, int flag);
 extern void KartMovement_SetTravelProgress(void *mov, float v);
-extern void KartReaction_Front();
-extern void KartReaction_Side();
+extern void KartReaction_Front(void *);
+extern void KartReaction_Side(void *);
 extern void MediaBoard_PollCompletion(void *snd, float v);
-extern void MediaBoard_SendAndCheck();
+extern void MediaBoard_SendAndCheck(void *);
 extern void MemoryManager_AllocTagged();
 extern void MemoryManager_TimedFree(void *p);
-extern void Mtx4x4_TransposeTo4x3();
+extern void Mtx4x4_TransposeTo4x3(void *, void *);
 extern unsigned long OSGetTick(void);
 extern void PlayCamera_Dtor();
 extern void PlayCamera_Init();
 extern void Profiler_RecordFrame(unsigned int id, float ms);
-extern void RankLog_OnHit();
-extern void RankLog_OnMatchEnd();
-extern void RankLog_OnPlayerDefeated();
-extern void RenderObj_ItemStateMachine_Timed();
+extern void RankLog_OnHit(void *, int);
+extern void RankLog_OnMatchEnd(void *, int, void *, void *);
+extern void RankLog_OnPlayerDefeated(void *, int);
+extern void RenderObj_ItemStateMachine_Timed(void *, void *, float, float);
 extern void RenderObj_ToggleLapSegment(void *obj, int seg);
 extern float Saturate_Double(float v, float lo, float hi);
-extern void SceneRender_SetViewportRect();
-extern void SetAnimSpin();
+extern void SceneRender_SetViewportRect(unsigned int, float, float, float, float, float, float);
+extern void SetAnimSpin(void *);
 extern unsigned char ShadowAreaMgr_QueryPoint(void *mgr, float x, float y, float z);
 extern unsigned char ShadowBillboard_IsRenderReady(void *billboard);
 extern void ShadowBillboard_SetField0x6CAndComputeAxis(void *bb, int mode);
 extern void ShadowBillboard_SetField0xA4(void *bb, float v);
-extern void ShadowBillboard_SetTargetSaturation();
+extern void ShadowBillboard_SetTargetSaturation(void *, float);
 extern void ShadowBillboard_SetVec3At0x70(void *bb, void *vec);
-extern void ShadowBillboard_StepSimple();
-extern void ShadowBillboard_Tick();
-extern void ShadowBillboard_TriggerSpinFlash();
+extern void ShadowBillboard_StepSimple(void *, int, int);
+extern void ShadowBillboard_Tick(void *, int, int);
+extern void ShadowBillboard_TriggerSpinFlash(void *);
 extern void SharedPtr_Init();
 extern void SoundCtrl_SetVolume(void *snd, float v);
 extern void SoundObj_PlaySE(void *snd, int id);
 extern void SoundObj_PlaySE_Direct(void *snd, int id);
 extern void SoundVolumePan_Update(void *snd);
 extern void SpeedBoost_Apply(void *obj, int id, float v);
-extern void StrPcb_ForceRun_Neutral();
+extern void StrPcb_ForceRun_Neutral(void *);
 extern void *StrPcb_GetInstance(void);
-extern void StrPcb_ResetCommands_Neutral();
+extern void StrPcb_ResetCommands_Neutral(void *, int);
 extern void StrPcb_SetCmdByte2d(void *pcb, int v);
 extern void StrPcb_SetCmdByte2e(void *pcb, int v);
 extern void StrPcb_SetCmdByte2f(void *pcb, int v);
@@ -200,17 +202,17 @@ extern void StrPcb_SetTimer3c40(void *pcb, float t, int mode);
 extern void Tachometer_SetCoinCount(int count);
 extern void Tachometer_UpdateDisplaySpeed(float current, float max);
 extern void TireEffect_ResetSpin(void *body, float a, float b);
-extern void TitleStats_IncCurrentRaceScore();
+extern void TitleStats_IncCurrentRaceScore(void *, int, int);
 extern void TitleStats_IncPerfectCount(void *stats, int score, signed char flag);
 extern void TitleStats_IncTotalRaces(void *stats, int score);
-extern void TitleStats_MarkAllCoursesClearedIfDistance();
-extern void TitleStats_SetEventFlag_806d1420();
+extern void TitleStats_MarkAllCoursesClearedIfDistance(void *, int);
+extern void TitleStats_SetEventFlag_806d1420(void *, int);
 extern void TitleTracker_Empty_PreFinalizeHook(unsigned int tracker, int kartSlot);
-extern void TornadoEffect_ApplyItemVisual_Compact();
-extern void TornadoEffect_ApplyItemVisual_Primary();
+extern void TornadoEffect_ApplyItemVisual_Compact(void *, int, int);
+extern void TornadoEffect_ApplyItemVisual_Primary(void *, int);
 extern void TornadoEffect_ApplyItemVisual_Secondary(void *fx, int itemId, int flag);
 extern void TornadoEffect_ClearFlagC0AndSetC4(void *obj, float v);
-extern void TornadoEffect_ComposeRenderMatrix();
+extern void TornadoEffect_ComposeRenderMatrix(void *, void *, void *);
 extern void TornadoEffect_Ctor();
 #ifdef NON_MATCHING
 extern float TornadoEffect_GetField114(void *effect);
@@ -219,20 +221,20 @@ extern void TornadoEffect_GetField114();
 #endif
 extern void TornadoEffect_SetColorPairC8CC(void *obj, int a, int b);
 extern void TornadoEffect_SetColorRGBLerp(void *fx, int mode, float r, float g, float b);
-extern void TornadoEffect_SetColorY(); /* K&R on purpose: matched C calls it with 1 arg (StopCarObjectSE) and 2 args (OnApply_Freeze) */
-extern void TornadoEffect_SetField114();
-extern void TornadoEffect_SetField11c();
-extern void TornadoEffect_SetField128AndMaybeClear134();
+extern void TornadoEffect_SetColorY(void *, float); /* StopCarObjectSE forwards its own float argument (f1 is left alone) */
+extern void TornadoEffect_SetField114(void *, float);
+extern void TornadoEffect_SetField11c(void *, float);
+extern void TornadoEffect_SetField128AndMaybeClear134(void *, int, int);
 extern void TornadoEffect_SetFieldAc(void *obj, float v);
-extern void TornadoEffect_SetFlagB4();
+extern void TornadoEffect_SetFlagB4(void *, int);
 extern void TornadoEffect_SetFlagC0(void *obj);
 extern void TornadoEffect_SetMatrix1c(void *obj, float *m);
 extern void TornadoEffect_SetMatrixRow0_5c(void *obj, float x, float y, float z);
 extern void TornadoEffect_SetScalePairB0BC(void *obj, float a, float b);
-extern void TornadoEffect_SubmitRender();
+extern void TornadoEffect_SubmitRender(void *);
 extern void TornadoEffect_Tick(void *obj, int score);
 extern void TornadoEffect_TriggerField140(void *obj);
-extern void TornadoEffect_TriggerFlagD2WithTimer();
+extern void TornadoEffect_TriggerFlagD2WithTimer(void *);
 extern void TornadoEffect_TriggerWheelScaleAnim(void *fx, float scale);
 extern void TwoSubDtor_Pending_80064f58();
 extern void VisualEffectHolder_Dtor();
@@ -248,24 +250,24 @@ extern void __unexpected();
 extern void clItemBoxResponder_Ctor();
 extern void dtor_80060024();
 extern void dtor_800AA888();
-extern void dtor_80209180();
-extern void fn_8019A4E0();
-extern void fn_8019A6A4();
+extern void dtor_80209180(void *, int);
+extern void fn_8019A4E0(void *);
+extern void fn_8019A6A4(void *, float *); /* ForwardToCarMovement_8019a6a4 forwards its own second argument (r4 is left alone) */
 #ifdef NON_MATCHING
 extern float fn_8019A850(void *movement, int wheel);
 #else
 extern void fn_8019A850();
 #endif
 extern unsigned char fn_8019A8A4(void *mv, float f);
-extern void fn_8019A9BC();
-extern void fn_8019CC2C();
-extern void fn_801B1410();
-extern void fn_801B1458();
-extern void fn_801B5B60();
+extern void fn_8019A9BC(void *, float, float, float);
+extern void fn_8019CC2C(void *);
+extern void fn_801B1410(void *);
+extern void fn_801B1458(void *, void *);
+extern void fn_801B5B60(int);
 extern void fn_802090F0(void *obj, void *center, void *half, float f1, float f2, float f3);
-extern void fn_802091BC();
+extern void fn_802091BC(void *, int, int);
 extern void __throw();
-extern void strcpy();
+extern void strcpy(void *, const void *);
 #ifdef NON_MATCHING
 extern double cos(double x);
 #else
@@ -274,11 +276,11 @@ extern void cos();
 extern double sin(double x);
 extern void fn_802BD6AC(float x, float y);
 extern void fn_802BD6C0();
-extern void HSD_FObjForceLinearInterp();
-extern void HSD_MtxGetRotation();
+extern void HSD_FObjForceLinearInterp(int);
+extern void HSD_MtxGetRotation(void *, void *);
 extern float HSD_Randf(void);
 extern int HSD_Randi(int range);
-extern void memset();
+extern void memset(void *, int, int);
 extern unsigned long strlen(const char *);
 
 /* --- extern decls: sda21-referenced data --- */
@@ -1204,10 +1206,12 @@ void CarObject_MainUpdate(void *self, void *arg);
 void CarObject_FrameUpdate(CarObjFrameView *self, void *arg);
 void CarObject_ApplyInput_AI(CarObjInputAIView *self, unsigned char active, float in1, float in2, float in3, float in4);
 void CarObject_ApplyInput(CarObjInputAIView *self, unsigned char active, float in1, float in2, float in3);
+C_REGION_END
 #pragma cplusplus on
 struct KartItemObj;
 extern "C" void *KartItem_Dtor(KartItemObj *self, short flag);
 #pragma cplusplus off
+C_REGION_BEGIN
 void KartItem_UpdateShadowBillboardAndViewport(KartItemOpsView *self, int arg2, int arg3);
 float KartItem_AdvanceAnim3c(const KartItemOpsView *self);
 float CarObject_CalcSpeedRatio(KartItemOpsView *self);
@@ -1232,13 +1236,13 @@ void KartMovement_SetMueScale(KartItemOpsView *self, float v);
 void KartMovement_SetSpeedScale(KartItemOpsView *self, float v);
 void KartItem_GetCarVelocityVec3(KartItemOpsView *self, Vec3 *out);
 void KartItem_SetCarVelocityVec3(KartItemOpsView *self, Vec3 *v);
-void KartItem_StopCarObjectSE(KartItemOpsView *self);
+void KartItem_StopCarObjectSE(KartItemOpsView *self, float y);
 unsigned char KartItem_TryArmBoostOnLanding(KartItemOpsView *self, unsigned char spin);
 void KartItem_SetCarObjectField2d4Float(KartItemOpsView *self, float v);
 void KartItem_SetCarObjectField1c8Float(KartItemOpsView *self, float v);
 void CarObject_SetPosition(KartItemOpsView *self, void *pos);
 void KartItem_ForwardToCarMovement_8019a4e0(const KartItemOpsView *self);
-void KartItem_ForwardToCarMovement_8019a6a4(const KartItemOpsView *self);
+void KartItem_ForwardToCarMovement_8019a6a4(const KartItemOpsView *self, float *m);
 void KartItem_OnFallOffOrDeath(KartItemOpsView *self);
 int CarObject_HandleItemEffect(ItemSecondaryLane *self, int itemId);
 int ItemEffect_SelectAndDispatch_Wrap(ItemEffectTable *self, int itemId, void *itemObj, int arg4);
@@ -1500,6 +1504,7 @@ void KartItem_ApplyEffectToVictim_AdjThunk(void);
 #endif
 void *dtor_800524CC(void *self, short flag);
 void StlList_RemoveByValueField(StlList *l, StlListValRef *key);
+C_REGION_END
 #pragma cplusplus on
 struct StlEraseIter {
     StlListNode *node;
@@ -1529,6 +1534,7 @@ struct StlInsIter {
 
 extern "C" StlInsIter StlList_InsertBefore(StlList *l, StlInsIter &pos, const StlInsValue &value);
 #pragma cplusplus off
+C_REGION_BEGIN
 void StlList_InitEmpty(StlList *l);
 void *dtor_80052744(void *self, short flag);
 void dtor_8005278C(void);
@@ -1536,9 +1542,11 @@ void *dtor_80052808(void *self, short flag);
 void *dtor_8005285C(void *self, short flag);
 void dtor_800528B0(void);
 void dtor_8005292C(void);
+C_REGION_END
 #pragma cplusplus on
 extern "C" void *dtor_800529A8(void *self, short flag) throw();
 #pragma cplusplus off
+C_REGION_BEGIN
 void dtor_80052A58(void);
 void dtor_80052AD4(void);
 void dtor_80052B50(void);
@@ -1955,7 +1963,7 @@ unsigned char KartItem_OnKartHit(KartItemHit *self, KartDriverHitView *victim) {
                 return 0;
             }
         }
-        rm = KartDriver_GetKartRootMtx(victim);
+        rm = (KartRootMtxView *)KartDriver_GetKartRootMtx(victim);
         drv = self->ownerDriver;
         if ((drv->itemBus->flags & 0x30000000ULL) == 0) {
             float *t;
@@ -5360,6 +5368,7 @@ void CarObject_UpdateCoinSpeedBonus(KartItemOpsView *self) { /* 0x8004CF64 size:
 }
 #pragma exceptions reset
 
+C_REGION_END
 #pragma cplusplus on
 struct Vec3c {
     float x, y, z;
@@ -5436,6 +5445,7 @@ extern "C" void CarObject_ProcessWarpAndDash(CarObjWarpView *self) { /* 0x8004D1
     }
 }
 #pragma cplusplus off
+C_REGION_BEGIN
 
 #ifdef NON_MATCHING
 /* NON_MATCHING: equivalent C, 82 % when written (docs/archive/drafts/CarObject_MainUpdate_82pct.handoff.md);
@@ -5558,7 +5568,7 @@ void CarObject_MainUpdate(void *self_, void *arg) { /* 0x8004D404 size:0xAC8 */
 
     bus = self->renderObj->bus;
     ItemEffectBus_SnapshotAndFullReset(bus);
-    CarObject_ProcessWarpAndDash((void *)self);
+    CarObject_ProcessWarpAndDash((CarObjWarpView *)self);
     if (self->coinCount < self->renderObj->coinCount) {
         TornadoEffect_TriggerFlagD2WithTimer(self->kartBody);
     }
@@ -5615,7 +5625,7 @@ void CarObject_MainUpdate(void *self_, void *arg) { /* 0x8004D404 size:0xAC8 */
         self->timerD0 = 0x2d;
         break;
     case 2: {
-        switch (ItemEffect_SelectAndDispatch_Wrap((void *)self->kartItem, self->guard->param0c, 0, (int)self->guard->param10)) {
+        switch (ItemEffect_SelectAndDispatch_Wrap((ItemEffectTable *)self->kartItem, self->guard->param0c, 0, (int)self->guard->param10)) {
         case 0: {
             KartItemEventView *it;
             int ev;
@@ -5625,7 +5635,7 @@ void CarObject_MainUpdate(void *self_, void *arg) { /* 0x8004D404 size:0xAC8 */
             it = self->kartItem;
             ev = it->eventId;
             hasObj = it->hasObjField >= 0;
-            ItemEffectBus_ApplyItemEventSet(bus, ev, (hasObj == 1) ? it->eventObj : 0);
+            ItemEffectBus_ApplyItemEventSet(bus, ev, (int)((hasObj == 1) ? it->eventObj : 0));
             TornadoEffect_ApplyItemVisual_Secondary(self->kartBody, ev, 1);
             KartItemAudio_PlayHitConfirmSE(self->soundCtrl, ev);
             sl2 = self->slot;
@@ -5784,7 +5794,7 @@ void CarObject_MainUpdate(void *self_, void *arg) { /* 0x8004D404 size:0xAC8 */
         DebugPrintf((char *)lbl_802EDA20);
         break;
     }
-    KartItem_TickActiveEffectsTwoLane((void *)self->kartItem);
+    KartItem_TickActiveEffectsTwoLane((ItemEffectTable *)self->kartItem);
     {
         CarObjSlotView *slot = self->slot;
         if (slot->itemId >= 0) {
@@ -5817,7 +5827,7 @@ void CarObject_MainUpdate(void *self_, void *arg) { /* 0x8004D404 size:0xAC8 */
             }
         }
     }
-    CarObject_UpdateCoinSpeedBonus((void *)self);
+    CarObject_UpdateCoinSpeedBonus((KartItemOpsView *)self);
     InputCmd_PushSample(self->inputCmd, 0, self->spd0, self->spd1, self->spd2);
     InputCmd_TickAndDetectAndClear(self->inputCmd);
     if (self->gateA8 == 1) {
@@ -5839,7 +5849,7 @@ void CarObject_MainUpdate(void *self_, void *arg) { /* 0x8004D404 size:0xAC8 */
             }
         }
     }
-    KartItem_PerFrameStep((void *)self, arg);
+    KartItem_PerFrameStep((PfsKartView *)self, arg);
     KartItem_Tick((void *)self);
     InputMgr_GetPlayer(GetInputManager(), 0);
     {
@@ -6696,6 +6706,7 @@ void CarObject_ApplyInput(CarObjInputAIView *self, unsigned char active, float i
  * The owned-pointer member holders are plain (non-template) structs on
  * purpose: a template instantiation makes MWCC defer KartItem_Dtor past the
  * following asm CarObject_Init, which breaks the link order. */
+C_REGION_END
 #pragma cplusplus on
 #pragma exceptions on
 struct Owned8005278C {
@@ -6904,11 +6915,13 @@ extern "C" void *KartItem_Dtor(KartItemObj *self, short flag) { /* 0x8004E2B0 si
 #undef gCarList
 #pragma exceptions reset
 #pragma cplusplus off
+C_REGION_BEGIN
 
 /* CarObject_Init: native C++ constructor (exceptions on). Members are
  * owned-pointer holders built from tagged new-expressions; the compiler
  * extab destroys the built members/bases when a later ctor throws.
  * Mangled names are bridged in tools/extab_user_renames.json. */
+C_REGION_END
 #pragma cplusplus on
 #pragma exceptions on
 void *operator new(size_t);
@@ -7229,6 +7242,7 @@ CarObject::CarObject(int slot, int character, int a18, int a1c, unsigned char is
 #undef gCarList
 #pragma exceptions reset
 #pragma cplusplus off
+C_REGION_BEGIN
 
 static inline float KartItem_CalcKeySpeedFromTable(KartMovementSpeedView *mv) {
     SpeedTableEntry *e;
@@ -7550,8 +7564,8 @@ void KartItem_SetCarVelocityVec3(KartItemOpsView *self, Vec3 *v) { /* 0x8004F540
 #pragma exceptions reset
 
 #pragma exceptions off
-void KartItem_StopCarObjectSE(KartItemOpsView *self) { /* 0x8004F560 size:0x24 */
-    TornadoEffect_SetColorY(self->effectObj);
+void KartItem_StopCarObjectSE(KartItemOpsView *self, float y) { /* 0x8004F560 size:0x24 */
+    TornadoEffect_SetColorY(self->effectObj, y);
 }
 #pragma exceptions reset
 
@@ -7602,8 +7616,8 @@ void KartItem_ForwardToCarMovement_8019a4e0(const KartItemOpsView *self) { /* 0x
 #pragma exceptions reset
 
 #pragma exceptions off
-void KartItem_ForwardToCarMovement_8019a6a4(const KartItemOpsView *self) { /* 0x8004F68C size:0x24 */
-    fn_8019A6A4(self->movement);
+void KartItem_ForwardToCarMovement_8019a6a4(const KartItemOpsView *self, float *m) { /* 0x8004F68C size:0x24 */
+    fn_8019A6A4(self->movement, m);
 }
 #pragma exceptions reset
 
@@ -7968,6 +7982,7 @@ int ItemEffect_SelectAndDispatch_Wrap(ItemEffectTable *self, int itemId, void *i
  * returning the pick (keeps the sel<0 branch pair), the ignore-list scan is
  * `while (p--, n-- > 0)` over a 1-entry table, and the owner message send
  * is a real virtual call (slot 0x34) so the vtable temp is r12/r12. */
+C_REGION_END
 #pragma cplusplus on
 struct ItemMsgTarget {
     virtual void v08(); virtual void v0C(); virtual void v10(); virtual void v14();
@@ -8026,6 +8041,7 @@ extern "C" int ItemEffect_SelectAndDispatch(ItemEffectTable *self, int itemId, v
     return ItemEffect_GenericHandler(self, sel, itemObj, arg4);
 }
 #pragma cplusplus off
+C_REGION_BEGIN
 
 #pragma exceptions off
 int ItemEffect_GenericHandler(ItemEffectTable *self, int itemId, void *itemObj, int arg4) { /* 0x800501B0 size:0x140 */
@@ -9016,6 +9032,7 @@ void CarObject_GetField304Vec3(Vec3 *out, CarObjAux304View *car) { /* 0x80051DD0
  * changes the 12-byte copies), the collide callback is a real virtual call, the index
  * of the outer loop reaches the bitset calls as int so no shared (unsigned long)i temp
  * is coalesced with it, and &bs is written at each use instead of a pointer local. */
+C_REGION_END
 #pragma cplusplus on
 struct SweepKartBase {
     virtual void v08(); virtual void v0C(); virtual void v10(); virtual void v14();
@@ -9182,6 +9199,7 @@ extern "C" CarObjectManager *CarObjectManager_Dtor(CarObjectManager *self, short
 }
 #pragma exceptions reset
 #pragma cplusplus off
+C_REGION_BEGIN
 
 #pragma exceptions off
 /* Bitset deleting dtor: free word buffer, then free self when flag > 0 */
@@ -9219,6 +9237,7 @@ void Bitset_SetBit(Bitset *self, unsigned long idx, unsigned char val) { /* 0x80
 /* The exception hierarchy and string member generate Bitset_Init's cleanup
  * actions. Read-only exception names replace the corresponding raw pool data. */
 #pragma readonly_strings on
+C_REGION_END
 #pragma cplusplus on
 namespace std {
 struct exception {
@@ -9263,6 +9282,7 @@ extern "C" void Bitset_Init(Bitset *self, unsigned long n, const unsigned char *
     }
 }
 #pragma cplusplus off
+C_REGION_BEGIN
 #pragma readonly_strings reset
 static const char lbl_802EDADC[18] = "std::length_error";
 static const char lbl_802EDAF0[15] = "std::exception";
@@ -9362,6 +9382,7 @@ asm void KartItem_ApplyEffectToVictim_AdjThunk(void) { /* 0x800524C4 size:0x8 */
  * CW emit this function one slot late, so this source position yields the
  * target .text order (dtor_800524CC, remove, StlList_EraseRange); here it also
  * gets no auto extab, so the manual entry above stays. */
+C_REGION_END
 #pragma cplusplus on
 #pragma exceptions off
 static inline StlEraseIter StlList_EraseInl(StlList *l, StlEraseIter first, StlEraseIter last) {
@@ -9403,6 +9424,7 @@ extern "C" void StlList_RemoveByValueField(StlList *l, StlListValRef *key) { /* 
 }
 #pragma exceptions reset
 #pragma cplusplus off
+C_REGION_BEGIN
 #pragma exceptions off
 void *dtor_800524CC(void *self, short flag) { /* 0x800524CC size:0x3C */
     if (self) {
@@ -9415,6 +9437,7 @@ void *dtor_800524CC(void *self, short flag) { /* 0x800524CC size:0x3C */
 #pragma exceptions reset
 
 
+C_REGION_END
 #pragma cplusplus on
 #pragma exceptions off
 /* std::list::erase(first, last): unlink the whole range, then free node by node.
@@ -9437,6 +9460,7 @@ extern "C" StlEraseIter StlList_EraseRange(StlList *l, StlEraseIter first, StlEr
 }
 #pragma exceptions reset
 #pragma cplusplus off
+C_REGION_BEGIN
 
 /* skipped (0 probes): -Cpp_exceptions on EH scaffolding class - FP prologue
  * `mr r31,r1`, back-chain epilogue, EH state store `stw r1,0x24(r31)` and dead
@@ -9444,6 +9468,7 @@ extern "C" StlEraseIter StlList_EraseRange(StlList *l, StlEraseIter first, StlEr
  * node if the obj copy throws). Approach B cannot emit any of this; approach A
  * excluded by the 14.1 mix rule (manual-extab asm fns precede). Same class as
  * dtor_8005278C/800528B0 (exceptions-on-eh-scaffolding-unpromotable). */
+C_REGION_END
 #pragma cplusplus on
 inline void *operator new(size_t, void *p) { return p; }
 inline void operator delete(void *, void *) {}
@@ -9475,6 +9500,7 @@ extern "C" StlInsIter StlList_InsertBefore(StlList *l, StlInsIter &pos, const St
     return StlList_LinkNode(l, pos.node, guard.Release());
 }
 #pragma cplusplus off
+C_REGION_BEGIN
 
 #pragma exceptions off
 void StlList_InitEmpty(StlList *l) { /* 0x8005272C size:0x18 */
@@ -9506,6 +9532,7 @@ void *dtor_80052744(void *self, short flag) { /* 0x80052744 size:0x48 */
  *   __dt__15Holder8005278CFv -> dtor_8005278C
  *   __dt__14Owned8005278CFv  -> Free_IfOwnedShort
  */
+C_REGION_END
 #pragma cplusplus on
 #pragma exceptions on
 Holder8005278C::~Holder8005278C() throw() {
@@ -9513,6 +9540,7 @@ Holder8005278C::~Holder8005278C() throw() {
 }
 #pragma exceptions reset
 #pragma cplusplus off
+C_REGION_BEGIN
 
 #pragma exceptions off
 /* owned-pointer holder deleting dtor: free the payload at +0x0 unconditionally */
@@ -9540,6 +9568,7 @@ void *dtor_8005285C(void *self, short flag) { /* 0x8005285C size:0x54 */
 }
 #pragma exceptions reset
 
+C_REGION_END
 #pragma cplusplus on
 #pragma exceptions on
 Holder800528B0::~Holder800528B0() throw() {
@@ -9547,8 +9576,10 @@ Holder800528B0::~Holder800528B0() throw() {
 }
 #pragma exceptions reset
 #pragma cplusplus off
+C_REGION_BEGIN
 
 /* dtor_8005292C: EffectSteering owned-pointer holder deleting dtor. */
+C_REGION_END
 #pragma cplusplus on
 #pragma exceptions on
 Holder8005292C::~Holder8005292C() throw() {
@@ -9586,8 +9617,10 @@ Holder80052A58::~Holder80052A58() throw() {
 }
 #pragma exceptions reset
 #pragma cplusplus off
+C_REGION_BEGIN
 
 /* dtor_80052AD4: PlayCamera owned-pointer holder deleting dtor. */
+C_REGION_END
 #pragma cplusplus on
 #pragma exceptions on
 Holder80052AD4::~Holder80052AD4() throw() {
@@ -9611,8 +9644,10 @@ Holder80052BCC::~Holder80052BCC() throw() {
 }
 #pragma exceptions reset
 #pragma cplusplus off
+C_REGION_BEGIN
 
 /* dtor_80052C48: KartDriver owned-pointer holder deleting dtor. */
+C_REGION_END
 #pragma cplusplus on
 #pragma exceptions on
 Holder80052C48::~Holder80052C48() throw() {
@@ -9636,6 +9671,7 @@ Holder80052D40::~Holder80052D40() throw() {
 }
 #pragma exceptions reset
 #pragma cplusplus off
+C_REGION_BEGIN
 
 void KartMovement_UpdateBoostVisualBlend(KartDriverBusView *drv, KartMovementSpeedView *mv, float *outA, float *outB, int *counter) { /* 0x80052DBC size:0x164 */
     int ticks = drv->boostTicks1b4;
@@ -9675,4 +9711,5 @@ void KartMovement_UpdateBoostVisualBlend(KartDriverBusView *drv, KartMovementSpe
         KartMovement_UpdateBoostVisualBlend_bss_806D1084 = s;
     }
 }
+C_REGION_END
 

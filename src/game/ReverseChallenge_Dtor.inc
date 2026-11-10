@@ -1,3 +1,5 @@
+#include "game/types/c_region.h"
+C_REGION_BEGIN
 /* === extracted from auto_ReverseChallenge_Dto_text === */
 /* Copy into the TU between forward decls and function bodies; */
 /* keep emit order = target section layout (do not sort). */
@@ -6,22 +8,22 @@
 /* Open prototype (`extern void Foo();`) accepts any call signature; */
 /* refine if the real prototype matters for header consumers. */
 extern void ClRomTable_PurgeAll();
-extern void CourseEnvironment_Dtor();
+extern void CourseEnvironment_Dtor(void *, int);
 extern void *GetRaceContextPtr();
 extern void ItemObjectManager_Reset();
-extern void LakituStart_Dtor();
-extern void MemoryManager_TimedFree();
+extern void LakituStart_Dtor(void *, int);
+extern void MemoryManager_TimedFree(void *);
 extern void RankingTable_Init();
 extern void SceneDrawList_Reset();
-extern void SetActiveCamera();
-extern void SetPlayerCarObject();
-extern void SetResourceLoadingFlag();
+extern void SetActiveCamera(int, void *);
+extern void SetPlayerCarObject(void *);
+extern void SetResourceLoadingFlag(int);
 extern void VfxSlotMgr_Shutdown();
 extern void clRom_PurgeAll();
-extern void dtor_80122FD8();
-extern void fn_80124C84();
-extern void fn_8016C634();
-extern void fn_80254134();
+extern void dtor_80122FD8(void *, int);
+extern void fn_80124C84(void *, int);
+extern void fn_8016C634(void *, int);
+extern void fn_80254134(void *, int);
 
 /* --- extern decls: sda21-referenced data --- */
 extern unsigned int g_raceCamera;
@@ -40,6 +42,7 @@ extern unsigned int ReverseChallenge_vtable_80419E70[];
  */
 
 /* --- native C++ island (deleting-destructor shape, see RivalRun.c) --- */
+C_REGION_END
 #pragma cplusplus on
 struct RCVirtual {
     virtual ~RCVirtual();
