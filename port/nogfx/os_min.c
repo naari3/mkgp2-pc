@@ -30,6 +30,9 @@ __attribute__((constructor)) static void map_mem1(void) {
     fprintf(stderr, "nogfx: cannot map MEM1 at 0x%08X\n", MEM1_BASE);
     exit(2);
   }
+  /* Hardware registers, write-gather pipe (0xCC008000) included: plain
+   * memory here, so direct accesses do nothing instead of faulting. */
+  mmap((void*)0xCC000000u, 0x10000, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED_NOREPLACE, -1, 0);
   /* The console has no read-only memory: the game writes to objects that the
    * decompiled sources define as const (.sdata2 pointers and the like). */
   {
