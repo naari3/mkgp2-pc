@@ -25,6 +25,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import compile_census as cc  # noqa: E402
+import mwcc_cxx_abi  # noqa: E402
 
 ROOT = cc.ROOT
 OUT = os.path.join(ROOT, "build", "pc-census")
@@ -41,6 +42,26 @@ def compile_one(path, target):
     cmd = ["clang", "-target", target, "-c", "-O0", "-g", "-fno-exceptions", "-fno-rtti", "-fcommon"] + cc.base_flags(path)[1:]
     cmd += ["-include", cc.COMPAT]
     cmd += ["-x", "c++", "-std=gnu++98"] if cc.is_cxx(path, target) else ["-x", "c", "-std=gnu99", "-Wno-error=implicit-function-declaration", "-Wno-error=implicit-int", "-Wno-error=int-conversion", "-Wno-error=incompatible-pointer-types"]
+    if cc.is_cxx(path, target):
+        # C++: through LLVM IR, rewritten to MWCC's vtable conventions
+        # (port/tools/mwcc_cxx_abi.py, docs/port/census.md section 13)
+        ll = obj[:-2] + ".ll"
+        irflags = ["-S", "-emit-llvm", "-fstandalone-debug", "-fno-discard-value-names", "-flto", "-fwhole-program-vtables"]
+        r = subprocess.run([c for c in cmd if c != "-c"] + irflags + [path, "-o", ll], cwd=ROOT, capture_output=True, text=True, errors="replace")
+        if r.returncode != 0:
+            return path, None
+        notes = []
+        text, _ = mwcc_cxx_abi.rewrite(open(ll, encoding="utf-8", errors="surrogateescape").read(), notes.append)
+        open(ll, "w", encoding="utf-8", errors="surrogateescape").write(text)
+        if notes:
+            with open(obj[:-2] + ".abi-notes", "w") as f:
+                f.write("\n".join(sorted(set(notes))) + "\n")
+        r = subprocess.run(["clang", "-target", target, "-c", "-Wno-override-module", ll, "-o", obj], cwd=ROOT, capture_output=True, text=True, errors="replace")
+        if r.returncode != 0:
+            with open(obj[:-2] + ".abi-error", "w") as f:
+                f.write(r.stderr)
+            return path, None
+        return path, obj
     r = subprocess.run(cmd + [path, "-o", obj], cwd=ROOT, capture_output=True, text=True, errors="replace")
     return path, (obj if r.returncode == 0 else None)
 

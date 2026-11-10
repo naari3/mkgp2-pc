@@ -165,3 +165,26 @@ kept for reference. Item 10 is open.
       `CourseData_LoadPathTable.cpp`, `TEXLoadPalette.cpp`, plus the
       sysdolphin archive loader. On the disc: 5,358 `.tpl`, 1,918 `.dat`
       (215 MB), 684 `.dsp`, 640 `.bin`, MusyX `pool/proj/samp/sdir`.
+14. Pointers to member functions (added 2026-11-10; open). MWCC's are 12
+    bytes, `{ long thisDelta; long vtableOffset; union { void *func; long
+    vptrOffset; } }` with `vtableOffset == -1` for a non-virtual function
+    (the layout `__ptmf_scall` in `src/Runtime` reads). Clang's and GCC's are
+    8 bytes, `{ ptr, adj }`. The sources mix both views of the same bytes:
+    the tables are written as data in MWCC's layout
+    (`void *CardTaskWelcome_StateInit_data_803FE5F0[3] = { 0, -1, fn }` in
+    `src/game/autodata/data_803FE480.c`) and read through a real
+    pointer-to-member type (`CardStep step;` then `(self->*self->step)()` in
+    `CardTaskChecks.cpp:49`). Off MWCC the object is also 4 bytes shorter, so
+    every later member moves. First failure: the boot sequence calls 0 from
+    `CardTaskWelcome_TickCounter`.
+    Size: 24 pointer-to-member types in 15 files, about 10 call sites, a few
+    `&Class::Method` constants (`clItemBox.cpp`).
+    Wanted, in one shared header, unchanged under MWCC:
+    - the type: `PMF_TYPE(Name, Class, Ret, Args)`; off MWCC a 12-byte struct
+      in the layout above (a template carrying the signature is fine);
+    - the call: `PMF_CALL(obj, pmf)(args)`; off MWCC adds `thisDelta`, and
+      calls `func` when `vtableOffset < 0`, else the entry at
+      `*(void **)(this + vptrOffset) + vtableOffset` (objects point at the
+      start of MWCC-layout vtables in the port build, see census section 13);
+    - the constant: `PMF_OF(&Class::Method)`; off MWCC it can be built at run
+      time from the host's own `{ ptr, adj }` for non-virtual functions.
