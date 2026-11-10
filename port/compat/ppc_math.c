@@ -12,3 +12,9 @@
  * base/decrement table before relying on replay or network determinism.
  */
 double mkgp2pc_frsqrte(double x) { return 1.0 / sqrt(x); }
+
+/* MSL float.h constants, referenced as objects by HSD. */
+float __float_nan = __builtin_nanf("");
+float __float_huge = __builtin_huge_valf();
+float __float_min = 1.17549435e-38f;
+float __float_epsilon = 1.1920929e-07f;

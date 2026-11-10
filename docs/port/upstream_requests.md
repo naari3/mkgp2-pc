@@ -60,3 +60,15 @@ Strike an item out when it has been merged from upstream.
    (`include/game/types/EffectBus.h:6`). These are fragments included by
    another file; if they are never compiled alone they should not end in
    `.c`, or the PC build needs a list of them.
+9. `src/sysdolphin/baselib` (added 2026-11-10, upstream `fe3eca4`; 45 of 53
+   files compile on PC with the HSD include set and `MUST_MATCH`):
+   - a function declared non-static in its header and then defined
+     `static` (MWCC accepts, C compilers do not): `cobj.c:306`
+     `makeProjectionMtx`, `pobj.c:976` `HSD_PObjSetMtxMark`, `texp.c:153`
+     `HSD_TExpFree`, `tobj_anim.c:54` `HSD_TObjAddAnim`, `tobj_nm.c:189`
+     `HSD_TObjAnim`, `video.c:130` `HSD_VIGetXFBDrawEnable`. Either drop the
+     header declaration or guard the `static` with `#ifdef __MWERKS__`.
+   - `initialize.c:357`: `HSD_ObjDumpStat` conflicts with its earlier
+     declaration.
+   - `debug.c`: `HSD_SaveContext` is PowerPC asm; the port will supply its
+     own `debug.c`, nothing to do upstream unless a guard is easy.

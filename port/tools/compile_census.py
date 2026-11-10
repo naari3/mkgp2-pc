@@ -60,7 +60,7 @@ def is_cxx(path, target):
     (also when the pragma sits in an included header)."""
     if path.endswith(".cpp") or path.replace(os.sep, "/") in configure_lang_cxx():
         return True
-    r = subprocess.run(["clang", "-E", "-target", target] + BASE[1:] + ["-std=gnu99", path],
+    r = subprocess.run(["clang", "-E", "-target", target] + base_flags(path)[1:] + ["-std=gnu99", path],
                        cwd=ROOT, capture_output=True, text=True, errors="replace")
     return bool(CPLUSPLUS_RE.search(r.stdout))
 
@@ -71,11 +71,26 @@ def normalise(msg):
     return msg
 
 
+# src/sysdolphin (HSD, shared with the Melee decompilation) is built against
+# its own header set in the matching build (cflags_hsd_melee in configure.py).
+HSD_INCLUDES = ["-Ilibs/melee/src", "-Ilibs/melee/libs/doldecomp_include", "-Ilibs/melee/src/MSL",
+                "-Ilibs/melee/libs/dolphin_include", "-Ilibs/melee/src/sysdolphin/baselib",
+                "-Isrc/sysdolphin/baselib", "-DMUST_MATCH"]
+HSD_OWN_HEADERS = ("util.c", "id.c")  # these two use the game's include set
+
+
+def base_flags(path):
+    p = path.replace(os.sep, "/")
+    if p.startswith("src/sysdolphin/") and not p.endswith(HSD_OWN_HEADERS):
+        return [f for f in BASE if not f.startswith("-I") or f == "-Iport/compat/include"] + HSD_INCLUDES
+    return BASE
+
+
 def check(path, use_compat, target):
-    cmd = ["clang", "-target", target] + BASE
+    cmd = ["clang", "-target", target] + base_flags(path)
     if use_compat:
         cmd += ["-include", COMPAT]
-    cmd += ["-x", "c++", "-std=gnu++98"] if is_cxx(path, target) else ["-x", "c", "-std=gnu99"]
+    cmd += ["-x", "c++", "-std=gnu++98"] if is_cxx(path, target) else ["-x", "c", "-std=gnu99", "-Wno-error=implicit-function-declaration", "-Wno-error=implicit-int", "-Wno-error=int-conversion", "-Wno-error=incompatible-pointer-types"]
     r = subprocess.run(cmd + [path], cwd=ROOT, capture_output=True, text=True, errors="replace")
     errs = []
     for line in r.stderr.splitlines():
@@ -154,4 +169,6 @@ def main():
 
 
 if __name__ == "__main__":
+    import signal
+    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
     sys.exit(main())

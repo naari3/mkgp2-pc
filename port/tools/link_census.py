@@ -33,9 +33,9 @@ DEFAULT_DIRS = ["game", "sound", "ui", "util", "resource"]
 
 def compile_one(path, target):
     obj = os.path.join(OUT, path.replace(os.sep, "__") + ".o")
-    cmd = ["clang", "-target", target, "-c", "-O0", "-g", "-fno-exceptions", "-fno-rtti", "-fcommon"] + cc.BASE[1:]
+    cmd = ["clang", "-target", target, "-c", "-O0", "-g", "-fno-exceptions", "-fno-rtti", "-fcommon"] + cc.base_flags(path)[1:]
     cmd += ["-include", cc.COMPAT]
-    cmd += ["-x", "c++", "-std=gnu++98"] if cc.is_cxx(path, target) else ["-x", "c", "-std=gnu99"]
+    cmd += ["-x", "c++", "-std=gnu++98"] if cc.is_cxx(path, target) else ["-x", "c", "-std=gnu99", "-Wno-error=implicit-function-declaration", "-Wno-error=implicit-int", "-Wno-error=int-conversion", "-Wno-error=incompatible-pointer-types"]
     r = subprocess.run(cmd + [path, "-o", obj], cwd=ROOT, capture_output=True, text=True, errors="replace")
     return path, (obj if r.returncode == 0 else None)
 
@@ -77,17 +77,12 @@ def symbol_info():
     return info
 
 
-HOST_LIBC = {"MSL_C"}  # taken from the host C library instead of being stubbed
-
-
 def write_stubs(missing, groups, path):
     """One C file that defines every missing symbol: functions log their first
     call through MKGP2PC_STUB-style bookkeeping and return 0, objects are
     zero-filled with the size symbols.txt gives."""
     info = symbol_info()
     host = set()
-    for g in HOST_LIBC:
-        host.update(groups.get(g, []))
     # Anything the 32-bit host C library exports is taken from there (memset,
     # memcpy, ...), except the wide-character functions: wchar_t is 16 bits in
     # the game and 32 bits on Linux, so those need their own implementations.
@@ -210,7 +205,7 @@ def main():
     if args.link:
         # Real implementations written for the port win over generated stubs.
         port_objs = []
-        for sub in ("sdk", "platform", "compat"):
+        for sub in ("sdk", "platform", "compat", "nogfx"):
             for base, _, names in os.walk(os.path.join(ROOT, "port", sub)):
                 for n in sorted(names):
                     if n.endswith(".c"):
@@ -254,4 +249,6 @@ def main():
 
 
 if __name__ == "__main__":
+    import signal
+    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
     sys.exit(main())

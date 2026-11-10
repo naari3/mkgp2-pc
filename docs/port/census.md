@@ -171,3 +171,20 @@ The game calls 65 functions of the `am*` / `ac*` / `jvs*` libraries.
 Both link today. The second keeps more original behaviour and has the smaller
 surface; whether its state machines come up without real boards has to be
 tried.
+
+## 9. Bring-up state at the end of 2026-11-10
+
+`python3 port/tools/link_census.py game sound ui util resource triforce sysdolphin --link`
+links the game together with the decompiled Triforce libraries and HSD
+(2786 of 2848 files compile; `src/sysdolphin` 45 / 53 with its own include
+set). `port/nogfx/os_min.c` maps 24 MB at `0x80000000`, so console addresses
+stay valid in the 32-bit process, and supplies arena, time and interrupt
+no-ops.
+
+The run now gets through the am* boot calls and stops in `Alloc(4)`
+(`BootDispatcher.cpp:396`): the game heap is created by `HSD_InitComponent`,
+and `sysdolphin/baselib/initialize.c` is one of the eight HSD files that do
+not compile yet (see `upstream_requests.md` item 9).
+
+Also noted: `rand` / `srand` must be the MSL ones (`src/MSL_C/rand.c`), not
+the host's, or anything seeded diverges from the console.
