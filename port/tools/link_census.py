@@ -420,6 +420,16 @@ def expose_statics(built):
     return n
 
 
+PORT_ALIASES = {
+    # the race context's constructor is written under its address name
+    # (src/game/SetCourseParams.c); the unit's second view of the class
+    # calls it as a constructor
+    "_ZN11RaceContextC1Ev": "RaceContext_InitDefaults",
+    # include/game/FlowScene.h declares FlowFader's destructor; the function
+    # is dtor_801F2724, defined under another class name
+    "_ZN9FlowFaderD2Ev": "mkgp2pc_dt2__dtor_801F2724",
+}
+
 GAME_NEW_DELETE = {
     "_Znwj": "mkgp2pc_game_new", "_Znaj": "mkgp2pc_game_new_array",
     "_ZdlPv": "mkgp2pc_game_delete", "_ZdaPv": "mkgp2pc_game_delete_array",
@@ -812,11 +822,11 @@ def main():
             cands = [d for d in list(defined) + list(weak) if d.startswith(head)]
             if len(cands) == 1:
                 alias[n] = cands[0]
-    # The race context's constructor is written under its address name
-    # (RaceContext_InitDefaults, src/game/SetCourseParams.c); the unit's
-    # second view of the class calls it as a constructor.
-    if "_ZN11RaceContextC1Ev" in missing and "RaceContext_InitDefaults" in defined:
-        alias["_ZN11RaceContextC1Ev"] = "RaceContext_InitDefaults"
+    # Definitions the sources give under another name than the one a second
+    # view of the same class asks for (PORT_ALIASES).
+    for n, t in PORT_ALIASES.items():
+        if n in missing and (t in defined or t in weak):
+            alias[n] = t
     linkage = list(alias)
     # Same free function declared with other parameter types in the calling
     # file (per-file prototypes): the mangled names differ only after the
