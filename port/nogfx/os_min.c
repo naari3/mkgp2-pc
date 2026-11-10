@@ -96,3 +96,14 @@ void HSD_Panic(const char* file, int line, const char* msg) {
   fprintf(stderr, "HSD_Panic: %s:%d: %s\n", file ? file : "?", line, msg ? msg : "");
   abort();
 }
+
+/* Semaphores: single-threaded bring-up, so counts only. Layout as in
+ * dolphin/os/OSSemaphore.h (count first). */
+typedef struct {
+  int32_t count;
+  void* queue[2];
+} OSSemaphoreMin;
+void OSInitSemaphore(OSSemaphoreMin* s, int32_t count) { s->count = count; }
+int32_t OSWaitSemaphore(OSSemaphoreMin* s) { return s->count > 0 ? s->count-- : 0; }
+int32_t OSTryWaitSemaphore(OSSemaphoreMin* s) { return s->count > 0 ? s->count-- : 0; }
+int32_t OSSignalSemaphore(OSSemaphoreMin* s) { return s->count++; }

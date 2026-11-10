@@ -29,6 +29,11 @@ import compile_census as cc  # noqa: E402
 ROOT = cc.ROOT
 OUT = os.path.join(ROOT, "build", "pc-census")
 DEFAULT_DIRS = ["game", "sound", "ui", "util", "resource"]
+# Decompiled files the PC build does not compile because port/ replaces them
+# function for function.
+REPLACED = {
+    "src/triforce/amexi.c",  # port/platform/triforce/baseboard.c
+}
 
 
 def compile_one(path, target):
@@ -192,7 +197,7 @@ def main():
     for d in args.dirs:
         for base, _, names in os.walk(os.path.join(ROOT, "src", d)):
             files += [os.path.relpath(os.path.join(base, n), ROOT) for n in names if n.endswith((".c", ".cpp"))]
-    files.sort()
+    files = sorted(f for f in files if f.replace(os.sep, "/") not in REPLACED)
     with concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count()) as ex:
         built = dict(ex.map(lambda p: compile_one(p, target), files))
     objs = [o for o in built.values() if o]
