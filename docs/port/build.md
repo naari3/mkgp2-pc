@@ -136,6 +136,48 @@ freetype, sqlite3, png and zlib. Without a display it runs under Xvfb with
 Mesa's software GL. `MKGP2PC_FRAMES=N` exits after N frames. What the build
 does is described in docs/port/census.md section 21.
 
+### 32-bit Windows, with rendering
+
+Cross-built on Linux with clang and the MinGW-w64 runtime, like the
+no-graphics Windows build. Linked, not run yet.
+
+```sh
+cmake -S port/extern/aurora -B build/aurora-win32 -G Ninja -DCMAKE_TOOLCHAIN_FILE=$PWD/port/gfx/cmake/mingw-i686.cmake <settings>
+cmake --build build/aurora-win32        # the example program may fail to link; the libraries are what is needed
+python3 port/tools/link_census.py game sound ui util resource triforce sysdolphin --gfx --os windows --link
+cmake -S port/gfx -B build/pc-gfx-win/cmake -G Ninja -DCMAKE_TOOLCHAIN_FILE=$PWD/port/gfx/cmake/mingw-i686.cmake <settings>
+cmake --build build/pc-gfx-win/cmake    # mkgp2-gfx.exe
+```
+
+Settings: `-DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_C_FLAGS=-msse2
+-DCMAKE_CXX_FLAGS="-msse2 -Wno-c++11-narrowing -femulated-tls -I$PWD/port/gfx/cmake/mingw-case"
+-DAURORA_ENABLE_DVD=OFF -DAURORA_ENABLE_CARD=OFF -DAURORA_ENABLE_THP=OFF
+-DAURORA_CACHE_USE_ZSTD=OFF -DFT_DISABLE_ZLIB=ON -DAURORA_SDL3_PROVIDER=vendor
+-DAURORA_DAWN_PROVIDER=package -DAURORA_DAWN_PACKAGE_URL=<windows-x86 url below>`,
+with `PKG_CONFIG_LIBDIR` pointing at an empty directory (otherwise the
+host's Linux packages are found).
+
+- `-femulated-tls`: the MinGW libstdc++ is built by GCC with emulated
+  thread-local storage; clang's default for this target is native.
+- `port/gfx/cmake/mingw-case/`: `Windows.h` and `Wbemidl.h` under the names
+  Aurora includes them by, and the declaration of `SetThreadDescription`
+  that MinGW-w64 11 lacks.
+- Two library names Aurora links do not exist in MinGW: put a directory
+  with `libDXGI.a` (a link to `libdxgi.a`) and an empty `libcomsuppw.a` on
+  the linker path (`-DCMAKE_EXE_LINKER_FLAGS=-L<dir>`).
+- The Dawn package is an MSVC-built DLL with a C interface;
+  `port/gfx/dawn_mingw.cpp` supplies the one C++ function Aurora uses.
+- No abseil, freetype or sqlite packages exist for MinGW. They build from
+  source (`-DFETCHCONTENT_SOURCE_DIR_ABSEIL-CPP=...`, `_FREETYPE`,
+  `_SQLITE3`; the sqlite directory holds the amalgamation `sqlite3.c`).
+- The executable needs `webgpu_dawn.dll`, `dxcompiler.dll`, `dxil.dll` (from
+  the Dawn package), `SDL3.dll`, `libpng16.dll` and `libzlib1.dll` (from the
+  build tree's `_deps/*-build`) next to it.
+
+In this mode `link_census.py` compiles the glue of `port/gfx` itself and
+uses jumps instead of the linker's `--wrap` (the game's objects have plain
+names, Aurora's the COFF underscore; see `link_gfx_windows`).
+
 ## 32-bit Dawn packages
 
 Aurora takes Dawn as a prebuilt package and upstream publishes 64-bit ones

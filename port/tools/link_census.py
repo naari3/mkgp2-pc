@@ -84,6 +84,83 @@ def win_plain_names(obj, asm_only=False):
     subprocess.run(["llvm-objcopy", "--redefine-syms=" + obj + ".plain", obj], check=True)
 
 
+def link_gfx_windows(stubs, thunks, cxxrt, replaced, aurora_fns, aurora_data, port_objs, objs, defsyms, script, bss_ld, game_defined):
+    """Objects and link inputs of the rendering executable for 32-bit
+    Windows. The game's and the port's objects have plain names; Aurora's
+    libraries and everything CMake compiles have the COFF underscore. The
+    linker's --wrap is not used: the game reaches a wrapped function through
+    a jump to the glue's __wrap_ function, and __real_ is a jump to Aurora's."""
+    wrapped = set(GFX_WRAPPED)
+    data = sorted(n for n in replaced if n in aurora_data)
+    # the glue, compiled here so that its names can be matched to both sides
+    r = subprocess.run(["llvm-nm", "-g", "--defined-only", "--format=posix"] + port_objs, capture_output=True, text=True)
+    plain = game_defined | {l.split()[0] for l in r.stdout.splitlines() if len(l.split()) >= 2}
+    glue_objs, glue_def = [], set()
+    # SDL's headers (Aurora's event API shows them): where the Aurora build has them
+    sdl_inc = []
+    cache = os.path.join(ROOT, "build", "aurora-win32", "CMakeCache.txt")
+    for line in open(cache) if os.path.exists(cache) else []:
+        m = re.match(r"(SDL_SOURCE_DIR|sdl_SOURCE_DIR|FETCHCONTENT_SOURCE_DIR_SDL)\w*:\w+=(.+)", line)
+        if m and os.path.isdir(os.path.join(m.group(2), "include")):
+            sdl_inc = [os.path.join(m.group(2), "include")]
+    aurora = os.path.join(ROOT, "port", "extern", "aurora")
+    for src in sorted(glob.glob(os.path.join(ROOT, "port", "gfx", "*.c*"))):
+        if os.path.basename(src).startswith("dawn_"):
+            continue   # needs Dawn's headers: CMake compiles it
+        o = os.path.join(OUT, "gfx__" + os.path.basename(src) + ".o")
+        cxx = src.endswith(".cpp")
+        r = subprocess.run(["clang++" if cxx else "clang", "-target", WIN_TARGET, "-O2", "-g", "-msse2", "-c", src, "-o", o,
+                            "-DAURORA", "-DAURORA_ENABLE_GX", "-DTARGET_PC=1", "-I" + os.path.join(aurora, "include")]
+                           + ["-I" + d for d in sdl_inc]
+                           + (["-std=gnu++20", "-femulated-tls"] if cxx else []), capture_output=True, text=True)
+        if r.returncode != 0:
+            print(r.stderr[:3000])
+            return 1
+        out = subprocess.run(["llvm-nm", "-g", "--format=posix", o], capture_output=True, text=True).stdout
+        with open(o + ".plain", "w") as f:
+            for line in out.splitlines():
+                q = line.split()
+                if len(q) < 2 or not q[0].startswith("_"):
+                    continue
+                n = q[0][1:]
+                if n.startswith(("__wrap_", "__real_")) or n.startswith("_Z"):
+                    continue
+                if q[1] != "U":
+                    glue_def.add(n)
+                if q[1] != "U" or n in plain:
+                    f.write(f"{q[0]} {n}\n")
+        subprocess.run(["llvm-objcopy", "--redefine-syms=" + o + ".plain", o], check=True)
+        glue_objs.append(o)
+    with open(stubs, "a") as f:
+        def jump(name, to):
+            f.write(f'__asm__(".text\\n.globl {name}\\n{name}: jmp {to}\\n");\n')
+        for n in cxxrt:
+            jump(n, "_" + n)
+        for n in sorted(n for n in replaced if n in aurora_fns and n not in wrapped and n not in glue_def):
+            jump(n, "_" + n)
+        for n in sorted(wrapped):
+            jump(n, "___wrap_" + n)
+            jump("___real_" + n, "_" + n)
+        jump("_main", "___wrap_main")
+        jump("___real_main", "main")
+    gen = list(glue_objs)
+    for src in (stubs, thunks):
+        o = src[:-2] + ".o"
+        r = subprocess.run(["clang", "-target", WIN_TARGET, "-O0", "-g", "-fcommon", "-c", src, "-o", o], capture_output=True, text=True)
+        if r.returncode != 0:
+            print(r.stderr[:2000])
+            return 1
+        win_plain_names(o, asm_only=True)
+        gen.append(o)
+    link = os.path.join(OUT, "gfx_link.rsp")
+    with open(link, "w") as f:
+        f.write("\n".join(["-static", "-fcommon", "-Wl,--large-address-aware", "-Wl,-T," + script, "-Wl,-T," + bss_ld]
+                          + gen + port_objs + objs + defsyms + [f"-Wl,--defsym,{n}=_{n}" for n in data]
+                          + ["-lwinpthread", "-Wl,--allow-multiple-definition"]) + "\n")
+    print(f"link inputs for CMake: {os.path.relpath(link, ROOT)}")
+    return 0
+
+
 def win_bss_sizes(objs):
     """COFF symbols carry no size. A common symbol's value is its size; an
     object in .bss reaches up to the next symbol of that section."""
@@ -594,7 +671,7 @@ def main():
                          "(32-bit Linux host, needs gcc-multilib; no graphics, no SDK)")
     ap.add_argument("--dups", action="store_true", help="print symbols defined more than once")
     ap.add_argument("--os", choices=("linux", "windows"), default="linux",
-                    help="windows: 32-bit Windows objects and executable in build/pc-census-win "
+                    help="windows: 32-bit Windows objects and executable in build/pc-census-win (with --gfx: build/pc-gfx-win) "
                          "(needs the i686 MinGW-w64 toolchain)")
     ap.add_argument("--gfx", action="store_true",
                     help="objects and link inputs for the rendering executable in build/pc-gfx "
@@ -607,7 +684,7 @@ def main():
         OUT = os.path.join(ROOT, "build", "pc-gfx")
     if args.os == "windows":
         WIN, target = True, WIN_TARGET
-        OUT = os.path.join(ROOT, "build", "pc-census-win")
+        OUT = os.path.join(ROOT, "build", "pc-gfx-win" if GFX else "pc-census-win")
     os.makedirs(OUT, exist_ok=True)
 
     files = []
@@ -770,13 +847,19 @@ def main():
         ours = {l.split()[0] for l in r.stdout.splitlines() if len(l.split()) >= 2}
         if GFX:
             # what Aurora's libraries and port/gfx provide is not stubbed
-            libs = [f for f in (os.path.join(ROOT, "build", "aurora32", f"libaurora_{n}.a") for n in ("core", "gx", "vi"))
+            adir = "aurora-win32" if WIN else "aurora32"
+            libs = [f for f in (os.path.join(ROOT, "build", adir, f"libaurora_{n}.a") for n in ("core", "gx", "vi"))
                     if os.path.exists(f)]   # the ones port/gfx/CMakeLists.txt links
             if not libs:
-                print("build/aurora32 has no Aurora libraries; build them first (docs/port/build.md)")
+                print(f"build/{adir} has no Aurora libraries; build them first (docs/port/build.md)")
                 return 1
             r = subprocess.run(["llvm-nm", "-g", "--defined-only", "--format=posix"] + libs, capture_output=True, text=True)
-            ours |= {l.split()[0] for l in r.stdout.splitlines() if len(l.split()) >= 2 and l.split()[1] in "TDBR"}
+            anames = {l.split()[0]: l.split()[1] for l in r.stdout.splitlines() if len(l.split()) >= 2 and l.split()[1] in "TDBR"}
+            if WIN:   # Aurora's objects keep the COFF underscore
+                anames = {n[1:]: k for n, k in anames.items() if n.startswith("_")}
+            aurora_fns = {n for n, k in anames.items() if k == "T"} - ours
+            aurora_data = set(anames) - aurora_fns - ours
+            ours |= set(anames)
             for src in sorted(glob.glob(os.path.join(ROOT, "port", "gfx", "*.c*"))):
                 ours |= set(re.findall(r"^[A-Za-z_][\w \*]*?\b(\w+)\([^;{]*\)\s*\{", open(src).read(), re.M))
         # Aurora has the portable C_ functions only; the paired-single PS
@@ -881,6 +964,9 @@ def main():
             "wcslen", "wcscpy", "wcsncpy", "wcscmp", "wcschr", "wmemset"]  # port/compat/wchar16.c
         with open(private, "w") as f:
             f.write("{ local: %s };\n" % " ".join(n + ";" for n in host_names))
+        if GFX and WIN:
+            return link_gfx_windows(stubs, thunks, cxxrt, replaced, aurora_fns, aurora_data, port_objs, objs, defsyms,
+                                    script, bss_ld, set(defined) | set(weak))
         if GFX:
             gen = []
             for src in (stubs, thunks):
