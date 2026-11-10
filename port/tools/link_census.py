@@ -191,17 +191,36 @@ def main():
         if m:
             k = int(m.group(1))
             plain.setdefault(n[m.end():m.end() + k], n)
-    linkage = [n for n in missing if not n.startswith("_Z") and n in plain]
+    # alias[missing name] = the definition that exists under the other linkage
+    alias = {n: plain[n] for n in missing if not n.startswith("_Z") and n in plain}
     for n in missing:
         m = re.match(r"_Z(\d+)", n)
         if m and n[m.end():m.end() + int(m.group(1))] in defined:
-            linkage.append(n)
+            alias[n] = n[m.end():m.end() + int(m.group(1))]
+    linkage = list(alias)
+    # Same free function declared with other parameter types in the calling
+    # file (per-file prototypes): the mangled names differ only after the
+    # function name. Wire it when exactly one definition has that name.
+    by_name = collections.defaultdict(set)
+    for n in list(defined) + list(weak):
+        m = re.match(r"_Z(\d+)", n)
+        if m:
+            by_name[n[m.end():m.end() + int(m.group(1))]].add(n)
+    proto = {}
+    for n in missing:
+        m = re.match(r"_Z(\d+)", n)
+        if m and n not in alias:
+            cands = by_name.get(n[m.end():m.end() + int(m.group(1))], ())
+            if len(cands) == 1:
+                proto[n] = next(iter(cands))
+    alias.update(proto)
     print(f"objects built: {len(objs)} / {len(files)}")
     print(f"external symbols defined: {len(defined)}; defined more than once: {len(dups)}")
     print(f"used but not defined by these directories: {len(missing)}")
     for g in sorted(groups, key=lambda g: -len(groups[g])):
         print(f"  {len(groups[g]):>5}  {g}")
     print(f"of those, same function under the other language linkage (C vs C++): {len(linkage)}")
+    print(f"of those, C++ function defined once under other parameter types: {len(proto)}")
     if args.link:
         # Real implementations written for the port win over generated stubs.
         port_objs = []
@@ -225,6 +244,12 @@ def main():
         replaced = sorted(n for n in missing if n in ours)
         missing = {n: u for n, u in missing.items() if n not in ours}
         print(f"implemented under port/: {len(replaced)} of the missing symbols")
+        # A call that only fails to meet its definition because of C vs C++
+        # linkage is wired to that definition instead of a stub (same calling
+        # convention on this target).
+        defsyms = [f"-Wl,--defsym={n}={t}" for n, t in sorted(alias.items()) if n in missing]
+        missing = {n: u for n, u in missing.items() if n not in alias}
+        print(f"wired to an existing definition (linkage or prototype mismatch): {len(defsyms)}")
         stubs = os.path.join(OUT, "stubs.c")
         nfun, nobj = write_stubs(missing, groups, stubs)
         print(f"stubs generated: {nfun} functions, {nobj} objects")
@@ -233,7 +258,7 @@ def main():
         with open(rsp, "w") as f:
             f.write("\n".join(objs) + "\n")
         cmd = ["clang", "-m32", "-O0", "-g", "-fcommon", "-no-pie", "-o", exe, stubs] + port_objs + [
-               "@" + rsp, "-lm", "-Wl,--allow-multiple-definition", "-Wl,--no-warn-rwx-segments"]
+               "@" + rsp] + defsyms + ["-lm", "-Wl,--allow-multiple-definition", "-Wl,--no-warn-rwx-segments"]
         r = subprocess.run(cmd, capture_output=True, text=True)
         errs = [l for l in r.stderr.splitlines() if "error" in l or "undefined" in l]
         print(f"link: {'ok -> ' + os.path.relpath(exe, ROOT) if r.returncode == 0 else 'FAILED'}")
