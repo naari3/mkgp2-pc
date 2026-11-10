@@ -257,8 +257,11 @@ static void baseboard_frame(const uint8_t* tx, uint8_t* rx) {
       continue;
     }
     switch (c) {
-    case 0x10: /* status pair; amjvs init waits for bit 0x10 of the second byte */
-      rx[o++] = c, rx[o++] = 2, rx[o++] = 0, rx[o++] = 0x10;
+    case 0x10: /* status pair. Second byte: bit 0x10 must be set for amsys init;
+                * bit 0x01 is the JVS sense line (a node without an address is
+                * on the bus), which amjvs init waits for and then clears by
+                * assigning addresses. */
+      rx[o++] = c, rx[o++] = 2, rx[o++] = 0, rx[o++] = (uint8_t)(0x10 | (s_address == 0));
       break;
     case 0x11: /* 16-byte serial / id */
       rx[o++] = c, rx[o++] = 16;

@@ -30,7 +30,14 @@ __attribute__((constructor)) static void map_mem1(void) {
     fprintf(stderr, "nogfx: cannot map MEM1 at 0x%08X\n", MEM1_BASE);
     exit(2);
   }
+  /* Low-memory globals the game reads directly (host byte order). */
+  *(uint32_t*)(MEM1_BASE + 0x28) = MEM1_SIZE;   /* physical memory size */
+  *(uint32_t*)(MEM1_BASE + 0xF0) = MEM1_SIZE;   /* simulated memory size */
+  *(uint32_t*)(MEM1_BASE + 0xF8) = 162000000u;  /* bus clock */
+  *(uint32_t*)(MEM1_BASE + 0xFC) = 486000000u;  /* CPU clock */
 }
+uint32_t OSGetPhysicalMemSize(void) { return MEM1_SIZE; }
+uint32_t OSGetConsoleSimulatedMemSize(void) { return MEM1_SIZE; }
 
 void* OSGetArenaLo(void) { return s_arenaLo; }
 void* OSGetArenaHi(void) { return s_arenaHi; }
@@ -44,13 +51,6 @@ void OSGetSavedRegion(void** start, void** end) {
 void OSSetSaveRegion(void* start, void* end) {
   s_saveStart = start;
   s_saveEnd = end;
-}
-
-int OSDisableInterrupts(void) { return 0; }
-int OSEnableInterrupts(void) { return 0; }
-int OSRestoreInterrupts(int level) {
-  (void)level;
-  return 0;
 }
 
 uint32_t PPCMfhid0(void) { return 0; }
@@ -96,14 +96,3 @@ void HSD_Panic(const char* file, int line, const char* msg) {
   fprintf(stderr, "HSD_Panic: %s:%d: %s\n", file ? file : "?", line, msg ? msg : "");
   abort();
 }
-
-/* Semaphores: single-threaded bring-up, so counts only. Layout as in
- * dolphin/os/OSSemaphore.h (count first). */
-typedef struct {
-  int32_t count;
-  void* queue[2];
-} OSSemaphoreMin;
-void OSInitSemaphore(OSSemaphoreMin* s, int32_t count) { s->count = count; }
-int32_t OSWaitSemaphore(OSSemaphoreMin* s) { return s->count > 0 ? s->count-- : 0; }
-int32_t OSTryWaitSemaphore(OSSemaphoreMin* s) { return s->count > 0 ? s->count-- : 0; }
-int32_t OSSignalSemaphore(OSSemaphoreMin* s) { return s->count++; }

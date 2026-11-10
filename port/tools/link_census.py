@@ -344,7 +344,7 @@ def main():
         with open(rsp, "w") as f:
             f.write("\n".join(objs) + "\n")
         cmd = ["clang", "-m32", "-O0", "-g", "-fcommon", "-no-pie", "-o", exe, stubs] + port_objs + [
-               "@" + rsp] + defsyms + ["-lm", "-Wl,--allow-multiple-definition", "-Wl,--no-warn-rwx-segments"]
+               "@" + rsp] + defsyms + ["-lm", "-lpthread", "-Wl,--allow-multiple-definition", "-Wl,--no-warn-rwx-segments"]
         r = subprocess.run(cmd, capture_output=True, text=True)
         errs = [l for l in r.stderr.splitlines() if "error" in l or "undefined" in l]
         print(f"link: {'ok -> ' + os.path.relpath(exe, ROOT) if r.returncode == 0 else 'FAILED'}")
