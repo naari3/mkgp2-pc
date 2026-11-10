@@ -509,9 +509,36 @@ def main():
                             print(r.stderr[:2000])
                             return 1
                         port_objs.append(obj)
+        # Matrix and vector maths come from Aurora, as in the full build (its
+        # GX is not linked here, these files stand alone).
+        aurora = os.path.join(ROOT, "port", "extern", "aurora")
+        for n in ("mtx.c", "mtx44.c", "mtxvec.c", "quat.c", "vec.c"):
+            src = os.path.join(aurora, "lib", "dolphin", "mtx", n)
+            obj = os.path.join(OUT, "aurora__mtx__" + n + ".o")
+            # NDEBUG: the retail functions do not check their arguments, and
+            # the game does normalise zero vectors (the result is not finite).
+            r = subprocess.run(["clang", "-m32", "-O0", "-g", "-DNDEBUG", "-c", src, "-o", obj,
+                                "-I" + os.path.join(aurora, "include")], capture_output=True, text=True)
+            if r.returncode != 0:
+                print(r.stderr[:2000])
+                return 1
+            port_objs.append(obj)
         r = subprocess.run(["llvm-nm", "-g", "--defined-only", "--format=posix"] + port_objs,
                            capture_output=True, text=True)
         ours = {l.split()[0] for l in r.stdout.splitlines() if len(l.split()) >= 2}
+        # Aurora has the portable C_ functions only; the paired-single PS
+        # names (and the names this game gives five of them,
+        # src/dolphin/mtx/__mtx_names.h) are the same functions here.
+        game_names = {"Vec3_Subtract": "C_VECSubtract", "Vec3_Normalize": "C_VECNormalize",
+                      "Vec3_Magnitude": "C_VECMag", "Vec3_Dot": "C_VECDotProduct",
+                      "Vec3_Distance": "C_VECDistance"}
+        maths = 0
+        for n in sorted(missing):
+            t = game_names.get(n) or ("C_" + n[2:] if n.startswith("PS") else None)
+            if t in ours and n not in ours:
+                alias[n] = t
+                maths += 1
+        print(f"paired-single maths names wired to Aurora's C functions: {maths}")
         replaced = sorted(n for n in missing if n in ours)
         missing = {n: u for n, u in missing.items() if n not in ours}
         # the host C++ runtime (linked for the units that throw) has these

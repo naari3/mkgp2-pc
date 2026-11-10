@@ -130,7 +130,9 @@ def rewrite(text, warn=None):
         while i < len(items):
             a = items[i]
             b = items[i + 1] if i + 1 < len(items) else ""
-            ma = re.fullmatch(r"ptr @(\w*D1Ev)", a)
+            # (the complete-object destructor, or the base-object one where the
+            # compiler found the two identical and kept only that)
+            ma = re.fullmatch(r"ptr @(\w*D[12]Ev)", a)
             mb = re.fullmatch(r"ptr @(\w*D0Ev)", b)
             if ma and mb and ma.group(1)[:-4] == mb.group(1)[:-4]:
                 w = "__mwdt." + mb.group(1)
