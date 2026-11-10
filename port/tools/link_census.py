@@ -135,7 +135,7 @@ def compile_one(path, target):
     # -fshort-wchar: the game's wchar_t has 16 bits (card names, panel
     # labels); with the host's 32 the structs that hold such text grow and
     # no longer fit the sizes other units allocate for them.
-    cmd = ["clang", "-target", target, "-c", "-O0", "-g", "-fno-exceptions", "-fno-rtti", "-fcommon", "-fshort-wchar"] + (["-mno-ms-bitfields"] if WIN else []) + cc.base_flags(path)[1:]
+    cmd = ["clang", "-target", target, "-c", "-O0", "-g", "-fno-exceptions", "-fno-rtti", "-fcommon", "-fshort-wchar"] + (["-mno-ms-bitfields"] if WIN else ["-malign-double"]) + cc.base_flags(path)[1:]
     cmd += ["-include", cc.COMPAT]
     # -Dinline=: in C, MWCC also emits an `inline` function as an ordinary
     # one where it is called without being inlined. C99 leaves the caller of
@@ -682,7 +682,10 @@ def main():
     print(f"of those, C++ function defined once under other parameter types: {len(proto)}")
     if args.link:
         # Real implementations written for the port win over generated stubs.
-        HOSTCC = ["-target", WIN_TARGET] if WIN else ["-m32"]
+        # -malign-double: `double` and 64-bit integers aligned to 8 bytes inside
+        # structures, as on the console and on 32-bit Windows (the i386 Linux
+        # default is 4)
+        HOSTCC = ["-target", WIN_TARGET] if WIN else ["-m32", "-malign-double"]
         port_objs = []
         for sub in ("sdk", "platform", "compat", "nogfx"):
             for base, _, names in os.walk(os.path.join(ROOT, "port", sub)):
