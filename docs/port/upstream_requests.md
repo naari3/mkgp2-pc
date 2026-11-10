@@ -362,7 +362,8 @@ kept for reference. Item 10 is open.
     `Math_Segment2DIntersect`, which writes `outPos[0..2]`. On the host
     the two extra floats land on the local `finish`.
 28. Definitions that take fewer parameters than their callers pass and
-    forward the rest in the registers (added 2026-11-10; open).
+    forward the rest in the registers (added 2026-11-10; done, upstream
+    0a6f6ef and 5938fbd).
     `clItemBoxResponder_CmdGetWorldPos(clItemBoxResponder *self)` calls
     `self->GetWorldPos()`; its caller passes `(responder, &x, &y, &z)` and
     the virtual function stores through those three pointers. The third

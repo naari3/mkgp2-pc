@@ -660,3 +660,47 @@ to 8 bytes inside structures on Windows (as on the console) and to 4 on
 Linux; zlib is not linked (`inflate` is a stub). Not run yet: there is no
 way to run a Windows program in the build container.
 
+
+## 21. First pictures (2026-11-10, upstream `5938fbd`)
+
+The game is linked with Aurora and draws: under Xvfb with Mesa's software
+GL the boot logo screen, the attract fly-through of a course with the karts
+and the character introduction screens come out as on the console. The
+race of section 20 meanwhile ran 1,136 frames before the stop fixed by
+upstream request 28.
+
+How the rendering executable differs from the bring-up one
+(`link_census.py --gfx`, glue in `port/gfx/`):
+
+- **Frame and video.** `port/gfx/video_aurora.c` replaces
+  `port/nogfx/video_min.c`: `VIWaitForRetrace` ends the Aurora frame, pumps
+  the window events and begins the next one. `main` is wrapped
+  (`--wrap=main`) so that Aurora starts after the C++ static constructors
+  of the host libraries.
+- **Object sizes.** With `TARGET_PC` Aurora's `GXTexObj` is 64 bytes and
+  `GXTlutObj` 40; the game reserves 32 and 12. The texture and palette entry
+  points are wrapped (`port/gfx/gx_shim.cpp`): the game's objects only
+  record the parameters, and the real objects live in a cache keyed by data
+  pointer, size, format and palette. The cache is dropped whenever file
+  data is loaded (`mkgp2pc_data_generation`) and on `GXInvalidateTexAll`.
+- **Array sizes.** `GXSetArray` has no size on the console; Aurora uploads
+  the given size on every draw into an 8 MB frame buffer. The HSD archive
+  conversion (`port/platform/data/hsd_archive.c`) notes every vertex buffer
+  on its walk and takes the next relocation target as its end
+  (`mkgp2pc_array_extent`). Buffers it has not seen get 64 KB. Vertex
+  buffers, display lists and texture images stay big-endian, which is what
+  Aurora expects.
+- **Direct pipe writes.** MWCC inlines the vertex functions as stores to
+  0xCC008000 (or to the `GXWGFifo` object some units declare). The game's
+  headers are compiled with Aurora's `GXVert.h`
+  (`port/compat/include/dolphin/gx/GXVert.h`), and the stores that are
+  written out in the sources are rewritten in IR into `GXParam1*` calls
+  (`port/tools/mwcc_fifo.py`).
+- **operator new.** The game defines the global `operator new` and
+  `delete` on top of its own heap. Linked into one program with host C++
+  libraries, those would take them too, so the game's are renamed
+  `mkgp2pc_game_new` and so on in every game object.
+
+Not done: the 129 functions still stubbed in this build (`GXPeekZ`,
+`PSMTX44Identity` and others show up in the log), CPU-side reads of
+big-endian vertex data, sound, input from the window, Windows.

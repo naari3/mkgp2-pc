@@ -114,6 +114,28 @@ The executable is static and large-address-aware; on Windows run it with
 `MKGP2_ISO` set. What the mode does differently is described in
 docs/port/census.md section 20. It has been linked but not run yet.
 
+## The game code with rendering
+
+```sh
+python3 port/tools/link_census.py game sound ui util resource triforce sysdolphin --gfx --link
+cmake -S port/gfx -B build/pc-gfx/cmake -G Ninja <32-bit settings> -DAURORA_DAWN_PROVIDER=package -DAURORA_DAWN_PACKAGE_URL=<url below>
+cmake --build build/pc-gfx/cmake
+MKGP2_ISO=/path/to/the.iso build/pc-gfx/cmake/mkgp2-gfx
+```
+
+The first command compiles the game objects and writes
+`build/pc-gfx/gfx_link.rsp`; the CMake project `port/gfx` builds Aurora and
+links both. `link_census.py --gfx` reads the symbol lists of a standalone
+Aurora build in `build/aurora32` (same settings, source directory
+`port/extern/aurora`), so that one has to exist first. The 32-bit settings
+used on 64-bit Linux:
+`-DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_FLAGS="-m32 -msse2" -DCMAKE_CXX_FLAGS="-m32 -msse2 -Wno-c++11-narrowing" -DCMAKE_SYSTEM_PROCESSOR=i686 -DCMAKE_LIBRARY_ARCHITECTURE=i386-linux-gnu`
+with `PKG_CONFIG_LIBDIR=/usr/lib/i386-linux-gnu/pkgconfig:/usr/share/pkgconfig`
+and the i386 development packages of X11, Wayland, GL/EGL, udev, abseil,
+freetype, sqlite3, png and zlib. Without a display it runs under Xvfb with
+Mesa's software GL. `MKGP2PC_FRAMES=N` exits after N frames. What the build
+does is described in docs/port/census.md section 21.
+
 ## 32-bit Dawn packages
 
 Aurora takes Dawn as a prebuilt package and upstream publishes 64-bit ones
