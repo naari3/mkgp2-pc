@@ -49,7 +49,7 @@ def original_bss(root):
     return out
 
 
-def bss_script(bss, host_sizes, notes):
+def bss_script(bss, host_sizes, notes, noload=True):
     """Zero-initialised objects: one block per original section, and every
     object's name assigned to its original offset in it (an assignment in
     the script replaces the definitions in the object files). The code
@@ -66,7 +66,10 @@ def bss_script(bss, host_sizes, notes):
             continue
         base = objs[0][0] & ~0x1F
         end = max(a + z for a, n, z in objs)
-        out.append("  .mw_%s (NOLOAD) : ALIGN(32) { __mw_%s_start = .; . = . + 0x%X; }" % (sec, sec, end - base + 32))
+        # (GNU ld gives every NOLOAD section of a PE image the same address;
+        # there the blocks are ordinary zero-filled data)
+        out.append("  .mw_%s%s : ALIGN(32) { __mw_%s_start = .; . = . + 0x%X; }"
+                   % (sec, " (NOLOAD)" if noload else "", sec, end - base + 32))
         for i, (a, n, z) in enumerate(objs):
             room = (objs[i + 1][0] if i + 1 < len(objs) else end) - a
             if host_sizes.get(n, 0) > max(room, z):

@@ -4,8 +4,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/mman.h>
 #include <time.h>
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <sys/mman.h>
+#endif
 
 /*
  * Main memory at the console's own addresses. A 32-bit process on a 64-bit
@@ -27,24 +31,47 @@ static void* s_arenaHi = (void*)ARENA_HI;
 static void* s_saveStart;
 static void* s_saveEnd;
 
+#ifdef _WIN32
+/* The executable is linked large-address-aware, so a 32-bit process on
+ * 64-bit Windows owns the upper 2 GB as well. */
+static void* map_fixed(uintptr_t at, size_t size) {
+  return VirtualAlloc((void*)at, size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+}
+static void unprotect_image(void) {
+  uint8_t* base = (uint8_t*)GetModuleHandleA(NULL);
+  IMAGE_NT_HEADERS* nt = (IMAGE_NT_HEADERS*)(base + ((IMAGE_DOS_HEADER*)base)->e_lfanew);
+  IMAGE_SECTION_HEADER* sec = IMAGE_FIRST_SECTION(nt);
+  for (unsigned i = 0; i < nt->FileHeader.NumberOfSections; i++, sec++) {
+    DWORD old;
+    if (sec->Misc.VirtualSize != 0) {
+      VirtualProtect(base + sec->VirtualAddress, sec->Misc.VirtualSize, PAGE_EXECUTE_READWRITE, &old);
+    }
+  }
+}
+#else
+static void* map_fixed(uintptr_t at, size_t size) {
+  void* p = mmap((void*)at, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED_NOREPLACE, -1, 0);
+  return p == MAP_FAILED ? NULL : p;
+}
+static void unprotect_image(void) {
+  extern char __executable_start[], _end[];
+  uintptr_t lo = (uintptr_t)__executable_start & ~0xFFFu;
+  uintptr_t hi = ((uintptr_t)_end + 0xFFFu) & ~0xFFFu;
+  mprotect((void*)lo, hi - lo, PROT_READ | PROT_WRITE | PROT_EXEC);
+}
+#endif
+
 __attribute__((constructor)) static void map_mem1(void) {
-  void* p = mmap((void*)MEM1_BASE, MEM1_SIZE, PROT_READ | PROT_WRITE,
-                 MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED_NOREPLACE, -1, 0);
-  if (p != (void*)MEM1_BASE) {
+  if (map_fixed(MEM1_BASE, MEM1_SIZE) != (void*)MEM1_BASE) {
     fprintf(stderr, "nogfx: cannot map MEM1 at 0x%08X\n", MEM1_BASE);
     exit(2);
   }
   /* Hardware registers, write-gather pipe (0xCC008000) included: plain
    * memory here, so direct accesses do nothing instead of faulting. */
-  mmap((void*)0xCC000000u, 0x10000, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED_NOREPLACE, -1, 0);
+  map_fixed(0xCC000000u, 0x10000);
   /* The console has no read-only memory: the game writes to objects that the
    * decompiled sources define as const (.sdata2 pointers and the like). */
-  {
-    extern char __executable_start[], _end[];
-    uintptr_t lo = (uintptr_t)__executable_start & ~0xFFFu;
-    uintptr_t hi = ((uintptr_t)_end + 0xFFFu) & ~0xFFFu;
-    mprotect((void*)lo, hi - lo, PROT_READ | PROT_WRITE | PROT_EXEC);
-  }
+  unprotect_image();
   /* Low-memory globals the game reads directly (host byte order). */
   *(uint32_t*)(MEM1_BASE + 0x28) = MEM1_SIZE;   /* physical memory size */
   *(uint32_t*)(MEM1_BASE + 0xF0) = MEM1_SIZE;   /* simulated memory size */

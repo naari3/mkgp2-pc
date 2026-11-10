@@ -14,6 +14,19 @@
 #include <string.h>
 #include <unistd.h>
 
+#ifdef _WIN32
+/* No pread in the Windows C library; one reader at a time is enough here
+ * (the game's reads are serialised by its own DVD queue). */
+#include <io.h>
+static ssize_t pread(int fd, void* buf, size_t n, long long off) {
+  if (_lseeki64(fd, off, SEEK_SET) < 0) return -1;
+  return _read(fd, buf, (unsigned)n);
+}
+#define ISO_OPEN_FLAGS (O_RDONLY | O_BINARY)
+#else
+#define ISO_OPEN_FLAGS O_RDONLY
+#endif
+
 #include "mkgp2pc/triforce.h"
 
 typedef struct DVDCommandBlock {
@@ -65,7 +78,7 @@ static int disc(void) {
     fprintf(stderr, "nogfx: MKGP2_ISO is not set; there is no disc\n");
     return 0;
   }
-  s_fd = open(path, O_RDONLY);
+  s_fd = open(path, ISO_OPEN_FLAGS);
   if (s_fd < 0 || pread(s_fd, head, sizeof(head), 0) != (ssize_t)sizeof(head)) {
     fprintf(stderr, "nogfx: cannot read %s\n", path);
     s_fd = -1;

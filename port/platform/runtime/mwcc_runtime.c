@@ -157,3 +157,48 @@ void mkgp2pc_operator_delete_array(void* p) {
 }
 void* mkgp2pc_operator_new_array(unsigned int n) __asm__("_Znaj");
 void* mkgp2pc_operator_new_array(unsigned int n) { return Alloc(n); }
+
+/*
+ * __dynamic_cast of the MWCC runtime (0x80271340 in the image, unnamed in
+ * symbols.txt). MWCC's layout: a vtable begins with the type_info pointer
+ * and the offset to the complete object; type_info is { name, base list },
+ * the base list an array of { type_info, offset } ended by a null entry
+ * that lists every base class of the type. One class can have several
+ * type_info objects in the image (MinimapHud's table points at one, the
+ * cast in HUD_RegisterOverlay names another, both called "clCrsDisp"), so
+ * types are the same when their names are.
+ *
+ * Classes compiled here carry no type_info (built with -fno-rtti, slot 0 of
+ * their tables is null); for those the cast is taken to succeed, which is
+ * what the game's own flow expects wherever it does not check the result.
+ */
+typedef struct MwTypeInfo MwTypeInfo;
+typedef struct MwBase {
+  const MwTypeInfo* type;
+  int32_t offset;
+} MwBase;
+struct MwTypeInfo {
+  const char* name;
+  const MwBase* bases;
+};
+static int mw_same_type(const MwTypeInfo* a, const MwTypeInfo* b) {
+  if (a == b) return 1;
+  const char* x = a->name;
+  const char* y = b->name;
+  if (x == NULL || y == NULL) return 0;
+  while (*x != 0 && *x == *y) x++, y++;
+  return *x == *y;
+}
+void* fn_80271340(void* object, int32_t vptr_offset, const MwTypeInfo* to, const MwTypeInfo* from, int32_t is_reference) {
+  (void)from, (void)is_reference;
+  if (object == NULL) return NULL;
+  void** table = *(void***)((char*)object + vptr_offset);
+  const MwTypeInfo* type = (const MwTypeInfo*)table[0];
+  if (type == NULL) return object;
+  char* complete = (char*)object + (int32_t)(intptr_t)table[1];
+  if (mw_same_type(type, to)) return complete;
+  for (const MwBase* b = type->bases; b != NULL && b->type != NULL; b++) {
+    if (mw_same_type(b->type, to)) return complete + b->offset;
+  }
+  return NULL;
+}

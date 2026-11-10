@@ -41,6 +41,93 @@ REPLACED = {
 
 
 DATA_OBJECTS = mwcc_data_layout.original_objects(ROOT)
+# --os windows: 32-bit Windows objects (COFF, MinGW runtime). Set in main().
+WIN = False
+WIN_TARGET = "i686-w64-windows-gnu"
+
+
+def asm_name(name):
+    """A name that begins with L is an assembler-local label in COFF
+    assembly text. Generated assembly defines such a symbol under a longer
+    name, which win_plain_names turns back in the object."""
+    return "mkgp2pc_asmL_" + name if WIN and name.startswith("L") else name
+
+
+def win_plain_names(obj, asm_only=False):
+    """COFF on x86 puts an underscore before every C name. Take it off again
+    in the object, so that everything after this point (rename tables, linker
+    scripts, generated assembly) works on the same names as the ELF build.
+    Names the Windows libraries own keep theirs; the link step bridges the
+    few the game uses (see win_host_bridges)."""
+    out = subprocess.run(["llvm-nm", "--format=posix", obj], capture_output=True, text=True).stdout
+    names = sorted({l.split()[0] for l in out.splitlines() if l.startswith("_") and len(l.split()) >= 2})
+    names = [n for n in names if not n.startswith(("__imp_", "___chkstk", "__alloca", "___main"))]
+    if asm_only:
+        names = []
+    asm = sorted({l.split()[0] for l in out.splitlines() if l.startswith("mkgp2pc_asmL_")})
+    if not names and not asm:
+        return
+    with open(obj + ".plain", "w") as f:
+        f.writelines(f"{n} {n[1:]}\n" for n in names)
+        f.writelines(f"{n} {n[len('mkgp2pc_asmL_'):]}\n" for n in asm)
+    subprocess.run(["llvm-objcopy", "--redefine-syms=" + obj + ".plain", obj], check=True)
+
+
+def win_bss_sizes(objs):
+    """COFF symbols carry no size. A common symbol's value is its size; an
+    object in .bss reaches up to the next symbol of that section."""
+    sizes = {}
+
+    def one(obj):
+        out = subprocess.run(["i686-w64-mingw32-objdump", "-h", "-t", obj], capture_output=True, text=True).stdout
+        bss, bss_size, syms, local = None, 0, [], {}
+        for line in out.splitlines():
+            m = re.match(r"\s*(\d+) \.bss\s+([0-9a-f]+) ", line)
+            if m:
+                bss, bss_size = int(m.group(1)) + 1, int(m.group(2), 16)
+                continue
+            m = re.match(r"\[\s*\d+\]\(sec\s*(-?\d+)\)\(fl 0x\w+\)\(ty\s+\w+\)\(scl\s+(\d+)\) \(nx \d+\) 0x([0-9a-f]+) (\S+)", line)
+            if not m:
+                continue
+            sec, scl, val, name = int(m.group(1)), int(m.group(2)), int(m.group(3), 16), m.group(4)
+            if sec == 0 and scl == 2 and val:
+                local[name] = val
+            elif bss is not None and sec == bss and name != ".bss":
+                syms.append((val, name, scl))
+        syms.sort()
+        for i, (val, name, scl) in enumerate(syms):
+            end = next((v for v, _, _ in syms[i + 1:] if v > val), bss_size)
+            if scl == 2:
+                local[name] = end - val
+        return local
+    with concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count()) as ex:
+        for local in ex.map(one, objs):
+            for n, z in local.items():
+                sizes[n] = max(sizes.get(n, 0), z)
+    return sizes
+
+
+_WIN_LINKAGE = re.compile(r"^((?:define|@[\w.$\"]+ =) [^\n]*?)\b(?:linkonce_odr|weak_odr|linkonce|weak) ", re.M)
+_WIN_COMDAT = re.compile(r"^\$[^\n]* = comdat [a-z]+\n|,? comdat(?:\(\$[^)\n]*\))?(?=[ ,\n{])", re.M)
+
+
+def win_ir(text):
+    """Two differences of 32-bit Windows objects taken out again:
+
+    Member functions take `this` in ecx there; the decompiled code calls many
+    of them through plain C declarations, so every function uses the C
+    convention.
+
+    An inline function is a COMDAT section, and the linker keeps one such
+    section per section name, whatever its symbol is called by then. The
+    rename tables are per unit (the same inline destructor is `dtor_X` in
+    one unit and keeps its C++ name in the next), so one copy would survive
+    under one of the names only. They become ordinary definitions; the link
+    takes the first of each name (--allow-multiple-definition), which is how
+    the weak symbols of the ELF build behave."""
+    text = text.replace(" x86_thiscallcc ", " ")
+    text = _WIN_COMDAT.sub("", text)
+    return _WIN_LINKAGE.sub(r"\1", text)
 
 
 def compile_one(path, target):
@@ -48,7 +135,7 @@ def compile_one(path, target):
     # -fshort-wchar: the game's wchar_t has 16 bits (card names, panel
     # labels); with the host's 32 the structs that hold such text grow and
     # no longer fit the sizes other units allocate for them.
-    cmd = ["clang", "-target", target, "-c", "-O0", "-g", "-fno-exceptions", "-fno-rtti", "-fcommon", "-fshort-wchar"] + cc.base_flags(path)[1:]
+    cmd = ["clang", "-target", target, "-c", "-O0", "-g", "-fno-exceptions", "-fno-rtti", "-fcommon", "-fshort-wchar"] + (["-mno-ms-bitfields"] if WIN else []) + cc.base_flags(path)[1:]
     cmd += ["-include", cc.COMPAT]
     # -Dinline=: in C, MWCC also emits an `inline` function as an ordinary
     # one where it is called without being inlined. C99 leaves the caller of
@@ -79,6 +166,8 @@ def compile_one(path, target):
         text, _ = mwcc_data_layout.rewrite(text, DATA_OBJECTS)
         text, _ = mwcc_int_div.rewrite(text)
         text, _ = mwcc_struct_return.rewrite(text)
+        if WIN:
+            text = win_ir(text)
         open(ll, "w", encoding="utf-8", errors="surrogateescape").write(text)
         if notes:
             with open(obj[:-2] + ".abi-notes", "w") as f:
@@ -88,6 +177,8 @@ def compile_one(path, target):
             with open(obj[:-2] + ".abi-error", "w") as f:
                 f.write(r.stderr)
             return path, None
+        if WIN:
+            win_plain_names(obj)
         return path, obj
     # C: through LLVM IR as well, for MWCC's data alignment
     # (port/tools/mwcc_data_layout.py)
@@ -100,6 +191,8 @@ def compile_one(path, target):
     text, _ = mwcc_struct_return.rewrite(text)
     open(ll, "w", encoding="utf-8", errors="surrogateescape").write(text)
     r = subprocess.run(["clang", "-target", target, "-c", "-Wno-override-module", ll, "-o", obj], cwd=ROOT, capture_output=True, text=True, errors="replace")
+    if WIN and r.returncode == 0:
+        win_plain_names(obj)
     return path, (obj if r.returncode == 0 else None)
 
 
@@ -158,17 +251,35 @@ def write_stubs(missing, groups, path):
                 if n in missing and not re.match(r"(wcs|wmem|sw|vsw|mb|wc)", n):
                     host.add(n)
     out = ["/* Generated by port/tools/link_census.py --link. Do not edit. */",
-           "void mkgp2pc_stub_hit(int* seen, const char* func, const char* file, int line);", ""]
+           # (every name is spelled with __asm__: the object then has it as written
+           # here on COFF too, where a C name would get an underscore)
+           'void mkgp2pc_stub_hit(int* seen, const char* func, const char* file, int line) __asm__("mkgp2pc_stub_hit");', ""]
+    if WIN:
+        # The same choice as on Linux (the names the 32-bit glibc has), as
+        # far as the MinGW runtime has them too; those carry the COFF
+        # underscore, which the game's objects no longer do.
+        libdir = "/usr/i686-w64-mingw32/lib/"
+        r = subprocess.run(["llvm-nm", "-g", "--defined-only", "--format=posix"] +
+                           [libdir + n for n in ("libmsvcrt.a", "libmingwex.a", "libmingw32.a")],
+                           capture_output=True, text=True)
+        have = {l.split()[0][1:] for l in r.stdout.splitlines()
+                if len(l.split()) >= 2 and l.startswith("_") and l.split()[1] == "T"}
+        lost = sorted(host - have)
+        host &= have
+        if lost:
+            print("in glibc but not in the MinGW runtime (stubbed): " + " ".join(lost))
+        for name in sorted(host):
+            out.append(f'__asm__(".text\\n.globl {name}\\n{name}: jmp _{name}\\n");')
     nfun = nobj = 0
     for i, name in enumerate(sorted(missing)):
         if name in host:
             continue
         kind, size = info.get(name, ("function", 0))
         if kind == "object":
-            out.append(f'char mkgp2pc_obj_{i}[{max(size, 4)}] __asm__("{name}") __attribute__((aligned(8)));')
+            out.append(f'char mkgp2pc_obj_{i}[{max(size, 4)}] __asm__("{asm_name(name)}") __attribute__((aligned(8)));')
             nobj += 1
         else:
-            out.append(f'int mkgp2pc_fn_{i}(void) __asm__("{name}");')
+            out.append(f'int mkgp2pc_fn_{i}(void) __asm__("{asm_name(name)}");')
             out.append(f'int mkgp2pc_fn_{i}(void) {{ static int seen; mkgp2pc_stub_hit(&seen, "{name}", "generated", 0); return 0; }}')
             nfun += 1
     with open(path, "w") as f:
@@ -192,7 +303,7 @@ def expose_statics(built):
     for ext, (src, local) in STATIC_ALIASES.items():
         obj = built.get(src)
         if obj:
-            subprocess.run(["llvm-objcopy", "--globalize-symbol=" + local,
+            subprocess.run(["i686-w64-mingw32-objcopy" if WIN else "llvm-objcopy", "--globalize-symbol=" + local,
                             "--redefine-sym", f"{local}={ext}", obj], check=True)
             n += 1
     return n
@@ -399,7 +510,7 @@ def cxx_thunks(defined, weak, undefined, path):
         if kinds & {"ct", "ct2"}:
             if ct and not have(n):
                 # copy 64 bytes of arguments, call, return `this`
-                out.append(f'__asm__(".text\\n.globl {n}\\n{n}:\\n push %ebp\\n mov %esp,%ebp\\n push %esi\\n push %edi\\n'
+                out.append(f'__asm__(".text\\n.globl {asm_name(n)}\\n{asm_name(n)}:\\n push %ebp\\n mov %esp,%ebp\\n push %esi\\n push %edi\\n'
                            f' sub $72,%esp\\n lea 8(%ebp),%esi\\n mov %esp,%edi\\n mov $16,%ecx\\n rep movsl\\n'
                            f' call mkgp2pc_{ct[0]}__{n}\\n mov 8(%ebp),%eax\\n add $72,%esp\\n pop %edi\\n pop %esi\\n pop %ebp\\n ret\\n");\n')
                 defs.add(n)
@@ -415,8 +526,9 @@ def cxx_thunks(defined, weak, undefined, path):
             if dts:
                 pick = lambda want: next(k for k in want if k in dts)
                 for k in dts:
-                    out.append(f"extern void mkgp2pc_{k}__{n}(void*);\n")
+                    out.append(f'extern void mkgp2pc_{k}__{n}(void*) __asm__("mkgp2pc_{k}__{n}");\n')
                 if not have(n):
+                    out.append(f'void* {n}(void* self, short flag) __asm__("{asm_name(n)}");\n')
                     out.append(f"void* {n}(void* self, short flag) {{ if (self) {{ if (flag > 0) "
                                f"mkgp2pc_{pick(('dt0', 'dt1', 'dt2'))}__{n}(self); else if (flag == 0) "
                                f"mkgp2pc_{pick(('dt2', 'dt1', 'dt0'))}__{n}(self); else "
@@ -429,11 +541,12 @@ def cxx_thunks(defined, weak, undefined, path):
                         defsyms.append(f"-Wl,--defsym={sym}=mkgp2pc_{pick(order)}__{n}")
                         defs.add(sym)
             else:
-                out.append(f"extern void* {n}(void*, short);\n")
+                out.append(f'extern void* {n}(void*, short) __asm__("{asm_name(n)}");\n')
                 uses.add(n)
                 for k, flag in (("dt0", 1), ("dt1", -1), ("dt2", 0)):
                     sym = f"mkgp2pc_{k}__{n}"
                     if sym in undefined:
+                        out.append(f'void {sym}(void* self) __asm__("{sym}");\n')
                         out.append(f"void {sym}(void* self) {{ {n}(self, {flag}); }}\n")
                         defs.add(sym)
     open(path, "w").writelines(out)
@@ -455,8 +568,15 @@ def main():
                     help="generate stubs for everything missing and link build/pc-census/mkgp2-nogfx "
                          "(32-bit Linux host, needs gcc-multilib; no graphics, no SDK)")
     ap.add_argument("--dups", action="store_true", help="print symbols defined more than once")
+    ap.add_argument("--os", choices=("linux", "windows"), default="linux",
+                    help="windows: 32-bit Windows objects and executable in build/pc-census-win "
+                         "(needs the i686 MinGW-w64 toolchain)")
     args = ap.parse_args()
     target = cc.TARGET
+    global OUT, WIN
+    if args.os == "windows":
+        WIN, target = True, WIN_TARGET
+        OUT = os.path.join(ROOT, "build", "pc-census-win")
     os.makedirs(OUT, exist_ok=True)
 
     files = []
@@ -562,6 +682,7 @@ def main():
     print(f"of those, C++ function defined once under other parameter types: {len(proto)}")
     if args.link:
         # Real implementations written for the port win over generated stubs.
+        HOSTCC = ["-target", WIN_TARGET] if WIN else ["-m32"]
         port_objs = []
         for sub in ("sdk", "platform", "compat", "nogfx"):
             for base, _, names in os.walk(os.path.join(ROOT, "port", sub)):
@@ -569,7 +690,7 @@ def main():
                     if n.endswith(".c"):
                         src = os.path.join(base, n)
                         obj = os.path.join(OUT, "port__" + os.path.relpath(src, ROOT).replace(os.sep, "__") + ".o")
-                        r = subprocess.run(["clang", "-m32", "-O0", "-g", "-c", src, "-o", obj,
+                        r = subprocess.run(["clang"] + HOSTCC + ["-O0", "-g", "-c", src, "-o", obj,
                                             "-I" + os.path.join(ROOT, "port", "sdk", "include"),
                                             "-I" + os.path.join(ROOT, "port", "platform", "include")],
                                            capture_output=True, text=True)
@@ -585,12 +706,27 @@ def main():
             obj = os.path.join(OUT, "aurora__mtx__" + n + ".o")
             # NDEBUG: the retail functions do not check their arguments, and
             # the game does normalise zero vectors (the result is not finite).
-            r = subprocess.run(["clang", "-m32", "-O0", "-g", "-DNDEBUG", "-c", src, "-o", obj,
+            r = subprocess.run(["clang"] + HOSTCC + ["-O0", "-g", "-DNDEBUG", "-c", src, "-o", obj,
                                 "-I" + os.path.join(aurora, "include")], capture_output=True, text=True)
             if r.returncode != 0:
                 print(r.stderr[:2000])
                 return 1
             port_objs.append(obj)
+        if WIN:
+            # plain names for what the port defines and for what it uses of
+            # the game; the names of the Windows libraries stay as they are
+            r = subprocess.run(["llvm-nm", "-g", "--format=posix"] + port_objs, capture_output=True, text=True)
+            pdef = {l.split()[0] for l in r.stdout.splitlines() if len(l.split()) >= 2 and l.split()[1] != "U"}
+            pall = {l.split()[0] for l in r.stdout.splitlines() if len(l.split()) >= 2}
+            table = os.path.join(OUT, "port.plain")
+            with open(table, "w") as f:
+                for n in sorted(pall):
+                    if n in defined or n in undefined or n in weak:
+                        continue   # spelled with __asm__ in the port source: already the game's name
+                    if n.startswith("_") and (n in pdef or n[1:] in defined or n[1:] in weak):
+                        f.write(f"{n} {n[1:]}\n")
+            for o in port_objs:
+                subprocess.run(["llvm-objcopy", "--redefine-syms=" + table, o], check=True)
         r = subprocess.run(["llvm-nm", "-g", "--defined-only", "--format=posix"] + port_objs,
                            capture_output=True, text=True)
         ours = {l.split()[0] for l in r.stdout.splitlines() if len(l.split()) >= 2}
@@ -610,6 +746,7 @@ def main():
         replaced = sorted(n for n in missing if n in ours)
         missing = {n: u for n, u in missing.items() if n not in ours}
         # the host C++ runtime (linked for the units that throw) has these
+        cxxrt = sorted(n for n in missing if n.startswith(("__cxa_", "__gxx_personality", "_Unwind_")))
         missing = {n: u for n, u in missing.items()
                    if not n.startswith(("__cxa_", "__gxx_personality", "_Unwind_")) and n != "__dso_handle"}
         print(f"implemented under port/: {len(replaced)} of the missing symbols")
@@ -643,13 +780,20 @@ def main():
         stubs = os.path.join(OUT, "stubs.c")
         nfun, nobj = write_stubs(missing, groups, stubs)
         print(f"stubs generated: {nfun} functions, {nobj} objects")
-        exe = os.path.join(OUT, "mkgp2-nogfx")
+        exe = os.path.join(OUT, "mkgp2-nogfx.exe" if WIN else "mkgp2-nogfx")
         rsp = os.path.join(OUT, "objects.rsp")
         with open(rsp, "w") as f:
             f.write("\n".join(objs) + "\n")
         # original data layout (port/tools/mwcc_data_layout.py)
         inputs = collections.defaultdict(list)
         for i in range(0, len(objs), 200):
+            if WIN:
+                rr = subprocess.run(["i686-w64-mingw32-objdump", "-h"] + objs[i:i + 200], capture_output=True, text=True)
+                for line in rr.stdout.splitlines():
+                    m = re.match(r"\s*\d+ mw\.\w+\.(\w+)\s+([0-9a-f]+) .* 2\*\*(\d+)$", line)
+                    if m:
+                        inputs[m.group(1)].append((int(m.group(2), 16), 1 << int(m.group(3))))
+                continue
             rr = subprocess.run(["readelf", "-SW"] + objs[i:i + 200], capture_output=True, text=True)
             for line in rr.stdout.splitlines():
                 m = re.match(r"\s*\[\s*\d+\] mw\.\w+\.(\w+)\s+\w+\s+[0-9a-f]+ [0-9a-f]+ ([0-9a-f]+) .* (\d+)$", line)
@@ -662,7 +806,9 @@ def main():
         with open(os.path.join(OUT, "data_layout.notes"), "w") as f:
             f.write("\n".join(lnotes) + "\n")
         host_sizes = {}
-        for i in range(0, len(objs), 200):
+        if WIN:
+            host_sizes = win_bss_sizes(objs)
+        for i in range(0, len(objs) if not WIN else 0, 200):
             rr = subprocess.run(["nm", "-S", "--defined-only", "--format=posix"] + objs[i:i + 200] + ([stubs] if False else []), capture_output=True, text=True)
             for line in rr.stdout.splitlines():
                 q = line.split()
@@ -671,11 +817,11 @@ def main():
         bnotes = []
         bss_ld = os.path.join(OUT, "bss_layout.ld")
         with open(bss_ld, "w") as f:
-            f.write(mwcc_data_layout.bss_script(mwcc_data_layout.original_bss(ROOT), host_sizes, bnotes))
+            f.write(mwcc_data_layout.bss_script(mwcc_data_layout.original_bss(ROOT), host_sizes, bnotes, noload=not WIN))
         with open(os.path.join(OUT, "bss_layout.notes"), "w") as f:
             f.write("\n".join(bnotes) + "\n")
-        print(f"zero-initialised objects kept out of the original layout (larger here): {len(bnotes)} (build/pc-census/bss_layout.notes)")
-        print(f"data objects placed at their original distances: {len(inputs) - len(lnotes)} of {len(inputs)} (rest: build/pc-census/data_layout.notes)")
+        print(f"zero-initialised objects kept out of the original layout (larger here): {len(bnotes)} ({os.path.relpath(OUT, ROOT)}/bss_layout.notes)")
+        print(f"data objects placed at their original distances: {len(inputs) - len(lnotes)} of {len(inputs)} (rest: {os.path.relpath(OUT, ROOT)}/data_layout.notes)")
         # The game has data objects called `errno` and `time` (its C library's
         # own). Exported from the executable they would replace the host C
         # library's symbols of those names for the shared libraries too (libm
@@ -686,12 +832,36 @@ def main():
             "wcslen", "wcscpy", "wcsncpy", "wcscmp", "wcschr", "wmemset"]  # port/compat/wchar16.c
         with open(private, "w") as f:
             f.write("{ local: %s };\n" % " ".join(n + ";" for n in host_names))
-        cmd = ["clang", "-m32", "-O0", "-g", "-fcommon", "-no-pie", "-Wl,--version-script=" + private, "-Wl,-T," + script, "-Wl,-T," + bss_ld, "-o", exe, stubs, thunks] + port_objs + [
-               "@" + rsp] + defsyms + ["-lm", "-lpthread", "-lstdc++"] + (["-lz"] if os.path.exists("/usr/lib32/libz.so") else []) + [ "-Wl,--allow-multiple-definition", "-Wl,--no-warn-rwx-segments"]
+        if WIN:
+            # the host C++ runtime's names carry the COFF underscore
+            with open(stubs, "a") as f:
+                for n in cxxrt:
+                    f.write(f'__asm__(".text\\n.globl {n}\\n{n}: jmp _{n}\\n");\n')
+                # and the C runtime starts the program at its own spelling of main
+                f.write('__asm__(".text\\n.globl _main\\n_main: jmp main\\n");\n')
+            gen = []
+            for src in (stubs, thunks):
+                o = src[:-2] + ".o"
+                r = subprocess.run(["clang", "-target", WIN_TARGET, "-O0", "-g", "-fcommon", "-c", src, "-o", o], capture_output=True, text=True)
+                if r.returncode != 0:
+                    print(r.stderr[:2000])
+                    return 1
+                win_plain_names(o, asm_only=True)
+                gen.append(o)
+            # --large-address-aware: main memory is mapped at 0x80000000
+            # (port/nogfx/os_min.c). Static, so that the executable needs no
+            # MinGW runtime DLLs next to it.
+            cmd = ["clang", "-target", WIN_TARGET, "-g", "-static", "-Wl,--large-address-aware", "-Wl,-T," + script, "-Wl,-T," + bss_ld,
+                   "-o", exe] + gen + port_objs + ["@" + rsp] + defsyms + ["-lstdc++", "-lwinpthread", "-Wl,--allow-multiple-definition"]
+        else:
+          cmd = ["clang", "-m32", "-O0", "-g", "-fcommon", "-no-pie", "-Wl,--version-script=" + private, "-Wl,-T," + script, "-Wl,-T," + bss_ld, "-o", exe, stubs, thunks] + port_objs + [
+                 "@" + rsp] + defsyms + ["-lm", "-lpthread", "-lstdc++"] + (["-lz"] if os.path.exists("/usr/lib32/libz.so") else []) + [ "-Wl,--allow-multiple-definition", "-Wl,--no-warn-rwx-segments"]
         r = subprocess.run(cmd, capture_output=True, text=True)
         errs = [l for l in r.stderr.splitlines() if "error" in l or "undefined" in l]
         print(f"link: {'ok -> ' + os.path.relpath(exe, ROOT) if r.returncode == 0 else 'FAILED'}")
-        for l in errs[:40]:
+        seen_err = set()
+        errs = [l for l in errs if not (re.sub(r"^.*(undefined reference to .*)$", r"\1", l) in seen_err or seen_err.add(re.sub(r"^.*(undefined reference to .*)$", r"\1", l)))]
+        for l in errs[:60]:
             print("  " + l[:200])
     if args.dups:
         for n in sorted(dups):
