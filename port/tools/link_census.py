@@ -502,6 +502,9 @@ def main():
         ours = {l.split()[0] for l in r.stdout.splitlines() if len(l.split()) >= 2}
         replaced = sorted(n for n in missing if n in ours)
         missing = {n: u for n, u in missing.items() if n not in ours}
+        # the host C++ runtime (linked for the units that throw) has these
+        missing = {n: u for n, u in missing.items()
+                   if not n.startswith(("__cxa_", "__gxx_personality", "_Unwind_")) and n != "__dso_handle"}
         print(f"implemented under port/: {len(replaced)} of the missing symbols")
         # A call that only fails to meet its definition because of C vs C++
         # linkage is wired to that definition instead of a stub (same calling

@@ -1,0 +1,130 @@
+/*
+ * Support routines the MWCC-compiled game calls by name (the compiler emits
+ * calls to them for `new T[n]`, member arrays, static objects and so on).
+ * The decompiled sources keep those calls, so the port provides the
+ * routines. Behaviour follows the compiler's documented conventions:
+ * constructors and destructors take a hidden second argument (1: complete
+ * object; destructor -1: destroy without freeing), and `new[]` blocks carry
+ * a 16-byte header {element size, count}.
+ *
+ * The game's allocator is behind operator new / delete: Alloc and
+ * MemoryManager_TimedFree (tools/extab_user_renames.json).
+ */
+#include <stddef.h>
+#include <stdint.h>
+
+void* Alloc(unsigned long size);
+void MemoryManager_TimedFree(void* p);
+
+typedef void* (*CtorDtor)(void*, int);
+
+void __construct_array(void* ptr, CtorDtor ctor, CtorDtor dtor, uint32_t size, uint32_t n) {
+  (void)dtor; /* only used to unwind when a constructor throws */
+  char* p = (char*)ptr;
+  for (uint32_t i = 0; i < n; i++, p += size) {
+    ctor(p, 1);
+  }
+}
+
+void __destroy_arr(void* block, CtorDtor dtor, uint32_t size, uint32_t n) {
+  char* p = (char*)block + size * n;
+  for (; n > 0; n--) {
+    p -= size;
+    dtor(p, -1);
+  }
+}
+
+void* __construct_new_array(void* block, CtorDtor ctor, CtorDtor dtor, uint32_t size, uint32_t n) {
+  (void)dtor;
+  char* p = (char*)block;
+  if (p != NULL) {
+    ((uint32_t*)p)[0] = size;
+    ((uint32_t*)p)[1] = n;
+    p += 16;
+    if (ctor != NULL) {
+      char* q = p;
+      for (uint32_t i = 0; i < n; i++, q += size) {
+        ctor(q, 1);
+      }
+    }
+  }
+  return p;
+}
+
+void __destroy_new_array(void* block, CtorDtor dtor) {
+  if (block == NULL) {
+    return;
+  }
+  uint32_t* head = (uint32_t*)((char*)block - 16);
+  if (dtor != NULL) {
+    uint32_t size = head[0];
+    uint32_t n = head[1];
+    char* p = (char*)block + size * n;
+    for (uint32_t i = 0; i < n; i++) {
+      p -= size;
+      dtor(p, -1);
+    }
+  }
+  MemoryManager_TimedFree(head);
+}
+
+void* __copy(char* dest, char* src, uint32_t size) {
+  if (dest != NULL) {
+    for (uint32_t i = 0; i < size; i++) {
+      dest[i] = src[i];
+    }
+  }
+  return dest;
+}
+
+/* static objects with destructors: kept on a list, never run (the game
+ * does not return from main in normal operation) */
+typedef struct DestructorChain {
+  struct DestructorChain* next;
+  void* destructor;
+  void* object;
+} DestructorChain;
+static DestructorChain* s_chain;
+
+void* __register_global_object(void* object, void* destructor, void* regmem) {
+  DestructorChain* c = (DestructorChain*)regmem;
+  c->next = s_chain;
+  c->destructor = destructor;
+  c->object = object;
+  s_chain = c;
+  return object;
+}
+
+/* pointer to member function {this delta, vtable offset, function}: non-null? */
+int32_t __ptmf_test(const int32_t* pmf) { return pmf[0] != 0 || pmf[1] != 0 || pmf[2] != 0; }
+
+uint32_t __cvt_fp2unsigned(double d) {
+  if (!(d > 0.0)) {
+    return 0;
+  }
+  if (d >= 4294967296.0) {
+    return 0xFFFFFFFFu;
+  }
+  return (uint32_t)d;
+}
+
+int64_t __div2i(int64_t a, int64_t b) { return b != 0 ? a / b : 0; }
+int64_t __mod2i(int64_t a, int64_t b) { return b != 0 ? a % b : 0; }
+uint64_t __div2u(uint64_t a, uint64_t b) { return b != 0 ? a / b : 0; }
+uint64_t __mod2u(uint64_t a, uint64_t b) { return b != 0 ? a % b : 0; }
+
+/* global operator delete / delete[] as the host compiler names them */
+void mkgp2pc_operator_delete(void* p) __asm__("_ZdlPv");
+void mkgp2pc_operator_delete(void* p) {
+  if (p != NULL) {
+    MemoryManager_TimedFree(p);
+  }
+}
+void mkgp2pc_operator_delete_array(void* p) __asm__("_ZdaPv");
+void mkgp2pc_operator_delete_array(void* p) {
+  if (p != NULL) {
+    MemoryManager_TimedFree(p);
+  }
+}
+void* mkgp2pc_operator_new_array(unsigned int n) __asm__("_Znaj");
+void* mkgp2pc_operator_new_array(unsigned int n) { return Alloc(n); }

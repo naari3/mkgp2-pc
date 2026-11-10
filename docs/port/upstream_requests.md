@@ -244,7 +244,7 @@ kept for reference. Item 10 is open.
     pad86[2];` at the end of `GpPanelBase` (the rule now in
     `docs/notes/rtti_classes.md`).
 19. Functions defined `void` whose callers use a return value (added
-    2026-11-10; open). On the console the value is whatever the function
+    2026-11-10; done upstream in `3a5fce1`). On the console the value is whatever the function
     left in r3; on the host it is garbage. First failure: the attract-mode
     race loads its course, `CECollision::CECollision` stores the result of
     `CollisionFile_FixupPointers(self->data)` (defined
@@ -262,4 +262,16 @@ kept for reference. Item 10 is open.
     first argument or the result of its last call), in whatever form keeps
     the match (a macro that is empty under MWCC is fine), or the callers
     corrected where the value is not really used.
+20. Arrays made with `new T[n]` and destroyed by an explicit
+    `__destroy_new_array(p, dtor)` (added 2026-11-10; open). MWCC's `new[]`
+    puts a 16-byte header {element size, count} in front of the array and
+    `__destroy_new_array` reads it. The host compiler's `new[]` writes its
+    own 4-byte count instead, so the explicit call reads garbage sizes and
+    frees a wrong pointer. Two call sites, both in
+    `src/game/Scene_8014E0C4.cpp` (lines 3947 and 5546, element destructor
+    `dtor_800869D0`, the 0x230-byte text drawer); the first one crashes when
+    the attract mode leaves the title for the demo race. Wanted: the element
+    type as a class with its destructor and `delete[]` at these sites (then
+    both ends come from the same compiler), or the allocation side written
+    with the explicit `__construct_new_array` as well.
 
