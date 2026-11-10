@@ -459,3 +459,23 @@ MusyX files (10), stream headers (11).
   else (GitHub Actions or the Windows machine) before real GX can be wired
   into the 32-bit game.
 
+## 17. Through the menus to the pre-race scene (2026-11-10, upstream `55ea6d8`)
+
+- Upstream typed the byte-array data that holds numbers (request 15) and
+  fixed `TransitionEffect.cpp` (request 16).
+- Data layout: the game reads some data relative to another object of the
+  same unit (`Scene3D_Init` takes the string 0xBC bytes after
+  `lbl_802E96B8`). `port/tools/mwcc_data_layout.py` gives arrays and structs
+  MWCC's minimum alignment of 4 in every unit (C units now also go through
+  LLVM IR) and keeps each generated data unit in one section, in definition
+  order. `port/tools/data_layout_check.py <exe>` compares object distances
+  with `symbols.txt`: 238 units, 16,257 pairs, 2 units still differ
+  (`data_804EE3A8.c`, `sdata2_806DB6E0.c`).
+- With the scripted input the menu now runs attract -> card (9) -> class
+  (11) -> character (13) -> figure (19) -> cup (21) -> round (27) -> "GP
+  please" (37), in 8,900 retraces. `select_mario.dat` and the other menu
+  archives load and convert.
+- Stop: flow 37 is `clFlowGpPlease`, a generated stub, because
+  `GpPleaseInit.cpp` does not compile (base class tail padding, upstream
+  request 18). The first draw of the uninitialised object crashes.
+

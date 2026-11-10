@@ -189,7 +189,8 @@ kept for reference. Item 10 is open.
       start of MWCC-layout vtables in the port build, see census section 13);
     - the constant: `PMF_OF(&Class::Method)`; off MWCC it can be built at run
       time from the host's own `{ ptr, adj }` for non-virtual functions.
-15. Byte-array data read as wider types (added 2026-11-10; open). The
+15. Byte-array data read as wider types (added 2026-11-10; done upstream in
+    `67b6237` and `962b6d1`). The
     generated data units define 877 objects (37 KB) as `unsigned char
     name[N] = { 0x3F, 0x80, ... }`, and the code reads floats, ints and
     structs out of them through casts. The bytes are in the console's order,
@@ -209,7 +210,8 @@ kept for reference. Item 10 is open.
     `clFlowClass_Update_rodata_8039A5A0` (1,128), `ClSound_rodata_80379100`
     (1,108). List them with
     `grep -c "char .*\[[0-9]*\] = {" src/game/autodata/*.c`.
-16. `src/game/TransitionEffect.cpp` (added 2026-11-10; open; new with
+16. `src/game/TransitionEffect.cpp` (added 2026-11-10; done upstream in
+    `55ea6d8`; new with
     upstream `6b7996e`). The destructors of `teSingleton<clScreenEffect>`
     and `TransitionOwner<...>` are explicit specializations defined at the
     end of the unit (lines 319 onwards), after `clScreenEffect` has already
@@ -231,4 +233,13 @@ kept for reference. Item 10 is open.
     read elsewhere, e.g. `PORT_BE16(p)`, `PORT_BE_F32(p)` in a shared header.
     Everything else in `pobj.c` and all of `fobj.c` already reads byte by
     byte and needs nothing.
+18. `include/game/GpPleaseInitPrivate.h` (added 2026-11-10; open). This is
+    the next stop of the menu: the scene after the round select (flow 37,
+    `clFlowGpPlease`) is a generated stub because `GpPleaseInit.cpp` fails
+    its own size check on the host. `GpPanelBase` ends with two `unsigned
+    char` members at 0x84 and 0x85 and two bytes of padding; the host puts
+    `short text` of `GpLabelPanel` into that padding (0x86), MWCC puts it at
+    0x88. Wanted: the padding spelled as a member, `unsigned char
+    pad86[2];` at the end of `GpPanelBase` (the rule now in
+    `docs/notes/rtti_classes.md`).
 
