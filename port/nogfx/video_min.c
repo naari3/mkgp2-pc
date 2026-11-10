@@ -8,6 +8,7 @@
 
 int OSDisableInterrupts(void);
 int OSRestoreInterrupts(int);
+void mkgp2pc_script_tick(uint32_t retrace); /* input_script.c */
 
 typedef void (*VIRetraceCallback)(uint32_t retraceCount);
 typedef void (*GXDrawDoneCallback)(void);
@@ -33,6 +34,7 @@ void VIWaitForRetrace(void) {
   nanosleep(&ts, 0);
   int level = OSDisableInterrupts();
   s_retrace++;
+  mkgp2pc_script_tick(s_retrace);
   if (s_pre) {
     s_pre(s_retrace);
   }

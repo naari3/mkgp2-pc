@@ -135,6 +135,16 @@ int DVDOpen(const char* name, DVDFileInfo* fi) {
     fprintf(stderr, "nogfx: DVDOpen(%s): not found\n", name);
     return 0;
   }
+  {
+    /* MKGP2PC_TRACE_DVD=1: print every file the game opens */
+    static int trace = -1;
+    if (trace < 0) {
+      trace = getenv("MKGP2PC_TRACE_DVD") != NULL;
+    }
+    if (trace) {
+      fprintf(stderr, "dvd: open %s\n", name);
+    }
+  }
   return DVDFastOpen(e, fi);
 }
 
