@@ -106,3 +106,28 @@ kept for reference. Item 10 is open.
     prototype with fewer parameters than the definition). The same sweep
     would catch the reverse (more arguments than the definition takes), which
     is harmless on PowerPC and on cdecl x86 but not on every ABI.
+12. Bit-fields (added 2026-11-10, upstream `0ba4382`). MWCC on PowerPC
+    allocates bit-fields from the most significant bit, x86 compilers from
+    the least significant. 144 bit-field members in 18 files of `src/game` /
+    `include/game` are affected wherever the same storage is also read as a
+    whole integer or through a second view, for example
+    `src/game/PCBCheckRecv.c:2275` `union SlotFlags { u16 half; struct { u16
+    local:1; u16 reserved:5; u16 id:3; u16 blocks:7; } ids; ... }` with
+    `SlotId()` = `(half >> 7) & 7` and `SetSlotId()` = `ids.id = id`: on PC
+    the id written is not the id read, `PCBComm_Init` takes the wrong branch
+    and crashes. Wanted: every run of adjacent bit-fields declared through a
+    macro that reverses the member order off MWCC, e.g.
+    `BITFIELDS4(u16 local:1, u16 reserved:5, u16 id:3, u16 blocks:7)` =
+    the members in this order under `__MWERKS__` and in reverse order
+    otherwise (pad to the full storage unit first, or the reversed run starts
+    at the wrong bit). That makes the integer value of the storage unit the
+    same on both. Files: `grep -rlE ':\s*[0-9]+\s*;' src/game include/game`.
+    Byte order of multi-byte fields on the wire (PCB link packets, card data)
+    is a separate matter and stays with the port.
+    Harder case in the same union: a second view made of `u8` bit-fields
+    over the `u16` (`bits`): there the two bytes also trade places on a
+    little-endian host, so the PC order is second byte first, each byte
+    reversed (`blocks:7, idLow:1` then `low:2, ack:1, card:1, rx:1, tx:1,
+    idHigh:1, local:1`). `union PacketHead { u32 word; struct { RoleByte
+    role; u8 remaining[3]; } bytes; }` is the same kind (the role byte is the
+    top byte of `word` on PowerPC).
