@@ -22,6 +22,9 @@ Input must be produced with
 tells which slot of that class is the destructor). The output is plain IR
 for `clang -c`.
 
+For 32-bit Windows targets the `this`-in-register convention is taken off
+member functions (see the comment in rewrite()).
+
 Not handled: where the vtable pointer sits inside an object, multiple
 inheritance (secondary vtables), pointers to virtual member functions of
 classes with a virtual destructor.
@@ -106,6 +109,12 @@ def _class_dtor_slots(text):
 def rewrite(text, warn=None):
     warn = warn or (lambda s: None)
     slots, clash = _class_dtor_slots(text)
+
+    # 32-bit Windows (GNU ABI) passes `this` in a register for member
+    # functions. The vtables written as data hold C functions and C code calls
+    # member functions by their MWCC names, so the game needs one convention
+    # for both: member functions become plain C-convention functions.
+    text, n_cc = re.subn(r"\bx86_thiscallcc ", "", text)
 
     # drop the module summary (stale after the edits)
     text = re.sub(r"^\^\d+ = .*\n", "", text, flags=re.M)
@@ -224,7 +233,7 @@ destroy:
         cut = re.search(r"^(attributes #|!llvm\.|!\d+ = )", text, re.M)
         pos = cut.start() if cut else len(text)
         text = text[:pos] + "".join(extra) + "\n" + text[pos:]
-    return text, {"address_points": n_addr, "virtual_calls": n_calls, "dtor_slots": len(wrappers)}
+    return text, {"address_points": n_addr, "virtual_calls": n_calls, "dtor_slots": len(wrappers), "thiscall_removed": n_cc}
 
 
 if __name__ == "__main__":

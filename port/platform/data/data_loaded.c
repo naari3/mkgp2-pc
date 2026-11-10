@@ -187,6 +187,22 @@ void mkgp2pc_data_loaded(int kind, void* data, uint32_t size) {
   case MKGP2PC_DATA_DEMO_INPUT: /* TraceInput163: three floats, an int */
     records16((uint8_t*)data, size, 4);
     break;
+  case MKGP2PC_DATA_STREAM_HEADER: {
+    /* DSP ADPCM header (StreamInfo): samples, nibbles, rate; loop flag,
+     * format; loop start, loop end, current address; then 16-bit fields
+     * (coefficients, gain, predictor state) to the end */
+    uint8_t* d = (uint8_t*)data;
+    if (size >= 0x60) {
+      swap32n(d, 3);
+      swap16(d + 0x0C);
+      swap16(d + 0x0E);
+      swap32n(d + 0x10, 3);
+      for (uint32_t o = 0x1C; o < 0x60; o += 2) {
+        swap16(d + o);
+      }
+    }
+    break;
+  }
   case MKGP2PC_DATA_TPL:
     tpl((uint8_t*)data, size);
     break;

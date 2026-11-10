@@ -431,4 +431,14 @@ MusyX files (10), stream headers (11).
   `GpLabelPanel` is 0x94 bytes under MWCC and smaller on the host, so
   `GpPleaseInit.cpp` fails its own size check. Not handled; belongs with the
   class layout work upstream (`docs/port/cxx_classes.md`).
+- Windows target check of the IR pass, done on Linux by compiling only
+  (`-target i686-w64-windows-gnu`, no link): 915 of 918 game C++ units
+  compile and pass through `mwcc_cxx_abi.py`, the same three fail as for
+  Linux before the exception retry. One difference mattered: that target
+  passes `this` in a register for member functions (`x86_thiscallcc`), which
+  cannot work with vtables written as data that hold C functions, and it
+  hid all 440 destructor-slot calls from the pass. The pass now takes that
+  convention off member functions, after which the counts match the Linux
+  build (440 destructor calls, 35 wrappers). Still to do on a real Windows
+  machine: link and run.
 
