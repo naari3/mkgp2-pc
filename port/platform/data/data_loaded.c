@@ -70,13 +70,85 @@ static void tpl(uint8_t* d, uint32_t size) {
   free(done);
 }
 
+/*
+ * Sprite animation (`ani_*.bin`), types in include/game/SpriteAnimTraversal_private.h.
+ * Header (0x20): five words, f32 length, u32 frames offset, u32 resources
+ * offset. Frame (0x54): u8 flags (bit 0 = last of its array), s8 layer,
+ * s8 count, u8, s16 resource, s16, u32 child offset, f32 time, f32 x, y,
+ * scaleX, scaleY, rotation, f32 red, green, blue, alpha, s16 colour offsets
+ * x4, f32 matrix[6]. Resources: s16 list ended by -1.
+ */
+typedef struct {
+  uint32_t* offsets;
+  uint32_t count, room;
+} Visited;
+
+static int visit(Visited* v, uint32_t offset) {
+  for (uint32_t i = 0; i < v->count; i++) {
+    if (v->offsets[i] == offset) {
+      return 0;
+    }
+  }
+  if (v->count == v->room) {
+    v->room = v->room ? v->room * 2 : 64;
+    v->offsets = (uint32_t*)realloc(v->offsets, v->room * sizeof(uint32_t));
+  }
+  v->offsets[v->count++] = offset;
+  return 1;
+}
+
+static void sprite_frames(uint8_t* d, uint32_t offset, Visited* v, int depth) {
+  if (offset == 0 || depth > 64 || !visit(v, offset)) {
+    return;
+  }
+  for (uint8_t* f = d + offset;; f += 0x54) {
+    uint32_t child = mkgp2pc_be32(f + 8);
+    swap16(f + 4);
+    swap16(f + 6);
+    swap32n(f + 8, 11);    /* child, time, x .. alpha */
+    for (int i = 0; i < 4; i++) {
+      swap16(f + 0x34 + i * 2);
+    }
+    swap32n(f + 0x3C, 6);  /* matrix */
+    sprite_frames(d, child, v, depth + 1);
+    if (f[0] & 1) {
+      break;
+    }
+  }
+}
+
+static void sprite_anim(uint8_t* d) {
+  uint32_t frames = mkgp2pc_be32(d + 0x18), resources = mkgp2pc_be32(d + 0x1C);
+  Visited v = {0, 0, 0};
+  swap32n(d, 8);
+  sprite_frames(d, frames, &v, 0);
+  free(v.offsets);
+  if (resources) {
+    for (uint8_t* r = d + resources;; r += 2) {
+      int last = mkgp2pc_be16(r) == 0xFFFF;
+      swap16(r);
+      if (last) {
+        break;
+      }
+    }
+  }
+}
+
 void mkgp2pc_data_loaded(int kind, void* data, uint32_t size) {
   switch (kind) {
   case MKGP2PC_DATA_TPL:
     tpl((uint8_t*)data, size);
     break;
-  default:
-    fprintf(stderr, "mkgp2pc_data_loaded: unknown kind %d\n", kind);
+  case MKGP2PC_DATA_SPRITE_ANIM:
+    sprite_anim((uint8_t*)data);
     break;
+  default: {
+    static unsigned told;
+    if (kind >= 0 && kind < 32 && !(told & (1u << kind))) {
+      told |= 1u << kind;
+      fprintf(stderr, "mkgp2pc_data_loaded: kind %d is not converted yet\n", kind);
+    }
+    break;
+  }
   }
 }
