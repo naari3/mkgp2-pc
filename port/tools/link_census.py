@@ -223,7 +223,11 @@ def compile_one(path, target):
     # -fshort-wchar: the game's wchar_t has 16 bits (card names, panel
     # labels); with the host's 32 the structs that hold such text grow and
     # no longer fit the sizes other units allocate for them.
-    cmd = ["clang", "-target", target, "-c", "-O0", "-g", "-fno-exceptions", "-fno-rtti", "-fcommon", "-fshort-wchar"] + (["-mno-ms-bitfields"] if WIN else ["-malign-double"]) + (["-DMKGP2PC_GFX"] if GFX else []) + cc.base_flags(path)[1:]
+    # -fkeep-inline-functions (C++): MWCC emits an inline function whose
+    # address the unit's exception tables take, and other units call those
+    # (fn_80120A08 in SpriteHandle.cpp). A host compiler drops an inline
+    # function its own unit does not use.
+    cmd = ["clang", "-target", target, "-c", "-O0", "-g", "-fno-exceptions", "-fno-rtti", "-fcommon", "-fshort-wchar"] + (["-mno-ms-bitfields"] if WIN else ["-malign-double"]) + (["-DMKGP2PC_GFX"] if GFX else []) + (["-fkeep-inline-functions"] if path.endswith(".cpp") else []) + cc.base_flags(path)[1:]
     cmd += ["-include", cc.COMPAT]
     # -Dinline=: in C, MWCC also emits an `inline` function as an ordinary
     # one where it is called without being inlined. C99 leaves the caller of

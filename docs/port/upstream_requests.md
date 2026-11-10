@@ -372,7 +372,7 @@ kept for reference. Item 10 is open.
     arguments than it takes; each needs a look at whether its body forwards
     them.
 29. Initialized data defined as bytes and read through a wider type
-    (added 2026-11-10; open). `lbl_806D97E8` is `const unk8[6]` in
+    (added 2026-11-10; done, upstream 1ef6e6d and 92d47ab). `lbl_806D97E8` is `const unk8[6]` in
     `src/game/autodata/sdata2_806D7998.c` and
     `src/game/sprite/fn_801A1798.c` reads it as a structure of three
     `short`; the bytes keep the console's order, so the race queued voice
@@ -381,3 +381,14 @@ kept for reference. Item 10 is open.
     of other units also finds `VSMode_FrameUpdate_data_806CF148` (one byte,
     read as `unsigned int`) and `lbl_802EB4E0` (1,284 bytes, `NamCamPool`).
     Wanted: the definition in the type its users read.
+30. Float-returning functions declared `void` by a caller, and the
+    reverse (added 2026-11-10; open). On 32-bit x86 a float result is
+    returned on the x87 register stack. A caller that takes the function
+    for `void` never pops it; after eight such calls the stack is full and
+    every float load produces NaN. `fn_8019EA8C`
+    (`src/game/kartmove/carobject.cpp`, returns `float`) is declared `void`
+    in `KartMovement_PhysicsStep.cpp` and called seven times per step: the
+    player kart's position was NaN after its first physics step, and with
+    it the race camera (no 3D picture in the race).
+    `KartEffectFadeTransit_GetActiveValue` is the reverse (integer result,
+    declared `float` in `auto_ONKARTHIT_block.c`).
