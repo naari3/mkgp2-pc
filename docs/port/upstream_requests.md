@@ -140,3 +140,28 @@ kept for reference. Item 10 is open.
     idHigh:1, local:1`). `union PacketHead { u32 word; struct { RoleByte
     role; u8 remaining[3]; } bytes; }` is the same kind (the role byte is the
     top byte of `word` on PowerPC).
+13. Data byte order at the load sites (added 2026-11-10, upstream
+    `0f0bec5`). The disc files are big-endian and the game reads them through
+    native structs; a few values are little-endian in the file and swapped by
+    hand. The port converts a file in place once it is in memory
+    (`port/platform/data/data_loaded.c`, `mkgp2pc_data_loaded(kind, data,
+    size)`), and needs to be called at the right moment. Wanted:
+    - a hook macro, empty under MWCC, at every place where a file has just
+      been read (and inflated, if it was compressed) and before the game
+      looks inside or turns offsets into pointers:
+      `PORT_DATA_LOADED(kind, pointer, size)` ->
+      `mkgp2pc_data_loaded(kind, pointer, size)` off MWCC. First site:
+      `src/game/TEXLoadPalette.cpp`, before `RelocatePalette(*out)`, kind 1
+      (TPL). Kinds are numbered in `port/platform/include/mkgp2pc/data.h`;
+      propose a number per format (HSD archive, sprite / animation `.bin`,
+      course path table, ...) and I add the converter.
+    - hand-written swaps of little-endian file values through one macro
+      (`LE32(x)`: swap under MWCC, identity on a little-endian host), e.g.
+      the size word in `TEXLoadPalette.cpp` (`((x >> 24) & 0xff) | ...`).
+    - for each format, the struct types the game overlays on the file (names
+      and headers), so the converter can be written from them. The loaders
+      are few: `DVDLoad_ReadFileTimed.c`, `DVDLoad_ReadChunkHandle.c`,
+      `DVDLoad_OpenAllocReadRelocSync.c`, `DVDFile_LoadSync.c`,
+      `CourseData_LoadPathTable.cpp`, `TEXLoadPalette.cpp`, plus the
+      sysdolphin archive loader. On the disc: 5,358 `.tpl`, 1,918 `.dat`
+      (215 MB), 684 `.dsp`, 640 `.bin`, MusyX `pool/proj/samp/sdir`.
