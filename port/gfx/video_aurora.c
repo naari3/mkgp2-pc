@@ -18,7 +18,67 @@ int OSDisableInterrupts(void);
 int OSRestoreInterrupts(int);
 void mkgp2pc_script_tick(uint32_t retrace); /* port/nogfx/input_script.c */
 
+void mkgp2pc_jvs_set_switches(const uint8_t* bytes, int count);
+void mkgp2pc_jvs_set_analog(int channel, uint16_t value);
+void mkgp2pc_jvs_add_coin(int slot);
+void mkgp2pc_baseboard_set_operator_switches(uint8_t pressed);
+
 typedef void (*RetraceCallback)(uint32_t retraceCount);
+
+/*
+ * Keyboard as the cabinet's controls (the window has to have the focus):
+ *   left / right   steering wheel (turns and returns gradually)
+ *   up or Z        accelerator pedal
+ *   down or X      brake pedal
+ *   space, enter   item button (also "decide" in the menus)
+ *   5 or C         coin
+ *   F1 / F2        test / service button of the cabinet
+ * Once a key has been used the keyboard owns the inputs; until then a
+ * script (MKGP2PC_SCRIPT) may drive them.
+ */
+static bool s_keyLeft, s_keyRight, s_keyAccel, s_keyBrake, s_keyItem, s_keyTest, s_keyService;
+static bool s_keyboardUsed;
+static int s_wheel; /* -0x7FFF .. 0x7FFF */
+
+static void key_event(const SDL_Event* e) {
+  bool down = e->type == SDL_EVENT_KEY_DOWN;
+  switch (e->key.scancode) {
+  case SDL_SCANCODE_LEFT: s_keyLeft = down; break;
+  case SDL_SCANCODE_RIGHT: s_keyRight = down; break;
+  case SDL_SCANCODE_UP: case SDL_SCANCODE_Z: s_keyAccel = down; break;
+  case SDL_SCANCODE_DOWN: case SDL_SCANCODE_X: s_keyBrake = down; break;
+  case SDL_SCANCODE_SPACE: case SDL_SCANCODE_RETURN: s_keyItem = down; break;
+  case SDL_SCANCODE_F1: s_keyTest = down; break;
+  case SDL_SCANCODE_F2: s_keyService = down; break;
+  case SDL_SCANCODE_5: case SDL_SCANCODE_C:
+    if (down && !e->key.repeat) {
+      mkgp2pc_jvs_add_coin(0);
+    }
+    break;
+  default: return;
+  }
+  s_keyboardUsed = true;
+}
+
+static void keyboard_tick(void) {
+  if (!s_keyboardUsed) {
+    return;
+  }
+  int target = s_keyLeft == s_keyRight ? 0 : s_keyRight ? 0x7FFF : -0x7FFF;
+  int step = target == 0 ? 0x1000 : 0x0C00; /* full lock in about 10 frames */
+  if (s_wheel < target) {
+    s_wheel = s_wheel + step > target ? target : s_wheel + step;
+  } else if (s_wheel > target) {
+    s_wheel = s_wheel - step < target ? target : s_wheel - step;
+  }
+  mkgp2pc_jvs_set_analog(0, (uint16_t)(0x8000 + s_wheel));
+  mkgp2pc_jvs_set_analog(1, s_keyAccel ? 0xFFFF : 0);
+  mkgp2pc_jvs_set_analog(2, s_keyBrake ? 0xFFFF : 0);
+  uint8_t sw[5] = {0, 0, (uint8_t)(s_keyItem ? 0x20 : 0), 0, 0};
+  mkgp2pc_jvs_set_switches(sw, 5);
+  /* 0x01: the DIP switch that skips the card reader, printer and camera */
+  mkgp2pc_baseboard_set_operator_switches((uint8_t)(0x01 | (s_keyTest ? 0x40 : 0) | (s_keyService ? 0x80 : 0)));
+}
 
 static RetraceCallback s_pre, s_post;
 static uint32_t s_retrace;
@@ -77,11 +137,16 @@ void VIWaitForRetrace(void) {
       aurora_shutdown();
       exit(0);
     }
+    if (event->type == AURORA_SDL_EVENT &&
+        (event->sdl.type == SDL_EVENT_KEY_DOWN || event->sdl.type == SDL_EVENT_KEY_UP)) {
+      key_event(&event->sdl);
+    }
     ++event;
   }
   int level = OSDisableInterrupts();
   s_retrace++;
   mkgp2pc_script_tick(s_retrace);
+  keyboard_tick();
   if (s_pre) {
     s_pre(s_retrace);
   }

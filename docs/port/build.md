@@ -224,3 +224,14 @@ git add port/extern/aurora
 Rebuild and run the test before committing. Aurora's dependency versions are
 pinned inside Aurora (`cmake/AuroraDependencyVersions.cmake`), so the
 submodule commit fixes them too.
+
+## Keyboard (rendering executable)
+
+`port/gfx/video_aurora.c` maps the keyboard to the cabinet's controls while
+the window has the focus: left / right = steering wheel, up or Z =
+accelerator, down or X = brake, space or enter = item button (also "decide"
+in the menus), 5 or C = coin, F1 / F2 = test / service button. Until a key
+is used, `MKGP2PC_SCRIPT` may drive the inputs. Not tested with a real
+keyboard yet (the cloud build machine has no input device); the same input
+calls driven by the script steer and accelerate the kart.
+
