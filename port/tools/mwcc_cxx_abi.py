@@ -26,7 +26,8 @@ For 32-bit Windows targets the `this`-in-register convention is taken off
 member functions (see the comment in rewrite()).
 
 Not handled: where the vtable pointer sits inside an object, multiple
-inheritance (secondary vtables), pointers to virtual member functions of
+inheritance beyond the address of the second base's group in a vtable that
+is defined elsewhere as data, pointers to virtual member functions of
 classes with a virtual destructor.
 """
 import re
@@ -163,6 +164,25 @@ def rewrite(text, warn=None):
 
     # 2. address point = start of the table
     text, n_addr = re.subn(r"getelementptr inbounds \(\{ \[\d+ x ptr\] \}, ptr (@_ZTV[\w.$]+), i32 0, inrange i32 0, i32 2\)", r"\1", text)
+    # 2b. a class with two bases whose vtable is data written out elsewhere
+    # (MWCC layout): the table has one group per base, each with its own two
+    # header words. Group 0 is the table start; group 1 starts after group
+    # 0, which is one slot shorter than Itanium's when the class has a
+    # virtual destructor (one destructor slot instead of two).
+    external = set(re.findall(r"^(@_ZTV[\w.$]+) = external ", text, re.M))
+
+    def group_address(m):
+        sizes, table, group = [int(n) for n in re.findall(r"\[(\d+) x ptr\]", m.group(1))], m.group(2), int(m.group(3))
+        if table not in external or group > 1:
+            return m.group(0)
+        if group == 0:
+            return table
+        dtor = 1 if slots.get("_ZTS" + table[5:]) is not None else 0
+        return "getelementptr inbounds (i8, ptr %s, i32 %d)" % (table, 4 * (sizes[0] - dtor))
+
+    text, n_group = re.subn(r"getelementptr inbounds \((\{ \[\d+ x ptr\](?:, \[\d+ x ptr\])+ \}), ptr (@_ZTV[\w.$]+), i32 0, inrange i32 (\d+), i32 2\)",
+                            group_address, text)
+    n_addr += n_group
     if re.search(r"getelementptr inbounds \(\{[^)]*\}, ptr @_ZTV", text):
         warn("vtable reference left as it was (secondary vtable?)")
 
