@@ -170,7 +170,12 @@ static void records16(uint8_t* d, uint32_t size, int words) {
 void mkgp2pc_hsd_archive_header(void* header);
 void mkgp2pc_hsd_archive(void* archive);
 
+/* Counts loads: file data replaces older data at the same addresses, and
+ * caches keyed by address (the GX layer's textures) must notice. */
+unsigned mkgp2pc_data_generation;
+
 void mkgp2pc_data_loaded(int kind, void* data, uint32_t size) {
+  mkgp2pc_data_generation++;
   switch (kind) {
   case MKGP2PC_DATA_ARCHIVE_HEADER:
     mkgp2pc_hsd_archive_header(data);

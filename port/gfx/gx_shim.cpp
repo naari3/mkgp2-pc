@@ -13,9 +13,10 @@
  * (the game calls it after changing texture memory) starts a new generation
  * of them.
  *
- * GXSetArray: the SDK call has no size, Aurora's needs one. Indices are at
- * most 16 bits, so the size is 65536 elements, cut at the end of main
- * memory. (To be refined: it is the amount Aurora uploads.)
+ * GXSetArray: the SDK call has no size, Aurora's needs one, and uploads that
+ * much per draw. For model data the archive conversion knows where each
+ * vertex buffer ends (mkgp2pc_array_extent); buffers it has not seen get
+ * 64 KB.
  */
 #include <dolphin/gx.h>
 
@@ -32,6 +33,9 @@ void __real_GXLoadTexObj(GXTexObj*, GXTexMapID);
 void __real_GXInitTlutObj(GXTlutObj*, const void*, GXTlutFmt, u16);
 void __real_GXLoadTlut(const GXTlutObj*, u32);
 void __real_GXSetArray(GXAttr, const void*, u32, u8, bool);
+void __real_GXInvalidateTexAll(void);
+uint32_t mkgp2pc_array_extent(const void* base);
+extern unsigned mkgp2pc_data_generation;
 }
 
 namespace {
@@ -92,6 +96,11 @@ void __wrap_GXInitTexObjLOD(GameTexObj* o, u32 minFilt, u32 magFilt, float minLo
 
 void __wrap_GXLoadTexObj(GameTexObj* o, u32 id) {
   const Key key{o->data, o->width, o->height, o->format, static_cast<uint8_t>(o->flags & (kMipmap | kIndexed)), o->tlut};
+  static unsigned generation;
+  if (generation != mkgp2pc_data_generation) {
+    generation = mkgp2pc_data_generation;
+    sTextures.clear();
+  }
   auto it = sTextures.find(key);
   if (it == sTextures.end()) {
     GXTexObj real;
@@ -130,14 +139,21 @@ void __wrap_GXLoadTlut(const GameTlutObj* o, u32 idx) {
 
 void __wrap_GXSetArray(u32 attr, const void* base, u8 stride) {
   const uintptr_t end = 0x81800000u;
-  uint32_t size = 65536u * stride;
-  const uintptr_t at = reinterpret_cast<uintptr_t>(base);
-  if (at < end && at + size > end) {
-    size = static_cast<uint32_t>(end - at);
+  uint32_t size = mkgp2pc_array_extent(base);
+  if (size == 0) {
+    size = 0x10000;
+    const uintptr_t at = reinterpret_cast<uintptr_t>(base);
+    if (at < end && at + size > end) {
+      size = static_cast<uint32_t>(end - at);
+    }
   }
   __real_GXSetArray(static_cast<GXAttr>(attr), base, size, stride, false);
 }
 
 /* The game changes texture memory in place and says so with this call. */
 void mkgp2pc_gx_forget_textures(void) { sTextures.clear(); }
+void __wrap_GXInvalidateTexAll(void) {
+  sTextures.clear();
+  __real_GXInvalidateTexAll();
+}
 }

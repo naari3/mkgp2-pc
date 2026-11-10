@@ -54,7 +54,7 @@ GFX_REPLACED = ("video_min.c", "gx_min.c")
 # GX functions whose objects the game sizes differently from Aurora; the
 # link sends the game's calls to port/gfx/gx_shim.cpp (ld --wrap).
 GFX_WRAPPED = ("GXInitTexObj", "GXInitTexObjCI", "GXInitTexObjLOD", "GXLoadTexObj",
-               "GXInitTlutObj", "GXLoadTlut", "GXSetArray")
+               "GXInitTlutObj", "GXLoadTlut", "GXSetArray", "GXInvalidateTexAll")
 
 
 def asm_name(name):

@@ -38,7 +38,81 @@ typedef struct {
   uint32_t size;
   uint8_t* map; /* per byte: 1 = block converted, 2 = pointer field */
   unsigned problems;
+  uint32_t* arrays; /* offsets of the vertex buffers met on the walk */
+  uint32_t nb_arrays, cap_arrays;
 } Ctx;
+
+/*
+ * Extents of vertex buffers. The console's GXSetArray takes no size, and a
+ * host GX has to know how much to hand to the GPU. A vertex buffer ends no
+ * later than the next thing some pointer of the archive refers to, so the
+ * walk notes each buffer and the conversion derives its extent from the
+ * relocation targets. Kept sorted by address; loading an archive drops the
+ * entries of whatever was at those addresses before.
+ */
+typedef struct {
+  uintptr_t base;
+  uint32_t size;
+} Extent;
+static Extent* s_extents;
+static uint32_t s_nb_extents, s_cap_extents;
+
+static uint32_t extent_find(uintptr_t at) { /* first entry with base >= at */
+  uint32_t lo = 0, hi = s_nb_extents;
+  while (lo < hi) {
+    uint32_t mid = (lo + hi) / 2;
+    if (s_extents[mid].base < at) {
+      lo = mid + 1;
+    } else {
+      hi = mid;
+    }
+  }
+  return lo;
+}
+
+uint32_t mkgp2pc_array_extent(const void* base) {
+  uint32_t i = extent_find((uintptr_t)base);
+  if (i < s_nb_extents && s_extents[i].base == (uintptr_t)base) {
+    return s_extents[i].size;
+  }
+  /* a pointer into a known buffer (shape animation blends do that) */
+  if (i > 0 && (uintptr_t)base - s_extents[i - 1].base < s_extents[i - 1].size) {
+    return s_extents[i - 1].size - (uint32_t)((uintptr_t)base - s_extents[i - 1].base);
+  }
+  return 0;
+}
+
+static void extent_drop(uintptr_t lo, uintptr_t hi) {
+  uint32_t a = extent_find(lo), b = extent_find(hi);
+  memmove(s_extents + a, s_extents + b, (s_nb_extents - b) * sizeof(Extent));
+  s_nb_extents -= b - a;
+}
+
+static void extent_add(uintptr_t base, uint32_t size) {
+  uint32_t i = extent_find(base);
+  if (i < s_nb_extents && s_extents[i].base == base) {
+    s_extents[i].size = size;
+    return;
+  }
+  if (s_nb_extents == s_cap_extents) {
+    uint32_t cap = s_cap_extents ? s_cap_extents * 2 : 1024;
+    Extent* e = (Extent*)realloc(s_extents, cap * sizeof(Extent));
+    if (e == NULL) {
+      return;
+    }
+    s_extents = e;
+    s_cap_extents = cap;
+  }
+  memmove(s_extents + i + 1, s_extents + i, (s_nb_extents - i) * sizeof(Extent));
+  s_extents[i].base = base;
+  s_extents[i].size = size;
+  s_nb_extents++;
+}
+
+static int cmp_u32(const void* a, const void* b) {
+  uint32_t x = *(const uint32_t*)a, y = *(const uint32_t*)b;
+  return x < y ? -1 : x > y;
+}
 
 #define NONE 0xFFFFFFFFu
 
@@ -125,6 +199,20 @@ static void vtxdesc(Ctx* c, uint32_t o) {
     s16(c, o + 0x12);
     if (attr == 0xFF) { /* GX_VA_NULL */
       return;
+    }
+    if (c->map[o + 0x14] & 2) {
+      uint32_t v = *(uint32_t*)(c->d + o + 0x14); /* already host order */
+      if (c->nb_arrays == c->cap_arrays) {
+        uint32_t cap = c->cap_arrays ? c->cap_arrays * 2 : 256;
+        uint32_t* n = (uint32_t*)realloc(c->arrays, cap * sizeof(uint32_t));
+        if (n != NULL) {
+          c->arrays = n;
+          c->cap_arrays = cap;
+        }
+      }
+      if (c->nb_arrays < c->cap_arrays) {
+        c->arrays[c->nb_arrays++] = v;
+      }
     }
     o += 0x18;
   }
@@ -470,13 +558,13 @@ static void scene(Ctx* c, uint32_t o) {
 }
 
 void mkgp2pc_hsd_archive_header(void* header) {
-  Ctx c = {(uint8_t*)header, 0x20, NULL, 0};
+  Ctx c = {(uint8_t*)header, 0x20, NULL, 0, NULL, 0, 0};
   s32n(&c, 0, 5);
 }
 
 void mkgp2pc_hsd_archive(void* archive) {
   Archive* a = (Archive*)archive;
-  Ctx c = {a->data, a->data_size, NULL, 0};
+  Ctx c = {a->data, a->data_size, NULL, 0, NULL, 0, 0};
   uint32_t i;
   size_t len;
   if (a->data == NULL) {
@@ -517,5 +605,38 @@ void mkgp2pc_hsd_archive(void* archive) {
   if (c.problems) {
     fprintf(stderr, "mkgp2pc: HSD archive: %u things this converter does not know\n", c.problems);
   }
+  extent_drop((uintptr_t)a->data, (uintptr_t)a->data + a->data_size);
+  if (c.nb_arrays != 0) {
+    uint32_t* targets = (uint32_t*)malloc((a->nb_reloc + 1) * sizeof(uint32_t));
+    if (targets != NULL) {
+      uint32_t n = 0;
+      for (i = 0; i < a->nb_reloc; i++) {
+        uint32_t o = a->reloc_info[i];
+        if (o + 4 <= c.size) {
+          targets[n++] = *(uint32_t*)(c.d + o);
+        }
+      }
+      qsort(targets, n, sizeof(uint32_t), cmp_u32);
+      for (i = 0; i < c.nb_arrays; i++) {
+        uint32_t base = c.arrays[i], end = c.size, lo = 0, hi = n;
+        while (lo < hi) { /* first target above the base */
+          uint32_t mid = (lo + hi) / 2;
+          if (targets[mid] <= base) {
+            lo = mid + 1;
+          } else {
+            hi = mid;
+          }
+        }
+        if (lo < n && targets[lo] < end) {
+          end = targets[lo];
+        }
+        if (base < end) {
+          extent_add((uintptr_t)a->data + base, end - base);
+        }
+      }
+      free(targets);
+    }
+  }
+  free(c.arrays);
   free(c.map);
 }
