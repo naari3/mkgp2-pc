@@ -46,7 +46,11 @@ def compile_one(path, target):
     obj = os.path.join(OUT, path.replace(os.sep, "__") + ".o")
     cmd = ["clang", "-target", target, "-c", "-O0", "-g", "-fno-exceptions", "-fno-rtti", "-fcommon"] + cc.base_flags(path)[1:]
     cmd += ["-include", cc.COMPAT]
-    cmd += ["-x", "c++", "-std=gnu++98"] if cc.is_cxx(path, target) else ["-x", "c", "-std=gnu99", "-Wno-error=implicit-function-declaration", "-Wno-error=implicit-int", "-Wno-error=int-conversion", "-Wno-error=incompatible-pointer-types"]
+    # -Dinline=: in C, MWCC also emits an `inline` function as an ordinary
+    # one where it is called without being inlined. C99 leaves the caller of
+    # a plain `inline` function without a definition, GNU89 the caller of an
+    # `extern inline` one, and the sources use both spellings.
+    cmd += ["-x", "c++", "-std=gnu++98"] if cc.is_cxx(path, target) else ["-x", "c", "-std=gnu99", "-Dinline=", "-Wno-error=implicit-function-declaration", "-Wno-error=implicit-int", "-Wno-error=int-conversion", "-Wno-error=incompatible-pointer-types"]
     if cc.is_cxx(path, target):
         # C++: through LLVM IR, rewritten to MWCC's vtable conventions
         # (port/tools/mwcc_cxx_abi.py, docs/port/census.md section 13)
