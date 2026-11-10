@@ -51,7 +51,11 @@ def compile_one(path, target):
         # C++: through LLVM IR, rewritten to MWCC's vtable conventions
         # (port/tools/mwcc_cxx_abi.py, docs/port/census.md section 13)
         ll = obj[:-2] + ".ll"
-        irflags = ["-S", "-emit-llvm", "-fstandalone-debug", "-fno-discard-value-names", "-flto", "-fwhole-program-vtables"]
+        # -fno-strict-return: a function declared with a result that runs off
+        # its end returns whatever is in the register, as on the console; the
+        # default in C++ is a trap instruction there (card_pack does this).
+        irflags = ["-S", "-emit-llvm", "-fstandalone-debug", "-fno-discard-value-names", "-flto", "-fwhole-program-vtables",
+                   "-fno-strict-return"]
         r = subprocess.run([c for c in cmd if c != "-c"] + irflags + [path, "-o", ll], cwd=ROOT, capture_output=True, text=True, errors="replace")
         if r.returncode != 0 and "with exceptions disabled" in r.stderr:
             # the few units that throw or catch (also through headers) are
@@ -61,6 +65,8 @@ def compile_one(path, target):
         if r.returncode != 0:
             return path, None
         notes = []
+        if os.path.exists(obj[:-2] + ".abi-notes"):
+            os.remove(obj[:-2] + ".abi-notes")
         text, _ = mwcc_cxx_abi.rewrite(open(ll, encoding="utf-8", errors="surrogateescape").read(), notes.append)
         text, _ = mwcc_data_layout.rewrite(text, DATA_OBJECTS)
         text, _ = mwcc_int_div.rewrite(text)
@@ -617,7 +623,8 @@ def main():
         # then stores an error code through the game's `errno` as if it were
         # a thread-local offset). Keep them out of the dynamic symbol table.
         private = os.path.join(OUT, "private_names.ver")
-        host_names = sorted(n for n in ("errno", "time") if n in info)
+        host_names = sorted(n for n in ("errno", "time") if n in info) + [
+            "wcslen", "wcscpy", "wcsncpy", "wcscmp", "wcschr", "wmemset"]  # port/compat/wchar16.c
         with open(private, "w") as f:
             f.write("{ local: %s };\n" % " ".join(n + ";" for n in host_names))
         cmd = ["clang", "-m32", "-O0", "-g", "-fcommon", "-no-pie", "-Wl,--version-script=" + private, "-Wl,-T," + script, "-Wl,-T," + bss_ld, "-o", exe, stubs, thunks] + port_objs + [

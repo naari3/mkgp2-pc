@@ -321,3 +321,16 @@ kept for reference. Item 10 is open.
     `ReverseChallenge_Init.inc:172`, `NokoNoko_801287F8.cpp:1001`,
     `SuikaBall_801313D0.cpp:1154`); the console keeps the first call's
     result in r3, a host does not. Wanted: the nested call, or a host form.
+24. Shift-JIS patterns of the card name check typed as words and as byte
+    strings (added 2026-11-10; open). `NameCheck_ScanBannedWords`
+    (`src/game/NameCheck_CardName.c:3445`) holds names as `NameCode`
+    (`unsigned short`, one Shift-JIS character each) and searches them with
+    the byte functions `strstr` / `strcmp`. Its patterns in
+    `src/game/autodata/sdata2_806D3060.c` are `const unsigned int X =
+    0x82A60000;` (`lbl_806D46E4` and its neighbours) or `const char[8]`
+    (`lbl_806D4714`, `lbl_806D4720`, `lbl_806D4740`). On a little-endian
+    host the first kind begins with a zero byte, `strstr` matches the empty
+    pattern everywhere and the scan runs off its buffer. Wanted: every
+    operand that is compared with `NameCode` data as a `NameCode` array.
+    Left for the port side: names with codes below 0x100, whose byte view
+    starts with a zero on the console only.

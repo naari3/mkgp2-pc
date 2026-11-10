@@ -153,6 +153,28 @@ def rewrite(text, warn=None):
 
     # 3. virtual calls
     lines = text.split("\n")
+    # A class that is only ever deleted through a pointer here has no debug
+    # description in this unit. The `delete` itself tells where its
+    # destructor is: it calls the deleting one, the second of the pair.
+    label, seen = "", {}
+    for line in lines:
+        m = re.match(r"([\w.]+):", line)
+        if m:
+            label = m.group(1)
+            continue
+        if line.startswith("define "):
+            label = ""
+            seen.clear()
+            continue
+        m = re.match(r"\s*%[\w.]+ = call i1 @llvm\.(?:public\.)?type\.test\(ptr (%[\w.]+), metadata !\"([^\"]+)\"\)", line)
+        if m:
+            seen[m.group(1)] = m.group(2)
+            continue
+        m = re.match(r"\s*%vfn[\w.]* = getelementptr inbounds ptr, ptr (%vtable[\w.]*), i64 (\d+)", line)
+        if m and label.startswith("delete.notnull"):
+            cls = seen.get(m.group(1))
+            if cls and cls not in slots and int(m.group(2)) > 0:
+                slots[cls] = int(m.group(2)) - 1
     out = []
     vt_class = {}     # %vtable name -> _ZTS name (per function)
     dtor_fn = {}      # value loaded from a destructor slot -> flag
