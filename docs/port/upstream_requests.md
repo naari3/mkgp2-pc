@@ -336,7 +336,7 @@ kept for reference. Item 10 is open.
     Left for the port side: names with codes below 0x100, whose byte view
     starts with a zero on the console only.
 25. Float and integer parameters declared in another order than defined,
-    C names (added 2026-11-10; open). Same class as item 22, found with
+    C names (added 2026-11-10; done, upstream 1d181d0). Same class as item 22, found with
     `port/tools/arg_order_census.py`, which compares every declaration in
     the host IR with the definition. I = integer or pointer, F = float:
     `fn_802090F0` (defined IFFFII in `anon_80208E30_nm1.cpp`, declared
@@ -346,3 +346,13 @@ kept for reference. Item 10 is open.
     `KartMovement_PhysicsStep` (IIFFF, IFFFI in one), and `AnimState_Init`
     (second parameter a pointer, declared float in two units). The first
     stops the race scene while it builds the player's kart.
+26. Calls that pass fewer arguments than the definition takes (added
+    2026-11-10; open). The console leaves an argument register alone until
+    it is written, so `EnemyRunType1_Init(void **self)` calls
+    `EnemyRun_BaseInit(self)` and the base constructor still finds the four
+    further arguments its own caller put in r4 to r8; a host reads stack
+    garbage (the race scene stops while it builds the first AI kart). The
+    second list of `port/tools/arg_order_census.py`, kept in
+    `docs/port/arg_count_census.txt`: 52 functions, among them destructors
+    called without their flag and `ItemObject_GetGroundTypeAt` (five
+    parameters, three passed in about sixty units).

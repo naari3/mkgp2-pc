@@ -1,0 +1,280 @@
+AudioChannel_DtorWithSeStop: takes 2 in src/game/AudioChannel_DtorWithSeStop.c
+    called with 1 in src/game/AI_KartInit.cpp
+    called with 1 in src/game/fn_801E81D8.cpp
+Clear: takes 2 in src/game/bitread/fn_8018B248.c
+    called with 0 in src/game/miyazakiconsole/fn_80180170.c
+CourseEnvironment_Dtor: takes 2 in src/game/CourseEnvironment.cpp
+    called with 1 in src/game/CoinChallenge.cpp
+    called with 1 in src/game/anon_802124FC_m1.cpp
+EnemyRun_BaseInit: takes 6 in src/game/EnemyRun_BaseInit.cpp
+    called with 1 in src/game/EnemyRunType1_Init.c
+    called with 1 in src/game/EnemyRunType2_Init.c
+ItemObject_GetGroundTypeAt: takes 5 in src/game/ItemObjectManager_RenderImpl.c
+    called with 3 in src/game/BananaTriple_OnImpactTick.c
+    called with 3 in src/game/BananaTriple_Tick_HeldAndHoming.c
+    called with 3 in src/game/BombExplosion_UpdateShockwaveVfx.c
+    called with 3 in src/game/Dossun_State1And2_HeldOrFly.c
+    called with 3 in src/game/Dossun_State2_Drop.c
+    called with 3 in src/game/DrawEffect_KartDustRing_Update.c
+    called with 3 in src/game/EffectDrift79.cpp
+    called with 3 in src/game/EffectDrift7A.cpp
+    called with 3 in src/game/EffectItemChainIndicator_Tick.c
+    called with 3 in src/game/EffectKartTrail3A.cpp
+    called with 3 in src/game/EffectVfx4E_TextSplash_Tick.c
+    called with 3 in src/game/GabyouItemFall.cpp
+    called with 3 in src/game/GabyouItemFlight.cpp
+    called with 3 in src/game/GabyouItemHeld.cpp
+    called with 3 in src/game/GabyouItemImpact.cpp
+    called with 3 in src/game/GabyouTripleChild.c
+    called with 3 in src/game/GreenShell_State1_Held.c
+    called with 3 in src/game/ItemGroundExplosion.c
+    called with 3 in src/game/ItemGroundProbes.c
+    called with 3 in src/game/ItemLaunch.c
+    called with 3 in src/game/ItemMotion.c
+    called with 3 in src/game/ItemObject_ChainShell_GrabAndArc_Sub.c
+    called with 3 in src/game/ItemObject_Teresa_GrabAndArc_Sub.c
+    called with 3 in src/game/ItemObject_Tick_Kind2d_ChainShellPair.c
+    called with 3 in src/game/ItemObject_Tick_Kind3dTo3f_GreenShell.c
+    called with 3 in src/game/Item_BendVelocityByGroundProbe.c
+    called with 3 in src/game/KartFxExhaustRay.c
+    called with 3 in src/game/MukadeItem.c
+    called with 3 in src/game/OnchiSpeaker_State1_Held.c
+    called with 3 in src/game/OnchiSpeaker_State2_Flight.c
+    called with 3 in src/game/PowItem.c
+    called with 3 in src/game/ShellItem.c
+    called with 3 in src/game/StarItem.c
+    called with 3 in src/game/TornadoItem.c
+    called with 3 in src/game/fn_80100F64.c
+    called with 3 in src/game/fn_80101A58.c
+    called with 3 in src/game/fn_801022E0.c
+    called with 3 in src/game/fn_801025C0.c
+    called with 3 in src/game/fn_80103144.c
+    called with 3 in src/game/fn_8010376C.c
+    called with 3 in src/game/fn_80104ED4.c
+    called with 3 in src/game/fn_80105180.c
+    called with 3 in src/game/fn_80105EB4.c
+    called with 3 in src/game/fn_8010670C.c
+    called with 3 in src/game/fn_80107C74.c
+    called with 3 in src/game/fn_80108484.c
+    called with 3 in src/game/fn_801094E4.c
+    called with 3 in src/game/fn_80109AB8.c
+    called with 3 in src/game/fn_8010AA54.c
+    called with 3 in src/game/fn_8010ACF0.c
+    called with 3 in src/game/fn_8010B664.c
+    called with 3 in src/game/fn_8010CC40.c
+    called with 3 in src/game/fn_8010D270.c
+    called with 3 in src/game/fn_8010DCAC.c
+    called with 3 in src/game/fn_8010E2A8.c
+    called with 3 in src/game/fn_8010F40C.c
+    called with 3 in src/game/fn_8010FA60.c
+    called with 3 in src/game/fn_8011136C.c
+    called with 3 in src/game/fn_80113114.c
+    called with 3 in src/game/fn_80113728.c
+    called with 3 in src/game/fn_80113F30.c
+    called with 3 in src/game/fn_80114400.c
+    called with 3 in src/game/fn_80115474.c
+    called with 3 in src/game/fn_80115894.c
+    called with 3 in src/game/fn_80116120.c
+    called with 3 in src/game/fn_80116640.c
+    called with 3 in src/game/fn_80116960.c
+    called with 3 in src/game/fn_8011A184.c
+    called with 3 in src/game/fn_8011A684.c
+    called with 3 in src/game/fn_8011B244.c
+    called with 3 in src/game/fn_8011B748.c
+    called with 3 in src/game/fn_8011C20C.c
+    called with 3 in src/game/fn_8011C5DC.c
+    called with 3 in src/game/objview/fn_80198F84.c
+    called with 3 in src/game/objview/fn_801992B0.c
+Item_Explode: takes 2 in src/game/fn_80113728.c
+    called with 1 in src/game/fn_8011C5DC.c
+KartDriver_Dtor: takes 2 in src/game/KartDriver_Dtor.c
+    called with 1 in src/game/AI_KartInit.cpp
+    called with 1 in src/game/fn_801E81D8.cpp
+LObjList_Destroy: takes 2 in src/game/LObjList.cpp
+    called with 1 in src/game/anon_8020007C_nm1.cpp
+LakituStart_Dtor: takes 2 in src/game/LakituStart_Dtor.c
+    called with 1 in src/game/CoinChallenge.cpp
+    called with 1 in src/game/anon_802124FC_m1.cpp
+MemoryManager_TimedFreeIfActive: takes 2 in src/game/CardPrinterChecker_StartCleaning.c
+    called with 1 in src/game/CardTaskChecks.cpp
+Next: takes 1 in src/game/objview/fn_8018D0F4.c
+    called with 0 in src/triforce/random_nm1.c
+Object_DtorWithGXSync: takes 2 in src/game/Object_DtorWithGXSync.c
+    called with 1 in src/game/CoinSystem_Init.c
+    called with 1 in src/game/DNBress_breath.cpp
+    called with 1 in src/game/DNFlash_tail.cpp
+    called with 1 in src/game/DNStartDino_tail.cpp
+    called with 1 in src/game/EnmyFaceEffect.cpp
+    called with 1 in src/game/FaceEffect.cpp
+    called with 1 in src/game/ItemObjectManager_Controls.c
+    called with 1 in src/game/KartTireFX.cpp
+    called with 1 in src/game/NokoNoko_Init.c
+    called with 1 in src/game/PreviewModel.c
+    called with 1 in src/game/anon_8020007C_nm1.cpp
+    called with 1 in src/game/anon_8021A7C8.cpp
+    called with 1 in src/game/cLNormal3DWrap.cpp
+    called with 1 in src/game/coursescene/fn_8017E824.cpp
+    called with 1 in src/game/fn_801F9AAC.cpp
+    called with 1 in src/game/mapobject/fn_8017AD54.cpp
+    called with 1 in src/game/objview/fn_801957AC.cpp
+PathCursor_Free: takes 2 in src/game/PathCursor_Free.c
+    called with 1 in src/game/PathFollower_Init.cpp
+    called with 1 in src/game/PathFollower_Update.cpp
+    called with 1 in src/game/dtor_801DC460.cpp
+    called with 1 in src/game/fn_801DC29C.cpp
+RankReached: takes 4 in src/game/fn_801D5970.c
+    called with 3 in src/game/fn_801D680C.c
+    called with 3 in src/game/fn_801D6DF0.c
+SoundDriver_GetOrCreate: takes 1 in src/game/clItemBoxManager_nm1.cpp
+    called with 0 in src/game/DbgMenu.cpp
+SpriteAnimHandle_Destroy: takes 2 in src/game/SpriteAnimHandleDestroy.cpp
+    called with 1 in src/game/anon_8021B568_exact2.cpp
+    called with 1 in src/game/clFlowItemSelect_Dtor.c
+Sprite_Destroy: takes 2 in src/game/Sprite_Destroy.c
+    called with 1 in src/game/CardPrintOwner.cpp
+    called with 1 in src/game/FaceEffect.cpp
+    called with 1 in src/game/KartChoiceFinish.cpp
+    called with 1 in src/game/SpritePairOwnerLife.cpp
+    called with 1 in src/game/TimerDisp.cpp
+    called with 1 in src/game/anon_80218D98.cpp
+    called with 1 in src/game/anon_80219FF4_nm1.cpp
+    called with 1 in src/game/anon_8021BC44.cpp
+    called with 1 in src/game/anon_8021BC44_nm1.cpp
+    called with 1 in src/game/anon_8021F088_m_80221AA8.cpp
+    called with 1 in src/game/anon_8021F088_nm_80220780.cpp
+    called with 1 in src/game/anon_8021F088_nm_80221C94_m1.cpp
+    called with 1 in src/game/anon_8021F088_nm_80221C94_nm1.cpp
+    called with 1 in src/game/anon_8021F088_nm_80221C94_nm1_m1.cpp
+    called with 1 in src/game/anon_8021F088_nm_80221C94_nm1_nm1.cpp
+    called with 1 in src/game/anon_8021F088_nm_8022353C.cpp
+    called with 1 in src/game/anon_8021F088_nm_80224484.cpp
+    called with 1 in src/game/anon_8021F088_nm_802246A4.cpp
+    called with 1 in src/game/anon_8021F088_nm_80224800.cpp
+    called with 1 in src/game/anon_80224ECC.cpp
+    called with 1 in src/game/anon_802253EC_tail.cpp
+    called with 1 in src/game/clFlowCourse.cpp
+    called with 1 in src/game/fn_801C5C34.cpp
+    called with 1 in src/game/fn_801CE1EC.cpp
+TitleStats_MarkAllCoursesClearedIfDistance: takes 3 in src/game/RankLog.c
+    called with 2 in src/game/auto_ONKARTHIT_block.c
+TweenInterp_Dtor: takes 2 in src/game/HitMessageOverlay_Init.c
+    called with 1 in src/game/RaceDigitHudDtor.cpp
+    called with 1 in src/game/RaceDigitLap.cpp
+    called with 1 in src/game/RaceDigits.cpp
+    called with 1 in src/game/anon_80202148.cpp
+    called with 1 in src/game/anon_80216568_misc.cpp
+VisualEffectHolder_Dtor: takes 2 in src/game/KartItem_RenderCb_Modes.c
+    called with 1 in src/game/AI_KartInit.cpp
+    called with 1 in src/game/fn_801E81D8.cpp
+clDrawMan_Buckets_Free: takes 2 in src/game/clDrawMan_Buckets_Free.c
+    called with 1 in src/game/clDrawManager.cpp
+clDrawMan_Dtor: takes 2 in src/game/clDrawMan_Dtor.c
+    called with 1 in src/game/clDrawManager.cpp
+clDrawMan_NodePool_Free: takes 2 in src/game/clDrawMan_NodePool_Free.c
+    called with 1 in src/game/clDrawManager.cpp
+dtor_8002CDF4: takes 2 in src/game/ObjectBase.c
+    called with 1 in src/game/ChallengeDemoObj.cpp
+    called with 1 in src/game/ChallengeDemoShell.cpp
+    called with 1 in src/game/ChallengeDemoTornado.cpp
+    called with 1 in src/game/ChallengeDemoUra.cpp
+    called with 1 in src/game/MiniGameBase.cpp
+    called with 1 in src/game/VSModeIntro.cpp
+    called with 1 in src/game/VolumeCalibration.cpp
+    called with 1 in src/game/ZoneList.c
+    called with 1 in src/game/anon_80209FA4.cpp
+    called with 1 in src/game/anon_8020F44C.cpp
+    called with 1 in src/game/anon_80210078.cpp
+    called with 1 in src/game/clMiyoshiCardCreate.c
+dtor_80036988: takes 2 in src/game/StrPcb_988.c
+    called with 1 in src/game/Terrain_RaycastWall.c
+dtor_800488F4: takes 2 in src/game/CourseEnvironment.cpp
+    called with 1 in src/game/mapeffect/mapeffect.cpp
+dtor_80052808: takes 2 in src/game/auto_ONKARTHIT_block.c
+    called with 1 in src/game/auto_ONKARTHIT_block.c
+dtor_8005285C: takes 2 in src/game/auto_ONKARTHIT_block.c
+    called with 1 in src/game/auto_ONKARTHIT_block.c
+dtor_8007D9C4: takes 2 in src/game/dtor_8007D9C4.c
+    called with 1 in src/game/CGameCoin_8012BF5C.cpp
+    called with 1 in src/game/CourseObjects_80138CE4.cpp
+    called with 1 in src/game/DNBress.cpp
+    called with 1 in src/game/DNFlash.cpp
+    called with 1 in src/game/DNStartCamera.cpp
+    called with 1 in src/game/DNStartDino_nm1.cpp
+    called with 1 in src/game/ItemBox_8016CC04.cpp
+    called with 1 in src/game/LavaSplash.cpp
+    called with 1 in src/game/Scene_8016EACC.cpp
+    called with 1 in src/game/objview/fn_8018D968.cpp
+    called with 1 in src/game/objview/fn_8018E538.cpp
+    called with 1 in src/game/objview/fn_80196028.cpp
+    called with 1 in src/game/objview/fn_80197130.cpp
+    called with 1 in src/game/objview/fn_80197F24.cpp
+dtor_80091284: takes 2 in src/game/ItemEffectBus.c
+    called with 1 in src/game/EnmyFaceEffect.cpp
+dtor_800A0688: takes 2 in src/game/BtMode_BaseDtor.c
+    called with 1 in src/game/TaMode_FrameUpdate.cpp
+dtor_800ABF10: takes 2 in src/game/CourseData_Lookup.c
+    called with 1 in src/game/clLineManager.cpp
+dtor_80122068: takes 2 in src/game/SpriteHandle.cpp
+    called with 1 in src/game/SpriteHandlePool.c
+dtor_80122120: takes 2 in src/game/SpriteHandle.cpp
+    called with 1 in src/game/Scene_801734B0.cpp
+    called with 1 in src/game/fn_801F27B4.cpp
+dtor_8013DCBC: takes 2 in src/game/PreviewModel.c
+    called with 1 in src/game/anon_8021A7C8.cpp
+dtor_801419C8: takes 2 in src/game/LogoAnim.c
+    called with 1 in src/game/RacePopups.cpp
+    called with 1 in src/game/anon_8020E3D0_nm2.cpp
+    called with 1 in src/game/anon_8021550C.cpp
+    called with 1 in src/game/anon_80216568_misc.cpp
+    called with 1 in src/game/resultscene/resultscene_nm1.cpp
+dtor_80145F04: takes 2 in src/game/RankPanel_80144430.cpp
+    called with 1 in src/game/RankPanel_80144430.cpp
+dtor_80157EC0: takes 2 in src/game/SceneList_80157EA8.cpp
+    called with 1 in src/game/fn_80157DE0.cpp
+dtor_8016A270: takes 2 in src/game/CourseMarker.cpp
+    called with 1 in src/game/DNBress_breath.cpp
+    called with 1 in src/game/DNFlash_tail.cpp
+    called with 1 in src/game/DNLensflare.cpp
+    called with 1 in src/game/DNStartCamera_m2.cpp
+    called with 1 in src/game/DNStartDino_tail.cpp
+    called with 1 in src/game/mapeffect/mapeffect.cpp
+dtor_8018A0A8: takes 2 in src/game/objview/dtor_8018A0A8.c
+    called with 1 in src/game/ShadowCaster.cpp
+dtor_801BA14C: takes 2 in src/game/dtor_801BA14C.c
+    called with 1 in src/game/FlowCardCheck_nm2.cpp
+    called with 1 in src/game/anon_8020D1C0.cpp
+    called with 1 in src/game/anon_8020DAA0.cpp
+    called with 1 in src/game/clFlowCourse.cpp
+    called with 1 in src/game/clFlowItemSelect_Dtor.c
+    called with 1 in src/game/clFlowRound.c
+    called with 1 in src/game/fn_801BAA88.cpp
+    called with 1 in src/game/fn_801C5C34.cpp
+    called with 1 in src/game/fn_801CCF2C.cpp
+    called with 1 in src/game/fn_801CE1EC.cpp
+dtor_801F6BD0: takes 2 in src/game/dtor_801F6BD0.c
+    called with 1 in src/game/fn_801F7604.cpp
+fn_80124C84: takes 2 in src/game/fn_80124C84.c
+    called with 1 in src/game/CoinChallenge.cpp
+    called with 1 in src/game/anon_802124FC_m1.cpp
+fn_80141A24: takes 2 in src/game/LogoAnim.c
+    called with 1 in src/game/anon_8020E3D0_nm2.cpp
+    called with 1 in src/game/anon_80216568_misc.cpp
+fn_8016C634: takes 2 in src/sound/SoundMgr_Weather.c
+    called with 1 in src/game/CoinChallenge.cpp
+    called with 1 in src/game/anon_802124FC_m1.cpp
+fn_8019A4E0: takes 2 in src/game/kartmove/fn_8019A4E0.cpp
+    called with 1 in src/game/auto_ONKARTHIT_block.c
+fn_801B7C1C: takes 1 in src/game/fn_801B7C1C.c
+    called with 0 in src/game/fn_801BAA88.cpp
+fn_801B7C40: takes 1 in src/game/fn_801B7C40.c
+    called with 0 in src/game/fn_801BAA88.cpp
+fn_801D9F88: takes 2 in src/game/fn_801D9F88.c
+    called with 1 in src/game/CardPrintFlowLifetime.cpp
+fn_8022FCA8: takes 2 in src/game/EnmyFaceEffect.cpp
+    called with 1 in src/game/EnemyFace_exact5.cpp
+fn_802406A4: takes 2 in src/game/JointTracks.cpp
+    called with 1 in src/game/DNBress_breath.cpp
+    called with 1 in src/game/DNStartDino_tail.cpp
+fn_80253294: takes 3 in src/game/HudManager.cpp
+    called with 2 in src/game/HUD_RegisterOverlay.c
+52 functions called with fewer arguments than they take
