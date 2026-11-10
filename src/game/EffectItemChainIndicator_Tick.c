@@ -10,14 +10,12 @@
  * has these two instructions in the opposite order. Conversion literals
  * are already mapped to pooled lbl_806D5378 by the standard postprocess. */
 
-typedef struct Vec {
-    float x, y, z;
-} Vec;
+#include "game/types/Vec.h"
 
 extern int g_gameMode;
 extern int g_kartVariant;
 extern int g_cupId;
-extern const float lbl_8032A36C[];
+extern const float EffectItemChainIndicator_Tick_rodata_8032A36C[];
 extern const float lbl_806D51BC; /* 2.0 */
 extern const float lbl_806D51C0; /* 0.0 */
 extern const float lbl_806D51C4; /* 1.0 */
@@ -222,7 +220,7 @@ void EffectItemChainIndicator_Tick(unsigned char *self)
         if (idx < 0) {
             c->color = 2;
         } else {
-            c->color = (int)lbl_8032A36C[idx];
+            c->color = (int)EffectItemChainIndicator_Tick_rodata_8032A36C[idx];
         }
         self[0xB4]++;
     }

@@ -1,4 +1,4 @@
-struct Vec3 { float x, y, z; };
+#include "game/types/Vec3.h"
 
 struct JDCamera {
     int state;
@@ -17,37 +17,10 @@ struct JDTimer {
     void *sprite[7];
 };
 
-struct JDLanding { unsigned char pad0; unsigned char slowed; char pad2[10]; float scale; };
-struct JDCoins { int pad0; int pad4; int base; int earned; };
+#include "game/types/JDLanding.h"
+#include "game/types/JDCoins.h"
 
-struct JDMode {
-    void *vptr;
-    int x4;
-    void *car;
-    void *lakitu;
-    void *environment;
-    void *camera;
-    void *goalCamera;
-    void *x1C;
-    char pad20[8];
-    void *hud;
-    JDTimer *timer;
-    char pad30[0xC];
-    JDLanding *landing;
-    JDCamera *introCamera;
-    unsigned char active;
-    unsigned char reached;
-    char pad46[2];
-    int endDelay;
-    int resultFrames;
-    int state;
-    char pad54[4];
-    float distance;
-    char pad5C[0x20];
-    JDCoins *coins;
-    char pad80[4];
-    int coinCount;
-};
+#include "game/types/JDMode.h"
 
 extern "C" {
 extern unsigned char g_raceEnded, g_lakituStartAnimDone;
@@ -55,7 +28,7 @@ extern float g_raceTimeRemaining;
 extern void *g_weatherSystem, *lbl_806D109C;
 extern const float lbl_806DAD70, lbl_806DAD74, lbl_806DAD7C, lbl_806DAD88, lbl_806DADA4;
 extern const float lbl_806DADB0, lbl_806DADD8, lbl_806DADE8, lbl_806DADEC, lbl_806DADF4;
-extern const float lbl_803C3CF0[14];
+extern const float JumpDistanceMode_rodata_803C3CF0[14];
 void *GetRaceContextPtr();
 void ItemObjectManager_PerFrameUpdate(void *);
 void fn_802128F4(JDLanding *, void *);
@@ -183,7 +156,7 @@ static inline void UpdateTimer(JDTimer *timer) {
         k = lbl_806DADF4;
         timer->slide += lbl_806DAD88;
         for (i = 0; i < 7; i++) {
-            fn_8011F804(timer->sprite[i], k * timer->slide + lbl_803C3CF0[i * 2], lbl_803C3CF0[i * 2 + 1]);
+            fn_8011F804(timer->sprite[i], k * timer->slide + JumpDistanceMode_rodata_803C3CF0[i * 2], JumpDistanceMode_rodata_803C3CF0[i * 2 + 1]);
         }
     }
     {
@@ -250,7 +223,7 @@ extern "C" int JumpDistanceMode_Update(JDMode *self) {
     fn_80253EBC(self->hud, lbl_806DADA4 * CarObject_CalcSpeedRatio(self->car));
     fn_80253EC0(self->hud, KartItem_GetCurrentSpeedWithBonus(self->car));
     HUD_FrameUpdate(self->hud);
-    UpdateTimer(self->timer);
+    UpdateTimer(self->display);
     RumbleUpdate();
     TransitionEffect_Tick(getTransition());
     if (g_raceEnded == 1) {
@@ -278,7 +251,7 @@ extern "C" int JumpDistanceMode_Update(JDMode *self) {
                 }
                 NokoNokoChallenge_SaveResult(self, self->coinCount, self->reached);
                 {
-                    JDTimer *t = self->timer;
+                    JDTimer *t = self->display;
                     t->slide = lbl_806DAD7C;
                     t->exiting = 1;
                 }

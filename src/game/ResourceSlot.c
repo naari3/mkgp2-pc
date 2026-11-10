@@ -3,13 +3,9 @@
  * one GXTexObj per texture, a GXTlutObj per CI texture and the TLUT slot it
  * was assigned. Ids from 0x2B00 up name display buffers instead of files.
  */
-typedef struct GXTexObj {
-    unsigned int dummy[8];
-} GXTexObj;
+#include "game/types/GXTexObj.h"
 
-typedef struct GXTlutObj {
-    unsigned int dummy[3];
-} GXTlutObj;
+#include "game/types/GXTlutObj.h"
 
 extern void GXInitTlutObj(GXTlutObj *obj, void *lut, unsigned int fmt, unsigned short n);
 extern void GXInitTexObj(GXTexObj *obj, void *image, unsigned short w, unsigned short h, unsigned int fmt,
@@ -19,20 +15,7 @@ extern void GXInitTexObjCI(GXTexObj *obj, void *image, unsigned short w, unsigne
 extern void GXInitTexObjLOD(GXTexObj *obj, unsigned int minFilt, unsigned int magFilt, float minLOD, float maxLOD,
                             float lodBias, unsigned char clamp, unsigned char edgeLOD, unsigned int aniso);
 
-typedef struct TEXHeader {
-    unsigned short height;
-    unsigned short width;
-    unsigned int format;
-    void *data;
-    unsigned int wrapS;
-    unsigned int wrapT;
-    unsigned int minFilter;
-    unsigned int magFilter;
-    float lodBias;
-    unsigned char edgeLODEnable;
-    unsigned char minLOD;
-    unsigned char maxLOD;
-} TEXHeader;
+#include "game/types/TEXHeader.h"
 
 typedef struct CLUTHeader {
     unsigned short numEntries;
@@ -41,25 +24,11 @@ typedef struct CLUTHeader {
     void *data;
 } CLUTHeader;
 
-typedef struct TEXDescriptor {
-    TEXHeader *tex;
-    CLUTHeader *clut;
-} TEXDescriptor;
+#include "game/types/TEXDescriptor.h"
 
-typedef struct TEXPalette {
-    void *data;
-    unsigned int numDescriptors;
-} TEXPalette;
+#include "game/types/TEXPalette.h"
 
-typedef struct ResourceSlot {
-    int id;
-    int group;
-    TEXPalette *palette;
-    int count;
-    GXTexObj *texObjs;
-    GXTlutObj *tlutObjs;
-    unsigned char *tlutNames;
-} ResourceSlot;
+#include "game/types/ResourceSlot.h"
 
 extern void TEXReleasePalette(TEXPalette **palette);
 extern void TEXLoadPalette_Retry(TEXPalette **palette, const char *path);

@@ -1,4 +1,4 @@
-typedef struct HitVec3 { float x, y, z; } HitVec3;
+#include "game/types/HitVec3.h"
 typedef struct HitMtx44 { float m[16]; } HitMtx44;
 typedef struct HitEffectBus {
     unsigned char pad_00[0x10];
@@ -19,14 +19,7 @@ typedef struct HitRaceSlot {
     unsigned char pad_04[0xB0];
     HitDriver *driver;
 } HitRaceSlot;
-typedef struct HitItem {
-    unsigned char pad_00[0x1C];
-    unsigned char kind;
-    unsigned char pad_1D[0x83];
-    HitVec3 position;
-    unsigned char pad_AC[0x18];
-    float radiusScale;
-} HitItem;
+#include "game/types/HitItem.h"
 typedef struct HitDescriptor {
     unsigned char pad_00[8];
     float radius;
@@ -44,7 +37,7 @@ extern void Mtx44_TransformVec3(HitVec3 *dest, const HitMtx44 *matrix,
                               const HitVec3 *source);
 extern float fn_800D3184(const HitVec3 *a, const HitVec3 *b);
 extern HitDescriptor lbl_8041AC24[];
-extern const HitVec3 lbl_8032DDF4;
+extern const HitVec3 Item_PropagateHitToDriversInRadius_rodata_8032DDF4;
 extern const float lbl_806D5B24;
 
 /* Private layout views expose only fields read here and by the callees.
@@ -131,7 +124,7 @@ void Item_PropagateHitToDriversInRadius(HitItem *item, HitDriver *excluded)
     if (item == 0) {
         return;
     }
-    radius = item->radiusScale * lbl_8041AC24[item->kind].radius;
+    radius = item->radiusScale * lbl_8041AC24[item->kind_01C].radius;
     radius = lbl_806D5B24 + radius;
     for (i = 0; i < 128; i++) {
         HitRaceSlot *slot = RaceContextSlot_GetIfAlive(GetRaceContextPtr(), i);
@@ -145,7 +138,7 @@ void Item_PropagateHitToDriversInRadius(HitItem *item, HitDriver *excluded)
                 continue;
             }
             Mtx_TransposeToMtx44(&matrix, KartDriver_GetKartRootMtx(driver));
-            position = lbl_8032DDF4;
+            position = Item_PropagateHitToDriversInRadius_rodata_8032DDF4;
             origin = position;
             Mtx44_TransformVec3(&position, &matrix, &origin);
             if (fn_800D3184(&item->position, &position) < radius) {

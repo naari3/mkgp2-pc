@@ -3,7 +3,7 @@
 /*
  * Continue (insert coin) flow scene @ 0x8024D764..0x8024E338.
  *
- * ContinueScene derives from FlowScene (vtable lbl_804EF000). CoinCounter
+ * ContinueScene derives from FlowScene (vtable ContinueScene_vtable_804EF000). CoinCounter
  * (0x10 bytes) is defined first so CW auto-inlines its methods into the
  * scene; its out-of-line copies are the functions at the end of the range.
  */
@@ -18,10 +18,7 @@ struct CoinWindow {
     CoinWindow();
 };
 
-struct CoinPrompt {
-    char body[0x20];
-    CoinPrompt(int a, int b, int c, int d, int e);
-};
+#include "game/types/CoinPrompt.h"
 
 struct CoinPopupDetail {
     int pad00[4];
@@ -32,10 +29,7 @@ struct CoinPopupDetail {
     CoinPopupDetail(int a, int b, int c);
 };
 
-struct ItemMsgWnd {
-    char body[0x5C];
-    ItemMsgWnd();
-};
+#include "game/types/ItemMsgWnd.h"
 
 struct MsgParam {
     int a;
@@ -75,7 +69,7 @@ extern int g_roundIndex;
 extern char g_playerData[];
 extern const char lbl_806DC020[4];
 extern const char lbl_803F0848[];
-extern const char lbl_803F0860[];
+extern const char ContinueScene_rodata_803F0860[];
 extern const char lbl_803EFEA0[];
 extern const char *lbl_806D0970[2];
 extern unsigned char lbl_80598A60[];
@@ -136,11 +130,7 @@ static inline bool IsNoCredit() {
     return 0;
 }
 
-struct CoinPromptHolder {
-    CoinPrompt *p;
-    CoinPromptHolder(CoinPrompt *q) : p(q) {}
-    ~CoinPromptHolder() throw() { fn_8023CFE0(p, 1); }
-};
+#include "game/types/CoinPromptHolder.h"
 
 struct CoinCounter {
     int slot;

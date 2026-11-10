@@ -15,23 +15,13 @@ struct Owned801CE1EC {
     ~Owned801CE1EC();
 };
 
-struct InputView {
-    unsigned char opaque[4];
-    unsigned char enabled;
-    unsigned char opaque5[0x13];
-    int held;
-    int edge;
-};
+#include "game/types/InputView.h"
 
-struct FlowBase {
-    void *vt;
-    FlowBase();
-    ~FlowBase();
-};
+#include "game/types/FlowBase.h"
 
 extern "C" {
 extern InputView *g_pInputState;
-extern void *lbl_8049B1CC[];
+extern void *C8TaPlease_vtable_8049B1CC[];
 void fn_80169C44(void);
 void PcbSlot_ResetScratchAreas(void);
 void CommBroadcast_ClearTable(void);
@@ -73,7 +63,7 @@ struct Scene801CE1EC : FlowBase {
 Scene801CE1EC::~Scene801CE1EC() {
     int i;
 
-    vt = lbl_8049B1CC;
+    vt = C8TaPlease_vtable_8049B1CC;
     fn_80169C44();
     PcbSlot_ResetScratchAreas();
     CommBroadcast_ClearTable();

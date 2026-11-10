@@ -33,7 +33,7 @@ struct CupTileOwner {
     unsigned char unlock154, unlock155;
 };
 struct CupTileInfo { short id, sub; float x, y; };
-extern "C" CupTileInfo lbl_8049AD58[];
+extern "C" CupTileInfo clFlowCup_data_8049AD58[];
 
 struct RoundTileSlot {
     int state, variant, timer, frame;
@@ -48,5 +48,5 @@ struct RoundTileTable {
     char gap114[8];
     short cups[2];
 };
-extern "C" RoundTileTable lbl_8049AE70;
+extern "C" RoundTileTable clFlowRound_data_8049AE70;
 #endif

@@ -2,8 +2,8 @@
  * carrot models are placed at spawn points projected through the course
  * camera and rendered, then the two trailing ribbons are drawn as quads
  * through each carrot's matrix. The local tables are copied from the
- * shared .rodata block that starts at lbl_80328EB8 (see KartShellRibbonDraw). */
-typedef struct Vec { float x, y, z; } Vec;
+ * shared .rodata block that starts at CelebPop17Update_rodata_80328EB8 (see KartShellRibbonDraw). */
+#include "game/types/Vec.h"
 
 typedef struct CarrotF3 { float v[3]; } CarrotF3;
 typedef struct CarrotPts { Vec p[8]; } CarrotPts;
@@ -30,7 +30,7 @@ typedef struct CarrotEffect {
     CarrotSub sub;      /* 0xEC */
 } CarrotEffect;
 
-extern CarrotRodata lbl_80328EB8;
+extern CarrotRodata CelebPop17Update_rodata_80328EB8;
 extern void *g_courseScene3D;
 extern const float lbl_806D5020;
 extern const float lbl_806D5024;
@@ -83,10 +83,7 @@ extern unsigned char fn_80231B74(int id);
 extern unsigned char fn_8011D890(int id, float uv[2][2], int flags);
 extern void Mtx44_TransformVec3(Vec *out, float m[4][4], Vec v);
 
-typedef union {
-    float f;
-    unsigned int u;
-} WGPipeWord;
+#include "game/types/WGPipeWord.h"
 
 #define GXWGFifo (*(volatile WGPipeWord *)0xCC008000)
 
@@ -149,7 +146,7 @@ void CarrotItemEffect_Render(CarrotEffect *self)
     int i;
     int k;
     int j;
-    CarrotRodata *rd = &lbl_80328EB8;
+    CarrotRodata *rd = &CelebPop17Update_rodata_80328EB8;
     CarrotSub *sub = &self->sub;
     Vec out[2][3][4];
     float m34[3][3][4];

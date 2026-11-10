@@ -9,9 +9,7 @@
  * tools/extab_user_renames.json.
  */
 
-struct Vec3f {
-    float x, y, z;
-};
+#include "game/types/Vec3f.h"
 
 struct PosCache {
     char pad00[0x4];
@@ -44,14 +42,11 @@ struct EffectSlot {
     char pad00[0x94];
 };
 
-struct SlotDesc {
-    float params[4];
-    int obj;
-};
+#include "game/types/SlotDesc.h"
 
 extern "C" {
-extern const SlotDesc lbl_8036E8D4[4];
-extern const char *lbl_806CFAC8[2];
+extern const SlotDesc Scene_80172844_rodata_8036E8D4[4];
+extern const char *Scene_801734B0_data_806CFAC8[2];
 void fn_801F7344(EffectObj *, EffectSlot *);
 void fn_801F7198(EffectObj *, EffectSlot *, int);
 void fn_801F6D58(EffectSlot *, const SlotDesc *, int, int);
@@ -65,15 +60,15 @@ struct SharedEffect {
         int i;
 
         for (i = 0; i < 2; i++) {
-            objs[i] = new EffectObj(lbl_806CFAC8[i]);
+            objs[i] = new EffectObj(Scene_801734B0_data_806CFAC8[i]);
         }
         for (i = 0; i < 4; i++) {
-            int obj = lbl_8036E8D4[i].obj;
+            int obj = Scene_80172844_rodata_8036E8D4[i].obj;
 
             if (objs[obj]) {
                 fn_801F7344(objs[obj], &slots[i]);
                 fn_801F7198(objs[obj], &slots[i], 0);
-                fn_801F6D58(&slots[i], &lbl_8036E8D4[i], 0, 0);
+                fn_801F6D58(&slots[i], &Scene_80172844_rodata_8036E8D4[i], 0, 0);
             }
         }
     }
@@ -91,13 +86,10 @@ struct SharedEffect {
 
 extern "C" {
 extern SharedEffect *lbl_806D15E0;
-extern int lbl_806D15E4;
+extern int Scene_801734B0_bss_806D15E4;
 }
 
-struct RefSub {
-    unsigned char on;
-    char pad01[0x1F];
-};
+#include "game/types/RefSub.h"
 
 struct SharedRef {
     int id;
@@ -136,7 +128,7 @@ struct SharedRef {
         if (lbl_806D15E0 == 0) {
             lbl_806D15E0 = new SharedEffect();
         }
-        lbl_806D15E4++;
+        Scene_801734B0_bss_806D15E4++;
         id = -1;
         t = 0.0f;
         active = 0;
@@ -149,13 +141,13 @@ struct SharedRef {
     }
 
     ~SharedRef() {
-        if (lbl_806D15E4 > 0) {
-            lbl_806D15E4--;
+        if (Scene_801734B0_bss_806D15E4 > 0) {
+            Scene_801734B0_bss_806D15E4--;
         }
-        if (lbl_806D15E4 <= 0 && lbl_806D15E0) {
+        if (Scene_801734B0_bss_806D15E4 <= 0 && lbl_806D15E0) {
             delete lbl_806D15E0;
             lbl_806D15E0 = 0;
-            lbl_806D15E4 = 0;
+            Scene_801734B0_bss_806D15E4 = 0;
         }
     }
 };
@@ -168,9 +160,7 @@ struct EffectHandle {
     ~EffectHandle();
 };
 
-struct Vec2f {
-    float x, y;
-};
+#include "game/types/Vec2f.h"
 
 struct Driver {
     char pad000[0x2D0];
@@ -192,7 +182,7 @@ struct HomingMarker {
 };
 
 extern "C" {
-extern const Vec2f lbl_8036E954[];
+extern const Vec2f Scene_801734B0_rodata_8036E954[];
 void fn_801721B0(SharedRef *);
 void fn_80172948(SharedRef *);
 void *GetCourseScene3D(void);
@@ -318,8 +308,8 @@ void fn_801737F0(HomingMarker *self) {
                     self->wobble = 0;
                 }
             }
-            self->cur.x = lbl_8036E954[self->wobble].x * LUT_Sin12Bit(6.0f * self->phase) + self->cur.x;
-            self->cur.y = lbl_8036E954[self->wobble].y * LUT_Sin12Bit(6.0f * self->phase) + self->cur.y;
+            self->cur.x = Scene_801734B0_rodata_8036E954[self->wobble].x * LUT_Sin12Bit(6.0f * self->phase) + self->cur.x;
+            self->cur.y = Scene_801734B0_rodata_8036E954[self->wobble].y * LUT_Sin12Bit(6.0f * self->phase) + self->cur.y;
         }
         break;
     case 2:

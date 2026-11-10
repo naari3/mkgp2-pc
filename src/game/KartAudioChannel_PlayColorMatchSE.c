@@ -3,29 +3,11 @@
  * table index wins; speed <= 0 means "no surface"), and when it changed,
  * stops the previous loop and starts the new one (plus its positional copy
  * at the kart when the channel has a source and is not muted). */
-typedef struct Vec {
-    float x, y, z;
-} Vec;
+#include "game/types/Vec.h"
 
-typedef struct SoundSource {
-    unsigned char pad00[0xc];
-    float x; /* 0x0C */
-    unsigned char pad10[0xc];
-    float y; /* 0x1C */
-    unsigned char pad20[0xc];
-    float z; /* 0x2C */
-} SoundSource;
+#include "game/types/SoundSource.h"
 
-typedef struct KartAudioChannel {
-    void *owner;          /* 0x00 */
-    unsigned char muted;  /* 0x04 */
-    unsigned char enabled; /* 0x05 */
-    unsigned char pad06[0x2];
-    int channel;          /* 0x08 */
-    SoundSource *source;  /* 0x0C */
-    unsigned char pad10[0x24];
-    int surfaceSE;        /* 0x34 */
-} KartAudioChannel;
+#include "game/types/KartAudioChannel.h"
 
 typedef struct SurfaceSE {
     unsigned int ground;
@@ -33,8 +15,8 @@ typedef struct SurfaceSE {
 } SurfaceSE;
 
 extern const float lbl_806D2940;
-extern SurfaceSE lbl_802EDCBC[13];
-extern const Vec lbl_802EDD24;
+extern SurfaceSE KartAudioChannel_PlayColorMatchSE_rodata_802EDCBC[13];
+extern const Vec KartItemAudio_PlaySEByItemId_rodata_802EDD24;
 extern unsigned int Terrain_ApplyCup2FlagPatch(int flags);
 extern void SoundMgr_PlaySE(unsigned int id);
 extern void fn_8016C394(unsigned int id);
@@ -64,33 +46,33 @@ void KartAudioChannel_PlayColorMatchSE(KartAudioChannel *self, int ground0, int 
     idx0 = 12;
     idx1 = 12;
     for (i = 0; i < 13; i++) {
-        if (type0 == lbl_802EDCBC[i].ground) {
+        if (type0 == KartAudioChannel_PlayColorMatchSE_rodata_802EDCBC[i].ground) {
             idx0 = i;
             break;
         }
     }
     for (i = 0; i < 13; i++) {
-        if (type1 == lbl_802EDCBC[i].ground) {
+        if (type1 == KartAudioChannel_PlayColorMatchSE_rodata_802EDCBC[i].ground) {
             idx1 = i;
             break;
         }
     }
     idx = (idx0 < idx1) ? idx0 : idx1;
 
-    if (self->surfaceSE == lbl_802EDCBC[idx].se) {
+    if (self->surfaceSE == KartAudioChannel_PlayColorMatchSE_rodata_802EDCBC[idx].se) {
         return;
     }
     if (self->surfaceSE >= 0) {
         fn_8016C394(self->surfaceSE | ((self->channel & 0xf) << 27));
     }
-    self->surfaceSE = lbl_802EDCBC[idx].se;
+    self->surfaceSE = KartAudioChannel_PlayColorMatchSE_rodata_802EDCBC[idx].se;
     se = self->surfaceSE;
     if (se >= 0) {
         SoundMgr_PlaySE(se | ((self->channel & 0xf) << 27));
         if (self->muted == 0) {
             src = self->source;
             if (src != 0) {
-                Vec pos = lbl_802EDD24;
+                Vec pos = KartItemAudio_PlaySEByItemId_rodata_802EDD24;
                 pos.x = src->x;
                 pos.y = src->y;
                 pos.z = src->z;

@@ -22,12 +22,10 @@ extern "C" char lbl_806DAEA8[];
 extern "C" const char * lbl_804EDB40[10][2] = { (const char *)&lbl_803C44C4, (const char *)&lbl_806DAE98, (const char *)&lbl_803C44D0, (const char *)&lbl_806DAE98, (const char *)&lbl_806DAEA0, (const char *)&lbl_806DAE98, (const char *)&lbl_803C44E0, (const char *)&lbl_806DAE98, (const char *)&lbl_803C44EC, (const char *)&lbl_806DAE98, (const char *)&lbl_806DAEA8, (const char *)&lbl_806DAE98, (const char *)&lbl_803C44F8, (const char *)&lbl_806DAE98, (const char *)&lbl_803C4504, (const char *)&lbl_806DAE98, (const char *)&lbl_803C4510, (const char *)&lbl_806DAE98, (const char *)&lbl_803C451C, (const char *)&lbl_806DAE98 };
 #pragma force_active reset
 extern "C" 
-typedef struct CoinTimeTable {
-    float t[8][2][4];
-} CoinTimeTable;
+#include "game/types/CoinTimeTable.h"
 
 /*
- * Coin reward tables inside the rodata pool at lbl_803C3F50. The original
+ * Coin reward tables inside the rodata pool at CalcEarnedCoins_rodata_803C3F50. The original
  * TU owned them as static const arrays (addressed off the pool base), so
  * CalcEarnedCoins does not match until that rodata is split into this TU.
  */
@@ -46,7 +44,7 @@ typedef struct CoinRodata {
     CoinTimeTable timesRev;
 } CoinRodata;
 
-extern const CoinRodata lbl_803C3F50;
+extern const CoinRodata CalcEarnedCoins_rodata_803C3F50;
 #define kWinBonus (rd->winBonus)
 #define kPositionGP (rd->positionGP)
 #define kPositionVS (rd->positionVS)
@@ -57,17 +55,9 @@ extern const CoinRodata lbl_803C3F50;
 #define kTimesFwd (rd->timesFwd)
 #define kTimesRev (rd->timesRev)
 
-typedef struct RaceResult {
-    char pad00;
-    unsigned char retired;
-    char pad02[0x18 - 0x2];
-    int coins;
-    int coinGoal;
-} RaceResult;
+#include "game/types/RaceResult.h"
 
-typedef struct RankSlot {
-    unsigned char active;
-} RankSlot;
+#include "game/types/RankSlot.h"
 
 typedef struct PlayerData {
     char pad00[0x48];

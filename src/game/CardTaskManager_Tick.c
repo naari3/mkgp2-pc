@@ -15,18 +15,9 @@ public:
     int state; /* 0x04 */
 };
 
-struct CardTaskEntry {
-    CardTask *task;
-    int pad04;
-};
+#include "game/types/CardTaskEntry.h"
 
-struct CardTaskManager {
-    CardTaskEntry *entries; /* 0x00 */
-    int count;              /* 0x04 */
-    int current;            /* 0x08 */
-    int frame;              /* 0x0C */
-    int linger;             /* 0x10 */
-};
+#include "game/types/CardTaskManager.h"
 
 extern "C" void ServiceButtonExtra_Set(int value);
 

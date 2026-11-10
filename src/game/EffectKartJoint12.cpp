@@ -1,9 +1,9 @@
 /* --- owned .data 0x8041A428..0x8041A494 (tools/own_data.py) --- */
 #pragma force_active on
-extern "C" float lbl_8041A428[3][9] = { 0.0f, 2.0f, 4.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 2.0f, 3.0f, 4.0f, 0.0f, 0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 4.0f, 5.5f, 7.0f, 1.0f, 1.5f, 2.0f, 1.0f, 0.5f, 0.0f };
+extern "C" float Effect_KartJoint12_3Stage_Update_data_8041A428[3][9] = { 0.0f, 2.0f, 4.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 2.0f, 3.0f, 4.0f, 0.0f, 0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 4.0f, 5.5f, 7.0f, 1.0f, 1.5f, 2.0f, 1.0f, 0.5f, 0.0f };
 #pragma force_active reset
 extern "C" /* Target-observed local views; live Ghidra types were unavailable. */
-struct JointVec { float x, y, z; };
+#include "game/types/JointVec.h"
 struct Joint12Effect;
 struct Joint12Group {
  char pad00[0x10]; Joint12Effect *children[3]; char pad1C[0x34];
@@ -85,6 +85,6 @@ extern "C" void Effect_KartJoint12_3Stage_Update(Joint12Effect *effect) {
  Mtx_TransposeToMtx44(matrix, KartDriver_GetKartRootMtx(group->kart));
  Mtx44_TransformVec3(&effect->position, matrix, group->offset);
  for (i = 0; i < 3; ++i) {
-  updateChild(lbl_8041A428[i], group, effect, i);
+  updateChild(Effect_KartJoint12_3Stage_Update_data_8041A428[i], group, effect, i);
  }
 }

@@ -1,16 +1,9 @@
 #ifndef GAME_OPTION_MENU_DRAW_PRIVATE_H
 #define GAME_OPTION_MENU_DRAW_PRIVATE_H
-struct OptionDrawPrefix { int layer, pad4; float x, y, alpha; };
-struct OptionDrawPanel : OptionDrawPrefix {
-    virtual void v8(); virtual void vC(); virtual void v10(); virtual void v14(); virtual void Draw();
-};
-struct OptionDrawTarget { char pad[0x198]; signed char count; };
-struct OptionDrawScene {
-    char pad0[0x20]; OptionDrawTarget *target; void *preview;
-    char pad28[0x10]; OptionDrawPanel *panel38; OptionDrawPanel *panel3C;
-    char pad40[8]; int texture; unsigned char toggle; char pad4D[3];
-    float fade50, fade54; unsigned char selection;
-};
+#include "game/types/OptionDrawPrefix.h"
+#include "game/types/OptionDrawPanel.h"
+#include "game/types/OptionDrawTarget.h"
+#include "game/types/OptionDrawScene.h"
 struct RankLog;
 extern "C" {
 int isJapanese();

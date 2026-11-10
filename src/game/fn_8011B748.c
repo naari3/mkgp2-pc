@@ -1,5 +1,5 @@
-typedef struct Vec3 { float x, y, z; } Vec3;
-typedef struct Mtx44 { float m[4][4]; } Mtx44;
+#include "game/types/Vec3.h"
+#include "game/types/Mtx44.h"
 
 extern void SpriteSlot_InitNonLoop(void *slot, int animId);
 extern unsigned char *DrawEffect_SpawnDirect(void (*cb)(void *));

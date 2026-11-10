@@ -2,7 +2,7 @@
  * from its bounding box. The bounds are copied as words like the target. */
 #pragma cplusplus on
 void *operator new(unsigned long size);
-typedef struct Vec3 { float x, y, z; } Vec3;
+#include "game/types/Vec3.h"
 struct W3 { int a, b, c; };
 struct SuikaNormal {
     unsigned char opaque[0x5C];
@@ -10,23 +10,15 @@ struct SuikaNormal {
 };
 extern "C" {
 
-typedef struct SuikaBallObj {
-    SuikaNormal *obj;
-    float scale;
-    float mtx[3][4];
-    float f38[10];
-    unsigned char b60;
-    unsigned char b61;
-    float f64[6];
-} SuikaBallObj;
+#include "game/types/SuikaBallObj.h"
 
 extern void *Archive_GetRootJObj(void *obj);
 extern unsigned char fn_801847DC(void *jobj, Vec3 *min, Vec3 *max);
 extern void PSMTXIdentity(float m[3][4]);
 extern void Object_BindMatrixSource(void *obj, float m[3][4], int flag);
 
-extern const Vec3 lbl_80355900;
-extern const Vec3 lbl_8035590C;
+extern const Vec3 SuikaBallObj_Init_rodata_80355900;
+extern const Vec3 SuikaBallObj_Init_rodata_8035590C;
 }
 
 extern "C" SuikaBallObj *SuikaBallObj_Init(SuikaBallObj *self, void *res)
@@ -57,8 +49,8 @@ extern "C" SuikaBallObj *SuikaBallObj_Init(SuikaBallObj *self, void *res)
     SuikaNormal *p = new SuikaNormal(res, 0);
     self->obj = p;
     if (p != 0) {
-        *(W3 *)&min = *(const W3 *)&lbl_80355900;
-        *(W3 *)&max = *(const W3 *)&lbl_8035590C;
+        *(W3 *)&min = *(const W3 *)&SuikaBallObj_Init_rodata_80355900;
+        *(W3 *)&max = *(const W3 *)&SuikaBallObj_Init_rodata_8035590C;
         if (fn_801847DC(Archive_GetRootJObj(self->obj), &min, &max)) {
             self->scale = 0.5f * (max.x - min.x);
         }

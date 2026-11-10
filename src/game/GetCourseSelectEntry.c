@@ -1,13 +1,9 @@
-typedef struct CourseSelectEntry {
-    char data[0x18];
-} CourseSelectEntry;
+#include "game/types/CourseSelectEntry.h"
 
-typedef struct CupCourseEntry {
-    char data[0xC];
-} CupCourseEntry;
+#include "game/types/CupCourseEntry.h"
 
-extern CourseSelectEntry lbl_8049A5A8[];
-extern CupCourseEntry lbl_8049A248[][8];
+extern CourseSelectEntry GetCourseSelectEntry_data_8049A5A8[];
+extern CupCourseEntry GetCourseSelectEntry_data_8049A248[][8];
 extern int g_roundIndex;
 extern int g_cupId;
 
@@ -18,7 +14,7 @@ CourseSelectEntry *GetCourseSelectEntry(int idx) {
     if (idx > 15) {
         idx = 15;
     }
-    return &lbl_8049A5A8[idx];
+    return &GetCourseSelectEntry_data_8049A5A8[idx];
 }
 
 CupCourseEntry *fn_801BA060(int round) {
@@ -46,5 +42,5 @@ CupCourseEntry *fn_801BA060(int round) {
     } else {
         cup = 0;
     }
-    return &lbl_8049A248[cup][round];
+    return &GetCourseSelectEntry_data_8049A248[cup][round];
 }

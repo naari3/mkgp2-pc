@@ -6,9 +6,7 @@
 
 typedef float Mtx[3][4];
 
-struct Vec3f {
-    float x, y, z;
-};
+#include "game/types/Vec3f.h"
 
 struct ScreenParticle {
     unsigned char active;
@@ -42,15 +40,7 @@ struct ScreenParticleLayer {
     ScreenParticleLayer();
 };
 
-class GXChannel {
-public:
-    GXChannel(void *root, void *desc, int flags, int mode);
-    ~GXChannel();
-    void PushTransform(Mtx m);
-
-private:
-    char pad[0x14];
-};
+#include "game/types/GXChannel.h"
 
 extern "C" {
 void *GetCourseScene3D(void);

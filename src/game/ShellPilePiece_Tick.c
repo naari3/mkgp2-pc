@@ -2,9 +2,9 @@
  * The model (per item kind at +0xEC) shows only this piece's joint. The
  * piece is flung outward and tumbles while dropping, rides along with the
  * owning kart's motion, and fades out after 30 frames. */
-typedef struct Vec { float x, y, z; } Vec;
+#include "game/types/Vec.h"
 
-extern unsigned char lbl_8041EEC0[];
+extern unsigned char ShellPile_data_8041EEC0[];
 extern const float lbl_806D5B60;
 extern const float lbl_806D5B64;
 extern const float lbl_806D5B68;
@@ -60,7 +60,7 @@ void ShellPilePiece_Tick(unsigned char *self)
     Vec t1;
     Vec t2;
     Vec t3;
-    unsigned char *base = lbl_8041EEC0;
+    unsigned char *base = ShellPile_data_8041EEC0;
     unsigned char *cfg;
     int i;
 

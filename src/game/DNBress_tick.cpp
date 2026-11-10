@@ -4,7 +4,7 @@
  * a breath sound starts and fire/frost particles (two variants, picked by the
  * reverse-course flag) are spawned through pointer-to-member tables. Four
  * smoke puffs rise over the lake. The class data (spawn ranges, member
- * function tables, vtable) lives in lbl_804EDF80 and is addressed off one
+ * function tables, vtable) lives in DNBress_nm3_data_804EDF80 and is addressed off one
  * base; the static initializer (fn_80227FA4) stays in asm.
  */
 
@@ -13,9 +13,7 @@ void operator delete(void *p) throw();
 
 typedef float Mtx[3][4];
 
-struct Vec3f {
-    float x, y, z;
-};
+#include "game/types/Vec3f.h"
 
 struct HSD_JObj {
     char pad00[0x14];
@@ -25,55 +23,17 @@ struct HSD_JObj {
     Mtx mtx;
 };
 
-struct clNormal3D {
-    char _opaque[0x5C];
-    clNormal3D(const char *res, int flags);
-    ~clNormal3D();
-};
+#include "game/types/clNormal3D.h"
 
-struct AnimCtrl {
-    char _opaque[0x180];
-    AnimCtrl();
-    ~AnimCtrl();
-};
+#include "game/types/AnimCtrl.h"
 
-struct KartRender {
-    char pad000[0x23C];
-    int x23c;
-};
+#include "game/types/KartDriver.h"
 
-class GXChannel {
-public:
-    GXChannel(void *root, void *desc, int flags, int mode);
-    ~GXChannel();
-    void PushTransform(Mtx m);
+#include "game/types/GXChannel.h"
 
-private:
-    char pad[0x14];
-};
+#include "game/types/Particle.h"
 
-struct Particle {
-    unsigned char active;
-    Vec3f v;
-    Vec3f pos;
-    float scale;
-    float alpha;
-    float c[3];
-    float speed;
-    float grow;
-    float dvx;
-    float dvy;
-    float dvz;
-    int delay;
-};
-
-struct clMapEffectParts {
-    virtual ~clMapEffectParts() {}
-    virtual void Update();
-    virtual void Draw();
-    virtual void Enable(int on);
-    clMapEffectParts() {}
-};
+#include "game/types/clMapEffectParts.h"
 
 struct clDNBress;
 typedef void (clDNBress::*SpawnFn)();
@@ -128,26 +88,26 @@ extern "C" {
 extern int g_gameMode;
 extern int g_longRoundFlag;
 extern int g_reverseRoundFlag;
-extern KartRender *g_playerRenderObj;
+extern KartDriver *g_playerRenderObj;
 extern const char lbl_806DB3F0[7];
 extern const char lbl_806DB3F8[5];
 extern const int lbl_806DB3E8[2];
 extern float lbl_806D0548[2];
-extern float lbl_806D0580;
-extern float lbl_806D0584;
-extern float lbl_806D0588;
+extern float DNBress_breath_data_806D0580;
+extern float DNBress_breath_data_806D0584;
+extern float DNBress_breath_data_806D0588;
 extern const int lbl_803D0240[4][2];
-extern const float lbl_803D0260[3];
+extern const float DNBress_tick_rodata_803D0260[3];
 extern const float lbl_803D026C[3];
-extern const float lbl_803D0278[4];
+extern const float DNBress_breath_rodata_803D0278[4];
 extern const Vec3f lbl_803D02A0[2];
-extern float lbl_804EDF80[2][3];
+extern float DNBress_nm3_data_804EDF80[2][3];
 extern FireFuncs lbl_804EDF98[2];
 extern float lbl_80495A94[48];
 extern const char lbl_803D01BC[];
 extern const char lbl_803D01CC[];
 extern const char *lbl_803D01DC[];
-extern const char lbl_803D0300[];
+extern const char DNBress_breath_rodata_803D0300[];
 extern const char lbl_803D0320[];
 extern const char lbl_803D0340[];
 extern const char lbl_803D0354[];
@@ -199,10 +159,10 @@ float PSVECSquareMag(Vec3f *v);
 void Object_SetColorRGBA(clNormal3D *m, int idx, float r, float g, float b, float a);
 void Object_DriveAnimMatrix(clNormal3D *m);
 void clNormal3D_SetScale(clNormal3D *m, int idx, float x, float y, float z, float w);
-KartRender *GetKartSlotKartVariant(int slot);
+KartDriver *GetKartSlotKartVariant(int slot);
 void *GetPlayerCarObject(void);
-KartRender *CarObject_GetRenderObj(void *car);
-const float *KartDriver_GetKartRootMtx(KartRender *k);
+KartDriver *CarObject_GetRenderObj(void *car);
+const float *KartDriver_GetKartRootMtx(KartDriver *k);
 void fn_80240014(AnimCtrl *a);
 void fn_8023FE74(AnimCtrl *a, int b, int frame);
 void fn_80240378(AnimCtrl *a, const char *file, int b, clNormal3D *m, const char **names);
@@ -290,20 +250,20 @@ void clDNBress::Tick() {
             p->delay--;
         } else {
             p->v.y = lbl_806DB414 * lbl_80495A94[randIdx] + lbl_806DB410;
-            p->pos.x = lbl_804EDF80[type][0] * lbl_80495A94[randIdx] + lbl_803D02A0[type].x;
+            p->pos.x = DNBress_nm3_data_804EDF80[type][0] * lbl_80495A94[randIdx] + lbl_803D02A0[type].x;
             if (++randIdx >= 48) {
                 randIdx = 0;
             }
             p->pos.y = lbl_803D02A0[type].y;
-            p->pos.z = lbl_804EDF80[type][2] * lbl_80495A94[randIdx] + lbl_803D02A0[type].z;
+            p->pos.z = DNBress_nm3_data_804EDF80[type][2] * lbl_80495A94[randIdx] + lbl_803D02A0[type].z;
             p->scale = lbl_806DB418;
             p->alpha = lbl_806DB41C;
             p->speed = lbl_806DB41C * lbl_80495A94[randIdx] + lbl_806DB404;
             p->grow = lbl_806DB424 * lbl_80495A94[randIdx] + lbl_806DB420;
             p->active = 1;
-            p->c[0] = lbl_803D0260[0];
-            p->c[1] = lbl_803D0260[1];
-            p->c[2] = lbl_803D0260[2];
+            p->c[0] = DNBress_tick_rodata_803D0260[0];
+            p->c[1] = DNBress_tick_rodata_803D0260[1];
+            p->c[2] = DNBress_tick_rodata_803D0260[2];
             if (++randIdx >= 48) {
                 randIdx = 0;
             }

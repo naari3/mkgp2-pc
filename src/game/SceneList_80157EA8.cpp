@@ -21,42 +21,17 @@ extern unsigned char lbl_806D84D8[4];
  */
 #pragma cplusplus on
 
-struct ListNode {
-    ListNode *prev;
-    ListNode *next;
-};
+#include "game/types/ListNode.h"
 
-struct ListIter {
-    ListNode *n;
-};
+#include "game/types/ListIter.h"
 
-struct List {
-    int size;
-    ListNode head;
-};
+#include "game/types/List.h"
 
-struct DataBuf {
-    int pad0;
-    void *data;
-};
+#include "game/types/DataBuf.h"
 
-class DrawObj {
-public:
-    virtual void v8();
-    virtual void vC();
-    virtual void v10();
-    virtual void Draw();
-};
+#include "game/types/DrawObj.h"
 
-struct DrawScene {
-    char pad0[4];
-    unsigned char hidden;
-    char pad5[3];
-    unsigned char state;
-    char pad9[0x2c - 9];
-    DrawObj *a;
-    DrawObj *b;
-};
+#include "game/types/DrawScene.h"
 
 struct InputView {
     char pad[0x14];
@@ -95,56 +70,7 @@ public:
     virtual void Draw();
 };
 
-struct OptionMenu {
-    char pad0[4];
-    unsigned char done;
-    char pad5[3];
-    unsigned char started;
-    char pad9[3];
-    int state;
-    float timer;
-    int page;
-    int nextPage;
-    unsigned char stickHeld;
-    unsigned char toggleEnabled;
-    char pad1E[2];
-    MenuTarget *target;
-    char pad24[4];
-    int timeout;
-    DrawObj *bg;
-    DrawObj *frame;
-    Widget *w34;
-    Widget *w38;
-    Widget *w3C;
-    Widget *w40;
-    float blink;
-    char pad48[4];
-    bool toggle;
-    char pad4D[3];
-    float fade50;
-    float fade54;
-    unsigned char sel;
-    char pad59[3];
-    float blink2;
-    int count;
-    int value;
-    int equipped;
-    int rule;
-    unsigned char flags[6];
-    char pad76[2];
-    unsigned short wins;
-    unsigned short losses;
-    signed char digitsA[3];
-    signed char digitsB[3];
-    char pad82[2];
-    int scroll;
-    int scrollTimer;
-    float time[6];
-    int course[6];
-    int mode[6];
-    int isNew[6];
-    int kind[6];
-};
+#include "game/types/OptionMenu.h"
 
 /* TOP-END */
 
@@ -351,7 +277,7 @@ extern unsigned int lbl_806D85CC;
 #pragma force_active on
 /* ---- formerly OptionMenuDraw.cpp: the TU .rodata 0x803678D8..0x80367F68 ---- */
 // Shared curve, color and layout tables, followed by the scene text pool.
-extern "C" const float lbl_803678D8[255] = {
+extern "C" const float SceneList_80157EA8_rodata_803678D8[255] = {
     1.0f, 0.699999988f, 0.899999976f, 0.0f, 0.0f, 500.0f, 66.6666718f, 1000.0f,
     66.6666718f, 2000.0f, 66.6666718f, 3000.0f, 66.6666718f, 4000.0f, 66.6666718f, 5000.0f,
     66.6666718f, 0.0f, 0.0f, 500.0f, 66.6666718f, 1000.0f, 66.6666718f, 2000.0f,
@@ -1146,17 +1072,10 @@ extern "C" void fn_80159BD0(OptionMenu *self, int layer, float x, float y, float
 }
 
 /* ---- formerly OptionMenuDraw.cpp ---- */
-struct OptionDrawPrefix { int layer, pad4; float x, y, alpha; };
-struct OptionDrawPanel : OptionDrawPrefix {
-    virtual void v8(); virtual void vC(); virtual void v10(); virtual void v14(); virtual void Draw();
-};
-struct OptionDrawTarget { char pad[0x198]; signed char count; };
-struct OptionDrawScene {
-    char pad0[0x20]; OptionDrawTarget *target; void *preview;
-    char pad28[0x10]; OptionDrawPanel *panel38; OptionDrawPanel *panel3C;
-    char pad40[8]; int texture; unsigned char toggle; char pad4D[3];
-    float fade50, fade54; unsigned char selection;
-};
+#include "game/types/OptionDrawPrefix.h"
+#include "game/types/OptionDrawPanel.h"
+#include "game/types/OptionDrawTarget.h"
+#include "game/types/OptionDrawScene.h"
 struct OptionDrawPoint { float x, y; };
 static inline RankLog *GetRankLog() { RankLog **pp = (RankLog **)&lbl_806D10A0; return (*pp == 0 ? 0 : *pp); }
 extern "C" void fn_8015A6E4(OptionMenu *self_, int layer, float x, float y, float alpha) {
@@ -1265,7 +1184,7 @@ extern "C" void fn_8015A6E4(OptionMenu *self_, int layer, float x, float y, floa
 /* ---- formerly game/Scene_8015AE3C.cpp ---- */
 /*
  * 0x8015AE3C..0x8015AFCC: deleting destructor of the scene object built by
- * fn_8015AFCC (vtable lbl_8049003C, base vtable lbl_803FE0C8).
+ * fn_8015AFCC (vtable Scene8015AFCC_vtable_8049003C, base vtable lbl_803FE0C8).
  */
 
 struct VObj {
@@ -1273,9 +1192,7 @@ struct VObj {
     virtual void Update();
 };
 
-struct VObjPad {
-    char pad[0x14];
-};
+#include "game/types/VObjPad.h"
 
 struct VObj14 : VObjPad {
     virtual ~VObj14();
@@ -1295,7 +1212,7 @@ struct Scene8015AE3CView {
 };
 
 extern "C" {
-extern char lbl_8049003C[];
+extern char Scene8015AFCC_vtable_8049003C[];
 extern char lbl_803FE0C8[];
 extern void MemoryManager_TimedFree(void *);
 extern void fn_80121210(void);
@@ -1310,7 +1227,7 @@ extern void fn_80169C44(void);
 
 Scene8015AE3CView *fn_8015AE3C(Scene8015AE3CView *self, short flag) {
     if (self) {
-        self->vtable = lbl_8049003C;
+        self->vtable = Scene8015AFCC_vtable_8049003C;
         fn_80121210();
         fn_8013DB9C();
         if (fn_8019083C(1)) {

@@ -43,23 +43,13 @@ struct ObjList : ListBase {
     ~ObjList() {}
 };
 
-struct InputView {
-    unsigned char opaque[4];
-    unsigned char enabled;
-    unsigned char opaque5[0x13];
-    int held;
-    int edge;
-};
+#include "game/types/InputView.h"
 
-struct FlowBase {
-    void *vt;
-    FlowBase();
-    ~FlowBase();
-};
+#include "game/types/FlowBase.h"
 
 extern "C" {
 extern InputView *g_pInputState;
-extern void *lbl_8049B16C[];
+extern void *clFlowGpPlease_vtable_8049B16C[];
 }
 
 static inline InputView *input_state() {
@@ -76,7 +66,7 @@ struct Scene801CCF2C : FlowBase {
 };
 
 Scene801CCF2C::~Scene801CCF2C() {
-    vt = lbl_8049B16C;
+    vt = clFlowGpPlease_vtable_8049B16C;
     for (ListIter it(objs.head.next); it != objs.end(); ++it) {
         delete *it;
     }

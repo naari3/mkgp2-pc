@@ -3,20 +3,9 @@
  * thrown, sub-state 2 rolls it forward, bouncing off walls a few times and
  * hopping along the ground, until a kart hit, a wall stop, a fall or a
  * timeout ends the flight. */
-typedef struct Vec { float x, y, z; } Vec;
+#include "game/types/Vec.h"
 
-typedef struct KuppaShellWork {
-    unsigned char bounces;
-    unsigned char pad1[3];
-    unsigned int timers[4];
-    unsigned char pad14[0x30 - 0x14];
-    int seCh;
-    Vec launchPos;
-    unsigned char pad40[0x98 - 0x40];
-    void *driver;
-    void *target;
-    signed char launch;
-} KuppaShellWork;
+#include "game/types/KuppaShellWork.h"
 
 extern int g_ccClass;
 extern void SpriteSlot_SetMatrixSourceEnabled_WithReseed(void *slot, int en);

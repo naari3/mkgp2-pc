@@ -6,7 +6,7 @@
 
 extern "C" void *fn_801F5A9C(MenuScene *self, short flag) {
     if (self) {
-        *(void **)self = lbl_804E5444;
+        *(void **)self = MenuScene_vtable_804E5444;
         fn_8023E808(self->widgets[2], 1);
         fn_8023E808(self->widgets[1], 1);
         fn_8023E808(self->widgets[0], 1);
@@ -15,7 +15,7 @@ extern "C" void *fn_801F5A9C(MenuScene *self, short flag) {
         g_ccClass = self->cc;
         InputCmd_SetGlobalConfig(self->input);
         if (self) {
-            *(void **)self = lbl_804E549C;
+            *(void **)self = MenuModeBase_vtable_804E549C;
             if (self) *(void **)self = lbl_803FE0C8;
         }
         if (flag > 0) MemoryManager_TimedFree(self);
@@ -42,7 +42,7 @@ inline MenuScene::MenuScene() {
 }
 
 MenuMode::MenuMode() {
-    vt=lbl_804E54D8;
+    vt=MenuModeLane_data_804E54D8;
     scene=0;
     fn_801F6494();
     cup=g_cupId; course=0; variant=0; round=0; startAnim=1; randomItem=0;
@@ -64,8 +64,8 @@ MenuMode::MenuMode() {
         scene->variant=variant; scene->round=round; scene->character=character;
         scene->itemCount=itemCount; scene->startAnim=startAnim;
         scene->randomItem=randomItem; scene->role=role; scene->modeFlag=modeFlag;
-        scene->items[0]=lbl_804E53B0[0]; scene->items[1]=lbl_804E53B0[1];
-        scene->items[2]=lbl_804E53B0[2]; scene->kart=kart; scene->selection=selection;
+        scene->items[0]=DebugOverlay_RaceConfig_data_804E53B0[0]; scene->items[1]=DebugOverlay_RaceConfig_data_804E53B0[1];
+        scene->items[2]=DebugOverlay_RaceConfig_data_804E53B0[2]; scene->kart=kart; scene->selection=selection;
     }
 }
 
@@ -87,11 +87,11 @@ extern "C" int fn_801F6008(MenuMode *self) {
             self->itemCount=self->scene->itemCount; self->startAnim=self->scene->startAnim;
             self->randomItem=self->scene->randomItem; self->role=self->scene->role;
             self->modeFlag=self->scene->modeFlag;
-            lbl_804E53B0[0]=self->scene->items[0]; lbl_804E53B0[1]=self->scene->items[1];
-            lbl_804E53B0[2]=self->scene->items[2];
+            DebugOverlay_RaceConfig_data_804E53B0[0]=self->scene->items[0]; DebugOverlay_RaceConfig_data_804E53B0[1]=self->scene->items[1];
+            DebugOverlay_RaceConfig_data_804E53B0[2]=self->scene->items[2];
             self->mode=self->scene->mode; self->roundIndex=self->scene->roundIndex;
             self->gate=self->scene->gate; self->kart=self->scene->kart;
-            self->selection=self->scene->selection; g_humanPlayerCount=lbl_804E53B0[0];
+            self->selection=self->scene->selection; g_humanPlayerCount=DebugOverlay_RaceConfig_data_804E53B0[0];
         }
         self->scene->Destroy();
         self->scene=0;
@@ -102,7 +102,7 @@ extern "C" int fn_801F6008(MenuMode *self) {
 
 extern "C" void *fn_801F6178(MenuMode *self, short flag) {
     if (self) {
-        self->vt=lbl_804E54D8;
+        self->vt=MenuModeLane_data_804E54D8;
         fn_80218D98(self->display,1);
         SetTimerModeEnabled(self->timer);
         SetCourseParams(self->cup,self->course,self->variant,self->round);
@@ -111,15 +111,15 @@ extern "C" void *fn_801F6178(MenuMode *self, short flag) {
         lbl_806D1290=self->role == 0 ? self->randomItem != 0 : false;
         RaceSlot_InitSlot(slot,GetDisplayBufferIndex(),self->character,1,0);
         g_characterId=self->character;
-        int firstItem=lbl_804E53B0[0];
+        int firstItem=DebugOverlay_RaceConfig_data_804E53B0[0];
         lbl_806CF110=self->modeFlag;
         RaceSlot_SetItemSlotByte(slot,0,firstItem);
-        signed char item=lbl_804E53B0[1];
+        signed char item=DebugOverlay_RaceConfig_data_804E53B0[1];
         RaceSlot_SetItemSlotByte(slot,1,item);
-        item=lbl_804E53B0[2];
+        item=DebugOverlay_RaceConfig_data_804E53B0[2];
         RaceSlot_SetItemSlotByte(slot,2,item);
-        lbl_806D1264[0]=lbl_804E53B0[0]; lbl_806D1264[1]=lbl_804E53B0[1];
-        lbl_806D1264[2]=lbl_804E53B0[2];
+        lbl_806D1264[0]=DebugOverlay_RaceConfig_data_804E53B0[0]; lbl_806D1264[1]=DebugOverlay_RaceConfig_data_804E53B0[1];
+        lbl_806D1264[2]=DebugOverlay_RaceConfig_data_804E53B0[2];
         g_gameMode=self->mode; g_roundIndex=self->roundIndex;
         g_rendererGateFlag=self->gate != 0;
         SetKartVariant(self->kart);
@@ -136,7 +136,7 @@ extern "C" void *fn_801F6178(MenuMode *self, short flag) {
 }
 
 extern "C" MenuMode *fn_801F63A4() {
-    if (lbl_806D0050==1) { lbl_806D0051=0; lbl_806D0050=0; }
+    if (MenuModeLane_data_806D0050==1) { lbl_806D0051=0; MenuModeLane_data_806D0050=0; }
     return new MenuMode;
 }
 

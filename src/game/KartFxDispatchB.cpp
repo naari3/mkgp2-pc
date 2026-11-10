@@ -1,27 +1,18 @@
 /* Dispatch views contain only fields observed by this callback.
  * The timer only enables the star variant; a zero timer does not clear it.
  */
+/* Merged from 2 per-TU views by tools/struct_merge.py: members are
+ * the ones some TU accesses; the size is the largest any view declared. */
+typedef struct DispatchKart DispatchKart;
 struct DispatchKart {
-    unsigned char pad00[0x238];
-    int wingEnabled;
-    unsigned char pad23c[0x94];
-    unsigned char mode2Enabled;
+    /* 0x000 */ unsigned char pad_000[0x238];
+    /* 0x238 */ int wingEnabled;
+    /* 0x23C */ unsigned char pad_23C[0x94];
+    /* 0x2D0 */ unsigned char mode2Enabled;
+    /* 0x2D1 */ unsigned char pad_2D1[0x3];
 };
-struct DispatchPayload {
-    DispatchKart *kart;
-    unsigned char pad04[0x3C];
-    signed char active;
-    unsigned char pad41[0x3F];
-    unsigned char timer, previousActive;
-};
-struct DispatchEffect {
-    unsigned char pad00[0x10];
-    unsigned int index;
-    unsigned char pad14[0x108];
-    DispatchKart *kart;
-    unsigned char pad120[0x70];
-    unsigned char variant;
-};
+#include "game/types/DispatchPayload.h"
+#include "game/types/DispatchEffect.h"
 extern "C" {
 extern int g_gameMode;
 void EffectVfx72_ItemStarAura_Tick(DispatchEffect *);

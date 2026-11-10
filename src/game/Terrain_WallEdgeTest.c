@@ -5,46 +5,15 @@
  * for the target's add order.
  */
 
-typedef struct TerrainVertex {
-    float x;
-    float y;
-    float z;
-} TerrainVertex;
+#include "game/types/TerrainVertex.h"
 
-typedef struct TerrainTriangle {
-    unsigned char pad_00[0x10];
-    TerrainVertex verts[3];
-    unsigned char pad_34[0x24];
-    unsigned int wallEdges;
-} TerrainTriangle;
+#include "game/types/TerrainTriangle.h"
 
-typedef struct TerrainSegment {
-    float ax;
-    float az;
-    float bx;
-    float bz;
-} TerrainSegment;
+#include "game/types/TerrainSegment.h"
 
-typedef struct TerrainSample {
-    void *walls;
-    TerrainTriangle *triangle;
-    float x;
-    float y;
-    float z;
-    unsigned char onTriangle;
-    unsigned char pad_15[3];
-} TerrainSample;
+#include "game/types/TerrainSample.h"
 
-typedef struct TerrainStepper {
-    TerrainSample samples[2];
-    float normal[3];
-    float x;
-    float pad_40;
-    float z;
-    int index;
-    unsigned char pad_4C[4];
-    float delta[3];
-} TerrainStepper;
+#include "game/types/TerrainStepper.h"
 
 extern const float lbl_806D2380;
 extern const float lbl_806D2384;
@@ -52,7 +21,7 @@ extern const float lbl_806D2388;
 extern const double lbl_806D23A0;
 extern const double lbl_806D23A8;
 
-extern const TerrainSegment lbl_802E9828;
+extern const TerrainSegment Terrain_WallEdgeTest_rodata_802E9828;
 
 extern unsigned char Math_SegmentIntersection2D(void *self, float ax, float az, float bx, float bz, float cx,
                                                 float cz, float dx, float dz, float *out);

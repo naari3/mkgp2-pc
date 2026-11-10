@@ -5,12 +5,9 @@
  * expression (regalloc_patterns 62). */
 #include "game/DrawEffectAccess.h"
 
-typedef struct FlameCurve {
-    float keys[5];
-    float values[5];
-} FlameCurve;
+#include "game/types/FlameCurve.h"
 
-extern FlameCurve lbl_8041A224[];
+extern FlameCurve EffectVfx29_30_Item4SubFlame_Tick_data_8041A224[];
 extern const float lbl_806D51BC; /* 2.0 */
 extern const float lbl_806D51C0; /* 0.0 */
 extern const float lbl_806D51C4; /* 1.0 */
@@ -102,7 +99,7 @@ void EffectVfx29_30_Item4SubFlame_Tick(unsigned char *self)
         float height;
         int idx = I(0x10);
 
-        height = FlameCurve_Evaluate(lbl_8041A224 + idx, F(0x150));
+        height = FlameCurve_Evaluate(EffectVfx29_30_Item4SubFlame_Tick_data_8041A224 + idx, F(0x150));
 
         height /= lbl_806D5344;
         if (height == lbl_806D51C0) {

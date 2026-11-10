@@ -4,7 +4,7 @@ static inline float mul__lv(float a, float b) { return a * b; }
 #pragma force_active on
 extern "C" {
 // Shared AI tuning curves, followed by kart bounds and attachment offsets.
-static const float lbl_803BD320[255] = {
+static const float KartController_Update_rodata_803BD320[255] = {
     1.0f, 0.7f, 0.9f, 0.0f, 0.0f, 500.0f, 66.6666718f,
     1000.0f, 66.6666718f, 2000.0f, 66.6666718f, 3000.0f, 66.6666718f, 4000.0f,
     66.6666718f, 5000.0f, 66.6666718f, 0.0f, 0.0f, 500.0f, 66.6666718f,
@@ -52,7 +52,7 @@ static const KCVec lbl_803BD728[4] = {
 };
 static const KCVec lbl_803BD758 = {0.0f, 4.8f, 2.4f};
 static const KCVec lbl_803BD764 = {0.0f, 12.0f, 0.0f};
-static const int lbl_803BD770[3] = {73,43,62};
+static const int KartController_Update_rodata_803BD770[3] = {73,43,62};
 static const char lbl_803BD77C[13] = "clEnemyThink";
 static const char lbl_803BD78C[19] = "clItemBoxResponder";
 static const char lbl_803BD7A0[38] = "GRID %d: speed %6.2f(km/h) line %d-%d";

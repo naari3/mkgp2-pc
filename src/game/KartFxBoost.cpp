@@ -1,11 +1,8 @@
 /* Boost callbacks; local field views are limited to the observed ABI. */
-struct Vec3 { float x, y, z; };
-struct Mtx44 { float value[16]; };
+#include "game/types/Vec3.h"
+#include "game/types/Mtx44.h"
 struct BoostFlags { unsigned char pad00[0x10]; unsigned long long bits; };
-struct BoostKart {
-    unsigned char pad00[0x304];
-    BoostFlags *flags;
-};
+#include "game/types/BoostKart.h"
 struct BoostEffect;
 struct BoostPayload {
     unsigned char pad00[0x10];
@@ -43,7 +40,7 @@ struct BoostResources {
 };
 struct BoostCamera { unsigned char pad00[0x80]; Vec3 position; };
 extern "C" {
-extern BoostResources lbl_80329E20;
+extern BoostResources KartFxExhaustRay_rodata_80329E20;
 extern BoostCamera lbl_805DF3D0;
 extern float lbl_806D51C0;
 extern const float lbl_806D51BC, lbl_806D51C4, lbl_806D51C8;
@@ -87,7 +84,7 @@ static inline void FreeBoostChildren(BoostPayload *payload) {
 }
 
 void KartFx_Slot5C_TripleStreakTick(BoostEffect *effect) {
-    BoostResources *resources = &lbl_80329E20;
+    BoostResources *resources = &KartFxExhaustRay_rodata_80329E20;
     int childIndex;
     BoostPayload *payload = &effect->payload;
     switch (effect->state) {

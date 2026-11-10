@@ -1,11 +1,6 @@
-typedef struct GXColor {
-    unsigned char r, g, b, a;
-} GXColor;
+#include "game/types/GXColor.h"
 
-typedef union WGPipe {
-    unsigned char u8;
-    float f32;
-} WGPipe;
+#include "game/types/WGPipe.h"
 
 #define GXFIFO (*(volatile WGPipe *)0xCC008000)
 

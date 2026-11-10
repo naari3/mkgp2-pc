@@ -1,6 +1,6 @@
 /* --- owned .rodata 0x803D0300..0x803D0390 (tools/own_data.py) --- */
 #pragma force_active on
-extern "C" const char lbl_803D0300[144] = { 32, 68, 101, 108, 101, 116, 101, 77, 97, 112, 69, 102, 102, 101, 99, 116, 32, 58, 32, 99, 108, 68, 78, 66, 114, 101, 115, 115, 10, 0, 0, 0, 32, 67, 114, 101, 97, 116, 101, 77, 97, 112, 69, 102, 102, 101, 99, 116, 32, 58, 32, 99, 108, 68, 78, 66, 114, 101, 115, 115, 10, 0, 0, 0, 68, 78, 65, 95, 101, 102, 95, 105, 99, 101, 95, 106, 111, 105, 110, 116, 0, 0, 0, 0, 103, 101, 116, 74, 111, 105, 110, 116, 69, 114, 114, 111, 114, 33, 33, 32, 45, 32, 100, 110, 66, 114, 101, 115, 115, 46, 99, 112, 112, 32, 76, 105, 110, 101, 58, 50, 50, 50, 10, 0, 101, 102, 95, 100, 105, 110, 111, 95, 98, 114, 101, 115, 115, 46, 100, 97, 116, 0, 0, 0 };
+extern "C" const char DNBress_breath_rodata_803D0300[144] = { 32, 68, 101, 108, 101, 116, 101, 77, 97, 112, 69, 102, 102, 101, 99, 116, 32, 58, 32, 99, 108, 68, 78, 66, 114, 101, 115, 115, 10, 0, 0, 0, 32, 67, 114, 101, 97, 116, 101, 77, 97, 112, 69, 102, 102, 101, 99, 116, 32, 58, 32, 99, 108, 68, 78, 66, 114, 101, 115, 115, 10, 0, 0, 0, 68, 78, 65, 95, 101, 102, 95, 105, 99, 101, 95, 106, 111, 105, 110, 116, 0, 0, 0, 0, 103, 101, 116, 74, 111, 105, 110, 116, 69, 114, 114, 111, 114, 33, 33, 32, 45, 32, 100, 110, 66, 114, 101, 115, 115, 46, 99, 112, 112, 32, 76, 105, 110, 101, 58, 50, 50, 50, 10, 0, 101, 102, 95, 100, 105, 110, 111, 95, 98, 114, 101, 115, 115, 46, 100, 97, 116, 0, 0, 0 };
 #pragma force_active reset
 extern "C" /*
  * 0x80226954..0x80227FA4: clDNBress (dnBress.cpp), the ice dinosaur's breath
@@ -8,7 +8,7 @@ extern "C" /*
  * a breath sound starts and fire/frost particles (two variants, picked by the
  * reverse-course flag) are spawned through pointer-to-member tables. Four
  * smoke puffs rise over the lake. The class data (spawn ranges, member
- * function tables, vtable) lives in lbl_804EDF80 and is addressed off one
+ * function tables, vtable) lives in DNBress_nm3_data_804EDF80 and is addressed off one
  * base; the static initializer (fn_80227FA4) stays in asm.
  */
 
@@ -17,9 +17,7 @@ void operator delete(void *p) throw();
 
 typedef float Mtx[3][4];
 
-struct Vec3f {
-    float x, y, z;
-};
+#include "game/types/Vec3f.h"
 
 struct HSD_JObj {
     char pad00[0x14];
@@ -29,55 +27,17 @@ struct HSD_JObj {
     Mtx mtx;
 };
 
-struct clNormal3D {
-    char _opaque[0x5C];
-    clNormal3D(const char *res, int flags);
-    ~clNormal3D();
-};
+#include "game/types/clNormal3D.h"
 
-struct AnimCtrl {
-    char _opaque[0x180];
-    AnimCtrl();
-    ~AnimCtrl();
-};
+#include "game/types/AnimCtrl.h"
 
-struct KartRender {
-    char pad000[0x23C];
-    int x23c;
-};
+#include "game/types/KartDriver.h"
 
-class GXChannel {
-public:
-    GXChannel(void *root, void *desc, int flags, int mode);
-    ~GXChannel();
-    void PushTransform(Mtx m);
+#include "game/types/GXChannel.h"
 
-private:
-    char pad[0x14];
-};
+#include "game/types/Particle.h"
 
-struct Particle {
-    unsigned char active;
-    Vec3f v;
-    Vec3f pos;
-    float scale;
-    float alpha;
-    float c[3];
-    float speed;
-    float grow;
-    float dvx;
-    float dvy;
-    float dvz;
-    int delay;
-};
-
-struct clMapEffectParts {
-    virtual ~clMapEffectParts() {}
-    virtual void Update();
-    virtual void Draw();
-    virtual void Enable(int on);
-    clMapEffectParts() {}
-};
+#include "game/types/clMapEffectParts.h"
 
 struct clDNBress;
 typedef void (clDNBress::*SpawnFn)();
@@ -132,20 +92,20 @@ extern "C" {
 extern int g_gameMode;
 extern int g_longRoundFlag;
 extern int g_reverseRoundFlag;
-extern KartRender *g_playerRenderObj;
+extern KartDriver *g_playerRenderObj;
 extern const char lbl_806DB3F0[7];
 extern const char lbl_806DB3F8[5];
 extern const int lbl_806DB3E8[2];
 extern float lbl_806D0548[2];
-extern float lbl_806D0580;
-extern float lbl_806D0584;
-extern float lbl_806D0588;
+extern float DNBress_breath_data_806D0580;
+extern float DNBress_breath_data_806D0584;
+extern float DNBress_breath_data_806D0588;
 extern const int lbl_803D0240[4][2];
-extern const float lbl_803D0260[3];
+extern const float DNBress_tick_rodata_803D0260[3];
 extern const float lbl_803D026C[3];
-extern const float lbl_803D0278[4];
+extern const float DNBress_breath_rodata_803D0278[4];
 extern const Vec3f lbl_803D02A0[2];
-extern float lbl_804EDF80[2][3];
+extern float DNBress_nm3_data_804EDF80[2][3];
 extern FireFuncs lbl_804EDF98[2];
 extern float lbl_80495A94[48];
 extern const char lbl_803D01BC[];
@@ -202,10 +162,10 @@ float PSVECSquareMag(Vec3f *v);
 void Object_SetColorRGBA(clNormal3D *m, int idx, float r, float g, float b, float a);
 void Object_DriveAnimMatrix(clNormal3D *m);
 void clNormal3D_SetScale(clNormal3D *m, int idx, float x, float y, float z, float w);
-KartRender *GetKartSlotKartVariant(int slot);
+KartDriver *GetKartSlotKartVariant(int slot);
 void *GetPlayerCarObject(void);
-KartRender *CarObject_GetRenderObj(void *car);
-const float *KartDriver_GetKartRootMtx(KartRender *k);
+KartDriver *CarObject_GetRenderObj(void *car);
+const float *KartDriver_GetKartRootMtx(KartDriver *k);
 void fn_80240014(AnimCtrl *a);
 void fn_8023FE74(AnimCtrl *a, int b, int frame);
 void fn_80240378(AnimCtrl *a, const char *file, int b, clNormal3D *m, const char **names);
@@ -267,11 +227,11 @@ static inline bool InRect(float x, float z, const float *r) {
 void clDNBress::Breathe() {
     fn_80240014(anim);
     hidden = 1;
-    KartRender *k;
+    KartDriver *k;
     if ((k = g_playerRenderObj) != 0) {
         float x = KartDriver_GetKartRootMtx(k)[3];
         float z = KartDriver_GetKartRootMtx(k)[11];
-        if (InRect(x, z, lbl_803D0278) == 1) {
+        if (InRect(x, z, DNBress_breath_rodata_803D0278) == 1) {
             hidden = 0;
             if (!sePlaying) {
                 if (g_gameMode != 2) {
@@ -289,9 +249,9 @@ void clDNBress::Breathe() {
         sePlaying = 0;
     }
     if (sePlaying == 1) {
-        dir.x = lbl_806D0580;
-        dir.y = lbl_806D0584;
-        dir.z = lbl_806D0588;
+        dir.x = DNBress_breath_data_806D0580;
+        dir.y = DNBress_breath_data_806D0584;
+        dir.z = DNBress_breath_data_806D0588;
         HSD_JObj *jobj = joint;
         SetupJointMatrix(jobj);
         float(*m)[4] = jobj->mtx;
@@ -341,5 +301,5 @@ clDNBress::~clDNBress() {
         delete fx;
         fx = 0;
     }
-    DebugPrintf(lbl_803D0300);
+    DebugPrintf(DNBress_breath_rodata_803D0300);
 }

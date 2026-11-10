@@ -20,17 +20,12 @@ struct TDrawEntry {
     TDrawEntry();
 };
 
-struct TDrawSlot {
-    int id;            /* 0x00 - reset to -1 */
-    int _4;            /* 0x04 */
-    int _8;            /* 0x08 */
-    int prio;          /* 0x0C - reset to 5 */
-    TDrawEntry *entry; /* 0x10 */
-}; /* stride 0x14 */
+#include "game/types/TDrawSlot.h"
+ /* stride 0x14 */
 
 extern "C" {
 extern TDrawSlot lbl_805987E0[0x20];
-extern unsigned int lbl_806CEF20;
+extern unsigned int DMAChannelManager_Init_data_806CEF20;
 extern unsigned char lbl_806D10F0;
 extern unsigned int lbl_806D10F4;
 extern unsigned int lbl_806D10F8;
@@ -45,13 +40,13 @@ extern "C" void DMAChannelManager_Init(void) {
         return;
     }
     for (i = 0; i < 0x20; i++) {
-        if (lbl_805987E0[i].id != -1) {
-            lbl_805987E0[i].id = -1;
-            lbl_805987E0[i].prio = 5;
+        if (lbl_805987E0[i].owner != -1) {
+            lbl_805987E0[i].owner = -1;
+            lbl_805987E0[i].state = 5;
         }
         lbl_805987E0[i].entry = new TDrawEntry;
     }
-    lbl_806CEF20 = 8;
+    DMAChannelManager_Init_data_806CEF20 = 8;
     lbl_806D10F4 = 0;
     lbl_806D10F8 = 0;
     lbl_806D10F0 = 1;

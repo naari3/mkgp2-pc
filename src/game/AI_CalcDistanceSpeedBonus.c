@@ -1,23 +1,14 @@
-typedef struct KartCond {
-    signed char mode;
-    signed char cup;
-    signed char ccClass;
-    signed char round;
-    signed char kart;
-} KartCond;
+#include "game/types/KartCond.h"
 
 extern int g_gameMode;
 extern int g_cupId;
 extern int g_ccClass;
 extern int g_roundIndex;
 
-typedef struct DistanceBonusEntry {
-    KartCond cond;
-    float bonus[6][6];
-} DistanceBonusEntry;
+#include "game/types/DistanceBonusEntry.h"
 
-extern int lbl_806CFF08;
-extern DistanceBonusEntry lbl_804E3184[];
+extern int AI_CalcDistanceSpeedBonus_data_806CFF08;
+extern DistanceBonusEntry AI_CalcDistanceSpeedBonus_data_804E3184[];
 extern const float FLOAT_defaultBonus;
 
 static inline unsigned char KartCond_Matches(KartCond c, int kart) {
@@ -42,9 +33,9 @@ static inline unsigned char KartCond_Matches(KartCond c, int kart) {
 float AI_CalcDistanceSpeedBonus(int kart, int row, int col) {
     int i;
 
-    for (i = 0; i < lbl_806CFF08; i++) {
-        if (KartCond_Matches(lbl_804E3184[i].cond, kart)) {
-            return lbl_804E3184[i].bonus[row][col];
+    for (i = 0; i < AI_CalcDistanceSpeedBonus_data_806CFF08; i++) {
+        if (KartCond_Matches(AI_CalcDistanceSpeedBonus_data_804E3184[i].cond, kart)) {
+            return AI_CalcDistanceSpeedBonus_data_804E3184[i].bonus[row][col];
         }
     }
     return FLOAT_defaultBonus;

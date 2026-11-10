@@ -4,13 +4,10 @@
  * NonMatching: 99.729065% text; the initial scale/blend FP allocation differs.
  * The two jump tables, extab and extabindex match the target exactly.
  */
-typedef struct Vec3 { float x, y, z; } Vec3;
+#include "game/types/Vec3.h"
 typedef float Matrix4[4][4];
 typedef float Matrix3x4[3][4];
-typedef struct KartDriverCharacterView {
-    char pad0[0x1F8];
-    unsigned int characterId;
-} KartDriverCharacterView;
+#include "game/types/KartDriverCharacterView.h"
 typedef struct ItemHandheldRenderView {
     char pad0[0x2C];
     float blend;

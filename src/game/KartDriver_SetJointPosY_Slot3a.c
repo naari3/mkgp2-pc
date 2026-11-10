@@ -1,18 +1,7 @@
 /* Set the Y translation of the kart joint at 0xe8 (slot 3a). */
-typedef struct HSD_JObj {
-    unsigned char pad00[0x14];
-    unsigned int flags; /* 0x14 */
-    unsigned char pad18[0x24];
-    float translateY;   /* 0x3C */
-} HSD_JObj;
+#include "game/types/HSD_JObj.h"
 
-typedef struct KartDriver {
-    void *model;  /* 0x00 */
-    unsigned char pad04[0x8];
-    void *loaded; /* 0x0C */
-    unsigned char pad10[0xe8 - 0x10];
-    HSD_JObj *joint; /* 0xe8 */
-} KartDriver;
+#include "game/types/KartDriver.h"
 
 extern char lbl_806D2548[7]; /* "jobj.h" */
 extern char lbl_806D2550[5]; /* "jobj" */
@@ -37,7 +26,7 @@ static inline void HSD_JObjSetTranslateY(HSD_JObj *jobj, float y)
     if (!jobj) {
         __assert(lbl_806D2548, 0x3c6, lbl_806D2550);
     }
-    jobj->translateY = y;
+    jobj->translate.y = y;
     if (!(jobj->flags & 0x02000000)) {
         if (jobj != 0 && !HSD_JObjMtxIsDirty(jobj)) {
             HSD_JObjSetMtxDirtySub(jobj);
@@ -49,10 +38,10 @@ int KartDriver_SetJointPosY_Slot3a(KartDriver *self, float y)
 {
     HSD_JObj *jobj;
 
-    if (self->model == 0 || self->loaded == 0) {
+    if (self->model == 0 || self->driver == 0) {
         return 0;
     }
-    jobj = self->joint;
+    jobj = self->wheel[0];
     if (jobj != 0) {
         HSD_JObjSetTranslateY(jobj, y);
     }

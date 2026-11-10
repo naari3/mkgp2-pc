@@ -1,22 +1,11 @@
-typedef struct KartCond {
-    signed char mode;
-    signed char cup;
-    signed char ccClass;
-    signed char round;
-    signed char kart;
-} KartCond;
+#include "game/types/KartCond.h"
 
 extern int g_gameMode;
 extern int g_cupId;
 extern int g_ccClass;
 extern int g_roundIndex;
 
-typedef struct PathVariantEntry {
-    KartCond cond;
-    int kart;
-    int variantA;
-    int variantB;
-} PathVariantEntry;
+#include "game/types/PathVariantEntry.h"
 
 extern int g_PathVariantTableCount;
 extern PathVariantEntry g_PathVariantTable[];

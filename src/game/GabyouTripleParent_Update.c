@@ -2,10 +2,10 @@
  * held over the kart. It shows three sprite children around a carried
  * gabyou. When released (sub flag at +0xA0 == 1) it launches three
  * GabyouTripleChild objects in a spread and frees itself. */
-typedef struct { float v[3]; } FloatTriple;
+#include "game/types/FloatTriple.h"
 
-extern FloatTriple lbl_8032FA1C;
-extern FloatTriple lbl_8032FA10;
+extern FloatTriple GabyouTripleParent_Update_rodata_8032FA1C;
+extern FloatTriple GabyouTripleParent_Update_rodata_8032FA10;
 extern const float lbl_806D611C;
 extern const float lbl_806D60D0;
 extern const float lbl_806D6120;
@@ -92,8 +92,8 @@ void GabyouTripleParent_Update(unsigned char *self)
                         Vec3_Copy(c + 0x190, sub + 0xA4);
                         *(int *)(c + 0x180) = *(int *)(sub + 0x94);
                         *(void **)(c + 0x184) = DRIVER;
-                        angles = lbl_8032FA10;
-                        speeds = lbl_8032FA1C;
+                        angles = GabyouTripleParent_Update_rodata_8032FA10;
+                        speeds = GabyouTripleParent_Update_rodata_8032FA1C;
                         Item_InitLaunchFromKart(c, 0, lbl_806D60E8, speeds.v[*(int *)(self + 0x10)]);
                         Vec2_RotateY(c + 0xB8, c + 0xB8, angles.v[*(int *)(c + 0x10)]);
                     }

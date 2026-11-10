@@ -5,11 +5,7 @@
  * the two hoisted function addresses of the spawn loop). */
 #include "game/DrawEffectAccess.h"
 
-typedef struct HornBlastCurve {
-    float keys[3];
-    float scale[3];
-    float alpha[3];
-} HornBlastCurve;
+#include "game/types/HornBlastCurve.h"
 
 typedef struct HornBlastExt {
     unsigned char pad0[0x10];
@@ -20,7 +16,7 @@ typedef struct HornBlastExt {
     float timer;
 } HornBlastExt;
 
-extern HornBlastCurve lbl_8041A1B8[3];
+extern HornBlastCurve EffectVfx55_HornBlastTrio_Tick_data_8041A1B8[3];
 extern void fn_800AF4F8(unsigned char *self);
 extern void EffectVfx_KartChildAttached_RenderHook(unsigned char *self);
 
@@ -87,7 +83,7 @@ void EffectVfx55_HornBlastTrio_Tick(unsigned char *self)
             Vec pos;
 
             Vec3_Copy(V_(ext->children[i], 0x8C), V(0x8C));
-            curve = &lbl_8041A1B8[i];
+            curve = &EffectVfx55_HornBlastTrio_Tick_data_8041A1B8[i];
             if (curve->keys[0] <= ext->timer && ext->timer < curve->keys[2]) {
                 for (j = 0; j < 2; j++) {
                     if (curve->keys[j] <= ext->timer && ext->timer < curve->keys[j + 1]) {

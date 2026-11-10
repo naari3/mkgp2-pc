@@ -1,22 +1,11 @@
-typedef struct KartCond {
-    signed char mode;
-    signed char cup;
-    signed char ccClass;
-    signed char round;
-    signed char kart;
-} KartCond;
+#include "game/types/KartCond.h"
 
 extern int g_gameMode;
 extern int g_cupId;
 extern int g_ccClass;
 extern int g_roundIndex;
 
-typedef struct ItemSuppressionEntry {
-    KartCond cond;
-    int item;
-    int minValue;
-    int maxValue;
-} ItemSuppressionEntry;
+#include "game/types/ItemSuppressionEntry.h"
 
 extern int g_itemSuppressionCount;
 extern ItemSuppressionEntry g_itemSuppressionTable[];

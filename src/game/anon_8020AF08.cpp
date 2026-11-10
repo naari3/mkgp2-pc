@@ -6,29 +6,13 @@
 void *operator new(unsigned long size);
 void operator delete(void *p) throw();
 
-struct ShowModel {
-    ShowModel(void *res, int flag);
-    virtual ~ShowModel();
-    char pad[0x20 - 0x4];
-};
+#include "game/types/ShowModel.h"
 
-struct ShowShellA {
-    char pad[0x10];
-    ShowShellA(int layer, float x, float y, float scale);
-    ~ShowShellA();
-};
+#include "game/types/ShowShellA.h"
 
-struct ShowShellB {
-    char pad[0xC];
-    ShowShellB(int layer, float x, float y, float scale);
-    ~ShowShellB();
-};
+#include "game/types/ShowShellB.h"
 
-struct ShowAnim {
-    char pad[0x70];
-    ShowAnim(int res, int a, int b, const void *data, int c);
-    ~ShowAnim();
-};
+#include "game/types/ShowAnim.h"
 
 struct ShowAnimSet {
     char a[0x18C];
@@ -36,11 +20,7 @@ struct ShowAnimSet {
     char c[0x6B8 - 0x4D0];
 };
 
-struct ShowXform {
-    float pos[3];
-    float rot[3];
-    float scale;
-};
+#include "game/types/ShowXform.h"
 
 extern "C" {
 extern int g_humanPlayerCount;
@@ -88,21 +68,7 @@ void fn_8013B4FC(ShowAnim *a, int frame);
 void fn_8013B7A8(ShowAnim *a, ShowAnim *next);
 }
 
-struct ItemShowcase {
-    int timer;
-    int itemId;
-    ShowModel *model;
-    bool loaded;
-    float glow;
-    float alpha;
-    ShowAnim *anim;
-    ShowShellA *shellA;
-    ShowShellB *shellB;
-    ItemShowcase(int t);
-    ~ItemShowcase();
-    void Draw();
-    int Update();
-};
+#include "game/types/ItemShowcase.h"
 
 ItemShowcase::~ItemShowcase() {
     if (model != 0) {

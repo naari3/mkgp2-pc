@@ -8,15 +8,9 @@ public:
     virtual ~CardTask();
 };
 
-typedef struct CardTaskEntry {
-    CardTask *task;
-    int pad04;
-} CardTaskEntry;
+#include "game/types/CardTaskEntry.h"
 
-typedef struct CardTaskManager {
-    CardTaskEntry *entries; /* 0x00 */
-    int count;              /* 0x04 */
-} CardTaskManager;
+#include "game/types/CardTaskManager.h"
 
 extern "C" void MemoryManager_Free(void *p);
 extern "C" void MemoryManager_TimedFree(void *p);

@@ -5,28 +5,16 @@
  * pacing its animation along a keyframe curve, until its timer runs out
  * and the return flight starts. A kart hit or a kick on either object ends
  * the flight. */
-typedef struct Vec { float x, y, z; } Vec;
+#include "game/types/Vec.h"
 
 typedef struct PaceKey {
     float t[4];
     float v[4];
 } PaceKey;
 
-typedef struct BoomerangWork {
-    unsigned char thrown;
-    unsigned char hits;
-    unsigned char pad2[2];
-    unsigned int timers[4];
-    float pace;
-    unsigned char pad18[0x5C - 0x18];
-    unsigned char *sub;
-    unsigned char pad60[0x98 - 0x60];
-    void *driver;
-    void *target;
-    signed char launch;
-} BoomerangWork;
+#include "game/types/BoomerangWork.h"
 
-extern const PaceKey lbl_80330794;
+extern const PaceKey Boomerang_LaunchAndTickStateMachine_rodata_80330794;
 extern void SpriteSlot_SetAnimFrameAndApplyScale(void *slot, int frame, float f);
 extern void GabyouItem_BuildLocalTransformFromHandJoint(unsigned char *self, int a, float x, float y, float z);
 extern void *KartDriver_GetKartRootMtx(void *kart);
@@ -216,7 +204,7 @@ void Boomerang_LaunchAndTickStateMachine(unsigned char *self, BoomerangWork *w)
         case 1:
             if (w->sub != 0) {
                 x = *(float *)(w->sub + 0x20);
-                k = lbl_80330794;
+                k = Boomerang_LaunchAndTickStateMachine_rodata_80330794;
                 PaceKey_Eval(&k, x, &w->pace);
                 if (*(char *)(w->sub + 0x1E) == 1) {
                     w->timers[0] = 0;

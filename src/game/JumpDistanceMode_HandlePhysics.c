@@ -4,9 +4,9 @@
  * tools/postprocess_sdata2.py; the literal form is needed so CW reloads them
  * instead of keeping one register across the angle-wrap loops.
  */
-struct Vec3 { float x, y, z; };
-struct XZ { float x, z; };
-struct Rect { float minX, minZ, maxX, maxZ; };
+#include "game/types/Vec3.h"
+#include "game/types/XZ.h"
+#include "game/types/Rect.h"
 
 struct Pad {
     virtual void v0();
@@ -20,28 +20,11 @@ struct Pad {
     virtual int GetButton(int mask);
 };
 
-struct KartMove { char pad[0x1c8]; float heading; };
+#include "game/types/KartMove.h"
 struct CarObject { char pad[0x28]; KartMove *move; };
-struct GoalPlane { Vec3 *point; Vec3 normal; };
+#include "game/types/GoalPlane.h"
 
-struct JumpDistanceMode {
-    void *vtbl;
-    int x4;
-    CarObject *car;
-    int xC;
-    int x10;
-    void *x14;
-    void *camera;
-    void *x1C;
-    char pad20[0x18];
-    GoalPlane *goal;
-    char pad3C[0x14];
-    int state;
-    char pad54[0x14];
-    float speed;
-    char pad6C[0x1C];
-    unsigned char reached;
-};
+#include "game/types/JumpDistanceMode.h"
 
 extern "C" {
 extern unsigned char g_raceEnded;
@@ -51,8 +34,8 @@ extern const float lbl_806DAD70, lbl_806DAD7C, lbl_806DAD84, lbl_806DAD88, lbl_8
 extern const float lbl_806DADAC, lbl_806DADB0, lbl_806DADB4, lbl_806DADB8, lbl_806DADBC;
 extern const float lbl_806DADC0, lbl_806DADC4, lbl_806DADC8, lbl_806DADCC, lbl_806DADD0;
 extern const XZ lbl_806DCF68;
-extern const Rect lbl_803C3D64;
-extern const Vec3 lbl_803C3D80;
+extern const Rect JumpDistanceMode_HandlePhysics_rodata_803C3D64;
+extern const Vec3 JumpDistanceMode_rodata_803C3D80;
 
 void *GetInputManager(void);
 Pad *InputMgr_GetPlayer(void *mgr, int idx);
@@ -86,7 +69,7 @@ static inline float WrapAngle(float a) {
 }
 
 static inline unsigned char IsInFront(GoalPlane *goal, float *mtx) {
-    Vec3 pos = lbl_803C3D80;
+    Vec3 pos = JumpDistanceMode_rodata_803C3D80;
     Vec3 d;
 
     pos.x = mtx[3];
@@ -163,7 +146,7 @@ extern "C" void JumpDistanceMode_HandlePhysics(JumpDistanceMode *self) {
             self->speed = KartMovement_GetVelocityMagnitude(CarObject_GetRenderObj(self->car));
         }
         steer = 0.0f;
-        heading = self->car->move->heading;
+        heading = self->car->move->yaw;
         heading = WrapAngle(heading);
         if (g_reverseRoundFlag == 0) {
             if (heading <= lbl_806DADB8) {
@@ -220,7 +203,7 @@ extern "C" void JumpDistanceMode_HandlePhysics(JumpDistanceMode *self) {
 
         p.x = mtx[3];
         p.z = mtx[11];
-        if (InRect(&lbl_803C3D64, p) == 1) {
+        if (InRect(&JumpDistanceMode_HandlePhysics_rodata_803C3D64, p) == 1) {
             self->reached = 1;
         }
     }

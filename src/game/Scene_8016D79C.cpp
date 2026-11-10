@@ -1,29 +1,18 @@
 /*
  * 0x8016D79C..0x8016D920: marker model draw over a JObj chain, exec, and
- * the deleting destructor (vtable lbl_80491134, base vtable lbl_80490FE0).
+ * the deleting destructor (vtable MarkerChain_vtable_80491134, base vtable lbl_80490FE0).
  */
 
-struct Vec3f {
-    float x, y, z;
-};
+#include "game/types/Vec3f.h"
 
-struct HSD_JObj {
-    char pad00[0x8];
-    HSD_JObj *next;
-    char pad0C[0x2C];
-    Vec3f translate;
-};
+#include "game/types/HSD_JObj.h"
 
-struct MarkerChain {
-    void *vtable;
-    void *model;
-    HSD_JObj *chain;
-};
+#include "game/types/MarkerChain.h"
 
 extern "C" {
 extern char lbl_806D8B48[7];
 extern char lbl_806D8B50[5];
-extern char lbl_80491134[];
+extern char MarkerChain_vtable_80491134[];
 extern char lbl_80490FE0[];
 extern char lbl_8036D640[];
 void __assert(char *, int, char *);
@@ -72,7 +61,7 @@ void fn_8016D864(MarkerChain *self) {
 
 MarkerChain *fn_8016D890(MarkerChain *self, short flag) {
     if (self) {
-        self->vtable = lbl_80491134;
+        self->vtable = MarkerChain_vtable_80491134;
         if (self->model) {
             Object_DtorWithGXSync(self->model, 1);
         }

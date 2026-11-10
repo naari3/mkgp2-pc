@@ -3,9 +3,9 @@
  * horn SE loops; once the timer runs out they leave the screen and the
  * effect frees itself. Picks the character voice lines on its first frame. */
 
-typedef struct Vec { float x, y, z; } Vec;
-typedef struct Vec2 { float x, y; } Vec2;
-typedef struct Int4 { int v[4]; } Int4;
+#include "game/types/Vec.h"
+#include "game/types/Vec2.h"
+#include "game/types/Int4.h"
 
 typedef struct CarrotPad {
     unsigned char pad0[0x10];
@@ -46,8 +46,8 @@ typedef struct Camera {
 extern int g_gameMode;
 extern unsigned char g_namCamFlag;
 extern unsigned char g_playerData[];
-extern Int4 lbl_803292E0;
-extern Vec lbl_803293D0;
+extern Int4 Kart_rodata_803292E0;
+extern Vec KartPair3ArmUpdate_rodata_803293D0;
 extern Camera lbl_805DF3D0;
 
 extern void CarrotItemEffect_AddDraw(void *self);
@@ -76,7 +76,7 @@ static inline void Carrot_InitVoice(Carrots *c)
     kart = c->kart;
     c->voice = -1;
     c->line = -1;
-    lines = lbl_803292E0;
+    lines = Kart_rodata_803292E0;
     character = kart->character;
     if (g_gameMode == 0) {
         if (GetVBlankFlag() && VBlankValue_Get() != 1 && g_playerData[0x19D] && g_namCamFlag &&
@@ -116,7 +116,7 @@ void KartPair3ArmUpdate(unsigned char *self)
         c->skipDelay = 3;
         c->holdDelay = 3;
         for (i = 0; i < 3; i++) {
-            Vec yaw = lbl_803293D0;
+            Vec yaw = KartPair3ArmUpdate_rodata_803293D0;
             c->pos[i].x = 320.0f;
             c->pos[i].y = 240.0f;
             c->yaw[i] = (&yaw.x)[i];

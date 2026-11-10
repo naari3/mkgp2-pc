@@ -6,7 +6,7 @@
  */
 
 /*
- * Player title name HUD part @ 0x802529C8..0x80253294 (vtable lbl_804F202C).
+ * Player title name HUD part @ 0x802529C8..0x80253294 (vtable TitleNameHud_vtable_804F202C).
  *
  * Shows a badge (resource 0xBC7, or 0xBC7 + display buffer in mode 2)
  * followed by one glyph sprite per character of the player's title name.
@@ -15,24 +15,12 @@
 
 #include "game/FlowScene.h"
 
-struct Vec2 {
-    float x;
-    float y;
-};
+#include "game/types/Vec2.h"
 
-struct GlyphInfo {
-    int pad00[2];
-    int resId;
-    int pad0C;
-};
+#include "game/types/GlyphInfo.h"
 
 /* Stack TextManager built by TexMgr_Init; glyph codes start at +0x24. */
-struct GlyphText {
-    char pad000[0x24];
-    unsigned short glyphs[(0x230 - 0x24) / 2];
-    GlyphText();
-    TextManager *tm() { return (TextManager *)this; }
-};
+#include "game/types/GlyphText.h"
 
 struct RankLog;
 
@@ -46,7 +34,7 @@ extern const float lbl_806DC160;
 extern const float lbl_806DC164;
 extern const float lbl_806DC168;
 extern const char lbl_803F1194[];
-extern const GlyphInfo lbl_804EF1F0[];
+extern const GlyphInfo TitleNameHud_nm1_data_804EF1F0[];
 extern unsigned char g_playerData[];
 extern RankLog *lbl_806D10A0;
 extern int g_countdownPhase;

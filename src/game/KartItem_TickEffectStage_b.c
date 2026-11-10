@@ -2,10 +2,7 @@
  * of the held item effect, playing the hit sound for item kinds 4/5
  * and clearing the item when its uses run out. */
 
-typedef struct ItemKartFlag {
-    unsigned char pad0[4];
-    unsigned char active; /* 0x4 */
-} ItemKartFlag;
+#include "game/types/ItemKartFlag.h"
 
 typedef struct ItemKart {
     void *object;
@@ -77,15 +74,9 @@ static inline void ClearCurrentItem(ItemKart *kart)
     fn_80173BE8(kart->field29C);
 }
 
-typedef struct Vec3f {
-    float x, y, z;
-} Vec3f;
+#include "game/types/Vec3f.h"
 
-typedef struct ItemPick {
-    ItemKart *kart;
-    int field4;
-    int field8;
-} ItemPick;
+#include "game/types/ItemPick.h"
 
 extern const float lbl_806D255C;
 extern const float lbl_806D259C;

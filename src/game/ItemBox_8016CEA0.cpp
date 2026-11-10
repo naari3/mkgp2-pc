@@ -3,48 +3,16 @@
  * points, shadow particle spawns) and the item box set destructor.
  */
 
-struct Vec3f {
-    float x, y, z;
-};
+#include "game/types/Vec3f.h"
 
-struct BoxShadow {
-    Vec3f pos;
-    float scale;
-};
+#include "game/types/BoxShadow.h"
 
-struct ItemBoxSlot {
-    char pad00[0x4];
-    float peakY;
-    char pad08[0x4];
-    Vec3f start;
-    Vec3f end;
-    Vec3f pos;
-    float rotX;
-    float rotY;
-    char pad38[0x4];
-    float t;
-    int delay;
-    unsigned char visible;
-    char pad45[0x3];
-    BoxShadow shadows[10];
-    int cooldown;
-    int randIdx;
-};
+#include "game/types/ItemBoxSlot.h"
 
-struct ItemBoxSet {
-    void *vtable;
-    void *sound;
-    void *modelA;
-    void *modelB;
-    void *archive;
-    void *nodes;
-    int selected;
-    ItemBoxSlot *slots;
-    int count;
-};
+#include "game/types/ItemBoxSet.h"
 
 extern "C" {
-extern char lbl_8049110C[];
+extern char BoxConstruct_vtable_8049110C[];
 extern char lbl_80490FE0[];
 extern char lbl_8036D5A8[];
 extern const float lbl_80495A94[];
@@ -70,9 +38,9 @@ void fn_8016CEA0(ItemBoxSet *set) {
     }
 
     for (it = set->slots; it <= &set->slots[set->count - 1]; it++) {
-        if (it->delay > 0) {
-            it->delay--;
-            if (it->delay == 0) {
+        if (it->hidden > 0) {
+            it->hidden--;
+            if (it->hidden == 0) {
                 it->t = 0.0f;
             }
         } else {
@@ -83,7 +51,7 @@ void fn_8016CEA0(ItemBoxSet *set) {
                 if (set->sound) {
                     fn_801712E4(set->sound, it->end.x, it->end.y, it->end.z, 5.0f);
                 }
-                it->delay = 60;
+                it->hidden = 60;
             }
             Vec3_Subtract(&it->end, &it->start, &d);
             PSVECScale(&d, &it->pos, it->t);
@@ -105,7 +73,7 @@ void fn_8016CEA0(ItemBoxSet *set) {
                 if (it->shadows[i].scale < 0.0f) {
                     it->shadows[i].scale = 0.0f;
                 }
-            } else if (it->delay == 0 && spawned < 1 && it->cooldown == 0) {
+            } else if (it->hidden == 0 && spawned < 1 && it->cooldown == 0) {
                 it->shadows[i].scale = 0.5f * lbl_80495A94[it->randIdx] + 1.0f;
                 if (++it->randIdx >= 48) {
                     it->randIdx = 0;
@@ -136,7 +104,7 @@ void fn_8016CEA0(ItemBoxSet *set) {
 
 ItemBoxSet *fn_8016D208(ItemBoxSet *self, short flag) {
     if (self) {
-        self->vtable = lbl_8049110C;
+        self->vtable = BoxConstruct_vtable_8049110C;
         if (self->modelA) {
             Object_DtorWithGXSync(self->modelA, 1);
         }

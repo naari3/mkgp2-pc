@@ -25,9 +25,9 @@ struct DemoRodata163 {
     char readFormat[0x1c];
     char lakituName[1];
 };
-struct RaceLimits163 { signed char laps; char pad1[3]; float time, bonus; };
+#include "game/types/RaceLimits163.h"
 extern "C" {
-extern const float lbl_80369798[255];
+extern const float Scene_80164614_rodata_80369798[255];
 extern unsigned int *HSD_RandSeedPtr;
 extern int g_gameMode, g_ccClass, g_cupId, g_longRoundFlag, g_courseVariantIdx, g_roundIndex, g_reverseRoundFlag;
 extern unsigned char lbl_806D1264[3], g_isCommHost;

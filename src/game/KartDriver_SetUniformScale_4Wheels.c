@@ -1,20 +1,7 @@
 /* Set the same uniform scale on the four wheel joints (0xe8..0xf4). */
-typedef struct HSD_JObj {
-    unsigned char pad00[0x14];
-    unsigned int flags; /* 0x14 */
-    unsigned char pad18[0x2c - 0x18];
-    float scaleX; /* 0x2C */
-    float scaleY; /* 0x30 */
-    float scaleZ; /* 0x34 */
-} HSD_JObj;
+#include "game/types/HSD_JObj.h"
 
-typedef struct KartDriver {
-    void *model;  /* 0x00 */
-    unsigned char pad04[0x8];
-    void *loaded; /* 0x0C */
-    unsigned char pad10[0xe8 - 0x10];
-    HSD_JObj *wheel[4]; /* 0xE8 */
-} KartDriver;
+#include "game/types/KartDriver.h"
 
 extern char lbl_806D2548[7]; /* "jobj.h" */
 extern char lbl_806D2550[5]; /* "jobj" */
@@ -39,9 +26,9 @@ static inline void HSD_JObjSetScaleUniform(HSD_JObj *jobj, float s)
     if (!jobj) {
         __assert(lbl_806D2548, 0x316, lbl_806D2550);
     }
-    jobj->scaleX = s;
-    jobj->scaleY = s;
-    jobj->scaleZ = s;
+    jobj->scale.x = s;
+    jobj->scale.y = s;
+    jobj->scale.z = s;
     if (!(jobj->flags & 0x02000000)) {
         if (jobj != 0 && !HSD_JObjMtxIsDirty(jobj)) {
             HSD_JObjSetMtxDirtySub(jobj);
@@ -51,7 +38,7 @@ static inline void HSD_JObjSetScaleUniform(HSD_JObj *jobj, float s)
 
 int KartDriver_SetUniformScale_4Wheels(KartDriver *self, float s)
 {
-    if (self->model == 0 || self->loaded == 0) {
+    if (self->model == 0 || self->driver == 0) {
         return 0;
     }
     if (self->wheel[0] != 0) {

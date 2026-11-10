@@ -2,11 +2,7 @@
 #define GAME_TA_MODE_INIT_PRIVATE_H
 void *operator new(unsigned long);
 void operator delete(void *);
-typedef struct RaceParams {
-    signed char laps;
-    float timeLimit;
-    float lapBonus;
-} RaceParams;
+#include "game/types/RaceParams.h"
 
 struct GameModeBase {
     GameModeBase() {}
@@ -15,15 +11,9 @@ struct GameModeBase {
     virtual void Render() = 0;
 };
 
-struct EnvironmentMgr {
-    unsigned char data[0x37C];
-    EnvironmentMgr();
-};
+#include "game/types/EnvironmentMgr.h"
 
-struct RaceCamera {
-    unsigned char data[0x2C];
-    RaceCamera(float fovy, int width, float aspect, int height, void *renderTarget);
-};
+#include "game/types/RaceCamera.h"
 
 struct CarObject {
     unsigned char data[0x118];
@@ -31,10 +21,7 @@ struct CarObject {
               int team, int local, int ghost);
 };
 
-struct PathManager {
-    unsigned char data[0x4E8];
-    PathManager(void *pathKey, CarObject *car, void *renderObj, float *x, float *y, float *z);
-};
+#include "game/types/PathManager.h"
 
 struct LakituStart {
     unsigned char data[0x58];
@@ -51,45 +38,24 @@ struct JyugemuFlag {
     JyugemuFlag(Scene3D *scene);
 };
 
-struct JyugemuReverseFlag {
-    unsigned char data[0x14];
-    JyugemuReverseFlag(void *renderObj);
-};
+#include "game/types/JyugemuReverseFlag.h"
 
-struct FinalLapBanner {
-    unsigned char data[0x10];
-    FinalLapBanner(void *renderObj);
-};
+#include "game/types/FinalLapBanner.h"
 
-struct ObjCollChecker {
-    unsigned char data[0x18];
-    ObjCollChecker();
-};
+#include "game/types/ObjCollChecker.h"
 
-struct AISystem {
-    unsigned char data[0x4];
-    AISystem(PathManager *path, ObjCollChecker *coll, int flag);
-};
+#include "game/types/AISystem.h"
 
-struct ItemSelect {
-    unsigned char data[0x88];
-    ItemSelect(int slot, int flag);
-};
+#include "game/types/ItemSelect.h"
 
 struct WeatherSystem {
     unsigned char data[0x1B4];
     WeatherSystem(int flag);
 };
 
-struct RaceHud {
-    unsigned char data[0x80];
-    RaceHud(PathManager *path);
-};
+#include "game/types/RaceHud.h"
 
-struct SceneOverlay {
-    unsigned char data[0x24];
-    SceneOverlay(int frames);
-};
+#include "game/types/SceneOverlay.h"
 
 struct TaMode : GameModeBase {
     LakituStart *lakitu;           /* 0x04 */
@@ -114,7 +80,7 @@ struct TaMode : GameModeBase {
 };
 
 extern "C" {
-extern char lbl_803211D8[];
+extern char RaceScene_rodata_803211D8[];
 extern const char lbl_806D4800[4];  /* "map" */
 extern const char lbl_806D4804[6];  /* "light" */
 extern const char lbl_806D480C[8];  /* "itembox" */
@@ -127,7 +93,7 @@ extern const float lbl_806D47EC;
 extern const float lbl_806D47F4;
 extern const float lbl_806D4824;
 
-extern const char lbl_80321980[];
+extern const char TaMode_FrameUpdate_rodata_80321980[];
 extern const float lbl_806D4830, lbl_806D4834, lbl_806D4838, lbl_806D483C, lbl_806D484C, lbl_806D4860;
 
 extern int *HSD_RandSeedPtr;
@@ -252,15 +218,15 @@ void VoiceQueue_Clear(int flag);
 struct TaSound { char data[0x44]; TaSound(int); };
 struct TaGhostSource { int character; const char *file; unsigned long size; int unused; };
 extern "C" {
-extern int lbl_806D13CC, g_characterId, lbl_806D13A8, lbl_806D1394, lbl_806D139C, lbl_806CF198, lbl_806D13AC, lbl_806D13B0;
-extern unsigned char lbl_806D13A0, lbl_806D13A1, lbl_806D13B8;
+extern int TaMode_Init_bss_806D13CC, g_characterId, TaMode_FrameUpdate_bss_806D13A8, TaMode_FrameUpdate_bss_806D1394, TaMode_FrameUpdate_bss_806D139C, TaMode_FrameUpdate_data_806CF198, TaMode_FrameUpdate_bss_806D13AC, TaMode_FrameUpdate_bss_806D13B0;
+extern unsigned char TaMode_FrameUpdate_bss_806D13A0, lbl_806D13A1, TaMode_FrameUpdate_bss_806D13B8;
 extern CarObject *lbl_806D1398;
-extern PathManager *lbl_806D13A4;
-extern void *lbl_806D1390, *lbl_806D1388, *lbl_806D13C8;
-extern unsigned long lbl_806D138C;
+extern PathManager *TaMode_FrameUpdate_bss_806D13A4;
+extern void *TaMode_FrameUpdate_bss_806D1390, *TaMode_FrameUpdate_bss_806D1388, *TaMode_FrameUpdate_bss_806D13C8;
+extern unsigned long TaMode_FrameUpdate_bss_806D138C;
 extern TaSound *lbl_806D13B4;
-extern float lbl_806CF19C;
-extern unsigned long lbl_806D13C0, lbl_806D13C4;
+extern float TaMode_FrameUpdate_data_806CF19C;
+extern unsigned long TaMode_FrameUpdate_bss_806D13C0, TaMode_FrameUpdate_bss_806D13C4;
 void RaceSlot_ResetAll();
 void RaceSlot_InitSlot(int, int, int, int, int);
 unsigned char GetVBlankFlag();

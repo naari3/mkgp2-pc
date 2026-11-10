@@ -34,14 +34,9 @@ struct Vec3c {
 #endif
 };
 
-struct Vec3f {
-    float x, y, z;
-};
+#include "game/types/Vec3f.h"
 
-struct KartFlags {
-    char pad[0x10];
-    unsigned long long bits;
-};
+#include "game/types/KartFlags.h"
 
 struct KartRender {
     char pad0[0x1E8];
@@ -61,24 +56,9 @@ struct PathEntry {
     KartRender *kart;
 };
 
-struct TireSprite {
-    signed char flip;
-    char pad01[0x14 - 1];
-    signed char visible;
-    float alpha;
-    char pad1C[0x34 - 0x1C];
-    float vx[4];
-    float vy[4];
-    float vz[4];
-    char pad64[0x6C - 0x64];
-    float px, py, pz;
-};
+#include "game/types/TireSprite.h"
 
-struct FaceSprite {
-    virtual ~FaceSprite();
-    char pad04[0x14 - 4];
-    float scale;
-};
+#include "game/types/FaceSprite.h"
 
 struct FaceIcon : FaceSprite {
     char iconState[0x10];
@@ -98,11 +78,7 @@ struct FaceRing : FaceSprite {
     void Update();
 };
 
-struct FaceModelSub {
-    char pad[0x20];
-    float scale;
-    void Reset();
-};
+#include "game/types/FaceModelSub.h"
 
 struct clNormal3D;
 
@@ -150,21 +126,9 @@ struct clEFace3D {
     }
 };
 
-struct FaceHolder {
-    FaceSprite *p;
-    FaceHolder(FaceSprite *q) : p(q) {}
-    ~FaceHolder() throw() {
-        delete p;
-    }
-};
+#include "game/types/FaceHolder.h"
 
-struct clCDispInterface {
-    virtual ~clCDispInterface() {}
-    int id;
-    clCDispInterface() {
-        id = -1;
-    }
-};
+#include "game/types/clCDispInterface.h"
 
 struct clEnemyFace : clCDispInterface {
 #ifdef ENEMYFACE_INLINE_VEC_DTOR
@@ -256,7 +220,7 @@ unsigned char fn_80231644(int *b, int *a, int *c, int slot, int course);
 int fn_80231BD4(int kind, int course, int z);
 }
 
-extern const unsigned int lbl_803DA278[258];
+extern const unsigned int EnemyFace_rodata_803DA278[258];
 extern const unsigned int lbl_803DA680[8];
 extern const char lbl_803DA6A0[0x20];
 extern const char lbl_803DA6C0[0x20];

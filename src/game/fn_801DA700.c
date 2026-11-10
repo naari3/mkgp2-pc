@@ -1,18 +1,6 @@
-typedef struct InputView {
-    unsigned char opaque[4];
-    unsigned char enabled;
-    unsigned char opaque5[0x13];
-    int held;
-    int edge;
-} InputView;
+#include "game/types/InputView.h"
 
-typedef struct AttractFlow {
-    void *vt;
-    char pad_4;
-    signed char kind;
-    char pad_6[0x1A];
-    void *sprites[5];
-} AttractFlow;
+#include "game/types/AttractFlow.h"
 
 extern InputView *g_pInputState;
 extern void *lbl_8049BC08[];

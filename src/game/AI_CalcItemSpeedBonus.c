@@ -1,20 +1,8 @@
-typedef struct KartStatus {
-    char pad0[0x4];
-    unsigned char boosting;
-    char pad5[0xB];
-    unsigned long long flagsA;
-    unsigned long long flagsB;
-} KartStatus;
+#include "game/ItemEffectBusPrivate.h"
 
-typedef struct RenderObj {
-    char pad[0x304];
-    KartStatus *status;
-} RenderObj;
+#include "game/types/KartDriver.h"
 
-typedef struct KartObj {
-    char pad[0xF0];
-    int hitCooldown;
-} KartObj;
+#include "game/types/KartObj.h"
 
 typedef struct AIItemState {
     char pad0[0x4];
@@ -31,7 +19,7 @@ typedef struct AIItemState {
 
 extern KartObj *Read_U32[];
 extern void *fn_801DE1B0(void);
-extern RenderObj *CarObject_GetRenderObj(void *car);
+extern KartDriver *CarObject_GetRenderObj(void *car);
 extern float fn_801DE0E8(void *param);
 extern float fn_801DE000(void *param);
 extern int fn_801DDE7C(void *param);
@@ -40,21 +28,21 @@ extern int fn_801DDD6C(void *param);
 extern float fn_801DDDF4(void *param);
 extern int AI_GetHitCooldown(int kart);
 
-static inline int KartStatus_HasFlag(KartStatus *s, unsigned long long mask) {
-    unsigned long long f = s->flagsA;
-    f |= s->flagsB;
+static inline int KartStatus_HasFlag(ItemEffectBus *s, unsigned long long mask) {
+    unsigned long long f = s->mask;
+    f |= s->snapshot;
     return (f & mask) != 0;
 }
 
 float AI_CalcItemSpeedBonus(AIItemState *self, int kart) {
-    KartStatus *status;
+    ItemEffectBus *status;
     KartObj *kartObj;
     void *param;
     float bonus;
 
     kartObj = Read_U32[kart];
     param = fn_801DE1B0();
-    status = CarObject_GetRenderObj(self->car)->status;
+    status = CarObject_GetRenderObj(self->car)->itemBus;
     bonus = 0.0f;
 
     if (self->useBoost) {
@@ -63,7 +51,7 @@ float AI_CalcItemSpeedBonus(AIItemState *self, int kart) {
     if (self->useBrake) {
         bonus -= fn_801DE000(param);
     }
-    if (status->boosting && self->boostTimer <= 0) {
+    if (status->bonkPending && self->boostTimer <= 0) {
         self->boostTimer = fn_801DDE7C(param);
         self->boostPenalty = fn_801DDF04(param);
     }

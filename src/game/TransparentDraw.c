@@ -14,9 +14,7 @@
  *   0x80065FD8 TransparentDraw_RemoveByOwner    (0xC4)
  */
 
-typedef struct Vec3 {
-    float x, y, z;
-} Vec3;
+#include "game/types/Vec3.h"
 
 /* draw object: vtable + refcount + intrusive draw chain + position block */
 typedef struct TDrawObjVtbl TDrawObjVtbl;
@@ -113,13 +111,7 @@ typedef struct TDrawCase3 {
 } TDrawCase3;
 
 /* slot table row (0x14 bytes) */
-typedef struct TDrawSlot {
-    int owner;            /* 0x00 (-1 = free) */
-    int rank;             /* 0x04 (-1 = not drawn this frame) */
-    float dist;           /* 0x08 (squared XZ distance to camera) */
-    int state;            /* 0x0C */
-    TDrawEntry *entry;    /* 0x10 */
-} TDrawSlot;
+#include "game/types/TDrawSlot.h"
 
 extern unsigned char lbl_806D10F0;  /* .sbss: transparent draw system active */
 extern TDrawObj *lbl_806D10F8;      /* .sbss: draw chain head */

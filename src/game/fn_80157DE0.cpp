@@ -3,56 +3,28 @@
  */
 #pragma cplusplus on
 
-struct ListNode {
-    ListNode *prev;
-    ListNode *next;
-};
+#include "game/types/ListNode.h"
 
-struct ListIter {
-    ListNode *n;
-};
+#include "game/types/ListIter.h"
 
-struct List {
-    int size;
-    ListNode head;
-};
+#include "game/types/List.h"
 
-struct DataBuf {
-    int pad0;
-    void *data;
-};
+#include "game/types/DataBuf.h"
 
-class DrawObj {
-public:
-    virtual void v8();
-    virtual void vC();
-    virtual void v10();
-    virtual void Draw();
-};
+#include "game/types/DrawObj.h"
 
-struct DrawScene {
-    char pad0[4];
-    unsigned char hidden;
-    char pad5[3];
-    unsigned char state;
-    char pad9[0x2c - 9];
-    DrawObj *a;
-    DrawObj *b;
-};
+#include "game/types/DrawScene.h"
 
 struct InputView {
     char pad[0x14];
     int dir;
 };
 
-struct MenuTarget {
-    char pad0[0xc];
-    unsigned char sel;
-    char padD[0x19d - 0xd];
-    unsigned char flag;
-};
+#include "game/types/MenuTarget.h"
 
-struct OptionMenu {
+#include "game/types/MenuTarget.h"
+
+typedef struct OptionMenu {
     char pad0[0x1d];
     unsigned char toggleEnabled;
     char pad1E[2];
@@ -72,7 +44,7 @@ struct OptionMenu {
     char pad68[0x1c];
     int scroll;
     int scrollTimer;
-};
+} OptionMenu;
 
 /* TOP-END */
 
@@ -163,7 +135,7 @@ extern unsigned int lbl_806D848C;
 extern unsigned int lbl_806D8490;
 extern unsigned int lbl_806D8494;
 extern unsigned int lbl_806D84A0;
-extern unsigned int lbl_803678D8[];
+extern unsigned int SceneList_80157EA8_rodata_803678D8[];
 extern unsigned int lbl_806D84B0;
 extern unsigned int lbl_806D84B4;
 extern unsigned int lbl_806D84B8;

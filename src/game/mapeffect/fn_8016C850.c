@@ -1,8 +1,5 @@
-typedef struct { float x, y, z; } Vec;
-typedef struct PointList {
-    int count;
-    Vec *pts;
-} PointList;
+#include "game/types/Vec.h"
+#include "game/types/PointList.h"
 
 extern const float lbl_806D8B00;
 extern const float lbl_806D8B04;

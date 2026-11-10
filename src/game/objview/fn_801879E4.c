@@ -1,4 +1,4 @@
-typedef struct { float x, y, z; } Vec3;
+#include "game/types/Vec3.h"
 
 typedef struct Slot {
     Vec3 pos;
@@ -9,11 +9,7 @@ typedef struct Slot {
     int timer;
 } Slot;
 
-typedef struct Path {
-    Vec3 p0;
-    Vec3 p1;
-    Vec3 p2;
-} Path;
+#include "game/types/Path.h"
 
 typedef struct Obj801879E4 {
     void *vt;

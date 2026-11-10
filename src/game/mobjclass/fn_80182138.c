@@ -1,12 +1,11 @@
-typedef struct MObjView {
-    unsigned char base[0x20];
-    unsigned char color[4];
-} MObjView;
+#include "game/types/MObjView.h"
+
+#include "game/types/MObjView.h"
 
 typedef struct MObjClassView {
     unsigned char base[0x40];
-    int (*load)(MObjView *, void *);
-    void *(*setupTev)(MObjView *, void *, void **);
+    int (*load) (MObjView *, void *);
+    void *(*setupTev) (MObjView *, void *, void **);
     unsigned char tail[0xC];
 } MObjClassView;
 

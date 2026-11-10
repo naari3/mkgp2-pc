@@ -1,9 +1,7 @@
 #ifndef GAME_PATHCURSOR_H
 #define GAME_PATHCURSOR_H
 
-typedef struct Vec3 {
-    float x, y, z;
-} Vec3;
+#include "game/types/Vec3.h"
 
 typedef struct Waypoint {
     int flag;
@@ -17,7 +15,7 @@ typedef struct PathCursor {
     Waypoint *points;
 } PathCursor;
 
-extern Vec3 lbl_802EAF00;
+extern Vec3 Path_CountWaypointsAndSnapGround_rodata_802EAF00;
 extern const float lbl_806D2660;
 extern const float lbl_806D2664;
 extern const double lbl_806D2668;

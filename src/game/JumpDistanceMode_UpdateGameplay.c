@@ -3,14 +3,14 @@
  * Float literals in JD_sqrtf are remapped to the shared .sdata2 labels by
  * tools/postprocess_sdata2.py.
  */
-struct Vec3 { float x, y, z; };
-struct XZ { float x, z; };
-struct Rect { float minX, minZ, maxX, maxZ; };
+#include "game/types/Vec3.h"
+#include "game/types/XZ.h"
+#include "game/types/Rect.h"
 
 struct CarObject;
-struct GoalPlane { Vec3 *point; Vec3 normal; };
-struct JDLanding { unsigned char active; unsigned char slowed; char pad2[2]; int x4; int x8; };
-struct JDCoins { char pad[8]; int base; int earned; };
+#include "game/types/GoalPlane.h"
+#include "game/types/JDLanding.h"
+#include "game/types/JDCoins.h"
 
 struct JDMode {
     void *vtbl;
@@ -46,8 +46,8 @@ extern "C" {
 extern unsigned char g_raceEnded;
 extern const float lbl_806DAD74, lbl_806DAD7C, lbl_806DADA0, lbl_806DADA4, lbl_806DADA8, lbl_806DADAC;
 extern const XZ lbl_806DCF60;
-extern const Rect lbl_803C3D54;
-extern const Vec3 lbl_803C3D80;
+extern const Rect JumpDistanceMode_UpdateGameplay_rodata_803C3D54;
+extern const Vec3 JumpDistanceMode_rodata_803C3D80;
 
 unsigned char CarObject_IsAirborne(CarObject *car);
 void *CarObject_GetRenderObj(CarObject *car);
@@ -81,7 +81,7 @@ static inline float JD_sqrtf(float x) {
 }
 
 static inline unsigned char IsInFront(GoalPlane *goal, float *mtx) {
-    Vec3 pos = lbl_803C3D80;
+    Vec3 pos = JumpDistanceMode_rodata_803C3D80;
     Vec3 d;
 
     pos.x = mtx[3];
@@ -111,7 +111,7 @@ static inline unsigned char InStartZone(float *mtx) {
 
     p.x = mtx[3];
     p.z = mtx[11];
-    return InRect(&lbl_803C3D54, p);
+    return InRect(&JumpDistanceMode_UpdateGameplay_rodata_803C3D54, p);
 }
 
 static inline unsigned char IsLeaving(JDMode *self) {

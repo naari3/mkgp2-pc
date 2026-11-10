@@ -3,11 +3,7 @@
  * (voice base + offset) and its positional update.
  */
 
-typedef struct Vec3 {
-    float x;
-    float y;
-    float z;
-} Vec3;
+#include "game/types/Vec3.h"
 
 typedef struct SoundObj {
     int charId;               /* 0x0 */
@@ -21,8 +17,8 @@ typedef struct SoundObj {
     int voiceHandle;          /* 0x28 */
 } SoundObj;
 
-extern const int lbl_802EDC70[13]; /* per-character voice base */
-extern const Vec3 lbl_802EDD24;
+extern const int KartItemAudio_PlaySEByItemId_rodata_802EDC70[13]; /* per-character voice base */
+extern const Vec3 KartItemAudio_PlaySEByItemId_rodata_802EDD24;
 
 extern int SoundMgr_PlaySE(int soundId);
 extern int isJapanese(void);
@@ -35,7 +31,7 @@ void SoundObj_PlaySE(SoundObj *self, int ofs)
     int se;
 
     if (self->voiceOn != 0) {
-        se = ofs + lbl_802EDC70[self->charId];
+        se = ofs + KartItemAudio_PlaySEByItemId_rodata_802EDC70[self->charId];
         if (isJapanese() == 1 && self->charId == 10 && ofs == 0) {
             se = 0x1BF;
         }
@@ -43,7 +39,7 @@ void SoundObj_PlaySE(SoundObj *self, int ofs)
         if (self->playerType == 0) {
             float *mtx = self->mtx;
             if (mtx != 0) {
-                Vec3 pos = lbl_802EDD24;
+                Vec3 pos = KartItemAudio_PlaySEByItemId_rodata_802EDD24;
                 pos.x = mtx[3];
                 pos.y = mtx[7];
                 pos.z = mtx[11];

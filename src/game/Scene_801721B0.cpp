@@ -4,48 +4,22 @@
  * color) and drawn.
  */
 
-struct Vec3f {
-    float x, y, z;
-};
+#include "game/types/Vec3f.h"
 
-struct SlotDesc {
-    float params[4];
-    int obj;
-};
+#include "game/types/SlotDesc.h"
 
-struct EffectObj {
-    char pad00[0x4];
-};
+#include "game/types/EffectObj.h"
 
-struct EffectSlot {
-    char pad00[0x2C];
-    int mode;
-    char pad30[0x64];
-};
+#include "game/types/EffectSlot.h"
 
-struct SharedEffect {
-    EffectObj *objs[2];
-    EffectSlot slots[4];
-};
+#include "game/types/SharedEffect.h"
 
-struct RefSub {
-    unsigned char on;
-    float sx;
-    float sy;
-    float rot;
-    float color[4];
-};
+#include "game/types/RefSub.h"
 
-struct SharedRef {
-    int id;
-    float t;
-    unsigned char active;
-    Vec3f pos;
-    RefSub subs[5];
-};
+#include "game/types/SharedRef.h"
 
 extern "C" {
-extern const SlotDesc lbl_8036E8D4[4];
+extern const SlotDesc Scene_80172844_rodata_8036E8D4[4];
 extern SharedEffect *lbl_806D15E0;
 void GX_EndDraw(int);
 void GX_BeginDraw(void);
@@ -62,11 +36,11 @@ static inline void DrawLayerAt(SharedEffect *fx, RefSub *sub, int k, EffectSlot 
                              int blend) {
     if (sub->on) {
         float rot = sub->rot;
-        int o = lbl_8036E8D4[k].obj;
+        int o = Scene_80172844_rodata_8036E8D4[k].obj;
 
         if (fx->objs[o]) {
             fn_801F70F0(slot, x, y, 1.0f);
-            fn_801F6ED0(slot, sub->sx / lbl_8036E8D4[k].params[2], sub->sy / lbl_8036E8D4[k].params[3]);
+            fn_801F6ED0(slot, sub->sx / Scene_80172844_rodata_8036E8D4[k].params[2], sub->sy / Scene_80172844_rodata_8036E8D4[k].params[3]);
             fn_801F6EEC(slot, rot);
             fn_801F6EAC(slot, (int)fn_80173F5C(255.0f * sub->color[0], 0.0f, 255.0f),
                         (int)fn_80173F5C(255.0f * sub->color[1], 0.0f, 255.0f),
@@ -83,13 +57,13 @@ static inline void DrawLayer(SharedEffect *fx, RefSub *sub, int k, int si, float
                              int blend) {
     if (sub->on) {
         float rot = sub->rot;
-        int o = lbl_8036E8D4[k].obj;
+        int o = Scene_80172844_rodata_8036E8D4[k].obj;
 
         if (fx->objs[o]) {
             EffectSlot *slot = &fx->slots[si];
 
             fn_801F70F0(slot, x, y, 1.0f);
-            fn_801F6ED0(slot, sub->sx / lbl_8036E8D4[k].params[2], sub->sy / lbl_8036E8D4[k].params[3]);
+            fn_801F6ED0(slot, sub->sx / Scene_80172844_rodata_8036E8D4[k].params[2], sub->sy / Scene_80172844_rodata_8036E8D4[k].params[3]);
             fn_801F6EEC(slot, rot);
             fn_801F6EAC(slot, (int)fn_80173F5C(255.0f * sub->color[0], 0.0f, 255.0f),
                         (int)fn_80173F5C(255.0f * sub->color[1], 0.0f, 255.0f),

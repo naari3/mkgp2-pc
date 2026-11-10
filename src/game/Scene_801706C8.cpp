@@ -2,32 +2,11 @@
  * 0x801706C8..0x801707FC: per-entry child scale update and tree draw.
  */
 
-struct HSD_JObj {
-    char pad00[0x8];
-    HSD_JObj *next;
-    char pad0C[0x4];
-    HSD_JObj *child;
-    unsigned int flags;
-    char pad18[0x14];
-    float scaleX;
-    float scaleY;
-    float scaleZ;
-};
+#include "game/types/HSD_JObj.h"
 
-struct GrowEntry {
-    HSD_JObj *jobj;
-    char pad04[0xC];
-    int state;
-    char pad14[0x4];
-    float scale;
-    void *sub;
-};
+#include "game/types/GrowEntry.h"
 
-struct GrowSet {
-    char pad00[0x8];
-    GrowEntry *entries;
-    int count;
-};
+#include "game/types/GrowSet.h"
 
 extern "C" {
 extern char lbl_806D8CD8[7];
@@ -73,7 +52,7 @@ static inline void HSD_JObjSetScaleY(HSD_JObj *jobj, float y) {
     if (jobj == 0) {
         __assert(lbl_806D8CD8, 0x333, lbl_806D8CE0);
     }
-    jobj->scaleY = y;
+    jobj->scale.y = y;
     if (!(jobj->flags & 0x02000000) && jobj != 0) {
         HSD_JObjSetMtxDirty(jobj);
     }

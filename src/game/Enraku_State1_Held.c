@@ -3,23 +3,12 @@
  * until it is thrown, sub-state 2 flies it forward with homing and a spin,
  * and leaves the flying state on a kart hit, a wall, a landing or a
  * timeout. */
-typedef struct Vec { float x, y, z; } Vec;
+#include "game/types/Vec.h"
 
-typedef struct EnrakuWork {
-    unsigned char pad0[4];
-    unsigned int timers[4];
-    unsigned char pad14[0x4C - 0x14];
-    unsigned char *eff;
-    unsigned char pad50[0x7C - 0x50];
-    int approach;
-    unsigned char pad80[0x98 - 0x80];
-    void *driver;
-    void *target;
-    signed char launch;
-} EnrakuWork;
+#include "game/types/EnrakuWork.h"
 
-extern const Vec lbl_8032F518;
-extern const Vec lbl_8032F524;
+extern const Vec Enraku_State1_Held_rodata_8032F518;
+extern const Vec Enraku_State1_Held_rodata_8032F524;
 extern void SpriteSlot_SetMatrixSourceEnabled_WithReseed(void *slot, int en);
 extern void Effect_SmokeCloud_Update(unsigned char *self);
 extern unsigned char *DrawEffect_SpawnDirect(void (*callback)(unsigned char *));
@@ -73,7 +62,7 @@ void Enraku_State1_Held(unsigned char *self, EnrakuWork *w)
             F(0x2C) = 0.0f;
             self[0xCA]++;
         case 1:
-            Item_RenderCharacterScaledFromJoint12(self, lbl_8032F518, lbl_8032F524, 1, 1.2f);
+            Item_RenderCharacterScaledFromJoint12(self, Enraku_State1_Held_rodata_8032F518, Enraku_State1_Held_rodata_8032F524, 1, 1.2f);
             if (FinalLapCoinJump_CheckActiveForObject(w->driver)) {
                 self[0x28] = 0;
             } else {

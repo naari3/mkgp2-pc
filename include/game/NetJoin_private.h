@@ -2,7 +2,7 @@
 #define NET_JOIN_PRIVATE_H
 /*
  * 0x802253EC..0x80226640: network single-play join scene (vtable
- * lbl_804EDF3C, base clSceneInterface lbl_803FE0C8). Scrolls a "waiting
+ * clCSSceneNextRaceBT_vtable_804EDF3C, base clSceneInterface lbl_803FE0C8). Scrolls a "waiting
  * for host" text, waits for the host PCB through a SyncWaiter and lets the
  * player open a coin popup (NetJoinPopup) while waiting.
  */
@@ -52,24 +52,9 @@ struct TextSprite {
     TextManager *tm() { return (TextManager *)this; }
 };
 
-struct SceneObj {
-    char pad00[0x20];
-    SceneObj(int a, int b, int c, int d, int e);
-    ~SceneObj();
-    void Update();
-    void Draw();
-};
+#include "game/types/SceneObj.h"
 
-struct SyncWaiter {
-    char pad00[0x14];
-    virtual ~SyncWaiter();
-    virtual void v0C();
-    virtual void v10();
-    virtual void Update();
-    virtual void Draw();
-    char pad18[0x4C - 0x18];
-    SyncWaiter();
-};
+#include "game/types/SyncWaiter.h"
 
 struct FlowPanel {
     int state;
@@ -91,10 +76,7 @@ struct CoinPopupDetail {
     unsigned char Closed() { return state == 6; }
 };
 
-struct ItemMsgWnd {
-    char body[0x5C];
-    ItemMsgWnd();
-};
+#include "game/types/ItemMsgWnd.h"
 
 struct PcbMode {
     char pad00[8];
@@ -250,14 +232,7 @@ struct NetJoinPopup {
     void Update();
 };
 
-struct clSceneInterface {
-    virtual ~clSceneInterface() {}
-    virtual void Destroy();
-    virtual void Update();
-    virtual void Draw();
-    unsigned char done;
-    clSceneInterface() : done(false) {}
-};
+#include "game/types/clSceneInterface.h"
 
 struct clCSSceneNextRaceBT : clSceneInterface {
     int state;

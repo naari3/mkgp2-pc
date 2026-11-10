@@ -1,10 +1,7 @@
 /* Narrow target-observed layout; live Ghidra types unavailable in this worker. */
-struct CoinJumpVec { float x,y,z; };
+#include "game/types/CoinJumpVec.h"
 struct CoinJumpEffect;
-struct CoinJumpGroup {
-    char pad00[0x10]; CoinJumpEffect *children[5];
-    char pad24[0x60]; float phase[5];
-};
+#include "game/types/CoinJumpGroup.h"
 struct CoinJumpEffect {
     char pad00[0x10]; int extra;
     char slot[0x14]; unsigned char visible; char pad29[3]; float alpha;
@@ -13,7 +10,7 @@ struct CoinJumpEffect {
     signed char state; char padB5[0x14]; signed char cleanup; char padCA[2];
     CoinJumpGroup group;
 };
-struct CoinJumpCamera { char pad[0x80]; CoinJumpVec position; };
+#include "game/types/CoinJumpCamera.h"
 extern "C" {
 extern CoinJumpCamera lbl_805DF3D0;
 extern const float lbl_806D5770, lbl_806D577C, lbl_806D5780, lbl_806D5784, lbl_806D5790, lbl_806D5798, lbl_806D57D8, lbl_806D57F4;

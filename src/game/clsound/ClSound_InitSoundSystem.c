@@ -1,20 +1,20 @@
 #include "game/clsound_s25_private.h"
 #include "game/clsound_spatial_private.h"
 
-typedef struct SoundEvent { unsigned int id; int state; int countdown; } SoundEvent;
-typedef struct ActiveStream { unsigned int handle, id; } ActiveStream;
+#include "game/types/SoundEvent.h"
+#include "game/types/ActiveStream.h"
 /* Separate objects let MWCC retain the shared BSS base and subobject addresses. */
-SoundEvent lbl_80677F40[37];
+SoundEvent ClSound_InitSoundSystem_bss_80677F40[37];
 static SND_AUX_REVERBHI ClSound_ReverbHI;
 static SND_AUX_CHORUS ClSound_Chorus;
-ClSoundVoice lbl_80678378[32];
+ClSoundVoice ClSound_InitSoundSystem_bss_80678378[32];
 ActiveStream ClSound_ActiveStreams[4];
-extern const char lbl_80379100[];
+extern const char ClSound_rodata_80379100[];
 extern const unsigned int lbl_806D94F0, lbl_806D94F4;
 extern const float lbl_806D9524, lbl_806D9528, lbl_806D952C, lbl_806D9530, lbl_806D950C, lbl_806D9534;
 extern unsigned char ClSound_Initialized, lbl_806CFCA1, lbl_806CFCA2, lbl_806D16B1;
 extern void *lbl_806D16B4, *lbl_806D16B8, *lbl_806D16BC;
-extern unsigned int lbl_806D16C4[2];
+extern unsigned int ClSound_InitSoundSystem_bss_806D16C4[2];
 extern int lbl_806CF010;
 extern void DebugPrintf(const char *, ...);
 extern void *OSAllocFromHeap(int, unsigned long);
@@ -106,18 +106,18 @@ static inline void ResetStreams(ActiveStream *streams) {
 #pragma push
 #pragma opt_common_subs off
 void ClSound_InitSoundSystem(void) {
-    const char *strings = lbl_80379100;
+    const char *strings = ClSound_rodata_80379100;
     void *samples;
     unsigned int hooks[2];
     int i;
     unsigned int aramSize;
     if (!ClSound_Initialized) {
         DebugPrintf(strings + 0x3f64);
-        ResetEvents(lbl_80677F40);
+        ResetEvents(ClSound_InitSoundSystem_bss_80677F40);
         samples = 0;
         hooks[0] = lbl_806D94F0;
         hooks[1] = lbl_806D94F4;
-        aramSize = ARInit(lbl_806D16C4, 2);
+        aramSize = ARInit(ClSound_InitSoundSystem_bss_806D16C4, 2);
         DebugPrintf(strings + 0x3f90, aramSize);
         ARQInit();
         AIInit(0);
@@ -140,10 +140,10 @@ void ClSound_InitSoundSystem(void) {
         sndSetAuxProcessingCallbacks(0, sndAuxCallbackReverbHI, &ClSound_ReverbHI, 255, 0, sndAuxCallbackChorus, &ClSound_Chorus, 255, 0);
         sndVolume(127, 0, 255);
         for (i = 0; i < 32; i++) {
-            lbl_80678378[i].id = -1;
-            lbl_80678378[i].group = 255;
-            lbl_80678378[i].category = 255;
-            lbl_80678378[i].flags = 0;
+            ClSound_InitSoundSystem_bss_80678378[i].id = -1;
+            ClSound_InitSoundSystem_bss_80678378[i].group = 255;
+            ClSound_InitSoundSystem_bss_80678378[i].category = 255;
+            ClSound_InitSoundSystem_bss_80678378[i].flags = 0;
         }
         ResetStreams(ClSound_ActiveStreams);
         fn_801952EC();

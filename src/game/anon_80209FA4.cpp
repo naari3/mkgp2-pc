@@ -18,9 +18,7 @@ void *GetInputManager(void);
 
 /* ---- job runner singleton ---- */
 
-struct JobRunner {
-    char pad;
-};
+#include "game/types/JobRunner.h"
 
 extern "C" JobRunner *lbl_806D1A00;
 extern "C" JobRunner lbl_806D1A20;
@@ -31,49 +29,22 @@ extern "C" JobRunner lbl_806D1A20;
 
 /* ---- clJobRunner debug mode ---- */
 
-struct InputPlayer {
-    virtual void v0();
-    virtual void v1();
-    virtual float v2();
-    virtual void v3();
-    virtual float StickRight();
-    virtual float StickLeft();
-    virtual unsigned char Pressed(int mask);
-};
+#include "game/types/InputPlayer.h"
 
 extern "C" InputPlayer *InputMgr_GetPlayer(void *mgr, int index);
 
-struct JobTask {
-    virtual void v0();
-    virtual void Kill();
-    virtual void Update();
-    virtual void Draw();
-    unsigned char done;
-};
+#include "game/types/JobTask.h"
 
 extern "C" {
 JobTask *fn_8020CEAC(void);
 JobTask *fn_80254F74(void);
 }
 
-struct JobTask15 : JobTask {
-    char pad[0x18 - 0x8];
-    JobTask15();
-};
+#include "game/types/JobTask15.h"
 
-struct JobEntry {
-    int type;
-    const char *name;
-};
+#include "game/types/JobEntry.h"
 
-struct JobRodata {
-    char pad000[0x4E0];
-    JobEntry entries[14];
-    char pad550[0x568 - 0x550];
-    char selectFmt[0x14];
-    char runFmt[0x14];
-    char drawFmt[0x14];
-};
+#include "game/types/JobRodata.h"
 
 extern "C" {
 extern const JobRodata lbl_803C2840;
@@ -144,26 +115,11 @@ static inline JobTask *CreateJob(int type) {
 
 /* ---- fade keyframe sequence ---- */
 
-struct FadeKeyBase {
-    virtual ~FadeKeyBase();
-    int dur;
-    FadeKeyBase(int d) : dur(d) {}
-};
+#include "game/types/FadeKeyBase.h"
 
-struct FadeKey : FadeKeyBase {
-    float from;
-    float to;
-    VHolder<FadeKey> next;
-    FadeKey(int d, float f, float t) : FadeKeyBase(d), from(f), to(t) {}
-    ~FadeKey();
-    void Append(int dur, float to);
-};
+#include "game/types/FadeKey.h"
 
-struct FadeSeqBase {
-    virtual ~FadeSeqBase();
-    bool loop;
-    FadeSeqBase(bool l) : loop(l) {}
-};
+#include "game/types/FadeSeqBase.h"
 
 struct Tween : FlowFader {
     float from;
@@ -174,20 +130,7 @@ struct Tween : FlowFader {
     void Set(float f, float t, short d);
 };
 
-struct FadeSeq : FadeSeqBase {
-    FadeKey *head;
-    FadeKey *cur;
-    Tween *tween;
-    FadeSeq(FadeKey *h, bool l);
-    ~FadeSeq();
-    void Update();
-    bool Done();
-    void Load() {
-        float t = cur->to;
-        tween->Set(cur->from, t, cur->dur);
-        cur = cur->next.p;
-    }
-};
+#include "game/types/FadeSeq.h"
 
 extern "C" const float lbl_806DABD8;
 extern "C" const float lbl_806DABE8;
@@ -326,12 +269,12 @@ extern "C" void fn_80209FA4(void) {
 
 /* Target vtable includes its existing RTTI descriptor with RTTI disabled. */
 extern "C" {
-extern const char lbl_806D02F0[];
+extern const char JobRunnerMode_data_806D02F0[];
 int fn_8020A194(void *);
 void fn_8020A004(void *);
 void *fn_8020A39C(void *, short);
-const void *lbl_804EC7F4[5] = {
-    lbl_806D02F0, 0, (const void *)fn_8020A194,
+const void *JobRunnerMode_vtable_804EC7F4[5] = {
+    JobRunnerMode_data_806D02F0, 0, (const void *)fn_8020A194,
     (const void *)fn_8020A004, (const void *)fn_8020A39C
 };
 }

@@ -5,31 +5,24 @@
  * wobble offsets and the zero initializer of the screen position).
  */
 
-struct Vec3f {
-    float x, y, z;
-};
+#include "game/types/Vec3f.h"
 
-struct Vec2f {
-    float x, y;
-};
+#include "game/types/Vec2f.h"
 
-struct SlotDesc {
-    float params[4];
-    int obj;
-};
+#include "game/types/SlotDesc.h"
 
 extern const char lbl_8036E8B0[0x14] = "homing_target.tpl";
 extern const char lbl_8036E8C4[0x10] = "target_line.tpl";
-extern const SlotDesc lbl_8036E8D4[4] = {
+extern const SlotDesc Scene_80172844_rodata_8036E8D4[4] = {
     {{1.0f, 1.0f, 78.0f, 78.0f}, 0},
     {{80.0f, 1.0f, 113.0f, 113.0f}, 0},
     {{194.0f, 1.0f, 52.0f, 52.0f}, 0},
     {{0.0f, 0.0f, 128.0f, 128.0f}, 1},
 };
-extern const float lbl_8036E924[4] = {0.0f, 1.0f, 1.0f, 1.0f};
-extern const float lbl_8036E934[4] = {1.0f, 1.0f, 1.0f, 1.0f};
-extern const float lbl_8036E944[4] = {1.0f, 0.0f, 0.0f, 1.0f};
-extern const Vec2f lbl_8036E954[3] = {
+extern const float HomingMarkerUpdate_rodata_8036E924[4] = {0.0f, 1.0f, 1.0f, 1.0f};
+extern const float HomingMarkerUpdate_rodata_8036E934[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+extern const float HomingMarkerUpdate_rodata_8036E944[4] = {1.0f, 0.0f, 0.0f, 1.0f};
+extern const Vec2f Scene_801734B0_rodata_8036E954[3] = {
     {5.0f, 3.0f},
     {3.0f, 5.0f},
     {4.0f, 4.0f},
@@ -48,12 +41,7 @@ struct SharedRef {
     }
 };
 
-struct EffectHandle {
-    SharedRef *ref;
-    Vec3f anchor;
-    Vec3f cur;
-    float blend;
-};
+#include "game/types/EffectHandle.h"
 
 extern "C" {
 void *GetCourseScene3D(void);

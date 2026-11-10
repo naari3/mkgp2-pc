@@ -1,9 +1,9 @@
 /*
  * KartReaction Front/Side/Rear @ 0x80040C24 / 0x80040CA0 / 0x80040D1C.
  *
- * 3 sibling triggers that queue a hit-reaction animation on a KartItem
+ * 3 sibling triggers that queue a hit-reaction animation on a KartDriver
  * when the kart is hit from front/side/rear respectively. Each function:
- *   - returns 0 immediately when the KartItem is inactive (flag204 == 0)
+ *   - returns 0 immediately when the KartDriver is inactive (flag204 == 0)
  *   - returns 0 if the item slot is already in a non-idle state
  *     (currentState != 0; Rear skips this check)
  *   - returns 0 if the held item is the lightning bolt (0x51, immune)
@@ -27,16 +27,9 @@
 typedef unsigned char u8;
 typedef int s32;
 
-typedef struct KartItem {
-    u8 _pad_000[0x1F0];
-    s32 currentState;        /* 0x1F0 */
-    u8 _pad_1F4[0x204 - 0x1F4];
-    u8 flag204;              /* 0x204 */
-    u8 _pad_205[0x2C0 - 0x205];
-    s32 currentItemId;       /* 0x2C0 */
-} KartItem;
+#include "game/types/KartDriver.h"
 
-extern void SetAnimState(KartItem *self, int anim_id, int unk_zero, int trigger_flag,
+extern void SetAnimState(KartDriver *self, int anim_id, int unk_zero, int trigger_flag,
                          float f1, float f2, float f3, float f4);
 
 /* Direction tables in .sdata (Rear / Side / Front, 4 floats each).
@@ -45,17 +38,17 @@ extern float lbl_806CF01C;
 extern float lbl_806CF020;
 extern float lbl_806CF024;
 extern float lbl_806CF028;
-extern float lbl_806CF02C;
-extern float lbl_806CF030;
-extern float lbl_806CF034;
-extern float lbl_806CF038;
-extern float lbl_806CF03C;
-extern float lbl_806CF040;
-extern float lbl_806CF044;
-extern float lbl_806CF048;
+extern float KartReaction_Side_data_806CF02C;
+extern float KartReaction_Side_data_806CF030;
+extern float KartReaction_Side_data_806CF034;
+extern float KartReaction_Side_data_806CF038;
+extern float KartReaction_Front_data_806CF03C;
+extern float KartReaction_Front_data_806CF040;
+extern float KartReaction_Front_data_806CF044;
+extern float KartReaction_Front_data_806CF048;
 
 #pragma exceptions on
-int KartReaction_Front(KartItem *self) {
+int KartReaction_Front(KartDriver *self) {
     if (self->flag204 == 0) {
         return 0;
     }
@@ -65,11 +58,11 @@ int KartReaction_Front(KartItem *self) {
     if (self->currentItemId == 0x51) {
         return 0;
     }
-    SetAnimState(self, 0x16, 0, 1, lbl_806CF03C, lbl_806CF040, lbl_806CF044, lbl_806CF048);
+    SetAnimState(self, 0x16, 0, 1, KartReaction_Front_data_806CF03C, KartReaction_Front_data_806CF040, KartReaction_Front_data_806CF044, KartReaction_Front_data_806CF048);
     return 1;
 }
 
-int KartReaction_Side(KartItem *self) {
+int KartReaction_Side(KartDriver *self) {
     if (self->flag204 == 0) {
         return 0;
     }
@@ -79,11 +72,11 @@ int KartReaction_Side(KartItem *self) {
     if (self->currentItemId == 0x51) {
         return 0;
     }
-    SetAnimState(self, 0x15, 0, 1, lbl_806CF02C, lbl_806CF030, lbl_806CF034, lbl_806CF038);
+    SetAnimState(self, 0x15, 0, 1, KartReaction_Side_data_806CF02C, KartReaction_Side_data_806CF030, KartReaction_Side_data_806CF034, KartReaction_Side_data_806CF038);
     return 1;
 }
 
-int KartReaction_Rear(KartItem *self) {
+int KartReaction_Rear(KartDriver *self) {
     if (self->flag204 == 0) {
         return 0;
     }

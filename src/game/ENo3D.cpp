@@ -50,17 +50,24 @@ struct PcbSlot {
     unsigned char role : 3;
 };
 
-struct KartStatus {
-    char pad0[0x10];
-    unsigned long long bits;
-};
+#include "game/ItemEffectBusPrivate.h"
 
+struct ItemEffectBus;
+
+/* Merged from 14 per-TU views by tools/struct_merge.py: members are
+ * the ones some TU accesses; the size is the largest any view declared. */
+typedef struct KartRender KartRender;
 struct KartRender {
-    char pad0[0x1F4];
-    int slot;
-    int chara;
-    char pad1FC[0x304 - 0x1FC];
-    KartStatus *status;
+    /* 0x000 */ unsigned char pad_000[0x1F4];
+    /* 0x1F4 */ int slot;
+    /* 0x1F8 */ int chara;
+    /* 0x1FC */ unsigned char pad_1FC[0x3C];
+    /* 0x238 */ int visible;
+    /* 0x23C */ unsigned char middle[0x90];
+    /* 0x2CC */ int coins;
+    /* 0x2D0 */ unsigned char special;  /* also: active */
+    /* 0x2D1 */ unsigned char pad_2D1[0x33];
+    /* 0x304 */ struct ItemEffectBus *status;
 };
 
 /* Badge position; its empty inline dtor is the shared dtor_80036E40. */
@@ -87,7 +94,7 @@ public:
 void clENo3D::Draw() {
     if (enabled) {
         unsigned char hidden;
-        if ((kart->status->bits & 0x8000000000ULL) == 0) {
+        if ((kart->status->mask & 0x8000000000ULL) == 0) {
             hidden = 0;
         } else {
             hidden = 1;

@@ -1,7 +1,7 @@
 
 /* sdata symbols referenced from asm */
 extern unsigned char lbl_806CF810[8];
-extern unsigned char lbl_806CF818[8];
+extern unsigned char CSSceneGetTitle_8014ADB4_data_806CF818[8];
 extern unsigned char lbl_806D7CC0[4];
 extern unsigned char lbl_806D7E8C[7];
 /*
@@ -15,148 +15,35 @@ public:
     virtual ~VObj();
 };
 
-class VObjC {
-public:
-    virtual void v8();
-    virtual void vC();
-    virtual void v10();
-    virtual void v14();
-};
+#include "game/types/VObjC.h"
 
-struct Pad14 {
-    char pad[0x14];
-};
+#include "game/types/Pad14.h"
 
-class VObj14 : public Pad14 {
-public:
-    virtual ~VObj14();
-    virtual void vC();
-    virtual void v10();
-    virtual void v14();
-    virtual void v18();
-    virtual void v1C();
-};
+#include "game/types/VObj14.h"
 
-struct Countdown {
-    void *vt;
-    int f4;
-    int delay;
-    int state;
-};
+#include "game/types/Countdown.h"
 
-struct LapSlot {
-    float t;
-    char pad4[0x24];
-};
+#include "game/types/LapSlot.h"
 
-struct LapCtrl {
-    char pad0[0x18];
-    int mode;
-    float f1C;
-    int cur;
-    char pad24[0x24];
-    LapSlot slots[2];
-    char pad98[0x74 - 0x98 + 0x50];
-};
+#include "game/types/LapCtrl.h"
 
-class RecordCounter {
-public:
-    virtual void v8();
-    virtual void vC();
-    virtual void Start();
-    virtual void v14();
-    int f4;
-    int busy;
-    int count;
-    bool Tick() {
-        if (busy > 0) {
-            busy--;
-            return 0;
-        }
-        if (count == 1) {
-            count = 2;
-        }
-        return count <= 0;
-    }
-    bool Idle() {
-        if (busy > 0) {
-            return 0;
-        }
-        return count <= 0;
-    }
-};
+#include "game/types/RecordCounter.h"
 
-struct Spark {
-    float x;
-    float y;
-    float z;
-    int life;
-};
+#include "game/types/Spark.h"
 
-struct StepHolder {
-    char pad0[0xC];
-    int done;
-    unsigned char active;
-    char pad11[3];
-    int layer;
-    int state;
-    float t;
-    char pad20[4];
-    VObjC *m24;
-    VObjC *m28;
-    float cx;
-    float cy;
-    char pad34[4];
-    float rot;
-    float rotSpeed;
-    Spark sparks[5];
-    void *f90;
-    RecordCounter *counter;
-    struct HudResSet *step;
-    unsigned char glow;
-};
+#include "game/types/StepHolder.h"
 
-struct KartVariant {
-    char pad0[0x1F4];
-    int kind;
-    int sub;
-};
+#include "game/types/KartVariant.h"
 
-struct CountEntry {
-    int count;
-    int f4;
-    VObjC *obj;
-};
+#include "game/types/CountEntry.h"
 
-struct CountList {
-    char pad0[0x18];
-    unsigned char on;
-    char pad19[0x2C - 0x19];
-    CountEntry e[6];
-};
+#include "game/types/CountList.h"
 
-struct HudPanel {
-    char pad0[0x14];
-    void *vt14;
-    char pad18[0x60];
-    VObjC *f78;
-    void *f7C;
-    VObj14 *f80;
-};
+#include "game/types/HudPanel.h"
 
-struct CdHolder {
-    char pad0[0x1C];
-    Countdown *cd;
-};
+#include "game/types/CdHolder.h"
 
-struct CdHolder2 {
-    char pad0[0x34];
-    Countdown *cd;
-    char pad38[0x28];
-    VObj14 *f60;
-    char pad64[4];
-    void *f68;
-};
+#include "game/types/CdHolder2.h"
 
 inline bool Countdown_Tick(Countdown *c) {
     if (c->delay > 0) {
@@ -179,7 +66,7 @@ void fn_801FE27C(int n);
 void MemoryManager_TimedFree(void *p);
 void fn_801676AC(void *p, int flag);
 extern unsigned int lbl_8048EB44[];
-extern unsigned int lbl_8048EFD4[];
+extern unsigned int LapHud_vtable_8048EFD4[];
 extern void Alloc();
 extern void fn_80146260();
 extern void fn_80167730();
@@ -253,7 +140,7 @@ void fn_80140810(void *p, int flag);
 extern void fn_801F8E54();
 extern unsigned int lbl_8048ECF8[];
 extern unsigned int lbl_8048ED10[];
-extern unsigned int lbl_8048F020[];
+extern unsigned int RecordHud_vtable_8048F020[];
 int Clamp_Int(int v, int lo, int hi);
 int GetCoinCount(void);
 void fn_8013D634(void *m, float x, float y, float z);
@@ -331,8 +218,8 @@ extern unsigned int lbl_806D7D44;
 extern unsigned int lbl_806D7D48;
 extern const float lbl_806D7D4C;
 extern const float lbl_806D7D50;
-extern const float lbl_80362858[6];
-extern unsigned int lbl_8048F058[];
+extern const float RaceHud_80147470_rodata_80362858[6];
+extern unsigned int CountHud_vtable_8048F058[];
 extern void fn_80141924();
 extern void fn_8014393C();
 struct KartVariant *GetKartSlotKartVariant(int slot);
@@ -356,11 +243,11 @@ extern void *lbl_806D10A0;
 extern const float lbl_806D7D60;
 extern const float lbl_806D7D68;
 extern unsigned int lbl_806D7DF8;
-extern unsigned int lbl_8048F0C8[];
+extern unsigned int RaceHud_80147470_data_8048F0C8[];
 void fn_8014205C(void *self, int flag);
 void StrPcb_ClearStatusBits(void *p, int bits);
 void fn_8023CFE0(void *p, int flag);
-extern unsigned int lbl_8048F090[];
+extern unsigned int StrHud_vtable_8048F090[];
 int TaRecord_GetLastInsertedRank(void);
 extern void fn_8014403C();
 extern void fn_80144308();
@@ -382,7 +269,7 @@ extern unsigned int lbl_806D7E10;
 extern unsigned int lbl_806D7E14;
 extern unsigned int lbl_806D7E18;
 extern unsigned int lbl_806D7E1C;
-extern char lbl_803628A8[];
+extern char RaceHud_80147470_rodata_803628A8[];
 extern void HSD_StateInvalidate();
 extern void fn_8011FAB8();
 extern void fn_8013D940();
@@ -399,7 +286,7 @@ extern const float lbl_806D7E30;
 extern unsigned int lbl_806D7E34;
 extern unsigned int lbl_806D7E38;
 extern unsigned int lbl_806D7E3C;
-extern unsigned int lbl_80362D90[];
+extern unsigned int CSSceneGetTitle_8014ADB4_rodata_80362D90[];
 void ClSound_PlayBgmStream(int slot, int id);
 void SetRumbleMode(int a, int b, int c);
 unsigned char Sprite_AdvanceAnim(void *s, float step);
@@ -442,7 +329,7 @@ extern unsigned int lbl_806D7E84;
 extern unsigned int lbl_806D7E88;
 extern unsigned int lbl_806D7E94;
 extern unsigned int lbl_806D7E98;
-extern unsigned int lbl_8048F0FC[];
+extern unsigned int CSSceneGetTitle_8014ADB4_data_8048F0FC[];
 int Item_GetDescriptorFieldC(int item);
 void fn_8013D50C(void *model, float r, float g, float b, float a);
 void fn_8013DAC8(void *model, int a);
@@ -475,7 +362,7 @@ extern void fn_80121210();
 extern void fn_8013DB9C();
 extern void fn_80169C44();
 extern unsigned int lbl_803FE0C8[];
-extern unsigned int lbl_8048F118[];
+extern unsigned int CSSceneGetTitle_vtable_8048F118[];
 extern void CalcEarnedCoins();
 extern void InitRumbleController();
 extern void ItemRes_LookupByKey_Thunk();
@@ -522,13 +409,21 @@ HudPanel *dtor_80147584(HudPanel *self, short flag);
 void fn_80147778(void);
 void fn_801477BC(void);
 void fn_801478B0(StepHolder *self);
+#ifdef NON_MATCHING
+extern "C" void fn_80147900(HudResSet *set);
+#else
 asm void fn_80147900(struct HudResSet *o);
+#endif
 void fn_80147AF4(struct HudResSet *o);
 void fn_80147CE8(struct HudResSet *o);
 void fn_80147EE8(StepHolder *self);
 void fn_8014816C(StepHolder *self);
 struct RecordPanel *fn_80148648(struct RecordPanel *self, short flag);
+#ifdef NON_MATCHING
+extern "C" HudResSet *fn_80148A44(HudResSet *set, int coins, int param, int ly);
+#else
 asm void fn_80148A44(void);
+#endif
 void *dtor_8014917C(void *self, short flag);
 void fn_801491DC(VObj *p);
 void *fn_80149214(void *t);
@@ -637,9 +532,7 @@ __declspec(section ".extabindex_user") static const struct { void *fn; unsigned 
 }
 
 
-struct ResTrio {
-    char res[3][0x58];
-};
+#include "game/types/ResTrio.h"
 
 inline ResTrio *ResTrio_Destroy(ResTrio *self, short flag) {
     if (self != 0) {
@@ -651,32 +544,11 @@ inline ResTrio *ResTrio_Destroy(ResTrio *self, short flag) {
     return self;
 }
 
-struct HudResSet {
-    HudResSet(int coins, int layer, int mode);
-    int state;
-    int layer;
-    char pad8[8];
-    char res[11][0x58];
-    char texts[3][0x230];
-    ResTrio tail;
-    ~HudResSet() {
-        ResTrio_Destroy(&tail, 0);
-        __destroy_arr(texts, (void *)dtor_800869D0, 0x230, 3);
-        __destroy_arr(res, (void *)dtor_80082960, 0x58, 11);
-    }
-};
+#include "game/types/HudResSet.h"
 
-struct HudResHolder {
-    HudResSet *p;
-    HudResHolder(HudResSet *q) : p(q) {}
-    ~HudResHolder() throw();
-};
+#include "game/types/HudResHolder.h"
 
-struct PtrHolder {
-    VObj *p;
-    PtrHolder(VObj *q) : p(q) {}
-    ~PtrHolder() throw();
-};
+#include "game/types/PtrHolder.h"
 
 inline HudResHolder *HudResHolder_Destroy(HudResHolder *self, short flag) throw() {
     if (self != 0) {
@@ -750,116 +622,23 @@ struct ObjPair {
     }
 };
 
-struct ResultFader {
-    char pad0[0x20];
-    float alpha;
-};
+#include "game/types/ResultFader.h"
 
-struct Pad14F {
-    char pad0[4];
-    unsigned char f4;
-    char pad5[0xF];
-};
+#include "game/types/Pad14F.h"
 
-class VObj14F : public Pad14F {
-public:
-    virtual ~VObj14F();
-    virtual void vC();
-    virtual void v10();
-    virtual void v14();
-    virtual void v18();
-    virtual void v1C();
-};
+#include "game/types/VObj14F.h"
 
-class VObjCF : public VObjC {
-public:
-    unsigned char f4;
-};
+#include "game/types/VObjCF.h"
 
-class HudInput {
-public:
-    virtual void v8();
-    virtual void vC();
-    virtual void v10();
-    virtual void v14();
-    virtual float v18();
-    virtual void v1C();
-    virtual unsigned char Pressed(int mask);
-};
+#include "game/types/HudInput.h"
 
-struct ResultPanel {
-    void *vt;
-    unsigned char done;
-    char pad5[3];
-    VObj14 *f8;
-    VObj14 *fC;
-    VObj14 *f10;
-    void *f14;
-    void *f18;
-    char pad1C[4];
-    unsigned char f20;
-    unsigned char f21;
-    char pad22[2];
-    int state;
-    float t;
-    char pad2C[8];
-    unsigned char f34;
-    char pad35[3];
-    int item;
-    VObj *f3C;
-    unsigned char f40;
-    char pad41[3];
-    VObj14F *f44;
-    char pad48[4];
-    unsigned char f4C;
-    char pad4D[3];
-    VObj14 *f50;
-    VObjCF *f54;
-    unsigned char f58;
-    char pad59[3];
-    float f5C;
-    char pad60[4];
-    ResultFader *f64;
-    ObjTrio *f68;
-    ObjPair *f6C;
-    unsigned char f70;
-};
+#include "game/types/ResultPanel.h"
 
-struct HudRankSlot {
-    unsigned char active;
-    char pad1;
-    unsigned short name[7];
-    int chr;
-    int kart;
-    char pad18[4];
-    int icon;
-};
+#include "game/types/HudRankSlot.h"
 
-struct HudModel {
-    char data[0x90];
-    HudModel(int kart, int flag) {
-        fn_8013CC24(this, kart, flag);
-    }
-};
+#include "game/types/HudModel.h"
 
-struct CountListFull {
-    void *vt;
-    char pad4[0xC];
-    int layer;
-    float t;
-    unsigned char on;
-    char pad19[3];
-    RecordCounter *f1C;
-    char pad20[4];
-    VObj14 *f24;
-    char pad28[4];
-    struct {
-        int count;
-        float t;
-        VObj *obj;
-    } e[6];
-    int highlight;
-};
+#include "game/types/CountListFull.h"
 
 extern "C" int fn_80147470(LapCtrl *self, int idx) {
     if (idx < 0 || idx >= 2) {
@@ -906,7 +685,7 @@ extern "C" void fn_80147574(char *self, int v) {
 
 extern "C" HudPanel *dtor_80147584(HudPanel *self, short flag) {
     if (self != 0) {
-        self->vt14 = lbl_8048EFD4;
+        self->vt14 = LapHud_vtable_8048EFD4;
         if (self->f78 != 0) {
             self->f78->vC();
         }
@@ -1040,9 +819,9 @@ struct TexIdPair {
 };
 
 /* .rodata 0x80362778..0x80362858 (record HUD). */
-extern const float lbl_80362778[3] = {0.0f, 0.0f, 0.0f};
+extern const float RaceHud_80147470_rodata_80362778[3] = {0.0f, 0.0f, 0.0f};
 static const float sRecordModelPos[3] = {0.0f, 0.0f, -5.0f};
-extern const TexIdPair lbl_80362790[8] = {
+extern const TexIdPair RaceHud_80147470_rodata_80362790[8] = {
     {0, 0}, {0x8D, 0x92}, {0x8E, 0x93}, {0x8E, 0x93},
     {0x8F, 0x94}, {0, 0}, {0x8B, 0x90}, {0x8C, 0x91},
 };
@@ -1067,9 +846,9 @@ extern "C" void fn_801477BC(void) {
     TexMgr_Apply(&tm);
     int idx = g_cupId - 8;
     if (idx != 9 && idx != 6) {
-        TexMgr_SetTexture(&tm, GetTextureByIdAndLang(lbl_80362790[idx - 1].a, -1));
+        TexMgr_SetTexture(&tm, GetTextureByIdAndLang(RaceHud_80147470_rodata_80362790[idx - 1].a, -1));
         TexMgr_Apply(&tm);
-        TexMgr_SetTexture(&tm, GetTextureByIdAndLang(lbl_80362790[idx - 1].b, -1));
+        TexMgr_SetTexture(&tm, GetTextureByIdAndLang(RaceHud_80147470_rodata_80362790[idx - 1].b, -1));
         TexMgr_Apply(&tm);
     }
 }
@@ -1084,6 +863,7 @@ extern "C" void fn_801478B0(StepHolder *self) {
 }
 #pragma auto_inline reset
 
+#ifndef NON_MATCHING /* C version: end of this file */
 extern "C" asm void fn_80147900(struct HudResSet *o) { /* 0x80147900 size:0x1F4 */
     nofralloc
     stwu r1, -0x20(r1)
@@ -1223,6 +1003,7 @@ extern "C" asm void fn_80147900(struct HudResSet *o) { /* 0x80147900 size:0x1F4 
     addi r1, r1, 0x20
     blr
 }
+#endif
 
 /* Views of the HudResSet sub-objects touched by the intro steps. */
 static inline unsigned int HudColor_SetAlpha(unsigned int c, int a) {
@@ -1553,7 +1334,7 @@ struct RecordPanel {
 
 extern "C" RecordPanel *fn_80148648(RecordPanel *self, short flag) {
     if (self != 0) {
-        self->vt = lbl_8048F020;
+        self->vt = RecordHud_vtable_8048F020;
         fn_80140810(self->f90, 1);
         self->f94->vC();
         fn_801F8E54();
@@ -1672,6 +1453,7 @@ RecordHud::RecordHud(int ly, unsigned char act, int md, int id)
 }
 #pragma use_lmw_stmw reset
 
+#ifndef NON_MATCHING /* C version: end of this file */
 extern "C" asm void fn_80148A44(void) { /* 0x80148A44 size:0x738 */
     nofralloc
     stwu r1, -0x60(r1)
@@ -1687,7 +1469,7 @@ extern "C" asm void fn_80148A44(void) { /* 0x80148A44 size:0x738 */
     stw r8, 0x0(r3)
     lis r7, ResCtrl_Init@ha
     lis r3, dtor_80082960@ha
-    lis r9, lbl_80362778@ha
+    lis r9, RaceHud_80147470_rodata_80362778@ha
     stw r6, 0x4(r31)
     addi r6, r7, ResCtrl_Init@l
     mr r28, r4
@@ -1697,7 +1479,7 @@ extern "C" asm void fn_80148A44(void) { /* 0x80148A44 size:0x738 */
     mr r4, r6
     mr r5, r0
     stb r8, 0xc(r31)
-    addi r30, r9, lbl_80362778@l
+    addi r30, r9, RaceHud_80147470_rodata_80362778@l
     addi r3, r31, 0x10
     li r6, 0x58
     li r7, 0xb
@@ -2155,6 +1937,7 @@ extern "C" asm void fn_80148A44(void) { /* 0x80148A44 size:0x738 */
     addi r1, r1, 0x60
     blr
 }
+#endif
 
 extern "C" void *dtor_8014917C(void *self, short flag) {
     if (self != 0) {
@@ -2279,8 +2062,8 @@ extern "C" void fn_801494A4(CountListFull *self) {
                     y = 350.0f + LUT_Sin12Bit(45.0f * self->e[i].t);
                     sy = lbl_806D7CE8;
                     sx = -1.570796f;
-                    if (x < off + lbl_80362858[i]) {
-                        x = off + lbl_80362858[i];
+                    if (x < off + RaceHud_80147470_rodata_80362858[i]) {
+                        x = off + RaceHud_80147470_rodata_80362858[i];
                         self->e[i].count++;
                         self->e[i].t = lbl_806D7CE8;
                     }
@@ -2288,7 +2071,7 @@ extern "C" void fn_801494A4(CountListFull *self) {
                 case 3: {
                     float s;
                     self->e[i].t += 1.0f;
-                    x = off + lbl_80362858[i];
+                    x = off + RaceHud_80147470_rodata_80362858[i];
                     y = 350.0f;
                     sy = 0.1f * (0.17453292f * self->e[i].t);
                     sx = 1.4311696f * (self->e[i].t / 10.0f) + -1.570796f;
@@ -2313,7 +2096,7 @@ extern "C" void fn_801494A4(CountListFull *self) {
                     float nx;
                     self->e[i].t += 1.0f;
                     y = 350.0f;
-                    x = off + lbl_80362858[i];
+                    x = off + RaceHud_80147470_rodata_80362858[i];
                     sy = 0.17453292f;
                     sx = -0.13962634f;
                     if (slot->icon >= 0) {
@@ -2352,7 +2135,7 @@ extern "C" void fn_801494A4(CountListFull *self) {
 extern "C" CountListFull *fn_80149A88(CountListFull *self, short flag) {
     if (self != 0) {
         int i;
-        self->vt = lbl_8048F058;
+        self->vt = CountHud_vtable_8048F058;
         if (self->f1C != 0) {
             self->f1C->vC();
         }
@@ -2509,7 +2292,7 @@ struct StrMsg {
     char pad18[0x30];
     StrMsg() {
         fn_801420DC(this);
-        vt14 = lbl_8048F0C8;
+        vt14 = RaceHud_80147470_data_8048F0C8;
     }
     void SetKind(int v) {
         if (v >= 0 && v < 8) {
@@ -2538,11 +2321,7 @@ inline bool Countdown_IsDone(Countdown *c) {
     return c->state <= 0;
 }
 
-struct TaEntry {
-    char pad0[0xD];
-    unsigned char fD;
-    unsigned char fE;
-};
+#include "game/types/TaEntry.h"
 
 inline void *StrTitle_GetInstance() {
     if (lbl_806D10A0 == 0) {
@@ -2669,8 +2448,8 @@ extern "C" void fn_80149E44(StrHud *self) {
             int ra;
             int rb;
             if (get_title_result(p, &ra, &rb, 0)) {
-                e->fD = ra;
-                e->fE = rb;
+                e->titleA = ra;
+                e->titleB = rb;
             }
         }
         self->f20 = 4;
@@ -2725,7 +2504,7 @@ extern "C" void fn_80149E44(StrHud *self) {
 
 extern "C" HudPanel *fn_8014A890(HudPanel *self, short flag) {
     if (self != 0) {
-        self->vt14 = lbl_8048F0C8;
+        self->vt14 = RaceHud_80147470_data_8048F0C8;
         fn_80120A08(0x580);
         fn_8014205C(self, 0);
         if (flag > 0) {
@@ -2749,7 +2528,7 @@ struct StrPanel {
 extern "C" StrPanel *fn_8014A8FC(StrPanel *self, short flag) {
     if (self != 0) {
         int i;
-        self->vt = lbl_8048F090;
+        self->vt = StrHud_vtable_8048F090;
         StrPcb_ClearStatusBits(StrPcb_GetInstance(), 4);
         if (self->f34 != 0) {
             self->f34->vC();
@@ -2813,7 +2592,7 @@ StrHud::StrHud(int ly, int id) : HudTask(id) {
 #pragma use_lmw_stmw reset
 
 extern "C" void fn_8014AC48(void *self) {
-    char *str = lbl_803628A8;
+    char *str = RaceHud_80147470_rodata_803628A8;
     fn_80142010(self, 0x580, 0, 134.0f, lbl_806D7D68, lbl_806D7D60, lbl_806D7D60, lbl_806D7D60, lbl_806D7D60, lbl_806D7D60, lbl_806D7D60);
     if (isJapanese() == 1) {
         fn_80141E70(self, -212.0f, -52.0f, lbl_806D7D60, lbl_806D7D60, lbl_806D7D60, lbl_806D7D60, lbl_806D7D60, lbl_806D7D60, str + 0x494);
@@ -2830,3 +2609,232 @@ extern "C" void fn_8014AD7C(VObj *p) {
 
 
 __declspec(section ".ctors") static void *const fn_80147778_ctor_ref = (void *)fn_80147778;
+
+#ifdef NON_MATCHING
+/* NON_MATCHING: equivalent C++, 99.52 % (target shares one 0xFFFFFF00 constant via mr; docs/gave_up.md). */
+extern "C" void fn_80147900(HudResSet *set) {
+    HudResSetView *o = (HudResSetView *)set;
+
+    switch (o->state) {
+    case 0:
+        if (o->timer <= 15) {
+            HudTail_SetScale(o, 1.0f, o->timer / 15.0f);
+        } else if (o->timer >= 45) {
+            o->state = 1;
+            o->timer = 0;
+        }
+        break;
+    case 1:
+        if (o->timer <= 20) {
+            int a = (int)(255.0f * (o->timer / 20.0f));
+            int textColor = 0xFFFFFF00;
+            textColor = (textColor & ~0xFF) | (a & 0xFF);
+            for (int i = 0; i < 3; i++) {
+                o->texts[i].color = textColor;
+            }
+            unsigned int color = HudColor_SetAlpha(0xFFFFFF00, a);
+            o->res[0].colors[0] = color;
+            o->res[0].colors[1] = color;
+            o->res[0].colors[2] = color;
+            o->res[0].colors[3] = color;
+        } else if (o->timer >= 80) {
+            o->state = 2;
+            o->timer = 0;
+            if (o->skipCheck == 0) {
+                o->state = 3;
+            }
+        }
+        break;
+    case 2:
+        fn_80147CE8(set);
+        break;
+    case 3:
+        fn_80147AF4(set);
+        break;
+    case 4: {
+        HudInput *in = InputMgr_GetPlayer(GetInputManager(), 0);
+        if (!(in->v18() >= 0.7f)) {
+            in->Pressed(0x2000);
+        }
+        o->state = 5;
+        o->timer = 0;
+        break;
+    }
+    case 5:
+        return;
+    }
+    o->timer++;
+}
+#endif
+
+#ifdef NON_MATCHING
+/* NON_MATCHING: equivalent C++ for the HudResSet ctor (coins, record value, layer).
+ * Written as a plain function over a view; the 99.4 % class version is
+ * docs/wip/HudResSet_ctor_fn_80148A44_99.4.patch. */
+struct NMHudRes {
+    int resId;          /* 0x00 */
+    int field4;
+    int mode;           /* 0x08 */
+    int fieldc;
+    unsigned char flag; /* 0x10 */
+    char pad11[3];
+    float x, y, z;      /* 0x14 */
+    float width, height;
+    float field28;
+    float scaleX, scaleY; /* 0x2C */
+    unsigned int colors[4]; /* 0x34 */
+    char pad44[0x58 - 0x44];
+    void Show(float px, float py, float pz) { flag = 1; x = px; y = py; z = pz; }
+    void SetColors(unsigned int c) { for (int j = 0; j < 4; j++) colors[j] = c; }
+};
+struct NMHudText {
+    char pad0[0x18];
+    int x18;
+    int x1c;
+    unsigned int color; /* 0x20 */
+    char pad24[0x22C - 0x24];
+    float y;            /* 0x22C */
+};
+struct NMHudSet {
+    int state;
+    int layer;
+    int field8;
+    unsigned char flagC;
+    char padD[3];
+    NMHudRes res[11];   /* 0x10 */
+    NMHudText texts[3]; /* 0x3D8 */
+    NMHudRes tail[3];   /* 0xA68 */
+};
+#define NM_Printf ((void (*)(const char *, ...))DebugPrintf)
+#define NM_ConstructArray ((void (*)(void *, void *, void *, unsigned long, unsigned long))__construct_array)
+#define NM_TextSetPos ((void (*)(void *, float, float))fn_801F93EC)
+#define NM_TextApply ((void (*)(void *))fn_801F8E90)
+#define NM_strlen ((unsigned long (*)(const char *))strlen)
+#define NMCC0 lbl_806D7CC0
+extern "C" HudResSet *fn_80148A44(HudResSet *set, int coins, int param, int ly) {
+    int i;
+    short v;
+    int idx;
+    NMHudSet *o = (NMHudSet *)set;
+
+    o->state = 0;
+    o->layer = ly;
+    o->field8 = 0;
+    o->flagC = 0;
+    NM_ConstructArray(o->res, (void *)ResCtrl_Init, (void *)dtor_80082960, 0x58, 11);
+    NM_ConstructArray(o->texts, (void *)fn_80149214, (void *)dtor_800869D0, 0x230, 3);
+    NM_ConstructArray(o->tail, (void *)ResCtrl_Init, (void *)dtor_80082960, 0x58, 3);
+    NM_Printf(sRecordParamFmt, param, coins);
+    idx = g_cupId - 8;
+    o->tail[0].resId = 0x1D56;
+    o->tail[1].resId = 0x1D57;
+    o->tail[2].resId = 0x1D58;
+    o->tail[0].Show(156.5f, 360.0f, 1.0f);
+    o->tail[1].Show(412.5f, 360.0f, 1.0f);
+    o->tail[2].Show(576.0f, 360.0f, 1.0f);
+    o->tail[0].scaleX = 1.0f;
+    o->tail[0].scaleY = 0.0f;
+    o->tail[1].scaleX = 1.0f;
+    o->tail[1].scaleY = 0.0f;
+    o->tail[2].scaleX = 1.0f;
+    o->tail[2].scaleY = 0.0f;
+    o->res[0].resId = 0x16D8;
+    o->res[0].Show(535.0f, 380.0f, 1.0f);
+    v = coins / 10 + 0x14BA;
+    if (coins / 10 == 0) v = 0x1ECD;
+    o->res[1].resId = v;
+    o->res[1].Show(400.0f, 375.0f, 1.0f);
+    o->res[3].resId = v;
+    o->res[3].Show(400.0f, 375.0f, 1.0f);
+    o->res[3].mode = 3;
+    v = coins % 10 + 0x14BA;
+    o->res[2].resId = v;
+    o->res[2].Show(450.0f, 375.0f, 1.0f);
+    o->res[4].resId = v;
+    o->res[4].Show(450.0f, 375.0f, 1.0f);
+    o->res[4].mode = 3;
+    v = sRecordDigitTex[param / 100];
+    if (param / 100 == 0) v = 0x1ECD;
+    o->res[5].resId = v;
+    o->res[8].resId = v;
+    o->res[8].mode = 3;
+    v = sRecordDigitTex[(param / 10) % 10];
+    if (param / 10 == 0) v = 0x1ECD;
+    o->res[6].resId = v;
+    o->res[9].resId = v;
+    o->res[9].mode = 3;
+    v = sRecordDigitTex[param % 10];
+    o->res[7].resId = v;
+    o->res[10].resId = v;
+    o->res[10].mode = 3;
+    for (i = 0; i < 11; i++) {
+        o->res[i].SetColors(0xFFFFFF00);
+    }
+    TexMgr_SetTexture((TextManager *)&o->texts[0], GetTextureByIdAndLang(0x8A, -1));
+    NM_TextSetPos(&o->texts[0], 80.0f, 380.0f);
+    if (idx == 1 || idx == 6) {
+        o->flagC = 0;
+        TexMgr_SetTexture((TextManager *)&o->texts[1], (const char *)NMCC0);
+        TexMgr_SetTexture((TextManager *)&o->texts[2], (const char *)NMCC0);
+        o->res[5].resId = 0x1ECD;
+        o->res[6].resId = 0x1ECD;
+        o->res[7].resId = 0x1ECD;
+        o->res[8].resId = 0x1ECD;
+        o->res[9].resId = 0x1ECD;
+        o->res[10].resId = 0x1ECD;
+        NM_TextSetPos(&o->texts[0], 80.0f, 360.0f);
+        o->res[1].Show(400.0f, 355.0f, 1.0f);
+        o->res[3].Show(400.0f, 355.0f, 1.0f);
+        o->res[2].Show(450.0f, 355.0f, 1.0f);
+        o->res[4].Show(450.0f, 355.0f, 1.0f);
+        o->res[0].Show(535.0f, 360.0f, 1.0f);
+    } else {
+        float w = isJapanese() == 0 ? 12.0f : 20.0f;
+        int len1, len2, n, m, total;
+        float x0, x;
+        o->flagC = 1;
+        len1 = NM_strlen(GetTextureByIdAndLang(RaceHud_80147470_rodata_80362790[idx - 1].a, -1));
+        len2 = NM_strlen(GetTextureByIdAndLang(RaceHud_80147470_rodata_80362790[idx - 1].b, -1));
+        n = 1;
+        if (param / 10 > 0) n = 2;
+        if (param / 100 > 0) n = 3;
+        m = n;
+        if (!isJapanese()) m = n * 2;
+        x0 = 320.0f - 0.5f * (w * (float)(len1 + m + len2 + 1));
+        NM_TextSetPos(&o->texts[1], x0, 330.0f);
+        x = (float)(len1 + 1) * w + x0;
+        switch (n) {
+        case 3:
+            o->res[5].Show(x, 330.0f, 1.0f);
+            o->res[8].Show(x, 330.0f, 1.0f);
+            x += (float)m * w / (float)n;
+        case 2:
+            o->res[6].Show(x, 330.0f, 1.0f);
+            o->res[9].Show(x, 330.0f, 1.0f);
+            x += (float)m * w / (float)n;
+        case 1:
+            o->res[7].Show(x, 330.0f, 1.0f);
+            o->res[10].Show(x, 330.0f, 1.0f);
+            x += (float)m * w / (float)n;
+        }
+        NM_TextSetPos(&o->texts[2], x, 330.0f);
+        TexMgr_SetTexture((TextManager *)&o->texts[1], GetTextureByIdAndLang(RaceHud_80147470_rodata_80362790[idx - 1].a, -1));
+        TexMgr_SetTexture((TextManager *)&o->texts[2], GetTextureByIdAndLang(RaceHud_80147470_rodata_80362790[idx - 1].b, -1));
+    }
+    if (isJapanese() == 1) {
+        o->texts[0].y = -4.0f;
+    }
+    for (i = 0; i < 3; i++) {
+        o->texts[i].color = 0xFFFFFF00;
+        o->texts[i].x18 = 1;
+        NM_TextApply(&o->texts[i]);
+    }
+    return set;
+}
+#undef NM_Printf
+#undef NM_ConstructArray
+#undef NM_TextSetPos
+#undef NM_TextApply
+#undef NM_strlen
+#undef NMCC0
+#endif

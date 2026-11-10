@@ -143,12 +143,7 @@ typedef struct ResCtrl {
     unsigned char pad44[0x14];
 } ResCtrl;
 
-typedef struct ScrollEntry {
-    int id;
-    float x;
-    float y;
-    float w;
-} ScrollEntry;
+#include "game/types/ScrollEntry.h"
 
 typedef struct ScaleVec {
     float a[3];
@@ -213,37 +208,37 @@ extern void fn_8020AFD4(void *p);
 extern unsigned char fn_8020B07C(void *p);
 extern SceneHdr *DbgScene05_TplTest2_Reset(SceneHdr *p);
 
-extern DbgMenuEntry lbl_8041C920[];
-extern int lbl_806CF330;
-extern int lbl_806CF32C;
+extern DbgMenuEntry DbgMenu_HandleInput_data_8041C920[];
+extern int DbgMenu_HandleInput_data_806CF330;
+extern int TestMenuScrollList_Update_data_806CF32C;
 extern char lbl_806D5870[4];
 extern char lbl_806D5874[4];
-extern void *lbl_8041C99C[];
-extern void *lbl_8041C9D4[];
-extern void *lbl_8041C9F4[];
-extern void *lbl_8041CA14[];
-extern void *lbl_8041CA34[];
-extern void *lbl_8041CA54[];
-extern void *lbl_8041CA74[];
-extern void *lbl_8041CA94[];
-extern void *lbl_8041CAB4[];
-extern void *lbl_8041CAD4[];
-extern void *lbl_8041CAF4[];
-extern void *lbl_8041CB34[];
-extern void *lbl_8041CB54[];
-extern void *lbl_8041CB74[];
-extern void *lbl_8041CB94[];
-extern int lbl_806D14C4;
-extern int lbl_806D14C0;
-extern int lbl_8041C7E0[16];
-extern PaletteSet lbl_8063825C;
-extern PaletteSet lbl_806382AC;
+extern void *SpriteViewerScene_vtable_8041C99C[];
+extern void *MenuSceneBase_vtable_8041C9D4[];
+extern void *RaceStartScene_vtable_8041C9F4[];
+extern void *ItemTestScene_vtable_8041CA14[];
+extern void *PrizeTestScene_vtable_8041CA34[];
+extern void *DbgMenu_data_8041CA54[];
+extern void *TitleTestScene_vtable_8041CA74[];
+extern void *DbgMenu_data_8041CA94[];
+extern void *AtrTestScene_vtable_8041CAB4[];
+extern void *ScreenEffScene_vtable_8041CAD4[];
+extern void *PaletteTestScene_vtable_8041CAF4[];
+extern void *AnmTestScene_vtable_8041CB34[];
+extern void *TplTestScene_vtable_8041CB54[];
+extern void *MapViewerScene_vtable_8041CB74[];
+extern void *SpriteTestScene_vtable_8041CB94[];
+extern int DbgMenu_bss_806D14C4;
+extern int DbgMenu_bss_806D14C0;
+extern int DbgMenu_data_8041C7E0[16];
+extern PaletteSet DbgMenu_bss_8063825C;
+extern PaletteSet DbgMenu_bss_806382AC;
 extern char lbl_8032D064[];
 extern char lbl_8032D084[];
-extern char lbl_8032D098[];
-extern ScrollEntry lbl_8041C8C0[];
-extern float lbl_806D14C8;
-extern signed char lbl_806D14CC;
+extern char DbgScene08_AtrTest_Ctor_rodata_8032D098[];
+extern ScrollEntry TestMenuScrollList_Update_data_8041C8C0[];
+extern float TestMenuScrollList_Update_bss_806D14C8;
+extern signed char TestMenuScrollList_Update_bss_806D14CC;
 extern const float lbl_806D5878;
 extern const float lbl_806D587C;
 extern const float lbl_806D5880;
@@ -282,9 +277,7 @@ typedef struct SceneJoint {
     int sel;
 } SceneJoint;
 
-typedef struct Vec3 {
-    float x, y, z;
-} Vec3;
+#include "game/types/Vec3.h"
 
 typedef struct Particle {
     float x;
@@ -301,7 +294,7 @@ extern "C" {
 extern void fn_8014D4B8(DbgModel *p);
 extern unsigned char fn_8014D4F0(DbgModel *view);
 extern void fn_8014D540(void *p, int a, int b);
-extern JointTable lbl_8032CC64;
+extern JointTable TestMenuJointBrowser_Update_rodata_8032CC64;
 extern void GXSetZCompLoc(int a);
 extern void GXSetZMode(int a, int b, int c);
 extern void GXSetCullMode(int a);
@@ -326,10 +319,10 @@ extern unsigned char AnimState_Step(void *anim);
 extern float Rand_RangeFloat(float lo, float hi);
 extern void SpriteHandle_Destroy(int h);
 extern void DbgScene_PreloadResourceTree(ResNode *tree);
-extern unsigned char lbl_8041C8A0[];
-extern Particle lbl_80618C68[500];
-extern char lbl_80638068[500];
-extern void *lbl_8041CB14[];
+extern unsigned char DbgMenu_data_8041C8A0[];
+extern Particle DbgScene_bss_80618C68[500];
+extern char DbgMenu_bss_80638068[500];
+extern void *ParticleTestScene_vtable_8041CB14[];
 extern char lbl_806D58CC[8];
 extern const float lbl_806D58AC;
 extern const float lbl_806D58B0;
@@ -351,10 +344,7 @@ extern const float lbl_806D58E0;
 }
 
 
-typedef union WGPipe {
-    unsigned char u8;
-    float f32;
-} WGPipe;
+#include "game/types/WGPipe.h"
 
 #define GXFIFO (*(volatile WGPipe *)0xCC008000)
 
@@ -455,7 +445,7 @@ typedef struct NameEntry {
 } NameEntry;
 
 extern "C" {
-extern char lbl_8032CB38[];
+extern char DbgMenu_rodata_8032CB38[];
 extern void *lbl_8041AC24[];
 extern DbgModel *lbl_806D10D0;
 extern DbgModel *lbl_806D10AC;
@@ -511,16 +501,16 @@ extern void DbgScene03_TplTest_UpdateCamera(TplScene *s);
 
 
 extern "C" {
-extern int lbl_806CF320;
-extern int lbl_8041C860[];
-extern void *lbl_8041C820[16];
+extern int DbgScene01_SprMng2Test_InputCheck_data_806CF320;
+extern int DbgScene01_SprMng2Test_InputCheck_data_8041C860[];
+extern void *DbgScene_DrawTexturedQuad_data_8041C820[16];
 extern char lbl_806D5914[8];
 extern void AnimState_New(void *anim, void *src);
 }
 
 static inline void SceneBase_Init(void *p)
 {
-    ((SceneHdr *)p)->vt = lbl_8041C9D4;
+    ((SceneHdr *)p)->vt = MenuSceneBase_vtable_8041C9D4;
 }
 
 #define Pad0() InputMgr_GetPlayer(GetInputManager(), 0)
@@ -529,7 +519,7 @@ static inline InputPlayer *Pad0_unused(void)
     return InputMgr_GetPlayer(GetInputManager(), 0);
 }
 
-/* Only reached through the vtable lbl_8041C9D4, which this TU does not own yet. */
+/* Only reached through the vtable MenuSceneBase_vtable_8041C9D4, which this TU does not own yet. */
 extern "C" void DbgMenu_TickSubScene(DbgMenu *self)
 {
     if (self->sub != 0) {
@@ -547,17 +537,17 @@ extern "C" int DbgMenu_HandleInput(DbgMenu *self)
             return -4;
         }
         if (pad->IsHeld(0x40) == 1) {
-            self->sel = (self->sel + lbl_806CF330 - 1) % lbl_806CF330;
+            self->sel = (self->sel + DbgMenu_HandleInput_data_806CF330 - 1) % DbgMenu_HandleInput_data_806CF330;
         }
         if (pad->IsHeld(0x80) == 1) {
-            self->sel = (self->sel + lbl_806CF330 + 1) % lbl_806CF330;
+            self->sel = (self->sel + DbgMenu_HandleInput_data_806CF330 + 1) % DbgMenu_HandleInput_data_806CF330;
         }
         if (pad->IsHeld(1) == 1) {
-            self->sub = lbl_8041C920[self->sel].ctor();
+            self->sub = DbgMenu_HandleInput_data_8041C920[self->sel].ctor();
         }
         OverlayText(2, 0, self->sel, lbl_806D5870);
-        for (i = 0; i < lbl_806CF330; i++) {
-            OverlayText(2, 2, i, lbl_806D5874, lbl_8041C920[i].name);
+        for (i = 0; i < DbgMenu_HandleInput_data_806CF330; i++) {
+            OverlayText(2, 2, i, lbl_806D5874, DbgMenu_HandleInput_data_8041C920[i].name);
         }
     } else if (self->sub->Update()) {
         delete self->sub;
@@ -641,7 +631,7 @@ class SpriteTestScene : public MenuSceneBase {
     virtual void Key2();
 public:
     SpriteTestScene() {
-        lbl_806D14C4 = 0x2AFA;
+        DbgMenu_bss_806D14C4 = 0x2AFA;
         PreloadResource(0x2AFA);
     }
 };
@@ -711,11 +701,11 @@ extern "C" SceneTpl *DbgScene03_TplTest_Ctor(void)
 
 inline void PaletteSet::NextColor(void)
 {
-    int i = lbl_806D14C0;
-    color = lbl_8041C7E0[i];
-    lbl_806D14C0 = i + 1;
-    if (lbl_806D14C0 >= 16) {
-        lbl_806D14C0 = 0;
+    int i = DbgMenu_bss_806D14C0;
+    color = DbgMenu_data_8041C7E0[i];
+    DbgMenu_bss_806D14C0 = i + 1;
+    if (DbgMenu_bss_806D14C0 >= 16) {
+        DbgMenu_bss_806D14C0 = 0;
     }
 }
 
@@ -742,7 +732,7 @@ class AnmTestScene : public MenuSceneBase {
     virtual void Key2();
 public:
     AnmTestScene() {
-        LOAD_PALETTE_SET(lbl_8063825C, lbl_8032D064)
+        LOAD_PALETTE_SET(DbgMenu_bss_8063825C, lbl_8032D064)
     }
 };
 
@@ -766,7 +756,7 @@ class PaletteTestScene : public MenuSceneBase {
     virtual void Key2();
 public:
     PaletteTestScene() {
-        LOAD_PALETTE_SET(lbl_806382AC, lbl_8032D084)
+        LOAD_PALETTE_SET(DbgMenu_bss_806382AC, lbl_8032D084)
         fn_8002CFB8(0, 0x80, 0, 0);
     }
 };
@@ -803,7 +793,7 @@ class AtrTestScene : public MenuSceneBase {
 public:
     AtrTestScene() {
         SceneObj *p = (SceneObj *)this;
-        p->obj = new MenuNormalModel(lbl_8032D098, 1);
+        p->obj = new MenuNormalModel(DbgScene08_AtrTest_Ctor_rodata_8032D098, 1);
     }
 };
 
@@ -817,7 +807,7 @@ extern "C" SceneWords *DbgScene09_Flash_Ctor(void)
     SceneWords *p = (SceneWords *)Alloc(0xC);
     if (p != 0) {
         SceneBase_Init(p);
-        p->vt = lbl_8041CA94;
+        p->vt = DbgMenu_data_8041CA94;
         p->w4 = 0;
         p->w8 = 0x1C;
     }
@@ -858,7 +848,7 @@ extern "C" SceneHdr *DbgScene11_Empty_Ctor(void)
     SceneHdr *p = (SceneHdr *)Alloc(4);
     if (p != 0) {
         SceneBase_Init(p);
-        p->vt = lbl_8041CA54;
+        p->vt = DbgMenu_data_8041CA54;
     }
     return p;
 }
@@ -950,13 +940,13 @@ extern "C" SceneObj *TestMenuRaceStart_Ctor(void)
 extern "C" SceneObj *TestMenuRaceStart_Dtor(SceneObj *self, short flag)
 {
     if (self != 0) {
-        self->vt = lbl_8041C9F4;
+        self->vt = RaceStartScene_vtable_8041C9F4;
         if (self->obj != 0) {
             fn_8020AF08(self->obj, 1);
             self->obj = 0;
         }
         if (self != 0) {
-            self->vt = lbl_8041C9D4;
+            self->vt = MenuSceneBase_vtable_8041C9D4;
         }
         if (flag > 0) {
             MemoryManager_TimedFree(self);
@@ -987,7 +977,7 @@ extern "C" unsigned char TestMenuRaceStart_Update(SceneObj *self)
 extern "C" SceneItem *TestMenuItemDesc_Dtor(SceneItem *self, short flag)
 {
     if (self != 0) {
-        self->vt = lbl_8041CA14;
+        self->vt = ItemTestScene_vtable_8041CA14;
         if (self->flags & 1) {
             delete self->model;
             fn_8013DB9C();
@@ -998,7 +988,7 @@ extern "C" SceneItem *TestMenuItemDesc_Dtor(SceneItem *self, short flag)
             fn_80120A08(Item_GetDescriptorField0(self->item, 0));
         }
         if (self != 0) {
-            self->vt = lbl_8041C9D4;
+            self->vt = MenuSceneBase_vtable_8041C9D4;
         }
         if (flag > 0) {
             MemoryManager_TimedFree(self);
@@ -1038,9 +1028,9 @@ extern "C" unsigned char TestMenuItemDesc_Update(SceneItem *self)
 extern "C" SceneHdr *TestMenuScrollList_Dtor(SceneHdr *self, short flag)
 {
     if (self != 0) {
-        self->vt = lbl_8041CA34;
+        self->vt = PrizeTestScene_vtable_8041CA34;
         if (self != 0) {
-            self->vt = lbl_8041C9D4;
+            self->vt = MenuSceneBase_vtable_8041C9D4;
         }
         if (flag > 0) {
             MemoryManager_TimedFree(self);
@@ -1059,24 +1049,24 @@ extern "C" unsigned char TestMenuScrollList_Update(SpritePair *self)
     InputPlayer *pad;
     int i;
 
-    if (!lbl_806D14CC) {
-        lbl_806D14CC = 1;
-        lbl_806D14C8 = -0.2f;
+    if (!TestMenuScrollList_Update_bss_806D14CC) {
+        TestMenuScrollList_Update_bss_806D14CC = 1;
+        TestMenuScrollList_Update_bss_806D14C8 = -0.2f;
     }
     pad = Pad0();
     if (pad->IsHeld(0x400) == 1) {
         return 1;
     }
     if (pad->IsPressed(1) == 1) {
-        for (i = 0; i < lbl_806CF32C; i++) {
+        for (i = 0; i < TestMenuScrollList_Update_data_806CF32C; i++) {
             ResCtrl r;
             fn_80121E10(&r);
-            r.id = lbl_8041C8C0[i].id;
+            r.id = TestMenuScrollList_Update_data_8041C8C0[i].id;
             r.flag10 = 1;
-            r.x = lbl_8041C8C0[i].x;
-            r.y = lbl_806D14C8 + lbl_8041C8C0[i].y;
+            r.x = TestMenuScrollList_Update_data_8041C8C0[i].x;
+            r.y = TestMenuScrollList_Update_bss_806D14C8 + TestMenuScrollList_Update_data_8041C8C0[i].y;
             r.z = 1.0f;
-            r.w28 = lbl_8041C8C0[i].w;
+            r.w28 = TestMenuScrollList_Update_data_8041C8C0[i].w;
             fn_8011FAFC(&r, 7);
         }
     }
@@ -1089,9 +1079,9 @@ extern "C" unsigned char TestMenuScrollList_Update(SpritePair *self)
 extern "C" SceneHdr *TestMenuPageD_Dtor(SceneHdr *self, short flag)
 {
     if (self != 0) {
-        self->vt = lbl_8041CA54;
+        self->vt = DbgMenu_data_8041CA54;
         if (self != 0) {
-            self->vt = lbl_8041C9D4;
+            self->vt = MenuSceneBase_vtable_8041C9D4;
         }
         if (flag > 0) {
             MemoryManager_TimedFree(self);
@@ -1113,14 +1103,14 @@ extern "C" SpritePair *TestMenuFourSprite_Dtor(SpritePair *self, short flag)
 {
     if (self != 0) {
         int i;
-        self->vt = lbl_8041CA74;
+        self->vt = TitleTestScene_vtable_8041CA74;
         for (i = 0; i < 4; i++) {
             if (self->s[i] != 0) {
                 Sprite_Destroy(self->s[i], 1);
             }
         }
         if (self != 0) {
-            self->vt = lbl_8041C9D4;
+            self->vt = MenuSceneBase_vtable_8041C9D4;
         }
         if (flag > 0) {
             MemoryManager_TimedFree(self);
@@ -1154,12 +1144,12 @@ extern "C" unsigned char TestMenuFourSprite_Update(SpritePair *self)
 extern "C" SceneJoint *TestMenuJointBrowser_Dtor(SceneJoint *self, short flag)
 {
     if (self != 0) {
-        self->vt = lbl_8041CA94;
+        self->vt = DbgMenu_data_8041CA94;
         if (self->view != 0) {
             delete self->view;
         }
         if (self != 0) {
-            self->vt = lbl_8041C9D4;
+            self->vt = MenuSceneBase_vtable_8041C9D4;
         }
         if (flag > 0) {
             MemoryManager_TimedFree(self);
@@ -1184,7 +1174,7 @@ extern "C" unsigned char TestMenuJointBrowser_Update(SceneJoint *self)
         return 1;
     }
     if (!self->view) {
-        JointTable t = lbl_8032CC64;
+        JointTable t = TestMenuJointBrowser_Update_rodata_8032CC64;
 
         if (pad->IsHeld(2)) {
             self->sel++;
@@ -1210,9 +1200,9 @@ extern "C" unsigned char TestMenuJointBrowser_Update(SceneJoint *self)
 extern "C" SceneHdr *TestMenuModelView_Dtor(SceneHdr *self, short flag)
 {
     if (self != 0) {
-        self->vt = lbl_8041CAB4;
+        self->vt = AtrTestScene_vtable_8041CAB4;
         if (self != 0) {
-            self->vt = lbl_8041C9D4;
+            self->vt = MenuSceneBase_vtable_8041C9D4;
         }
         if (flag > 0) {
             MemoryManager_TimedFree(self);
@@ -1273,9 +1263,9 @@ extern "C" unsigned char TestMenuModelView_Update(void)
 extern "C" SceneHdr *TestMenuFwp_Dtor(SceneHdr *self, short flag)
 {
     if (self != 0) {
-        self->vt = lbl_8041CAD4;
+        self->vt = ScreenEffScene_vtable_8041CAD4;
         if (self != 0) {
-            self->vt = lbl_8041C9D4;
+            self->vt = MenuSceneBase_vtable_8041C9D4;
         }
         if (flag > 0) {
             MemoryManager_TimedFree(self);
@@ -1301,9 +1291,9 @@ extern "C" unsigned char TestMenuFwp_Update(void)
 extern "C" SceneHdr *TestMenuModelText_Dtor(SceneHdr *self, short flag)
 {
     if (self != 0) {
-        self->vt = lbl_8041CAF4;
+        self->vt = PaletteTestScene_vtable_8041CAF4;
         if (self != 0) {
-            self->vt = lbl_8041C9D4;
+            self->vt = MenuSceneBase_vtable_8041C9D4;
         }
         if (flag > 0) {
             MemoryManager_TimedFree(self);
@@ -1321,7 +1311,7 @@ extern "C" void TestMenuModelText_Render(void)
     r.x = 0.0f;
     r.y = 0.0f;
     r.z = 1.0f;
-    DbgScene_DrawTexturedQuad(&lbl_806382AC, &r, 0);
+    DbgScene_DrawTexturedQuad(&DbgMenu_bss_806382AC, &r, 0);
 }
 
 extern "C" unsigned char DbgScene05_TplTest2_InputCheck(void)
@@ -1332,10 +1322,10 @@ extern "C" unsigned char DbgScene05_TplTest2_InputCheck(void)
 extern "C" SceneHdr *DbgScene05_TplTest2_Dtor(SceneHdr *self, short flag)
 {
     if (self != 0) {
-        self->vt = lbl_8041CB14;
+        self->vt = ParticleTestScene_vtable_8041CB14;
         fn_80121210();
         if (self != 0) {
-            self->vt = lbl_8041C9D4;
+            self->vt = MenuSceneBase_vtable_8041C9D4;
         }
         if (flag > 0) {
             MemoryManager_TimedFree(self);
@@ -1368,11 +1358,11 @@ static inline int Particle_Spawn(void *anim)
         return 0;
     }
     for (i = 0; i < 500; i++) {
-        if (!lbl_80638068[i]) {
-            e = &lbl_80618C68[i];
+        if (!DbgMenu_bss_80638068[i]) {
+            e = &DbgScene_bss_80618C68[i];
             Particle_Reset(e, anim);
             e->handle = 0;
-            lbl_80638068[i] = 1;
+            DbgMenu_bss_80638068[i] = 1;
             return i + 1;
         }
     }
@@ -1382,15 +1372,15 @@ static inline int Particle_Spawn(void *anim)
 static inline void Particle_SetPos(int h, float x, float y)
 {
     if (h != 0) {
-        lbl_80618C68[h - 1].x = x;
-        lbl_80618C68[h - 1].y = y;
+        DbgScene_bss_80618C68[h - 1].x = x;
+        DbgScene_bss_80618C68[h - 1].y = y;
     }
 }
 
 static inline void Particle_SetState(int h, char state)
 {
     if (h != 0) {
-        lbl_80638068[h - 1] = state;
+        DbgMenu_bss_80638068[h - 1] = state;
     }
 }
 
@@ -1428,10 +1418,10 @@ extern "C" unsigned char DbgScene05_TplTest2_Update(void)
     if (Pad0()->IsHeld(0x400) == 1) {
         return 1;
     }
-    h = Particle_Spawn(lbl_8041C8A0);
+    h = Particle_Spawn(DbgMenu_data_8041C8A0);
     Particle_SetPos(h, Rand_RangeFloat(0.0f, 640.0f), Rand_RangeFloat(0.0f, 480.0f));
     Particle_SetState(h, 2);
-    Particle_UpdatePool(lbl_80638068, lbl_80618C68);
+    Particle_UpdatePool(DbgMenu_bss_80638068, DbgScene_bss_80618C68);
     return 0;
 }
 
@@ -1439,24 +1429,24 @@ static inline void ResetParticlePool(void)
 {
     int i;
     for (i = 0; i < 500; i++) {
-        Particle_Reset(&lbl_80618C68[i], 0);
-        lbl_80618C68[i].handle = 0;
-        lbl_80638068[i] = 0;
+        Particle_Reset(&DbgScene_bss_80618C68[i], 0);
+        DbgScene_bss_80618C68[i].handle = 0;
+        DbgMenu_bss_80638068[i] = 0;
     }
 }
 
 ParticleTestScene::ParticleTestScene()
 {
     ResetParticlePool();
-    DbgScene_PreloadResourceTree((ResNode *)lbl_8041C8A0);
+    DbgScene_PreloadResourceTree((ResNode *)DbgMenu_data_8041C8A0);
 }
 
 extern "C" SceneHdr *DbgScene04_AnmTest_Dtor(SceneHdr *self, short flag)
 {
     if (self != 0) {
-        self->vt = lbl_8041CB34;
+        self->vt = AnmTestScene_vtable_8041CB34;
         if (self != 0) {
-            self->vt = lbl_8041C9D4;
+            self->vt = MenuSceneBase_vtable_8041C9D4;
         }
         if (flag > 0) {
             MemoryManager_TimedFree(self);
@@ -1530,10 +1520,10 @@ extern "C" void DbgScene04_AnmTest_Draw(void)
     GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
     GXSetVtxDesc(0xE, 1);
     GXSetVtxAttrFmt(0, 0xE, 1, 4, 0);
-    set = &lbl_8063825C;
+    set = &DbgMenu_bss_8063825C;
     e0 = (TexPalEntry *)TEXGetPaletteEntry(set->pal, 0);
-    e1 = (TexPalEntry *)TEXGetPaletteEntry(lbl_8063825C.pal, 1);
-    GXLoadTexObj(lbl_8063825C.rgb, 0);
+    e1 = (TexPalEntry *)TEXGetPaletteEntry(DbgMenu_bss_8063825C.pal, 1);
+    GXLoadTexObj(DbgMenu_bss_8063825C.rgb, 0);
     if (e0->ci != 0) {
         GXLoadTlut(set->ci, 0);
     }
@@ -1573,7 +1563,7 @@ extern "C" unsigned char DbgScene04_AnmTest_InputCheck(void)
 extern "C" TplScene *DbgScene03_TplTest_Dtor(TplScene *self, short flag)
 {
     if (self != 0) {
-        self->vt = lbl_8041CB54;
+        self->vt = TplTestScene_vtable_8041CB54;
         if (self->env != 0) {
             CourseEnvironment_Dtor(self->env, 1);
         }
@@ -1593,7 +1583,7 @@ extern "C" TplScene *DbgScene03_TplTest_Dtor(TplScene *self, short flag)
         lbl_806D10AC = 0;
         fn_80121210();
         if (self != 0) {
-            self->vt = lbl_8041C9D4;
+            self->vt = MenuSceneBase_vtable_8041C9D4;
         }
         if (flag > 0) {
             MemoryManager_TimedFree(self);
@@ -1676,7 +1666,7 @@ static inline void LerpPos(TplScene *self, Vec3 b, Vec3 a)
 
 extern "C" void DbgScene03_TplTest_UpdateCamera(TplScene *self)
 {
-    char *str = lbl_8032CB38;
+    char *str = DbgMenu_rodata_8032CB38;
     int row;
 
     if (self->inited == 0) {
@@ -1823,7 +1813,7 @@ extern "C" void DbgScene03_TplTest_UpdateCamera(TplScene *self)
 
 extern "C" void DbgScene03_TplTest_SelectStage(TplScene *self)
 {
-    char *str = lbl_8032CB38;
+    char *str = DbgMenu_rodata_8032CB38;
     int row;
 
     if (self->next) {
@@ -2051,10 +2041,10 @@ extern "C" unsigned char DbgScene03_TplTest_InputCheck(TplScene *self)
 extern "C" SceneHdr *DbgScene02_MapViewer_Dtor(SceneHdr *self, short flag)
 {
     if (self != 0) {
-        self->vt = lbl_8041CB74;
+        self->vt = MapViewerScene_vtable_8041CB74;
         fn_80121210();
         if (self != 0) {
-            self->vt = lbl_8041C9D4;
+            self->vt = MenuSceneBase_vtable_8041C9D4;
         }
         if (flag > 0) {
             MemoryManager_TimedFree(self);
@@ -2094,10 +2084,10 @@ extern "C" unsigned char DbgScene02_MapViewer_InputCheck(void)
 extern "C" SceneHdr *DbgScene01_SprMng2Test_Dtor(SceneHdr *self, short flag)
 {
     if (self != 0) {
-        self->vt = lbl_8041CB94;
+        self->vt = SpriteTestScene_vtable_8041CB94;
         fn_80121210();
         if (self != 0) {
-            self->vt = lbl_8041C9D4;
+            self->vt = MenuSceneBase_vtable_8041C9D4;
         }
         if (flag > 0) {
             MemoryManager_TimedFree(self);
@@ -2119,24 +2109,24 @@ extern "C" unsigned char DbgScene01_SprMng2Test_InputCheck(void)
     if (pad->IsHeld(0x400) == 1) {
         return 1;
     }
-    prev = lbl_806D14C4;
+    prev = DbgMenu_bss_806D14C4;
     if (pad->IsHeld(0x20) || (pad->IsPressed(0x20) && pad->IsPressed(1))) {
-        if (++lbl_806D14C4 >= 0x2B00) {
-            lbl_806D14C4 = 0;
+        if (++DbgMenu_bss_806D14C4 >= 0x2B00) {
+            DbgMenu_bss_806D14C4 = 0;
         }
     } else if (pad->IsHeld(0x10) || (pad->IsPressed(0x10) && pad->IsPressed(1))) {
-        if (--lbl_806D14C4 <= -1) {
-            lbl_806D14C4 = 0x2AFF;
+        if (--DbgMenu_bss_806D14C4 <= -1) {
+            DbgMenu_bss_806D14C4 = 0x2AFF;
         }
     } else if (pad->IsHeld(4) || pad->IsHeld(2)) {
         int i;
 
-        for (i = 0; i < lbl_806CF320; i++) {
-            if (i == lbl_806CF320 - 1) {
-                if (lbl_8041C860[i] <= lbl_806D14C4) {
+        for (i = 0; i < DbgScene01_SprMng2Test_InputCheck_data_806CF320; i++) {
+            if (i == DbgScene01_SprMng2Test_InputCheck_data_806CF320 - 1) {
+                if (DbgScene01_SprMng2Test_InputCheck_data_8041C860[i] <= DbgMenu_bss_806D14C4) {
                     break;
                 }
-            } else if (lbl_8041C860[i] <= lbl_806D14C4 && lbl_806D14C4 < lbl_8041C860[i + 1]) {
+            } else if (DbgScene01_SprMng2Test_InputCheck_data_8041C860[i] <= DbgMenu_bss_806D14C4 && DbgMenu_bss_806D14C4 < DbgScene01_SprMng2Test_InputCheck_data_8041C860[i + 1]) {
                 break;
             }
         }
@@ -2146,20 +2136,20 @@ extern "C" unsigned char DbgScene01_SprMng2Test_InputCheck(void)
             i--;
         }
         if (i <= -1) {
-            i = lbl_806CF320 - 1;
+            i = DbgScene01_SprMng2Test_InputCheck_data_806CF320 - 1;
         }
-        if (lbl_806CF320 <= i) {
+        if (DbgScene01_SprMng2Test_InputCheck_data_806CF320 <= i) {
             i = 0;
         }
-        lbl_806D14C4 = lbl_8041C860[i];
+        DbgMenu_bss_806D14C4 = DbgScene01_SprMng2Test_InputCheck_data_8041C860[i];
     }
-    OverlayText(2, 0, 0, lbl_806D5914, lbl_806D14C4);
-    if (prev != lbl_806D14C4) {
+    OverlayText(2, 0, 0, lbl_806D5914, DbgMenu_bss_806D14C4);
+    if (prev != DbgMenu_bss_806D14C4) {
         fn_80120A08(prev);
     }
     ResCtrl r;
     fn_80121E10(&r);
-    r.id = lbl_806D14C4;
+    r.id = DbgMenu_bss_806D14C4;
     r.flag10 = 1;
     r.x = 320.0f;
     r.y = 240.0f;
@@ -2252,13 +2242,13 @@ extern "C" void DbgScene_DrawTexturedQuad(PaletteSet *set, ResCtrl *r, int idx)
     if (e->ci != 0) {
         int k;
         for (k = 0; k < 16; k++) {
-            if (set->color == lbl_8041C7E0[k]) {
+            if (set->color == DbgMenu_data_8041C7E0[k]) {
                 break;
             }
         }
-        if (lbl_8041C820[k] != set->ci) {
+        if (DbgScene_DrawTexturedQuad_data_8041C820[k] != set->ci) {
             GXLoadTlut(set->ci + idx * 0xC, set->color);
-            lbl_8041C820[k] = set->ci;
+            DbgScene_DrawTexturedQuad_data_8041C820[k] = set->ci;
         }
         GXLoadTexObj(set->rgb + idx * 0x20, 0);
     } else {
@@ -2278,7 +2268,7 @@ extern "C" void DbgScene_DrawTexturedQuad(PaletteSet *set, ResCtrl *r, int idx)
 extern "C" SceneHdr *dtor_800D2B98(SceneHdr *self, short flag)
 {
     if (self != 0) {
-        self->vt = lbl_8041C9D4;
+        self->vt = MenuSceneBase_vtable_8041C9D4;
         if (flag > 0) {
             MemoryManager_TimedFree(self);
         }

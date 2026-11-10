@@ -2,16 +2,9 @@
  * item id, resolving alias ids to their source item first. Id 0x10E (or
  * 0x45 spawned with arg 0x10E) is forced to the plain 0x45 item. */
 
-typedef struct ItemAliasEntry {
-    int source;
-    int dest;
-    int flags;
-} ItemAliasEntry;
+#include "game/types/ItemAliasEntry.h"
 
-typedef struct ItemClassEntry {
-    int def;
-    unsigned char pad4[0x14 - 4];
-} ItemClassEntry;
+#include "game/types/ItemClassEntry.h"
 
 typedef struct ItemObject {
     signed char active;
@@ -29,12 +22,12 @@ typedef struct ItemObject {
 extern ItemAliasEntry g_itemAliasTable[155];
 extern ItemClassEntry lbl_8041CBA8[];
 extern ItemObject lbl_80638300[256];
-extern int lbl_806D14D0;
+extern int ItemObject_bss_806D14D0;
 extern void *memset(void *dst, int c, unsigned long n);
 
 static inline ItemObject *ItemPool_Alloc(void)
 {
-    int cur = lbl_806D14D0;
+    int cur = ItemObject_bss_806D14D0;
     int i;
 
     for (i = 0; i < 256; i++) {
@@ -42,7 +35,7 @@ static inline ItemObject *ItemPool_Alloc(void)
         if (lbl_80638300[idx].active == 0) {
             ItemObject *obj = &lbl_80638300[idx];
             memset(obj, 0, sizeof(ItemObject));
-            lbl_806D14D0 = idx;
+            ItemObject_bss_806D14D0 = idx;
             obj->active = 1;
             return obj;
         }

@@ -14,14 +14,7 @@
 extern char lbl_806D2BCC[7];
 extern char lbl_806D2BD4[5];
 
-typedef struct ShadowBillboardSrc {
-    unsigned char pad000[0x58];
-    float mtx58[16]; /* 0x58 */
-    unsigned char pad098[0xD8 - 0x98];
-    float mtx[16]; /* 0xD8 */
-    unsigned char pad118[0x1D8 - 0x118];
-    float lerpT; /* 0x1D8 */
-} ShadowBillboardSrc;
+#include "game/types/ShadowBillboardSrc.h"
 
 typedef struct SBShake {
     int timer;
@@ -111,7 +104,7 @@ extern unsigned int g_gameMode;
 extern unsigned int g_longRoundFlag;
 extern unsigned int g_reverseRoundFlag;
 extern unsigned int g_roundIndex;
-extern unsigned int lbl_806CEEF0;
+extern unsigned int PlayCamera_Init_data_806CEEF0;
 extern unsigned int lbl_806D2B68;
 extern unsigned int lbl_806D2B70;
 extern unsigned int lbl_806D2B80;
@@ -143,7 +136,7 @@ extern unsigned int lbl_806D2C08;
 /* Open array (`[]`) avoids sda21 strict-mode link errors when a future */
 /* promote rewrites the asm_fn to C and references the symbol as `arr[i]`. */
 /* .rodata 0x802EE320..0x802EE50B: play camera tables */
-const float lbl_802EE320[13][2][4] = {
+const float ShadowBillboard_rodata_802EE320[13][2][4] = {
     {{18.0f, 25.0f, 50.0f, 10.0f}, {18.0f, 30.0f, 57.0f, 10.0f}},
     {{18.0f, 25.0f, 50.0f, 10.0f}, {18.0f, 30.0f, 57.0f, 10.0f}},
     {{18.0f, 25.0f, 50.0f, 10.0f}, {18.0f, 30.0f, 57.0f, 10.0f}},
@@ -159,8 +152,8 @@ const float lbl_802EE320[13][2][4] = {
     {{18.0f, 25.0f, 50.0f, 10.0f}, {18.0f, 30.0f, 55.0f, 10.0f}},
 };
 const float lbl_802EE4C0[3] = {1.0f, 0.7f, 0.9f};
-const float lbl_802EE4CC[3] = {0.075f, 0.075f, 0.075f};
-#define sCamTable lbl_802EE320
+const float ShadowBillboard_LerpMtx4x4_rodata_802EE4CC[3] = {0.075f, 0.075f, 0.075f};
+#define sCamTable ShadowBillboard_rodata_802EE320
 
 
 
@@ -180,15 +173,9 @@ const float lbl_802EE4CC[3] = {0.075f, 0.075f, 0.075f};
 
 
 /* per-course play camera overrides (0x7C-byte entries) */
-typedef struct PCCourseCamEntry {
-    int gameMode;
-    int cupId;
-    int ccClass;
-    int roundType;
-    PCPathSeg seg[3]; /* 0x10 */
-} PCCourseCamEntry;
+#include "game/types/PCCourseCamEntry.h"
 
-extern PCCourseCamEntry lbl_803F9F30[];
+extern PCCourseCamEntry ShadowBillboard_data_803F9F30[];
 
 /* --- forward decls --- */
 struct LineCam;
@@ -290,9 +277,7 @@ static inline Vec3f SBShake_GetOffset(SBShake *sh) {
     return lbl_802EE4F0;
 }
 
-typedef struct Mtx44S {
-    float v[16];
-} Mtx44S;
+#include "game/types/Mtx44S.h"
 
 /* Alias-safe 4x4 product (out may be a or b), result through a scratch buffer. */
 static inline void Mtx44S_Mul(Mtx44S *out, const Mtx44S *a, const Mtx44S *b) {
@@ -455,10 +440,10 @@ void ShadowBillboard_Tick(ShadowBillboard *sb, LineCam *lineCam, void *worldObj)
             {
                 Vec3f out;
                 Vec3f at;
-                PCPath_Lerp(&out, lbl_803F9F30[sb->courseCam].seg[idx].b,
-                            lbl_803F9F30[sb->courseCam].seg[idx].a, (float)rem / 120.0f);
+                PCPath_Lerp(&out, ShadowBillboard_data_803F9F30[sb->courseCam].seg[idx].b,
+                            ShadowBillboard_data_803F9F30[sb->courseCam].seg[idx].a, (float)rem / 120.0f);
                 CObj_LoadIntoGX(lineCam, &out);
-                Vec3_Copy(&at, &lbl_803F9F30[sb->courseCam].seg[idx].c);
+                Vec3_Copy(&at, &ShadowBillboard_data_803F9F30[sb->courseCam].seg[idx].c);
                 CObj_ApplyViewport(lineCam, &at);
             }
             if (rem < 20) {
@@ -968,8 +953,8 @@ clPlayCamera::clPlayCamera(void *owner_, int viewIndex_, void *scene_, void *src
         }
         cup = (int)g_cupId;
         cc = (int)g_ccClass;
-        for (i = 0; i < (int)lbl_806CEEF0; i++) {
-            e = &lbl_803F9F30[i];
+        for (i = 0; i < (int)PlayCamera_Init_data_806CEEF0; i++) {
+            e = &ShadowBillboard_data_803F9F30[i];
             if ((e->gameMode == -1 || mode == e->gameMode) && (e->cupId == -1 || cup == e->cupId) &&
                 (e->ccClass == -1 || cc == e->ccClass) && (e->roundType == -1 || round == e->roundType)) {
                 courseCam = i;

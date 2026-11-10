@@ -1,21 +1,17 @@
 /* --- owned .data 0x804221C8..0x80422208 (tools/own_data.py) --- */
 #pragma force_active on
-unsigned int lbl_804221C8[16] = { 0x00000000, 0x00000001, 0x00000002, 0x00000003, 0x00000004, 0x00000005, 0x00000006, 0x00000007, 0x00000008, 0x00000009, 0x0000000A, 0x0000000B, 0x0000000C, 0x0000000D, 0x0000000E, 0x0000000F };
+/* element type read off the values (all small integers), not from code */
+int lbl_804221C8[16] = {
+    0, 1, 2, 3, 4, 5, 6, 7,
+    8, 9, 10, 11, 12, 13, 14, 15
+};
 #pragma force_active reset
-typedef struct GXTexObj { unsigned int dummy[8]; } GXTexObj;
-typedef struct GXTlutObj { unsigned int dummy[3]; } GXTlutObj;
-typedef struct TEXHeader { unsigned short height; unsigned short width; } TEXHeader;
-typedef struct TEXDescriptor { TEXHeader *tex; void *clut; } TEXDescriptor;
+#include "game/types/GXTexObj.h"
+#include "game/types/GXTlutObj.h"
+#include "game/types/TEXHeader.h"
+#include "game/types/TEXDescriptor.h"
 
-typedef struct ResourceSlot {
-    int id;
-    int group;
-    void *palette;
-    int count;
-    GXTexObj *texObjs;
-    GXTlutObj *tlutObjs;
-    unsigned char *tlutNames;
-} ResourceSlot;
+#include "game/types/ResourceSlot.h"
 
 extern unsigned char IsValidResourceId(int id);
 extern int ResourceTable_GetSlotIndex(int id);
@@ -27,14 +23,14 @@ extern TEXDescriptor *TEXGetPaletteEntry(void *palette, unsigned int index);
 extern void GXLoadTlut(GXTlutObj *obj, unsigned int name);
 extern void GXLoadTexObj(GXTexObj *obj, int map);
 
-extern ResourceSlot lbl_806573E8[600];
+extern ResourceSlot SpriteHandle_bss_806573E8[600];
 
 static inline ResourceSlot *FindSlot(int group)
 {
     int i;
     for (i = 0; i < 600; i++) {
-        if (group == lbl_806573E8[i].group) {
-            return &lbl_806573E8[i];
+        if (group == SpriteHandle_bss_806573E8[i].group) {
+            return &SpriteHandle_bss_806573E8[i];
         }
     }
     return 0;

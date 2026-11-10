@@ -2,15 +2,9 @@
  * Kuppa (Bowser) shell. State 1 is held/flying, state 2 dispatches on how
  * it left the flying state: tether back to the kart, break into a shell
  * pile, or keep rolling while it fades out. */
-typedef struct Vec { float x, y, z; } Vec;
+#include "game/types/Vec.h"
 
-typedef struct KuppaShellWork {
-    unsigned char bounces;
-    unsigned char pad1[3];
-    unsigned int timers[4];
-    float tether;
-    float tetherScale;
-} KuppaShellWork;
+#include "game/types/KuppaShellWork.h"
 
 extern const char lbl_8032F548[];
 extern const char lbl_8032F564[];

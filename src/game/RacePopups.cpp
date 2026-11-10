@@ -2,18 +2,15 @@
  * Two sprite popup flow tasks @ 0x80250F38..0x80251CD0.
  *
  *   PopupRoot (vtable lbl_8048ECF8, inline) -> PopupTask (vtable lbl_8048ED10, inline)
- *     KindPopup  (vtable lbl_804EF160): resource 0x13A2 + kind, slides two halves together.
- *     FlashPopup (vtable lbl_804EF18C): resource 0x13A6, zoom and fade.
+ *     KindPopup  (vtable KindPopup_vtable_804EF160): resource 0x13A2 + kind, slides two halves together.
+ *     FlashPopup (vtable FlashPopup_vtable_804EF18C): resource 0x13A6, zoom and fade.
  *
  * KindPopup::Draw is the separate fn_80250F34 unit.
  */
 
 #include "game/FlowScene.h"
 
-struct Vec2 {
-    float x;
-    float y;
-};
+#include "game/types/Vec2.h"
 
 extern "C" {
 extern const Vec2 lbl_806DC0F8;
@@ -45,11 +42,7 @@ struct PopupRoot {
     PopupRoot(int id_) : id(id_), field08(0), done(0) {}
 };
 
-struct PopupTask : PopupRoot {
-    PopupTask(int id_) : PopupRoot(id_) {}
-    virtual ~PopupTask() {}
-    virtual void _keyT();
-};
+#include "game/types/PopupTask.h"
 
 struct KindPopup : PopupTask {
     virtual void _key();

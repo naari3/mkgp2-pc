@@ -59,8 +59,8 @@ extern void fn_801B1660(void *kart, void *target);
 extern void fn_801B1D5C(void *kart, void *target, int alias, bool flag);
 
 extern int g_ccClass;
-extern unsigned char lbl_8032EFF0[];
-extern char lbl_804211B0[][0xC0];
+extern unsigned char BananaTriple_Tick_HeldAndHoming_32to36_rodata_8032EFF0[];
+extern char BananaTriple_data_804211B0[][0xC0];
 extern const float lbl_806D5D90;
 extern const float lbl_806D5D94;
 extern const float lbl_806D5D98;
@@ -98,7 +98,7 @@ static inline void BananaTriple_SetIdleAnim(char *self)
 #pragma use_lmw_stmw on
 void BananaTriple_Tick_HeldAndHoming_32to36(char *self, char *w)
 {
-    unsigned char *base = lbl_8032EFF0;
+    unsigned char *base = BananaTriple_Tick_HeldAndHoming_32to36_rodata_8032EFF0;
     Vec3 n;
     int landed;
     float groundY;
@@ -182,8 +182,8 @@ void BananaTriple_Tick_HeldAndHoming_32to36(char *self, char *w)
             ItemTracker_SetTrackPhase(self, 1);
             self[0x8d] = 1;
             self[0x3c] = 1;
-            SpriteSlot_SetJointVisibilityByName(self + 0x14, lbl_804211B0[*(unsigned char *)(w + 3)], 0x10, 0);
-            SpriteSlot_SetJointVisibilityByName(self + 0x14, lbl_804211B0[*(unsigned char *)(w + 3)] + 0x40, 0x10,
+            SpriteSlot_SetJointVisibilityByName(self + 0x14, BananaTriple_data_804211B0[*(unsigned char *)(w + 3)], 0x10, 0);
+            SpriteSlot_SetJointVisibilityByName(self + 0x14, BananaTriple_data_804211B0[*(unsigned char *)(w + 3)] + 0x40, 0x10,
                                                 1);
             ItemObject_GetGroundTypeAt(*(Vec3 *)(self + 0xa0), (float *)(w + 0x18), 0);
             WF(0x18) = F(0xa4) - WF(0x18);

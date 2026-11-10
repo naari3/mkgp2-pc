@@ -12,13 +12,13 @@ typedef struct StrPcbChanStatus {
     int errorCount;
 } StrPcbChanStatus;
 
-extern u8 lbl_806D1000[3];
-extern int lbl_806D1004;
-extern int lbl_806D0FF8;
-extern int lbl_806D0FFC;
-extern unsigned int lbl_806D1008;
-extern u8 lbl_80598500[0xC];
-extern u8 lbl_8059850C[0x24];
+extern u8 StrPcb_bss_806D1000[3];
+extern int StrPcb_bss_806D1004;
+extern int StrPcb_InputTick_bss_806D0FF8;
+extern int StrPcb_InputTick_bss_806D0FFC;
+extern unsigned int StrPcb_bss_806D1008;
+extern u8 StrPcb_OutputTick_bss_80598500[0xC];
+extern u8 StrPcb_InputTick_bss_8059850C[0x24];
 extern const char lbl_802E9854[];
 extern const char lbl_802E9874[];
 extern const float lbl_806D23D8;
@@ -79,7 +79,7 @@ static inline u8 StrPcb_IsRunning(StrPcbCmd *pcb)
 
 static inline u8 StrPcb_ResponseTimedOut(void)
 {
-    if ((float)OSTicksToMicroseconds(OSGetTick() - lbl_806D100C) / lbl_806D23E4 >= lbl_806D23E8) {
+    if ((float)OSTicksToMicroseconds(OSGetTick() - StrPcb_bss_806D100C) / lbl_806D23E4 >= lbl_806D23E8) {
         return 1;
     }
     return 0;
@@ -120,10 +120,10 @@ void StrPcb_StateTick(StrPcbCmd *pcb)
         pcb->commError26 = 1;
         pcb->stickyError5C = 1;
         pcb->state20 = 4;
-        lbl_806D1000[0] = 'E';
-        lbl_806D1000[1] = '2';
-        lbl_806D1000[2] = '0';
-        memcpy(pcb->errorCode, lbl_806D1000, 3);
+        StrPcb_bss_806D1000[0] = 'E';
+        StrPcb_bss_806D1000[1] = '2';
+        StrPcb_bss_806D1000[2] = '0';
+        memcpy(pcb->errorCode, StrPcb_bss_806D1000, 3);
     }
 }
 
@@ -235,29 +235,29 @@ void StrPcb_InputTick(StrPcbCmd *pcb)
     if (pcb->state20 == 4) {
         return;
     }
-    lbl_806D0FFC = lbl_806D0FF8;
+    StrPcb_InputTick_bss_806D0FFC = StrPcb_InputTick_bss_806D0FF8;
     if (fn_80293290(0, &count) == 0) {
         if (count > 0) {
             while (count-- > 0) {
                 u8 c = fn_8029321C(0);
 
-                lbl_806D1000[lbl_806D1004++] = lbl_8059850C[lbl_806D0FF8++] = c;
-                if (lbl_806D1004 >= 3) {
-                    if (StrPcb_ParseResponse(pcb, lbl_806D1000) == 1) {
-                        lbl_806D1004 = 0;
-                        lbl_806D100C = OSGetTick();
+                StrPcb_bss_806D1000[StrPcb_bss_806D1004++] = StrPcb_InputTick_bss_8059850C[StrPcb_InputTick_bss_806D0FF8++] = c;
+                if (StrPcb_bss_806D1004 >= 3) {
+                    if (StrPcb_ParseResponse(pcb, StrPcb_bss_806D1000) == 1) {
+                        StrPcb_bss_806D1004 = 0;
+                        StrPcb_bss_806D100C = OSGetTick();
                     } else {
-                        memmove(lbl_806D1000, lbl_806D1000 + 1, 2);
+                        memmove(StrPcb_bss_806D1000, StrPcb_bss_806D1000 + 1, 2);
                         if (pcb->intensityMode == 0) {
-                            lbl_806D1000[0] = 'H';
-                            lbl_806D1000[1] = '0';
-                            lbl_806D1000[2] = '0';
+                            StrPcb_bss_806D1000[0] = 'H';
+                            StrPcb_bss_806D1000[1] = '0';
+                            StrPcb_bss_806D1000[2] = '0';
                         }
-                        lbl_806D1004--;
+                        StrPcb_bss_806D1004--;
                     }
                 }
-                if (lbl_806D0FF8 >= 0x24) {
-                    lbl_806D0FF8 = 0;
+                if (StrPcb_InputTick_bss_806D0FF8 >= 0x24) {
+                    StrPcb_InputTick_bss_806D0FF8 = 0;
                 }
             }
         } else if (count < 0) {
@@ -288,15 +288,15 @@ void StrPcb_OutputTick(StrPcbCmd *pcb)
         pcb->position28 = pcb->position10;
     }
     pcb->positionAck27 = 0;
-    lbl_806D1008 = OSGetTick();
+    StrPcb_bss_806D1008 = OSGetTick();
     delta = fn_80038798(pcb->positionTarget + pcb->counter14, 0, 0x3FF);
     delta = fn_80038798(delta - pcb->position10, lbl_806D23F8 * pcb->value48, lbl_806D23FC * pcb->value48);
     if (pcb->state20 == 1) {
         delta = 0;
     }
     pcb->position10 += delta;
-    lbl_80598500[2] = pcb->position10;
-    lbl_80598500[3] = (pcb->position10 >> 8) & 0x3F;
+    StrPcb_OutputTick_bss_80598500[2] = pcb->position10;
+    StrPcb_OutputTick_bss_80598500[3] = (pcb->position10 >> 8) & 0x3F;
     if (pcb->value34 > 0) {
         pcb->value34--;
         if (pcb->value34 % pcb->value38 == 0) {
@@ -325,16 +325,16 @@ void StrPcb_OutputTick(StrPcbCmd *pcb)
         pcb->status24 &= 0x7F;
     }
     pcb->value48 = Saturate_Double(pcb->value48, lbl_806D23E0, lbl_806D2400);
-    lbl_80598500[4] = pcb->intensityScale * (pcb->command2D * pcb->value48);
+    StrPcb_OutputTick_bss_80598500[4] = pcb->intensityScale * (pcb->command2D * pcb->value48);
     if (pcb->intensityScale <= lbl_806D23E0) {
-        lbl_80598500[6] = 0;
+        StrPcb_OutputTick_bss_80598500[6] = 0;
     } else {
-        lbl_80598500[6] = pcb->command2E * pcb->value48;
+        StrPcb_OutputTick_bss_80598500[6] = pcb->command2E * pcb->value48;
     }
-    lbl_80598500[8] = pcb->intensityScale * ((signed char)pcb->command2F * pcb->value48);
+    StrPcb_OutputTick_bss_80598500[8] = pcb->intensityScale * ((signed char)pcb->command2F * pcb->value48);
     StrPcb_StateTick(pcb);
     if (pcb->state20 != 4 && pcb->dirty18 != 0) {
-        StrPcb_SendPacket(pcb, lbl_80598500, 10);
+        StrPcb_SendPacket(pcb, StrPcb_OutputTick_bss_80598500, 10);
     }
     if (pcb->intensityMode != 0) {
         StrPcb_InputTick(pcb);

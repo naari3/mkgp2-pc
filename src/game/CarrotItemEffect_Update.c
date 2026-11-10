@@ -3,19 +3,11 @@
  * early once its bus bit is gone (or, after 3 frames, when bit 16 is set it
  * clears bit 49).  While visible the sprite follows joint 15 of the kart,
  * scaled by 2 and offset per character. */
-typedef struct Vec {
-    float x, y, z;
-} Vec;
+#include "game/types/Vec.h"
 
-typedef struct ItemEffectBus {
-    unsigned char pad00[0x10];
-    unsigned long long mask; /* 0x10 */
-} ItemEffectBus;
+#include "game/ItemEffectBusPrivate.h"
 
-typedef struct KartDriver {
-    unsigned char pad000[0x304];
-    ItemEffectBus *itemBus; /* 0x304 */
-} KartDriver;
+#include "game/types/KartDriver.h"
 
 typedef struct CarrotItemEffect {
     unsigned char pad000[0x14];
@@ -34,7 +26,7 @@ typedef struct CarrotItemEffect {
 } CarrotItemEffect;
 
 extern char lbl_803298F0[];
-extern Vec lbl_8041A000[];
+extern Vec CarrotItemEffect_Update_data_8041A000[];
 
 extern void SpriteSlot_InitNonLoop(void *slot, int id);
 extern void SpriteSlot_SetAnimFrameAndApplyScale(void *slot, int a, float frame);
@@ -100,7 +92,7 @@ void CarrotItemEffect_Update(CarrotItemEffect *self)
         Mtx_TransposeToMtx44(joint, KartDriver_GetJointByIdx(self->driver, 15));
         Matrix4_Identity(m);
         Mtx44_Scale_Uniform(m, m, 2.0f);
-        Mtx44_Translate(m, m, lbl_8041A000[KartCharacterParam_GetIdentityIndex(self->driver)]);
+        Mtx44_Translate(m, m, CarrotItemEffect_Update_data_8041A000[KartCharacterParam_GetIdentityIndex(self->driver)]);
         Matrix4_Multiply(m, m, joint);
         DbgScene_CopyMatrix3x4Transpose(self->mtx, m);
         Mtx44_GetTranslation_RowMajor(&self->pos, self->mtx);

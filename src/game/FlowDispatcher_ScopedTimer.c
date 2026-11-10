@@ -25,7 +25,7 @@ extern "C" unsigned int lbl_806D2288;
 /* --- extern decls: large-data refs (@ha/@l pairs) --- */
 /* Open array (`[]`) avoids sda21 strict-mode link errors when a future */
 /* promote rewrites the asm_fn to C and references the symbol as `arr[i]`. */
-extern "C" const char lbl_802E8DBC[];
+extern "C" const char FlowDispatcher_Create_rodata_802E8DBC[];
 
 /* --- forward decls --- */
 extern "C" void __dt__11ScopedTimerFv(void);
@@ -52,11 +52,7 @@ __declspec(section ".extabindex_user") static const struct { void *fn; unsigned 
     (void *)&__dt__11ScopedTimerFv, 0x000000A4, (void *)extab___dt__11ScopedTimerFv
 };
 
-struct FlowEntry {
-    void *(*create)(void);
-    int arg0;
-    int arg1;
-};
+#include "game/types/FlowEntry.h"
 
 struct SeqMenuScene {
     char pad[0x14];
@@ -78,7 +74,7 @@ struct FlowDispatcher {
     FlowDispatcher(FlowEntry *t, int s) {
         table = t;
         start = s;
-        DebugPrintf(lbl_802E8DBC);
+        DebugPrintf(FlowDispatcher_Create_rodata_802E8DBC);
         HeapStats_DumpForTag(lbl_806D2264, 0);
         menu = new SeqMenuScene(table);
         if (s == -4) {
@@ -98,23 +94,33 @@ struct FlowDispatcher {
         f30 = 0;
         f34 = 0;
         HeapStats_DumpForTag(lbl_806D2264, 0);
-        DebugPrintf(lbl_802E8DBC);
+        DebugPrintf(FlowDispatcher_Create_rodata_802E8DBC);
         DebugLog_LvIdMsg(0, 0, lbl_806D2264);
     }
 };
 
-extern "C" FlowDispatcher *lbl_806D0F80;
+extern "C" FlowDispatcher *FlowDispatcher_Create_bss_806D0F80;
 
 #pragma exceptions on
 extern "C" FlowDispatcher *FlowDispatcher_Create(FlowEntry *table, int start) {
-    if (lbl_806D0F80 == 0) {
-        lbl_806D0F80 = new FlowDispatcher(table, start);
+    if (FlowDispatcher_Create_bss_806D0F80 == 0) {
+        FlowDispatcher_Create_bss_806D0F80 = new FlowDispatcher(table, start);
     }
-    return lbl_806D0F80;
+    return FlowDispatcher_Create_bss_806D0F80;
 }
 #pragma exceptions reset
 
 #pragma exceptions off
+#ifdef NON_MATCHING
+/* Equivalent C++ for the PC port (docs/nonmatching_c.md): the natural
+ * destructor, as MainGameLoop's inlined copies have it. */
+ScopedTimer::~ScopedTimer()
+{
+    unsigned int elapsed = ((OSGetTick() - m_startTick) << 3) /
+        (((*(volatile unsigned int *)0x800000F8) >> 2) / 125000);
+    Profiler_RecordFrame(m_slot, (float)elapsed / 1000000.0f);
+}
+#else
 ScopedTimer::~ScopedTimer()
 {
     register int slot;
@@ -155,5 +161,6 @@ ScopedTimer::~ScopedTimer()
 
     Profiler_RecordFrame(slot, value);
 }
+#endif
 #pragma exceptions reset
 

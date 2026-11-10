@@ -5,54 +5,20 @@
 
 typedef float Mtx[3][4];
 
-struct Vec3f {
-    float x, y, z;
-};
+#include "game/types/Vec3f.h"
 
-struct BoxShadow {
-    Vec3f pos;
-    float scale;
-};
+#include "game/types/BoxShadow.h"
 
-struct ItemBoxSlot {
-    char pad00[0x24];
-    Vec3f pos;
-    float rotX;
-    float rotY;
-    float rotZ;
-    char pad3C[0x4];
-    int hidden;
-    unsigned char visible;
-    char pad45[0x3];
-    BoxShadow shadows[10];
-    char padE8[0x8];
-};
+#include "game/types/ItemBoxSlot.h"
 
 struct ListNode {
     char pad00[0x4];
     ListNode *next;
 };
 
-struct ItemBoxSet {
-    char pad00[0x8];
-    void *modelA;
-    void *modelB;
-    void *archive;
-    ListNode *nodes;
-    int selected;
-    ItemBoxSlot *slots;
-    int count;
-};
+#include "game/types/ItemBoxSet.h"
 
-class GXChannel {
-public:
-    GXChannel(void *root, void *desc, int flags, int mode);
-    ~GXChannel();
-    void PushTransform(Mtx m);
-
-private:
-    char pad[0x14];
-};
+#include "game/types/GXChannel.h"
 
 extern "C" {
 void HSD_DObjClearFlags(ListNode *, int);

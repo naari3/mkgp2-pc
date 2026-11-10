@@ -1,6 +1,6 @@
 /* Held/launch/homing/attached-effect phases, reconstructed from the target
  * 800E6F78..800E7EC4. These local views describe only observed fields. */
-struct Vec3 { float x, y, z; };
+#include "game/types/Vec3.h"
 struct HeldKart;
 struct HeldEffectBus {
     unsigned char pad00[8];
@@ -56,7 +56,7 @@ struct HeldContext {
 };
 struct HeldRadii { Vec3 entry[11]; };
 extern "C" {
-extern const HeldRadii lbl_8032EEAC;
+extern const HeldRadii GabyouItem_Tick_HeldAndHoming_2Eto31_rodata_8032EEAC;
 extern int g_ccClass;
 void SpriteSlot_SetMatrixSourceEnabled_WithReseed(HeldSprite *, int);
 void SpriteSlot_SetAnimFrameAndApplyScale(HeldSprite *, int, float);
@@ -257,7 +257,7 @@ void GabyouItem_Tick_HeldAndHoming_2Eto31(HeldItem *item, HeldContext *context)
     case 3: {
         /* The target performs a 132-byte aggregate copy before subphase dispatch.
          * Its table remains externally owned; no surrounding rodata is claimed. */
-        HeldRadii radii = lbl_8032EEAC;
+        HeldRadii radii = GabyouItem_Tick_HeldAndHoming_2Eto31_rodata_8032EEAC;
         switch (item->subphase) {
         case 0: {
             GetSpawnPosition(&item->velocity, 0.0f, 0.0f, 0.0f);

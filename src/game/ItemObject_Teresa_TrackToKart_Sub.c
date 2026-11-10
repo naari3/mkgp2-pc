@@ -3,7 +3,7 @@
  * animations, then fades out. If the target becomes invincible (status
  * flag 0x10000) it bursts into six pieces and vanishes; while the target
  * is not in the stolen state its lifetime is cut short. */
-typedef struct Vec { float x, y, z; } Vec;
+#include "game/types/Vec.h"
 
 extern const char lbl_8032E630[];
 extern void GetSpawnPosition(Vec *out, float x, float y, float z);
@@ -36,16 +36,13 @@ extern void Item_DecayVelocityScalar(unsigned char *self, float k);
 #define SU32(o) (*(unsigned int *)(sub + (o)))
 #define SP(o) (*(unsigned char **)(sub + (o)))
 
-typedef struct KartStatus {
-    unsigned char pad[0x10];
-    unsigned long long flags;
-} KartStatus;
+#include "game/ItemEffectBusPrivate.h"
 
-static inline unsigned char has_flag(KartStatus *st, unsigned long long mask)
+static inline unsigned char has_flag(ItemEffectBus *st, unsigned long long mask)
 {
     unsigned char result;
 
-    if ((st->flags & mask) == 0) {
+    if ((st->mask & mask) == 0) {
         result = 0;
     } else {
         result = 1;
@@ -112,7 +109,7 @@ void ItemObject_Teresa_TrackToKart_Sub(unsigned char *self, unsigned char *sub)
         self[0x14] &= ~2;
     }
     if (SP(0x9C) != 0 && SU32(0xC) == 0) {
-        KartStatus *st = *(KartStatus **)(SP(0x9C) + 0x304);
+        ItemEffectBus *st = *(ItemEffectBus **)(SP(0x9C) + 0x304);
         if (has_flag(st, 0x10000ULL)) {
             JointByName_GetWorldPosition(&jpos, self + 0x14, lbl_8032E630);
             for (i = 0; i < 6; i++) {
@@ -136,7 +133,7 @@ void ItemObject_Teresa_TrackToKart_Sub(unsigned char *self, unsigned char *sub)
             S8(0xC8) = 3;
             S8(0xC9) = 0;
             return;
-        } else if (!(st->flags & 2ULL)) {
+        } else if (!(st->mask & 2ULL)) {
             SU32(0x4) = 0;
         }
     }

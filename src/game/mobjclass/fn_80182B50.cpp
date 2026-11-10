@@ -1,21 +1,8 @@
-struct HSD_TObj {
-    unsigned char pad[0x74];
-    float mtx[3][4];
-};
+#include "game/types/HSD_TObj.h"
 
-struct HSD_DObj {
-    void *parent;
-    HSD_DObj *next;
-    void *mobj;
-};
+#include "game/types/HSD_DObj.h"
 
-struct HSD_JObj {
-    unsigned char pad[0x8];
-    HSD_JObj *next;
-    HSD_JObj *parent;
-    HSD_JObj *child;
-    unsigned int flags;
-};
+#include "game/types/HSD_JObj.h"
 
 extern "C" {
 extern const float lbl_806D927C;

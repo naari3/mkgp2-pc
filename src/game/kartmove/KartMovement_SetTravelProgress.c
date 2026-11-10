@@ -1,17 +1,6 @@
-typedef struct SpeedTable {
-    void *pts;
-    int count;
-    float maxProgress;
-    unsigned char pad[0xc];
-} SpeedTable;
+#include "game/types/SpeedTable.h"
 
-typedef struct KartMove {
-    unsigned char pad0[8];
-    int table;
-    float progress;
-    unsigned char pad10[0x24 - 0x10];
-    SpeedTable *tables;
-} KartMove;
+#include "game/types/KartMove.h"
 
 void KartMovement_SetTravelProgress(KartMove *k, float p) {
     if (p > k->tables[k->table].maxProgress) {

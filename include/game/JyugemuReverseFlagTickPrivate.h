@@ -7,7 +7,7 @@ extern "C" const char lbl_806D308C[7], lbl_806D3094[5], lbl_80311DFC[];
 typedef Vec3f Vec3;
 extern "C" {
 extern const float lbl_806D3078, lbl_806D307C, lbl_806D3080, lbl_806D3084, lbl_806D3088, lbl_806D309C, lbl_806D30A0;
-extern unsigned char lbl_806CEFC0[8];
+extern unsigned char Jyugemu_ReverseFlag_data_806CEFC0[8];
 void __assert(const char *, int, const char *);
 HSD_JObj *Archive_GetRootJObj(void *);
 float (*KartDriver_GetKartRootMtx(void *))[4];
@@ -24,7 +24,7 @@ double atan2(double, double);
 }
 struct ReverseFlag { void *object; void *driver; unsigned char state; unsigned char pad[3]; int timer; float phase; };
 /* Mirror the HSD JObj setter inlines used by Jyugemu_Flag_Tick. */
-typedef struct JointTransform { float rotation[4], scale[3], translation[3]; } JointTransform;
+#include "game/types/JointTransform.h"
 static inline JointTransform *Transform(HSD_JObj *j) { return (JointTransform *)j->_pad_1c; }
 static inline unsigned char MatrixDirty(HSD_JObj *j) {
     unsigned int flags;

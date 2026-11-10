@@ -2,23 +2,12 @@
  * item. Sub-state 1 holds it in the character's hand until it is thrown,
  * sub-state 2 flies it forward with homing, bounces it off walls and
  * leaves the flying state on a kart hit, a landing or a timeout. */
-typedef struct Vec { float x, y, z; } Vec;
+#include "game/types/Vec.h"
 
-typedef struct BombWork {
-    unsigned char pad0[4];
-    unsigned int timers[4];
-    unsigned char pad14[0x4C - 0x14];
-    unsigned char *eff;
-    unsigned char pad50[0x7C - 0x50];
-    int approach;
-    unsigned char pad80[0x98 - 0x80];
-    void *driver;
-    void *target;
-    signed char launch;
-} BombWork;
+#include "game/types/BombWork.h"
 
-extern const Vec lbl_8032FA48;
-extern const Vec lbl_8032FA54;
+extern const Vec BombItem_TickActive_rodata_8032FA48;
+extern const Vec BombItem_TickActive_rodata_8032FA54;
 extern void Effect_TwoChild_Res8F_Update(unsigned char *self);
 extern void SpriteSlot_SetMatrixSourceEnabled_WithReseed(void *slot, int en);
 extern void SpriteSlot_SetAnimFrameAndApplyScale(void *slot, int anim, float frame);
@@ -76,7 +65,7 @@ void BombItem_TickActive(unsigned char *self, BombWork *w)
             F(0x2C) = 0.0f;
             self[0xCA]++;
         case 1:
-            Item_RenderHandheldByCharacter(self, lbl_8032FA48, lbl_8032FA54, 1, 1.0f);
+            Item_RenderHandheldByCharacter(self, BombItem_TickActive_rodata_8032FA48, BombItem_TickActive_rodata_8032FA54, 1, 1.0f);
             if (FinalLapCoinJump_CheckActiveForObject(w->driver)) {
                 self[0x28] = 0;
             } else {
@@ -109,7 +98,7 @@ void BombItem_TickActive(unsigned char *self, BombWork *w)
             self[0x8D] = 1;
             self[0x3C] = 1;
             SpriteSlot_SetAnimFrameAndApplyScale(self + 0x14, 1, 0.0f);
-            w->eff = DrawEffect_SpawnDirect(Effect_TwoChild_Res8F_Update);
+            w->fx[0] = DrawEffect_SpawnDirect(Effect_TwoChild_Res8F_Update);
             w->timers[0] = 900;
             w->timers[1] = 0;
             self[0xCA]++;
@@ -207,10 +196,10 @@ void BombItem_TickActive(unsigned char *self, BombWork *w)
         if (ItemHitRegistry_RemoveEntry(self, w->timers[0], 0)) {
             ItemTracker_ReleaseLock(self);
             self[0x8D] = 0;
-            if (w->eff != 0) {
-                w->eff[0xC9] = 1;
+            if (w->fx[0] != 0) {
+                w->fx[0][0xC9] = 1;
             }
-            w->eff = 0;
+            w->fx[0] = 0;
             ItemObject_DecrementCategoryBudget(self);
             SpriteSlot_Container_Free(self);
         }

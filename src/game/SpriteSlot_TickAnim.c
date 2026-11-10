@@ -3,28 +3,11 @@
  * SpriteSlot_SetAnimFrameAndApplyScale (0x800D657C, own TU) is inlined into
  * the "restart" state here, so its body is repeated as a static inline. */
 
-typedef struct SpriteAnimEntry {
-    signed char loop; /* 0x0 */
-    float start;      /* 0x4 */
-    float end;        /* 0x8 */
-} SpriteAnimEntry;
+#include "game/types/SpriteAnimEntry.h"
 
-typedef struct SpriteClassEntry {
-    unsigned char pad0[4];
-    SpriteAnimEntry *anims; /* 0x4 */
-    unsigned char pad8[0xC];
-} SpriteClassEntry;
+#include "game/types/SpriteClassEntry.h"
 
-typedef struct SpriteSlot {
-    unsigned char pad0[4];
-    void *model;          /* 0x04 */
-    unsigned char cls;    /* 0x08 */
-    signed char anim;     /* 0x09 */
-    signed char state;    /* 0x0A */
-    float frame;          /* 0x0C */
-    float speed;          /* 0x10 */
-    signed char animated; /* 0x14 */
-} SpriteSlot;
+#include "game/types/SpriteSlot.h"
 
 extern SpriteClassEntry lbl_8041AC24[];
 
@@ -49,7 +32,7 @@ static inline void SpriteSlot_SetAnimFrame(SpriteSlot *slot, signed char anim, f
 {
     float t;
 
-    if (slot->model == 0) {
+    if (slot->object == 0) {
         return;
     }
     slot->anim = anim;
@@ -59,9 +42,9 @@ static inline void SpriteSlot_SetAnimFrame(SpriteSlot *slot, signed char anim, f
     }
     slot->state = 0;
     slot->frame = t - lbl_8041AC24[slot->cls].anims[slot->anim].start;
-    clNormal3D_SetScale(slot->model, 0, SpriteSlot_GetFrame(slot), 1.0f, 0.0f,
+    clNormal3D_SetScale(slot->object, 0, SpriteSlot_GetFrame(slot), 1.0f, 0.0f,
                         0.0f);
-    Object_SetField14_IfValid(slot->model, 0.0f);
+    Object_SetField14_IfValid(slot->object, 0.0f);
 }
 
 static inline void SpriteSlot_UpdateAnim(SpriteSlot *slot)
@@ -69,7 +52,7 @@ static inline void SpriteSlot_UpdateAnim(SpriteSlot *slot)
     SpriteAnimEntry *e;
     float len;
 
-    if (slot->model == 0) {
+    if (slot->object == 0) {
         return;
     }
     e = SpriteSlot_GetAnim(slot);
@@ -98,19 +81,19 @@ static inline void SpriteSlot_UpdateAnim(SpriteSlot *slot)
         break;
     }
     if (slot->animated) {
-        Object_SetField8_10_14(slot->model, e->start + slot->frame, 0.0f,
+        Object_SetField8_10_14(slot->object, e->start + slot->frame, 0.0f,
                                e->start + slot->frame);
-        clNormal3D_Exec(slot->model);
+        clNormal3D_Exec(slot->object);
     }
 }
 
 void SpriteSlot_TickAnim(SpriteSlot *slot)
 {
-    if (slot->model == 0) {
+    if (slot->object == 0) {
         return;
     }
     SpriteSlot_UpdateAnim(slot);
     if (slot->animated) {
-        Object_DriveAnimMatrix(slot->model);
+        Object_DriveAnimMatrix(slot->object);
     }
 }

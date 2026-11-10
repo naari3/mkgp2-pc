@@ -1,7 +1,10 @@
 typedef struct SprCtx {
-    float a, b;
-    float c, d;
-    float e, f;
+    float a;
+    float b;
+    float c;
+    float d;
+    float e;
+    float f;
 } SprCtx;
 extern int lbl_80678A0C[];
 extern int lbl_806D16E8;

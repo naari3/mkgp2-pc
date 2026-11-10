@@ -1,17 +1,6 @@
-typedef struct CharEntry {
-    unsigned short card;
-    unsigned short code;
-    int width;
-    int height;
-    int advance;
-} CharEntry;
+#include "game/types/CharEntry.h"
 
-typedef struct GlyphPos {
-    short x;
-    short y;
-    short w;
-    short h;
-} GlyphPos;
+#include "game/types/GlyphPos.h"
 
 extern CharEntry lbl_804E5590[];
 extern const GlyphPos lbl_803BF0A0[][8];

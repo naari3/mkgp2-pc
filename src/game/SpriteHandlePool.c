@@ -108,19 +108,12 @@ typedef struct SpriteHandle {
 
 extern "C" {
 extern SpriteHandle g_SpriteHandlePool[];
-extern int lbl_80677C38[];
+extern int SpriteHandlePool_bss_80677C38[];
 }
 
-typedef struct SpriteNode {
-    int index;
-    int pad;
-    struct SpriteNode *next;
-} SpriteNode;
+#include "game/types/SpriteNode.h"
 
-typedef struct SpriteList {
-    char pad[0x14];
-    SpriteNode *head;
-} SpriteList;
+#include "game/types/SpriteList.h"
 
 extern "C" SpriteList *lbl_806D1500;
 
@@ -162,12 +155,7 @@ struct SpriteUVTable {
     int idx[4][4][2];
 };
 
-struct SavedGXState {
-    int cullMode;
-    float proj[7];
-    float viewport[6];
-    unsigned int scissor[4];
-};
+#include "game/types/SavedGXState.h"
 
 extern "C" {
 void fn_8011EC18(unsigned char a);
@@ -177,8 +165,8 @@ extern signed char lbl_806D14F1;
 extern void *lbl_806D14F4;
 extern void *lbl_806D14F8;
 extern signed char lbl_806D14FC;
-extern const SpriteUVTable lbl_803325D0;
-extern SavedGXState lbl_806573A0;
+extern const SpriteUVTable SpriteHandlePool_rodata_803325D0;
+extern SavedGXState SpriteHandle_bss_806573A0;
 void fn_8011E31C(SpriteHandle *h);
 }
 
@@ -195,7 +183,7 @@ extern "C" void fn_8011DF98(SpriteHandle *h) {
         h->released = 1;
         if (!h->keep) {
             h->active = 0;
-            lbl_80677C38[h->type]--;
+            SpriteHandlePool_bss_80677C38[h->type]--;
         }
         if (h->next != -1) {
             fn_8011DF98(&g_SpriteHandlePool[h->next]);
@@ -211,7 +199,7 @@ extern "C" void fn_8011E31C(SpriteHandle *h) {
     int useTex2 = 0;
     int modeChanged = 0;
     int tevChanged = 0;
-    SpriteUVTable tbl = lbl_803325D0;
+    SpriteUVTable tbl = SpriteHandlePool_rodata_803325D0;
     int i;
     int coord;
     int map;
@@ -246,11 +234,11 @@ extern "C" void fn_8011E31C(SpriteHandle *h) {
         GXSetAlphaCompare(7, 0, 0, 7, 0);
         GXSetZCompLoc(1);
         GXSetZMode(1, 3, 1);
-        GXSetScissor(lbl_806573A0.scissor[0], lbl_806573A0.scissor[1], lbl_806573A0.scissor[2], lbl_806573A0.scissor[3]);
-        GXSetViewport(lbl_806573A0.viewport[0], lbl_806573A0.viewport[1], lbl_806573A0.viewport[2],
-            lbl_806573A0.viewport[3], lbl_806573A0.viewport[4], lbl_806573A0.viewport[5]);
-        GXSetProjectionv(lbl_806573A0.proj);
-        GXSetCullMode(lbl_806573A0.cullMode);
+        GXSetScissor(SpriteHandle_bss_806573A0.scissor[0], SpriteHandle_bss_806573A0.scissor[1], SpriteHandle_bss_806573A0.scissor[2], SpriteHandle_bss_806573A0.scissor[3]);
+        GXSetViewport(SpriteHandle_bss_806573A0.viewport[0], SpriteHandle_bss_806573A0.viewport[1], SpriteHandle_bss_806573A0.viewport[2],
+            SpriteHandle_bss_806573A0.viewport[3], SpriteHandle_bss_806573A0.viewport[4], SpriteHandle_bss_806573A0.viewport[5]);
+        GXSetProjectionv(SpriteHandle_bss_806573A0.proj);
+        GXSetCullMode(SpriteHandle_bss_806573A0.cullMode);
         HSD_StateInvalidate(-1);
         fn_8011EC18(h->posMode);
     }

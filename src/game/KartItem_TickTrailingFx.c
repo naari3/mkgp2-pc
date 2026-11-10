@@ -1,10 +1,7 @@
 /* KartItem_TickTrailingFx @ 0x8003EF20: steps the held item effect and keeps
  * its trailing sound effect following the kart until the item is cleared. */
 
-typedef struct ItemKartFlag {
-    unsigned char pad0[4];
-    unsigned char active; /* 0x4 */
-} ItemKartFlag;
+#include "game/types/ItemKartFlag.h"
 
 typedef struct ItemKart {
     void *object;
@@ -73,9 +70,7 @@ static inline void ClearCurrentItem(ItemKart *kart)
     fn_80173BE8(kart->field29C);
 }
 
-typedef struct Vec3f {
-    float x, y, z;
-} Vec3f;
+#include "game/types/Vec3f.h"
 
 extern const float lbl_806D25A8;
 extern const float lbl_806D25AC;

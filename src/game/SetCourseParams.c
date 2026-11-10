@@ -23,16 +23,16 @@ typedef struct RaceKartSlot {
 
 #pragma cplusplus on
 extern "C" {
-RaceKartSlot lbl_805AC600[8];
-unsigned char lbl_805AC6C0[0xC];     /* global-object registration node */
-unsigned char lbl_805AC6CC[0x5E00];  /* driver array */
-unsigned char lbl_805B24CC[0xA0];    /* rank rows [2][5], 0x10 each */
-unsigned char lbl_805B256C[0x14];    /* latest result */
-unsigned char lbl_805B2580[0x20000]; /* four 0x8000 banks */
+RaceKartSlot SetCourseParams_bss_805AC600[8];
+unsigned char KartDriverArray_StaticCtor_bss_805AC6C0[0xC];     /* global-object registration node */
+unsigned char SetCourseParams_bss_805AC6CC[0x5E00];  /* driver array */
+unsigned char SetCourseParams_bss_805B24CC[0xA0];    /* rank rows [2][5], 0x10 each */
+unsigned char RaceResult_StoreLatest_bss_805B256C[0x14];    /* latest result */
+unsigned char SetCourseParams_bss_805B2580[0x20000]; /* four 0x8000 banks */
 unsigned char g_playerData[0x1DC];
-unsigned char lbl_805D275C[0x1DC];
-unsigned char lbl_805D2938[0x10];    /* per-slot counters (written 8 wide) */
-unsigned char lbl_805D2948[0x160];   /* 8 rank slots, 0x2C each */
+unsigned char SetCourseParams_bss_805D275C[0x1DC];
+unsigned char RaceSlot_ResetAll_bss_805D2938[0x10];    /* per-slot counters (written 8 wide) */
+unsigned char SetCourseParams_bss_805D2948[0x160];   /* 8 rank slots, 0x2C each */
 }
 #pragma cplusplus off
 
@@ -47,12 +47,12 @@ unsigned char lbl_805D2948[0x160];   /* 8 rank slots, 0x2C each */
 #define g_localPcbRole g_localPcbRole_p1
 #define g_longRoundFlag g_longRoundFlag_p1
 #define g_raceFrameCounterLo2digits g_raceFrameCounterLo2digits_p1
-#define lbl_8040DE94 lbl_8040DE94_p1
+#define TaMode_GetDemoCameraBookend_data_8040DE94 lbl_8040DE94_p1
 #define lbl_806D12AD lbl_806D12AD_p1
-#define lbl_806D12D8 lbl_806D12D8_p1
+#define SetCourseParams_bss_806D12D8 lbl_806D12D8_p1
 #define lbl_806D4790 lbl_806D4790_p1
 #define lbl_806D4794 lbl_806D4794_p1
-#define lbl_805D2948 ((RankSlot *)lbl_805D2948)
+#define SetCourseParams_bss_805D2948 ((RankSlot *)SetCourseParams_bss_805D2948)
 #pragma exceptions off
 #pragma use_lmw_stmw off
 /* Race/session accessors and setters (0x8009BAC4..0x8009BD04). */
@@ -84,8 +84,8 @@ extern unsigned char lbl_806D12AD;
 extern int g_kartVariant;
 extern int g_localPcbRole;
 extern signed char g_isPcbHost;
-extern int lbl_806D12D8;
-extern unsigned char lbl_8040DE94[];
+extern int SetCourseParams_bss_806D12D8;
+extern unsigned char TaMode_GetDemoCameraBookend_data_8040DE94[];
 
 extern const float lbl_806D4790;
 extern const float lbl_806D4794;
@@ -144,7 +144,7 @@ void ItemUse_ResetAllKartUseSlots(void)
     int i;
 
     for (i = 0; i < 8; i++) {
-        RankSlot *s = &lbl_805D2948[i];
+        RankSlot *s = &SetCourseParams_bss_805D2948[i];
         s->active = 0;
         s->count = 0;
         s->target = -1;
@@ -156,7 +156,7 @@ void ItemUse_ResetAllKartUseSlots(void)
         s->value24 = lbl_806D4790;
         s->enabled = 1;
     }
-    lbl_806D12D8 = 0;
+    SetCourseParams_bss_806D12D8 = 0;
 }
 
 RankSlot *RankSlot_GetByIndex(int i)
@@ -164,7 +164,7 @@ RankSlot *RankSlot_GetByIndex(int i)
     if (i < 0 || i >= 8) {
         return 0;
     }
-    return &lbl_805D2948[i];
+    return &SetCourseParams_bss_805D2948[i];
 }
 #undef RankSlot
 #undef g_courseVariantIdx
@@ -176,19 +176,19 @@ RankSlot *RankSlot_GetByIndex(int i)
 #undef g_localPcbRole
 #undef g_longRoundFlag
 #undef g_raceFrameCounterLo2digits
-#undef lbl_8040DE94
+#undef TaMode_GetDemoCameraBookend_data_8040DE94
 #undef lbl_806D12AD
-#undef lbl_806D12D8
+#undef SetCourseParams_bss_806D12D8
 #undef lbl_806D4790
 #undef lbl_806D4794
-#undef lbl_805D2948
+#undef SetCourseParams_bss_805D2948
 #pragma cplusplus off
 
 /* ==== RankSlot_AppendOrUpdate.c ==== */
 #define RankSlot RankSlot_p2
 #define RankSlotTime RankSlotTime_p2
-#define lbl_806D12D8 lbl_806D12D8_p2
-#define lbl_805D2948 ((RankSlot *)lbl_805D2948)
+#define SetCourseParams_bss_806D12D8 lbl_806D12D8_p2
+#define SetCourseParams_bss_805D2948 ((RankSlot *)SetCourseParams_bss_805D2948)
 #pragma exceptions on
 #pragma use_lmw_stmw off
 typedef struct RankSlotTime {
@@ -212,13 +212,13 @@ typedef struct RankSlot {
     unsigned char pad29[3];
 } RankSlot;
 
-extern int lbl_806D12D8;
+extern int SetCourseParams_bss_806D12D8;
 
 int RankSlot_AppendOrUpdate(unsigned char kart, int a1, int a2, RankSlotTime *time,
                             unsigned char b18, unsigned char b19, int a1c, unsigned char b28,
                             float f20, float f24, int index)
 {
-    int slot = lbl_806D12D8;
+    int slot = SetCourseParams_bss_806D12D8;
     RankSlot *p;
 
     if (index > -1) {
@@ -227,8 +227,8 @@ int RankSlot_AppendOrUpdate(unsigned char kart, int a1, int a2, RankSlotTime *ti
     if (slot >= 8) {
         return -1;
     }
-    p = &lbl_805D2948[slot];
-    lbl_806D12D8 = slot + 1;
+    p = &SetCourseParams_bss_805D2948[slot];
+    SetCourseParams_bss_806D12D8 = slot + 1;
     p->kart = kart;
     p->field10 = a1;
     p->field14 = a2;
@@ -252,15 +252,15 @@ int RankSlot_AppendOrUpdate(unsigned char kart, int a1, int a2, RankSlotTime *ti
 }
 #undef RankSlot
 #undef RankSlotTime
-#undef lbl_806D12D8
-#undef lbl_805D2948
+#undef SetCourseParams_bss_806D12D8
+#undef SetCourseParams_bss_805D2948
 #pragma cplusplus off
 
 /* ==== VSMode_SeedRandomItemSequence.c ==== */
 #define KartSlot KartSlot_p3
 #define KartSlot_Set KartSlot_Set_p3
 #define rand rand_p3
-#define lbl_805AC600 ((KartSlot *)lbl_805AC600)
+#define SetCourseParams_bss_805AC600 ((KartSlot *)SetCourseParams_bss_805AC600)
 #pragma exceptions on
 #pragma use_lmw_stmw off
 /* VSMode_SeedRandomItemSequence (0x8009BDC0): fill `count` consecutive kart
@@ -285,11 +285,11 @@ static inline void KartSlot_Set(int i, int driver, int chr)
     if (i < 0 || i >= 8 || chr < 0 || chr >= 15) {
         return;
     }
-    lbl_805AC600[i].driverId = driver;
-    lbl_805AC600[i].charId = chr;
-    lbl_805AC600[i].field8 = 1;
-    lbl_805AC600[i].fieldC = 0;
-    lbl_805AC600[i].kartVariant = 0;
+    SetCourseParams_bss_805AC600[i].driverId = driver;
+    SetCourseParams_bss_805AC600[i].charId = chr;
+    SetCourseParams_bss_805AC600[i].field8 = 1;
+    SetCourseParams_bss_805AC600[i].fieldC = 0;
+    SetCourseParams_bss_805AC600[i].kartVariant = 0;
 }
 
 #pragma use_lmw_stmw on
@@ -317,7 +317,7 @@ int VSMode_SeedRandomItemSequence(int slot, int exclude, int count)
 #undef KartSlot
 #undef KartSlot_Set
 #undef rand
-#undef lbl_805AC600
+#undef SetCourseParams_bss_805AC600
 #pragma cplusplus off
 
 /* ==== RaceData_8009BEF4.c ==== */
@@ -338,37 +338,37 @@ int VSMode_SeedRandomItemSequence(int slot, int exclude, int count)
 #define g_raceStarted g_raceStarted_p4
 #define g_reverseRoundFlag g_reverseRoundFlag_p4
 #define g_timerModeEnabled g_timerModeEnabled_p4
-#define lbl_80320604 lbl_80320604_p4
-#define lbl_80401118 lbl_80401118_p4
-#define lbl_8040B218 lbl_8040B218_p4
-#define lbl_8040B318 lbl_8040B318_p4
-#define lbl_8040B90C lbl_8040B90C_p4
+#define SetCourseParams_rodata_80320604 lbl_80320604_p4
+#define RaceScene_GetPerspFovyForCup_data_80401118 lbl_80401118_p4
+#define GetCoinSpawnTable_data_8040B218 lbl_8040B218_p4
+#define DebugOverlay_GetCupLabel_data_8040B318 lbl_8040B318_p4
+#define SetCourseParams_data_8040B90C lbl_8040B90C_p4
 #define lbl_80598A60 lbl_80598A60_p4
-#define lbl_806CF100 lbl_806CF100_p4
-#define lbl_806D1278 lbl_806D1278_p4
-#define lbl_806D1280 lbl_806D1280_p4
+#define DebugOverlay_GetLongRoundLabel_data_806CF100 lbl_806CF100_p4
+#define SetCourseParams_bss_806D1278 lbl_806D1278_p4
+#define SetCourseParams_bss_806D1280 lbl_806D1280_p4
 #define lbl_806D46CC lbl_806D46CC_p4
 #define lbl_806D46D4 lbl_806D46D4_p4
 #define lbl_806D46DC lbl_806D46DC_p4
 #define lbl_806D4790 lbl_806D4790_p4
-#define lbl_805B2580 ((unsigned char *)lbl_805B2580)
-#define lbl_805B256C (*(RankEntry *)lbl_805B256C)
-#define lbl_805B24CC ((RankEntry (*)[5])lbl_805B24CC)
-#define lbl_805AC6CC ((unsigned char *)lbl_805AC6CC)
-#define lbl_805D2938 ((int *)lbl_805D2938)
+#define SetCourseParams_bss_805B2580 ((unsigned char *)SetCourseParams_bss_805B2580)
+#define RaceResult_StoreLatest_bss_805B256C (*(RankEntry *)RaceResult_StoreLatest_bss_805B256C)
+#define SetCourseParams_bss_805B24CC ((RankEntry (*)[5])SetCourseParams_bss_805B24CC)
+#define SetCourseParams_bss_805AC6CC ((unsigned char *)SetCourseParams_bss_805AC6CC)
+#define RaceSlot_ResetAll_bss_805D2938 ((int *)RaceSlot_ResetAll_bss_805D2938)
 #pragma exceptions off
 #pragma use_lmw_stmw off
 /* --- owned .data 0x8040E1C4..0x8040E450 (tools/own_data.py) --- */
 extern char lbl_806D46CC[];
 extern char lbl_806D46D4[];
 extern char lbl_806D46DC[];
-extern const unsigned int lbl_80320604[6];
+extern const unsigned int SetCourseParams_rodata_80320604[6];
 #pragma force_active on
-void *lbl_8040E1C4[163] = {
+void *DebugOverlay_GetDaytimeLabel_data_8040E1C4[163] = {
     (void *)&lbl_806D46CC,
     (void *)&lbl_806D46D4,
     (void *)&lbl_806D46DC,
-    (void *)&lbl_80320604,
+    (void *)&SetCourseParams_rodata_80320604,
     (void *)0x4552524F,
     (void *)0x5221204E,
     (void *)0x6F207374,
@@ -531,20 +531,13 @@ void *lbl_8040E1C4[163] = {
 };
 #pragma force_active reset
 /* Race/course data accessors (0x8009BEF4..0x8009CBFC): display buffers,
- * race result ranking, the per-course data table (lbl_8040B90C, indexed
+ * race result ranking, the per-course data table (SetCourseParams_data_8040B90C, indexed
  * [cup][longRound], with per-reverse and per-variant sub-arrays), kart
  * slots and debug overlay labels. */
 
-typedef struct Vec3f {
-    float x, y, z;
-} Vec3f;
+#include "game/types/Vec3f.h"
 
-typedef struct RankEntry {
-    int a;
-    int b;
-    float score;
-    float time;
-} RankEntry;
+#include "game/types/RankEntry.h"
 
 typedef struct CourseDir {
     void *finishLine;           /* 0x00 */
@@ -569,10 +562,7 @@ typedef struct CourseData {
 
 typedef RaceKartSlot KartSlot;
 
-typedef struct CharacterData {
-    void *name;
-    unsigned char rest[0x28];
-} CharacterData;
+#include "game/types/CharacterData.h"
 
 typedef struct DisplayState {
     unsigned char pad[0x21];
@@ -588,26 +578,26 @@ extern int g_ccClass;
 extern int g_gameMode;
 extern unsigned char g_raceStarted;
 extern void *g_courseScene3D;
-extern void *lbl_806D1278;
-extern void *lbl_806D1280;
+extern void *SetCourseParams_bss_806D1278;
+extern void *SetCourseParams_bss_806D1280;
 extern const float lbl_806D4790;
 
 extern DisplayState lbl_80598A60;
 
-extern CourseData lbl_8040B90C[][2];
-extern void *lbl_8040B218[][2][2][2];
+extern CourseData SetCourseParams_data_8040B90C[][2];
+extern void *GetCoinSpawnTable_data_8040B218[][2][2][2];
 
-extern unsigned char lbl_80401118[];
+extern unsigned char RaceScene_GetPerspFovyForCup_data_80401118[];
 extern CharacterData g_characterDataTable[15];
-extern void *lbl_806CF100[2];
-extern void *lbl_8040B318[17];
+extern void *DebugOverlay_GetLongRoundLabel_data_806CF100[2];
+extern void *DebugOverlay_GetCupLabel_data_8040B318[17];
 
 void *GetDisplayContext(int i)
 {
     if (i < 0 || i > 3) {
         return 0;
     }
-    return lbl_805B2580 + (i << 15);
+    return SetCourseParams_bss_805B2580 + (i << 15);
 }
 
 int GetDisplayBufferIndex(void)
@@ -617,15 +607,15 @@ int GetDisplayBufferIndex(void)
 
 void SetRaceResultLatestPtr(void *p)
 {
-    lbl_806D1280 = p;
+    SetCourseParams_bss_806D1280 = p;
 }
 
 void RaceResult_StoreLatest(int a, int b, float score, float time)
 {
-    lbl_805B256C.a = a;
-    lbl_805B256C.b = b;
-    lbl_805B256C.score = score;
-    lbl_805B256C.time = time;
+    RaceResult_StoreLatest_bss_805B256C.a = a;
+    RaceResult_StoreLatest_bss_805B256C.b = b;
+    RaceResult_StoreLatest_bss_805B256C.score = score;
+    RaceResult_StoreLatest_bss_805B256C.time = time;
 }
 
 RankEntry *RaceResult_GetRankEntry(int i)
@@ -633,7 +623,7 @@ RankEntry *RaceResult_GetRankEntry(int i)
     if (i < 0 || i >= 5) {
         return 0;
     }
-    return &lbl_805B24CC[g_longRoundFlag][i];
+    return &SetCourseParams_bss_805B24CC[g_longRoundFlag][i];
 }
 
 int RaceResult_InsertSortedRank(int a, int b, float score, float time)
@@ -644,7 +634,7 @@ int RaceResult_InsertSortedRank(int a, int b, float score, float time)
     int j;
 
     off = g_longRoundFlag * 0x50;
-    e = (RankEntry *)((unsigned char *)lbl_805B24CC + off);
+    e = (RankEntry *)((unsigned char *)SetCourseParams_bss_805B24CC + off);
 
     for (i = 0; i < 5; i++) {
         if (lbl_806D4790 == e[i].time || time <= e[i].time) {
@@ -664,7 +654,7 @@ int RaceResult_InsertSortedRank(int a, int b, float score, float time)
     }
     e[i].a = a;
     {
-        unsigned char *u = (unsigned char *)lbl_805B24CC;
+        unsigned char *u = (unsigned char *)SetCourseParams_bss_805B24CC;
         RankEntry *t;
 
         u += off;
@@ -678,17 +668,17 @@ int RaceResult_InsertSortedRank(int a, int b, float score, float time)
 
 void *GetRaceContextPtr(void)
 {
-    return lbl_805AC6CC;
+    return SetCourseParams_bss_805AC6CC;
 }
 
 void SetPlayerCarObject(void *p)
 {
-    lbl_806D1278 = p;
+    SetCourseParams_bss_806D1278 = p;
 }
 
 void *GetPlayerCarObject(void)
 {
-    return lbl_806D1278;
+    return SetCourseParams_bss_806D1278;
 }
 
 void SetCourseScene3D(void *p)
@@ -734,7 +724,7 @@ void *GetCourseBgmFilePath(void)
     if (g_courseVariantIdx < 0) {
         return 0;
     }
-    return lbl_8040B90C[g_cupId][g_longRoundFlag].dir[g_reverseRoundFlag].bgmPath;
+    return SetCourseParams_data_8040B90C[g_cupId][g_longRoundFlag].dir[g_reverseRoundFlag].bgmPath;
 }
 
 void *GetCoinSpawnTable(void)
@@ -757,9 +747,9 @@ void *GetCoinSpawnTable(void)
         return 0;
     }
     if (g_gameMode == 1) {
-        return lbl_8040B218[cup][lr][rev][cc];
+        return GetCoinSpawnTable_data_8040B218[cup][lr][rev][cc];
     }
-    return lbl_8040B218[cup][lr][rev][0];
+    return GetCoinSpawnTable_data_8040B218[cup][lr][rev][0];
 }
 
 void *GetCourseBgmEntry(void)
@@ -773,7 +763,7 @@ void *GetCourseBgmEntry(void)
     if (g_courseVariantIdx < 0) {
         return 0;
     }
-    return lbl_8040B90C[g_cupId][g_longRoundFlag].dir[g_reverseRoundFlag].bgm[g_courseVariantIdx];
+    return SetCourseParams_data_8040B90C[g_cupId][g_longRoundFlag].dir[g_reverseRoundFlag].bgm[g_courseVariantIdx];
 }
 
 void *CourseVariantTableLookup(void)
@@ -787,7 +777,7 @@ void *CourseVariantTableLookup(void)
     if (g_courseVariantIdx < 0) {
         return 0;
     }
-    return lbl_8040B90C[g_cupId][g_longRoundFlag].variantTable[g_courseVariantIdx];
+    return SetCourseParams_data_8040B90C[g_cupId][g_longRoundFlag].variantTable[g_courseVariantIdx];
 }
 
 void *GetFinishLineSegment(void)
@@ -798,7 +788,7 @@ void *GetFinishLineSegment(void)
     if (g_longRoundFlag < 0) {
         return 0;
     }
-    return lbl_8040B90C[g_cupId][g_longRoundFlag].dir[g_reverseRoundFlag].finishLine;
+    return SetCourseParams_data_8040B90C[g_cupId][g_longRoundFlag].dir[g_reverseRoundFlag].finishLine;
 }
 
 void *GetCourseModelFilename(void)
@@ -810,9 +800,9 @@ void *GetCourseModelFilename(void)
         return 0;
     }
     if (g_timerModeEnabled == 0) {
-        return lbl_8040B90C[g_cupId][g_longRoundFlag].dir[g_reverseRoundFlag].model[g_courseVariantIdx];
+        return SetCourseParams_data_8040B90C[g_cupId][g_longRoundFlag].dir[g_reverseRoundFlag].model[g_courseVariantIdx];
     }
-    return lbl_8040B90C[g_cupId][g_longRoundFlag].dir[g_reverseRoundFlag].modelTimer[g_courseVariantIdx];
+    return SetCourseParams_data_8040B90C[g_cupId][g_longRoundFlag].dir[g_reverseRoundFlag].modelTimer[g_courseVariantIdx];
 }
 
 void *GetCourseObjectTable(void)
@@ -823,7 +813,7 @@ void *GetCourseObjectTable(void)
     if (g_longRoundFlag < 0) {
         return 0;
     }
-    return lbl_8040B90C[g_cupId][g_longRoundFlag].dir[g_reverseRoundFlag].objectTable[g_courseVariantIdx];
+    return SetCourseParams_data_8040B90C[g_cupId][g_longRoundFlag].dir[g_reverseRoundFlag].objectTable[g_courseVariantIdx];
 }
 
 void *GetCollisionFilename(void)
@@ -834,7 +824,7 @@ void *GetCollisionFilename(void)
     if (g_longRoundFlag < 0) {
         return 0;
     }
-    return lbl_8040B90C[g_cupId][g_longRoundFlag].dir[g_reverseRoundFlag].collision[g_courseVariantIdx];
+    return SetCourseParams_data_8040B90C[g_cupId][g_longRoundFlag].dir[g_reverseRoundFlag].collision[g_courseVariantIdx];
 }
 
 void *GetJointNameTable(void)
@@ -845,7 +835,7 @@ void *GetJointNameTable(void)
     if (g_longRoundFlag < 0) {
         return 0;
     }
-    return lbl_8040B90C[g_cupId][g_longRoundFlag].jointNames[g_courseVariantIdx];
+    return SetCourseParams_data_8040B90C[g_cupId][g_longRoundFlag].jointNames[g_courseVariantIdx];
 }
 
 void *GetCollisionBinFilename(void)
@@ -859,7 +849,7 @@ void *GetCollisionBinFilename(void)
     if (g_courseVariantIdx < 0) {
         return 0;
     }
-    return lbl_8040B90C[g_cupId][g_longRoundFlag].collisionBin[g_courseVariantIdx];
+    return SetCourseParams_data_8040B90C[g_cupId][g_longRoundFlag].collisionBin[g_courseVariantIdx];
 }
 
 float GetCourseStartYaw(void)
@@ -870,7 +860,7 @@ float GetCourseStartYaw(void)
     if (g_longRoundFlag < 0) {
         return lbl_806D4790;
     }
-    return lbl_8040B90C[g_cupId][g_longRoundFlag].dir[g_reverseRoundFlag].startYaw;
+    return SetCourseParams_data_8040B90C[g_cupId][g_longRoundFlag].dir[g_reverseRoundFlag].startYaw;
 }
 
 static inline Vec3f *GetStartPositionPtr(int i)
@@ -884,7 +874,7 @@ static inline Vec3f *GetStartPositionPtr(int i)
     if (g_longRoundFlag < 0) {
         return 0;
     }
-    return &lbl_8040B90C[g_cupId][g_longRoundFlag].dir[g_reverseRoundFlag].startPos[i];
+    return &SetCourseParams_data_8040B90C[g_cupId][g_longRoundFlag].dir[g_reverseRoundFlag].startPos[i];
 }
 
 int GetStartPosition(int i, float *x, float *y, float *z)
@@ -914,7 +904,7 @@ int GetKartStartSlot(int driver)
         return -1;
     }
     for (i = 0; i < 8; i++) {
-        if (driver == lbl_805AC600[i].driverId) {
+        if (driver == SetCourseParams_bss_805AC600[i].driverId) {
             return i;
         }
     }
@@ -935,7 +925,7 @@ void *GetKartModelNameEntry(int chara, int kart)
     if (kart == 3) {
         k = 2;
     }
-    return lbl_80401118 + k * 0x9C + chara * 0xC;
+    return RaceScene_GetPerspFovyForCup_data_80401118 + k * 0x9C + chara * 0xC;
 }
 
 void *GetCharacterName(int i)
@@ -959,7 +949,7 @@ int GetKartSlotCharId(int i)
     if (i < 0 || i >= 8) {
         return -1;
     }
-    return lbl_805AC600[i].charId;
+    return SetCourseParams_bss_805AC600[i].charId;
 }
 
 int RaceSlot_GetDriverId(int i)
@@ -967,7 +957,7 @@ int RaceSlot_GetDriverId(int i)
     if (i < 0 || i >= 8) {
         return -1;
     }
-    return lbl_805AC600[i].driverId;
+    return SetCourseParams_bss_805AC600[i].driverId;
 }
 
 int GetKartSlotKartVariant(int i)
@@ -975,7 +965,7 @@ int GetKartSlotKartVariant(int i)
     if (i < 0 || i >= 8) {
         return 0;
     }
-    return lbl_805AC600[i].kartVariant;
+    return SetCourseParams_bss_805AC600[i].kartVariant;
 }
 
 int RaceSlot_SetDriverPtr(int i, int v)
@@ -983,7 +973,7 @@ int RaceSlot_SetDriverPtr(int i, int v)
     if (i < 0 || i >= 8) {
         return 0;
     }
-    lbl_805AC600[i].kartVariant = v;
+    SetCourseParams_bss_805AC600[i].kartVariant = v;
     return 1;
 }
 
@@ -995,7 +985,7 @@ int RaceSlot_SetItemSlotByte(int i, int slot, unsigned char v)
     if (slot < 0 || slot >= 3) {
         return 0;
     }
-    lbl_805AC600[i].items[slot] = v;
+    SetCourseParams_bss_805AC600[i].items[slot] = v;
     return 1;
 }
 
@@ -1010,11 +1000,11 @@ int RaceSlot_InitSlot(int i, int driver, int chara, int f8, int fc)
     if (chara < 0 || chara >= 15) {
         return 0;
     }
-    lbl_805AC600[i].driverId = driver;
-    lbl_805AC600[i].charId = chara;
-    lbl_805AC600[i].field8 = f8;
-    lbl_805AC600[i].fieldC = fc;
-    lbl_805AC600[i].kartVariant = 0;
+    SetCourseParams_bss_805AC600[i].driverId = driver;
+    SetCourseParams_bss_805AC600[i].charId = chara;
+    SetCourseParams_bss_805AC600[i].field8 = f8;
+    SetCourseParams_bss_805AC600[i].fieldC = fc;
+    SetCourseParams_bss_805AC600[i].kartVariant = 0;
     return 1;
 }
 
@@ -1023,14 +1013,14 @@ void RaceSlot_ResetAll(void)
     int i;
 
     for (i = 0; i < 8; i++) {
-        lbl_805AC600[i].driverId = -1;
-        lbl_805AC600[i].charId = -1;
-        lbl_805AC600[i].field8 = 1;
-        lbl_805AC600[i].items[0] = 0x24;
-        lbl_805AC600[i].items[1] = 0x25;
-        lbl_805AC600[i].items[2] = 0x26;
-        lbl_805AC600[i].kartVariant = 0;
-        lbl_805D2938[i] = 0;
+        SetCourseParams_bss_805AC600[i].driverId = -1;
+        SetCourseParams_bss_805AC600[i].charId = -1;
+        SetCourseParams_bss_805AC600[i].field8 = 1;
+        SetCourseParams_bss_805AC600[i].items[0] = 0x24;
+        SetCourseParams_bss_805AC600[i].items[1] = 0x25;
+        SetCourseParams_bss_805AC600[i].items[2] = 0x26;
+        SetCourseParams_bss_805AC600[i].kartVariant = 0;
+        RaceSlot_ResetAll_bss_805D2938[i] = 0;
     }
 }
 
@@ -1053,7 +1043,7 @@ void *DebugOverlay_GetDaytimeLabel(int i)
     if (i >= 4) {
         return 0;
     }
-    return lbl_8040E1C4[i];
+    return DebugOverlay_GetDaytimeLabel_data_8040E1C4[i];
 }
 
 void *DebugOverlay_GetLongRoundLabel(int i)
@@ -1064,7 +1054,7 @@ void *DebugOverlay_GetLongRoundLabel(int i)
     if (i >= 2) {
         return 0;
     }
-    return lbl_806CF100[i];
+    return DebugOverlay_GetLongRoundLabel_data_806CF100[i];
 }
 
 void *DebugOverlay_GetCupLabel(int i)
@@ -1075,7 +1065,7 @@ void *DebugOverlay_GetCupLabel(int i)
     if (i >= 17) {
         return 0;
     }
-    return lbl_8040B318[i];
+    return DebugOverlay_GetCupLabel_data_8040B318[i];
 }
 
 void SetReverseRoundFlag(int v)
@@ -1099,24 +1089,24 @@ void SetReverseRoundFlag(int v)
 #undef g_raceStarted
 #undef g_reverseRoundFlag
 #undef g_timerModeEnabled
-#undef lbl_80320604
-#undef lbl_80401118
-#undef lbl_8040B218
-#undef lbl_8040B318
-#undef lbl_8040B90C
+#undef SetCourseParams_rodata_80320604
+#undef RaceScene_GetPerspFovyForCup_data_80401118
+#undef GetCoinSpawnTable_data_8040B218
+#undef DebugOverlay_GetCupLabel_data_8040B318
+#undef SetCourseParams_data_8040B90C
 #undef lbl_80598A60
-#undef lbl_806CF100
-#undef lbl_806D1278
-#undef lbl_806D1280
+#undef DebugOverlay_GetLongRoundLabel_data_806CF100
+#undef SetCourseParams_bss_806D1278
+#undef SetCourseParams_bss_806D1280
 #undef lbl_806D46CC
 #undef lbl_806D46D4
 #undef lbl_806D46DC
 #undef lbl_806D4790
-#undef lbl_805AC6CC
-#undef lbl_805B24CC
-#undef lbl_805B256C
-#undef lbl_805B2580
-#undef lbl_805D2938
+#undef SetCourseParams_bss_805AC6CC
+#undef SetCourseParams_bss_805B24CC
+#undef RaceResult_StoreLatest_bss_805B256C
+#undef SetCourseParams_bss_805B2580
+#undef RaceSlot_ResetAll_bss_805D2938
 #pragma cplusplus off
 
 /* ==== SetCourseParams.c ==== */
@@ -1131,22 +1121,22 @@ void SetReverseRoundFlag(int v)
 #define g_longRoundFlag g_longRoundFlag_p5
 #define g_raceStarted g_raceStarted_p5
 #define g_reverseRoundFlag g_reverseRoundFlag_p5
-#define lbl_806CF10C lbl_806CF10C_p5
-#define lbl_806D1258 lbl_806D1258_p5
-#define lbl_806D1280 lbl_806D1280_p5
-#define lbl_806D12D8 lbl_806D12D8_p5
+#define SetCourseParams_data_806CF10C lbl_806CF10C_p5
+#define SetCourseParams_bss_806D1258 lbl_806D1258_p5
+#define SetCourseParams_bss_806D1280 lbl_806D1280_p5
+#define SetCourseParams_bss_806D12D8 lbl_806D12D8_p5
 #define lbl_806D4790 lbl_806D4790_p5
 #define lbl_806D4798 lbl_806D4798_p5
-#define lbl_805AC600 ((KartSlot *)lbl_805AC600)
-#define lbl_805AC6C0 ((unsigned char *)lbl_805AC6C0)
-#define lbl_805AC6CC ((unsigned char *)lbl_805AC6CC)
-#define lbl_805B24CC ((LapEntry *)lbl_805B24CC)
-#define lbl_805B256C (*(struct LapExtra *)lbl_805B256C)
-#define lbl_805B2580 ((unsigned char *)lbl_805B2580)
+#define SetCourseParams_bss_805AC600 ((KartSlot *)SetCourseParams_bss_805AC600)
+#define KartDriverArray_StaticCtor_bss_805AC6C0 ((unsigned char *)KartDriverArray_StaticCtor_bss_805AC6C0)
+#define SetCourseParams_bss_805AC6CC ((unsigned char *)SetCourseParams_bss_805AC6CC)
+#define SetCourseParams_bss_805B24CC ((LapEntry *)SetCourseParams_bss_805B24CC)
+#define RaceResult_StoreLatest_bss_805B256C (*(struct LapExtra *)RaceResult_StoreLatest_bss_805B256C)
+#define SetCourseParams_bss_805B2580 ((unsigned char *)SetCourseParams_bss_805B2580)
 #define g_playerData ((unsigned char *)g_playerData)
-#define lbl_805D275C ((unsigned char *)lbl_805D275C)
-#define lbl_805D2938 ((int *)lbl_805D2938)
-#define lbl_805D2948 ((RankSlot *)lbl_805D2948)
+#define SetCourseParams_bss_805D275C ((unsigned char *)SetCourseParams_bss_805D275C)
+#define RaceSlot_ResetAll_bss_805D2938 ((int *)RaceSlot_ResetAll_bss_805D2938)
+#define SetCourseParams_bss_805D2948 ((RankSlot *)SetCourseParams_bss_805D2948)
 #pragma exceptions on
 #pragma use_lmw_stmw off
 /* SetCourseParams (0x8009CBFC): select cup/round/variant and reset the
@@ -1203,10 +1193,10 @@ extern int g_longRoundFlag;
 extern int g_courseVariantIdx;
 extern int g_reverseRoundFlag;
 extern unsigned char g_raceStarted;
-extern unsigned char lbl_806D1258;
-extern int lbl_806CF10C;
-extern int lbl_806D1280;
-extern int lbl_806D12D8;
+extern unsigned char SetCourseParams_bss_806D1258;
+extern int SetCourseParams_data_806CF10C;
+extern int SetCourseParams_bss_806D1280;
+extern int SetCourseParams_bss_806D12D8;
 extern const float lbl_806D4790;
 extern const float lbl_806D4798;
 
@@ -1239,25 +1229,25 @@ int SetCourseParams(int cup, int longRound, int variant, int reverse)
     g_courseVariantIdx = variant;
     g_reverseRoundFlag = reverse;
     for (i = 0; i < 8; ++i) {
-        lbl_805AC600[i].driverId = -1;
-        lbl_805AC600[i].charId = -1;
-        lbl_805AC600[i].field8 = 1;
-        lbl_805AC600[i].items[0] = 0x24;
-        lbl_805AC600[i].items[1] = 0x25;
-        { lbl_805AC600[i].items[2] = 0x26;
-        lbl_805AC600[i].kartVariant = 0; }
-        lbl_805D2938[i] = 0;
+        SetCourseParams_bss_805AC600[i].driverId = -1;
+        SetCourseParams_bss_805AC600[i].charId = -1;
+        SetCourseParams_bss_805AC600[i].field8 = 1;
+        SetCourseParams_bss_805AC600[i].items[0] = 0x24;
+        SetCourseParams_bss_805AC600[i].items[1] = 0x25;
+        { SetCourseParams_bss_805AC600[i].items[2] = 0x26;
+        SetCourseParams_bss_805AC600[i].kartVariant = 0; }
+        RaceSlot_ResetAll_bss_805D2938[i] = 0;
     }
     /* fakematch: the target reloads both globals after the slot loop;
      * natural code: if (g_cupId >= 0 && g_longRoundFlag >= 0) */
     if (*(volatile int *)&g_cupId >= 0 && *(volatile int *)&g_longRoundFlag >= 0) {
         g_raceStarted = 0;
     }
-    lbl_806CF10C = 0;
-    if (0 == lbl_806D1258) {
-        struct LapExtra *extra = &lbl_805B256C;
-        RankSlot *rank = lbl_805D2948;
-        LapEntry *lap = lbl_805B24CC;
+    SetCourseParams_data_806CF10C = 0;
+    if (0 == SetCourseParams_bss_806D1258) {
+        struct LapExtra *extra = &RaceResult_StoreLatest_bss_805B256C;
+        RankSlot *rank = SetCourseParams_bss_805D2948;
+        LapEntry *lap = SetCourseParams_bss_805B24CC;
         for (i = 0; 5 > i; ++i) {
             lap[i].a = 0;
             lap[i].b = 0;
@@ -1270,12 +1260,12 @@ int SetCourseParams(int cup, int longRound, int variant, int reverse)
             lap[i].c = lbl_806D4790;
             lap[i].d = lbl_806D4798;
         }
-        lbl_805B256C.e.a = 0;
+        RaceResult_StoreLatest_bss_805B256C.e.a = 0;
         extra->e.b = 0;
         extra->e.c = lbl_806D4790;
         extra->e.d = lbl_806D4798;
-        lbl_806D1280 = 4;
-        lbl_806D1258 = 1;
+        SetCourseParams_bss_806D1280 = 4;
+        SetCourseParams_bss_806D1258 = 1;
         /* The original resets each rank explicitly rather than retaining a loop. */
         ResetRankSlot(&rank[0]);
         ResetRankSlot(&rank[1]);
@@ -1285,7 +1275,7 @@ int SetCourseParams(int cup, int longRound, int variant, int reverse)
         ResetRankSlot(&rank[5]);
         ResetRankSlot(&rank[6]);
         ResetRankSlot(&rank[7]);
-        lbl_806D12D8 = 0;
+        SetCourseParams_bss_806D12D8 = 0;
     }
     return 1;
 }
@@ -1301,22 +1291,22 @@ int SetCourseParams(int cup, int longRound, int variant, int reverse)
 #undef g_longRoundFlag
 #undef g_raceStarted
 #undef g_reverseRoundFlag
-#undef lbl_806CF10C
-#undef lbl_806D1258
-#undef lbl_806D1280
-#undef lbl_806D12D8
+#undef SetCourseParams_data_806CF10C
+#undef SetCourseParams_bss_806D1258
+#undef SetCourseParams_bss_806D1280
+#undef SetCourseParams_bss_806D12D8
 #undef lbl_806D4790
 #undef lbl_806D4798
 #undef g_playerData
-#undef lbl_805AC600
-#undef lbl_805AC6C0
-#undef lbl_805AC6CC
-#undef lbl_805B24CC
-#undef lbl_805B256C
-#undef lbl_805B2580
-#undef lbl_805D275C
-#undef lbl_805D2938
-#undef lbl_805D2948
+#undef SetCourseParams_bss_805AC600
+#undef KartDriverArray_StaticCtor_bss_805AC6C0
+#undef SetCourseParams_bss_805AC6CC
+#undef SetCourseParams_bss_805B24CC
+#undef RaceResult_StoreLatest_bss_805B256C
+#undef SetCourseParams_bss_805B2580
+#undef SetCourseParams_bss_805D275C
+#undef RaceSlot_ResetAll_bss_805D2938
+#undef SetCourseParams_bss_805D2948
 #pragma cplusplus off
 
 /* ==== PlayerData_ApplyItemUnlockById.c ==== */
@@ -1390,24 +1380,24 @@ void PlayerData_ResetForFlow(void)
 #define g_nonFirstFinishFlag g_nonFirstFinishFlag_p9
 #define g_raceStarted g_raceStarted_p9
 #define g_reverseRoundFlag g_reverseRoundFlag_p9
-#define lbl_806CF10C lbl_806CF10C_p9
-#define lbl_806D1258 lbl_806D1258_p9
-#define lbl_806D1280 lbl_806D1280_p9
+#define SetCourseParams_data_806CF10C lbl_806CF10C_p9
+#define SetCourseParams_bss_806D1258 lbl_806D1258_p9
+#define SetCourseParams_bss_806D1280 lbl_806D1280_p9
 #define lbl_806D12AD lbl_806D12AD_p9
 #define lbl_806D12AE lbl_806D12AE_p9
 #define lbl_806D12AF lbl_806D12AF_p9
 #define lbl_806D12B0 lbl_806D12B0_p9
 #define lbl_806D12C0 lbl_806D12C0_p9
-#define lbl_806D12D8 lbl_806D12D8_p9
+#define SetCourseParams_bss_806D12D8 lbl_806D12D8_p9
 #define lbl_806D12E4 lbl_806D12E4_p9
 #define lbl_806D4790 lbl_806D4790_p9
 #define lbl_806D4798 lbl_806D4798_p9
 #define memset memset_p9
-#define lbl_805AC600 ((KartSlot *)lbl_805AC600)
-#define lbl_805D2948 ((RaceEntry *)lbl_805D2948)
-#define lbl_805D2938 ((int *)lbl_805D2938)
-#define lbl_805B24CC ((RankRow *)lbl_805B24CC)
-#define lbl_805B256C (*(RankRow *)lbl_805B256C)
+#define SetCourseParams_bss_805AC600 ((KartSlot *)SetCourseParams_bss_805AC600)
+#define SetCourseParams_bss_805D2948 ((RaceEntry *)SetCourseParams_bss_805D2948)
+#define RaceSlot_ResetAll_bss_805D2938 ((int *)RaceSlot_ResetAll_bss_805D2938)
+#define SetCourseParams_bss_805B24CC ((RankRow *)SetCourseParams_bss_805B24CC)
+#define RaceResult_StoreLatest_bss_805B256C (*(RankRow *)RaceResult_StoreLatest_bss_805B256C)
 #define g_playerData ((unsigned char *)g_playerData)
 #pragma exceptions on
 #pragma use_lmw_stmw off
@@ -1472,11 +1462,11 @@ extern unsigned char lbl_806D12AE;
 extern unsigned char lbl_806D12AF;
 extern unsigned char lbl_806D12B0;
 extern int lbl_806D12C0;
-extern int lbl_806D12D8;
+extern int SetCourseParams_bss_806D12D8;
 extern unsigned char lbl_806D12E4[3];
-extern unsigned char lbl_806D1258;
-extern int lbl_806D1280;
-extern int lbl_806CF10C;
+extern unsigned char SetCourseParams_bss_806D1258;
+extern int SetCourseParams_bss_806D1280;
+extern int SetCourseParams_data_806CF10C;
 extern unsigned char g_namCamFlag;
 extern unsigned char g_isCommHost;
 extern unsigned char g_isPcbHost;
@@ -1517,7 +1507,7 @@ static inline void RaceEntries_Reset(RaceEntry *e)
     for (i = 0; i < 8; i++) {
         RaceEntry_Init(&e[i], lbl_806D4790);
     }
-    lbl_806D12D8 = 0;
+    SetCourseParams_bss_806D12D8 = 0;
 }
 
 void RaceFlow_ResetState_FullColdInit(void)
@@ -1526,7 +1516,7 @@ void RaceFlow_ResetState_FullColdInit(void)
 
     memset(g_playerData, 0, 0x1DC);
     fn_801D7610(g_playerData, 1);
-    RaceEntries_Reset(lbl_805D2948);
+    RaceEntries_Reset(SetCourseParams_bss_805D2948);
     fn_8018CC64();
 
     lbl_806D12AD = 0;
@@ -1546,25 +1536,25 @@ void RaceFlow_ResetState_FullColdInit(void)
     g_reverseRoundFlag = 0;
 
     for (i = 0; i < 8; i++) {
-        lbl_805AC600[i].character = -1;
-        lbl_805AC600[i].variant = -1;
-        lbl_805AC600[i].active = 1;
-        lbl_805AC600[i].colorA = 0x24;
-        lbl_805AC600[i].colorB = 0x25;
-        lbl_805AC600[i].colorC = 0x26;
-        lbl_805AC600[i].score = 0;
-        lbl_805D2938[i] = 0;
+        SetCourseParams_bss_805AC600[i].character = -1;
+        SetCourseParams_bss_805AC600[i].variant = -1;
+        SetCourseParams_bss_805AC600[i].active = 1;
+        SetCourseParams_bss_805AC600[i].colorA = 0x24;
+        SetCourseParams_bss_805AC600[i].colorB = 0x25;
+        SetCourseParams_bss_805AC600[i].colorC = 0x26;
+        SetCourseParams_bss_805AC600[i].score = 0;
+        RaceSlot_ResetAll_bss_805D2938[i] = 0;
     }
 
     if (g_cupId >= 0 && g_longRoundFlag >= 0) {
         g_raceStarted = 0;
     }
 
-    lbl_806CF10C = 0;
-    if (!lbl_806D1258) {
-        RankRow *extra = &lbl_805B256C;
-        RaceEntry *e = lbl_805D2948;
-        RankRow *row = lbl_805B24CC;
+    SetCourseParams_data_806CF10C = 0;
+    if (!SetCourseParams_bss_806D1258) {
+        RankRow *extra = &RaceResult_StoreLatest_bss_805B256C;
+        RaceEntry *e = SetCourseParams_bss_805D2948;
+        RankRow *row = SetCourseParams_bss_805B24CC;
         for (i = 0; 5 > i; ++i) {
             row[i].id = 0;
             row[i].group = 0;
@@ -1577,12 +1567,12 @@ void RaceFlow_ResetState_FullColdInit(void)
             row[i].time = lbl_806D4790;
             row[i].best = lbl_806D4798;
         }
-        lbl_805B256C.id = 0;
+        RaceResult_StoreLatest_bss_805B256C.id = 0;
         extra->group = 0;
         extra->time = lbl_806D4790;
         extra->best = lbl_806D4798;
-        lbl_806D1280 = 4;
-        lbl_806D1258 = 1;
+        SetCourseParams_bss_806D1280 = 4;
+        SetCourseParams_bss_806D1258 = 1;
         RaceEntries_Reset(e);
     }
 
@@ -1614,25 +1604,25 @@ void RaceFlow_ResetState_FullColdInit(void)
 #undef g_nonFirstFinishFlag
 #undef g_raceStarted
 #undef g_reverseRoundFlag
-#undef lbl_806CF10C
-#undef lbl_806D1258
-#undef lbl_806D1280
+#undef SetCourseParams_data_806CF10C
+#undef SetCourseParams_bss_806D1258
+#undef SetCourseParams_bss_806D1280
 #undef lbl_806D12AD
 #undef lbl_806D12AE
 #undef lbl_806D12AF
 #undef lbl_806D12B0
 #undef lbl_806D12C0
-#undef lbl_806D12D8
+#undef SetCourseParams_bss_806D12D8
 #undef lbl_806D12E4
 #undef lbl_806D4790
 #undef lbl_806D4798
 #undef memset
 #undef g_playerData
-#undef lbl_805AC600
-#undef lbl_805B24CC
-#undef lbl_805B256C
-#undef lbl_805D2938
-#undef lbl_805D2948
+#undef SetCourseParams_bss_805AC600
+#undef SetCourseParams_bss_805B24CC
+#undef RaceResult_StoreLatest_bss_805B256C
+#undef RaceSlot_ResetAll_bss_805D2938
+#undef SetCourseParams_bss_805D2948
 #pragma cplusplus off
 
 /* ==== ProcessSystemTick.c ==== */
@@ -1689,8 +1679,8 @@ void ProcessSystemTick(void) {
 #define MemoryManager_TimedFree MemoryManager_TimedFree_p11
 #define PolymorphicOwner PolymorphicOwner_p11
 #define RaceContextView RaceContextView_p11
-#define lbl_8040E4D0 lbl_8040E4D0_p11
-#define lbl_8040E4DC lbl_8040E4DC_p11
+#define SetCourseParams_data_8040E4D0 lbl_8040E4D0_p11
+#define SetCourseParams_data_8040E4DC lbl_8040E4DC_p11
 #define lbl_806D10A0 lbl_806D10A0_p11
 #pragma exceptions off
 #pragma use_lmw_stmw off
@@ -1717,8 +1707,8 @@ extern PolymorphicOwner *lbl_806D10A0;
 /* --- extern decls: large-data refs (@ha/@l pairs) --- */
 /* Open array (`[]`) avoids sda21 strict-mode link errors when a future */
 /* promote rewrites the asm_fn to C and references the symbol as `arr[i]`. */
-extern unsigned int lbl_8040E4D0[];
-extern unsigned int lbl_8040E4DC[];
+extern unsigned int SetCourseParams_data_8040E4D0[];
+extern unsigned int SetCourseParams_data_8040E4DC[];
 
 /* --- function index (1 fns, .text 0x8009D638..0x8009D6CC) ---
  * [  0] 0x8009D638 size:0x94    global RaceContext_Dtor
@@ -1746,11 +1736,11 @@ __declspec(section ".extabindex_user") static const struct { void *fn; unsigned 
 #pragma exceptions off
 extern "C" void *RaceContext_Dtor(RaceContextView *self, short freeFlag) { /* 0x8009D638 size:0x94 */
     if (self != 0) {
-        self->vtable = (void *)lbl_8040E4D0;
+        self->vtable = (void *)SetCourseParams_data_8040E4D0;
         delete lbl_806D10A0;
         lbl_806D10A0 = 0;
         if (self != 0) {
-            self->vtable = (void *)lbl_8040E4DC;
+            self->vtable = (void *)SetCourseParams_data_8040E4DC;
         }
         if (freeFlag > 0) {
             MemoryManager_TimedFree(self);
@@ -1763,8 +1753,8 @@ extern "C" void *RaceContext_Dtor(RaceContextView *self, short freeFlag) { /* 0x
 #undef MemoryManager_TimedFree
 #undef PolymorphicOwner
 #undef RaceContextView
-#undef lbl_8040E4D0
-#undef lbl_8040E4DC
+#undef SetCourseParams_data_8040E4D0
+#undef SetCourseParams_data_8040E4DC
 #undef lbl_806D10A0
 #pragma cplusplus off
 
@@ -1796,20 +1786,20 @@ extern "C" void *RaceContext_Dtor(RaceContextView *self, short freeFlag) { /* 0x
 #define g_raceStarted g_raceStarted_p12
 #define g_reverseRoundFlag g_reverseRoundFlag_p12
 #define g_timerModeEnabled g_timerModeEnabled_p12
-#define lbl_8040E4D0 lbl_8040E4D0_p12
-#define lbl_8040E4DC lbl_8040E4DC_p12
+#define SetCourseParams_data_8040E4D0 lbl_8040E4D0_p12
+#define SetCourseParams_data_8040E4DC lbl_8040E4DC_p12
 #define lbl_80598A60 lbl_80598A60_p12
-#define lbl_806CF10C lbl_806CF10C_p12
+#define SetCourseParams_data_806CF10C lbl_806CF10C_p12
 #define lbl_806CF110 lbl_806CF110_p12
 #define lbl_806CF12C lbl_806CF12C_p12
 #define lbl_806D117C lbl_806D117C_p12
-#define lbl_806D1258 lbl_806D1258_p12
-#define lbl_806D1259 lbl_806D1259_p12
+#define SetCourseParams_bss_806D1258 lbl_806D1258_p12
+#define RaceContext_InitDefaults_bss_806D1259 lbl_806D1259_p12
 #define lbl_806D1264 lbl_806D1264_p12
-#define lbl_806D1280 lbl_806D1280_p12
+#define SetCourseParams_bss_806D1280 lbl_806D1280_p12
 #define lbl_806D1290 lbl_806D1290_p12
 #define lbl_806D12B0 lbl_806D12B0_p12
-#define lbl_806D12D8 lbl_806D12D8_p12
+#define SetCourseParams_bss_806D12D8 lbl_806D12D8_p12
 #define lbl_806D12DC lbl_806D12DC_p12
 #define lbl_806D12E1 lbl_806D12E1_p12
 #define lbl_806D12E2 lbl_806D12E2_p12
@@ -1840,9 +1830,9 @@ void *memset(void *, int, unsigned long);
 extern int g_ccClass, g_consecutiveWinsTier, g_courseVariantIdx, g_cupId;
 extern int g_currentSceneState, g_gameMode, g_humanPlayerCount, g_kartVariant;
 extern int g_localPcbRole, g_longRoundFlag, g_reverseRoundFlag, g_timerModeEnabled;
-extern int lbl_806CF10C, lbl_806CF110, lbl_806CF12C, lbl_806D1280, lbl_806D12D8;
+extern int SetCourseParams_data_806CF10C, lbl_806CF110, lbl_806CF12C, SetCourseParams_bss_806D1280, SetCourseParams_bss_806D12D8;
 extern unsigned char g_isCommHost, g_isPcbHost, g_lakituStartAnimDone, g_raceStarted;
-extern unsigned char lbl_806D117C, lbl_806D1258, lbl_806D1259, lbl_806D1290;
+extern unsigned char lbl_806D117C, SetCourseParams_bss_806D1258, RaceContext_InitDefaults_bss_806D1259, lbl_806D1290;
 extern unsigned char lbl_806D12B0, lbl_806D12E1, lbl_806D12E2;
 extern unsigned char lbl_806D1264[3], lbl_806D12E4[3];
 extern unsigned char lbl_80598A60[];
@@ -1859,10 +1849,7 @@ struct RaceContext : RaceContextBase {
     RaceContext();
     virtual ~RaceContext();
 };
-struct RaceSlot {
-    int type, selection, enabled, pending, count;
-    unsigned char item[3], unused;
-};
+#include "game/types/RaceSlot.h"
 struct RaceAux {
     int value, enabled;
     float current, limit;
@@ -1892,13 +1879,13 @@ static inline void InitializeWideRow(RaceWideRow *row) {
 }
 
 RaceContext::RaceContext() {
-    unsigned char *farBank = lbl_805AC600 + 0x20000;
-    unsigned char *storage = lbl_805AC600;
+    unsigned char *farBank = SetCourseParams_bss_805AC600 + 0x20000;
+    unsigned char *storage = SetCourseParams_bss_805AC600;
     RaceSlot *slots = (RaceSlot *)storage;
 
     ItemTable_PopulateAliasedSlots();
-    if (lbl_806D1259 != 1) {
-        unsigned char *destination = lbl_805B2580;
+    if (RaceContext_InitDefaults_bss_806D1259 != 1) {
+        unsigned char *destination = SetCourseParams_bss_805B2580;
         int bank = 0;
         unsigned char *settings = lbl_80598A60;
         do {
@@ -1906,7 +1893,7 @@ RaceContext::RaceContext() {
             ++bank;
             destination += 0x8000;
         } while (bank <= 3);
-        lbl_806D1259 = 1;
+        RaceContext_InitDefaults_bss_806D1259 = 1;
     }
 
     g_timerModeEnabled = 1;
@@ -1931,8 +1918,8 @@ RaceContext::RaceContext() {
         g_raceStarted = 0;
     }
 
-    unsigned char initialized = lbl_806D1258;
-    lbl_806CF10C = 0;
+    unsigned char initialized = SetCourseParams_bss_806D1258;
+    SetCourseParams_data_806CF10C = 0;
     if (initialized == 0) {
         RaceAux *aux = (RaceAux *)(storage + 0x5ECC);
         RaceWideRow *rows = (RaceWideRow *)(farBank + 0x6348);
@@ -1953,8 +1940,8 @@ RaceContext::RaceContext() {
         last->enabled = 0;
         last->current = lbl_806D4790;
         last->limit = lbl_806D4798;
-        lbl_806D1280 = 4;
-        lbl_806D1258 = 1;
+        SetCourseParams_bss_806D1280 = 4;
+        SetCourseParams_bss_806D1258 = 1;
         InitializeWideRow(&rows[0]);
         InitializeWideRow(&rows[1]);
         InitializeWideRow(&rows[2]);
@@ -1963,7 +1950,7 @@ RaceContext::RaceContext() {
         InitializeWideRow(&rows[5]);
         InitializeWideRow(&rows[6]);
         InitializeWideRow(&rows[7]);
-        lbl_806D12D8 = 0;
+        SetCourseParams_bss_806D12D8 = 0;
     }
 
     g_ccClass = 0;
@@ -2021,12 +2008,21 @@ RaceContext::RaceContext() {
 /* --- extern decls: branch callees (bl/b targets) --- */
 /* Open prototype (`extern void Foo();`) accepts any call signature; */
 /* refine if the real prototype matters for header consumers. */
+#ifdef NON_MATCHING
+extern int CreditMgr_GetCreditCount(int idx);
+extern void ItemTable_PopulateAliasedSlots(void);
+extern void *TitleTracker_GetOrCreateSingleton(void);
+extern void fn_8018CC64(void);
+extern void fn_801D7610(void *playerData, unsigned char flag);
+extern void *memset(void *dst, int c, unsigned long n);
+#else
 extern void CreditMgr_GetCreditCount();
 extern void ItemTable_PopulateAliasedSlots();
 extern void TitleTracker_GetOrCreateSingleton();
 extern void fn_8018CC64();
 extern void fn_801D7610();
 extern void memset();
+#endif
 
 /* --- extern decls: sda21-referenced data --- */
 extern unsigned int g_ccClass;
@@ -2045,17 +2041,17 @@ extern unsigned int g_longRoundFlag;
 extern unsigned int g_raceStarted;
 extern unsigned int g_reverseRoundFlag;
 extern unsigned int g_timerModeEnabled;
-extern unsigned int lbl_806CF10C;
+extern unsigned int SetCourseParams_data_806CF10C;
 extern unsigned int lbl_806CF110;
 extern unsigned int lbl_806CF12C;
 extern unsigned int lbl_806D117C;
-extern unsigned int lbl_806D1258;
-extern unsigned int lbl_806D1259;
+extern unsigned int SetCourseParams_bss_806D1258;
+extern unsigned int RaceContext_InitDefaults_bss_806D1259;
 extern unsigned int lbl_806D1264;
-extern unsigned int lbl_806D1280;
+extern unsigned int SetCourseParams_bss_806D1280;
 extern unsigned int lbl_806D1290;
 extern unsigned int lbl_806D12B0;
-extern unsigned int lbl_806D12D8;
+extern unsigned int SetCourseParams_bss_806D12D8;
 extern unsigned int lbl_806D12DC;
 extern unsigned int lbl_806D12E1;
 extern unsigned int lbl_806D12E2;
@@ -2066,8 +2062,8 @@ extern unsigned int lbl_806D4798;
 /* --- extern decls: large-data refs (@ha/@l pairs) --- */
 /* Open array (`[]`) avoids sda21 strict-mode link errors when a future */
 /* promote rewrites the asm_fn to C and references the symbol as `arr[i]`. */
-extern unsigned int lbl_8040E4D0[];
-extern unsigned int lbl_8040E4DC[];
+extern unsigned int SetCourseParams_data_8040E4D0[];
+extern unsigned int SetCourseParams_data_8040E4DC[];
 extern unsigned int lbl_80598A60[];
 
 /* --- function index (1 fns, .text 0x8009D6CC..0x8009DC80) ---
@@ -2075,7 +2071,11 @@ extern unsigned int lbl_80598A60[];
  */
 
 /* --- forward decls --- */
+#ifdef NON_MATCHING
+void *RaceContext_InitDefaults(void *self);
+#else
 asm void RaceContext_InitDefaults(void);
+#endif
 
 /* --- extern decls: extab symbolic refs (dtors / typeids) --- */
 #pragma cplusplus on
@@ -2094,30 +2094,186 @@ __declspec(section ".extabindex_user") static const struct { void *fn; unsigned 
 };
 
 /* --- asm function bodies (.text order = fn address order) --- */
+#ifdef NON_MATCHING
+/* NON_MATCHING: equivalent C for the RaceContext ctor, 75 % (the rank-row loop is
+ * not unrolled, savegpr instead of stmw; the C++ ctor draft
+ * notes/merge_gen/SetCourseParams/InitDefaults_draft_v1_93.79.txt is closer): resets the race
+ * globals, the kart slot table and (once) the rank rows. Globals are reached
+ * through width casts because this part of the merged TU declares them as words. */
+typedef struct NMKartSlot {
+    int driverId, charId, field8, fieldC, kartVariant;
+    unsigned char items[3], pad17;
+} NMKartSlot;
+typedef struct NMRaceAux {
+    int value, enabled;
+    float current, limit;
+} NMRaceAux;
+typedef struct NMRaceWideRow {
+    unsigned char active, pad1;
+    unsigned short count;
+    unsigned char pad4[12];
+    int selection, state;
+    unsigned char flag18, flag19, pad1A[2];
+    int value;
+    float x, y;
+    unsigned char enabled, pad29[3];
+} NMRaceWideRow;
+#define NM_B(x) (*(unsigned char *)&(x))
+#define NM_I(x) (*(int *)&(x))
+#define NM_A(x) ((unsigned char *)&(x))
+static void NM_InitializeWideRow(NMRaceWideRow *row) {
+    row->active = 0;
+    row->count = 0;
+    row->selection = -1;
+    row->state = -1;
+    row->flag18 = 0;
+    row->flag19 = 0;
+    row->value = 0;
+    row->x = 0.0f;
+    row->y = 0.0f;
+    row->enabled = 1;
+}
+void *RaceContext_InitDefaults(void *self) {
+    int i;
+    int j;
+    unsigned char noCredit;
+    NMKartSlot *slots = (NMKartSlot *)(void *)SetCourseParams_bss_805AC600;
+    int *counters = (int *)(void *)RaceSlot_ResetAll_bss_805D2938;
+    NMRaceAux *latest = (NMRaceAux *)(void *)RaceResult_StoreLatest_bss_805B256C;
+
+    /* base-class ctor, then the derived vtable */
+    *(void **)self = (void *)SetCourseParams_data_8040E4DC;
+    *(void **)&lbl_806D12DC = self;
+    *(void **)self = (void *)SetCourseParams_data_8040E4D0;
+
+    ItemTable_PopulateAliasedSlots();
+    if (NM_B(RaceContext_InitDefaults_bss_806D1259) != 1) {
+        for (i = 0; i <= 3; i++) {
+            memset((unsigned char *)(void *)SetCourseParams_bss_805B2580 + i * 0x8000, (signed char)((signed char)((unsigned char *)(void *)lbl_80598A60)[0x21] - 1), 0x8000);
+        }
+        NM_B(RaceContext_InitDefaults_bss_806D1259) = 1;
+    }
+
+    NM_I(g_timerModeEnabled) = 1;
+    NM_I(g_cupId) = 1;
+    NM_I(g_longRoundFlag) = 0;
+    NM_I(g_courseVariantIdx) = 0;
+    NM_I(g_reverseRoundFlag) = 0;
+    for (i = 0; i < 8; i++) {
+        slots[i].driverId = -1;
+        slots[i].charId = -1;
+        slots[i].field8 = 1;
+        slots[i].items[0] = 0x24;
+        slots[i].items[1] = 0x25;
+        slots[i].items[2] = 0x26;
+        slots[i].kartVariant = 0;
+        counters[i] = 0;
+    }
+    if (NM_I(g_cupId) >= 0 && NM_I(g_longRoundFlag) >= 0) {
+        NM_B(g_raceStarted) = 0;
+    }
+
+    NM_I(SetCourseParams_data_806CF10C) = 0;
+    if (!NM_B(SetCourseParams_bss_806D1258)) {
+        NMRaceAux *row = (NMRaceAux *)(void *)SetCourseParams_bss_805B24CC;
+        NMRaceWideRow *e = (NMRaceWideRow *)(void *)SetCourseParams_bss_805D2948;
+        for (i = 0; i < 5; i++) {
+            row[i].value = 0;
+            row[i].enabled = 0;
+            row[i].current = 0.0f;
+            row[i].limit = 1000.0f;
+        }
+        for (i = 5; i < 10; i++) {
+            row[i].value = 0;
+            row[i].enabled = 1;
+            row[i].current = 0.0f;
+            row[i].limit = 1000.0f;
+        }
+        latest->value = 0;
+        latest->enabled = 0;
+        latest->current = 0.0f;
+        latest->limit = 1000.0f;
+        NM_I(SetCourseParams_bss_806D1280) = 4;
+        NM_B(SetCourseParams_bss_806D1258) = 1;
+        for (j = 0; j < 8; j++) {
+            NM_InitializeWideRow(&e[j]);
+        }
+        NM_I(SetCourseParams_bss_806D12D8) = 0;
+    }
+
+    NM_I(g_ccClass) = 0;
+    for (i = 0; i < 7; i++) {
+        slots[i].driverId = 6;
+        slots[i].charId = i + 1;
+        slots[i].field8 = 1;
+        slots[i].fieldC = 0;
+        slots[i].kartVariant = 0;
+    }
+    slots[7].driverId = 0;
+    slots[7].charId = 0;
+    slots[7].field8 = 1;
+    slots[7].fieldC = 0;
+    slots[7].kartVariant = 0;
+    slots[7].items[0] = 0x2B;
+    slots[7].items[1] = 0x2D;
+    slots[7].items[2] = 0x32;
+    NM_A(lbl_806D1264)[0] = 0x2B;
+    NM_A(lbl_806D1264)[1] = 0x2D;
+    NM_A(lbl_806D1264)[2] = 0x32;
+    NM_B(g_lakituStartAnimDone) = 0;
+    NM_B(lbl_806D1290) = 0;
+    NM_I(lbl_806CF110) = 1;
+    NM_I(g_gameMode) = 0;
+    NM_B(g_isCommHost) = 0;
+    NM_I(g_currentSceneState) = 2;
+    NM_B(g_isPcbHost) = 0;
+    NM_I(g_localPcbRole) = 0;
+    NM_B(lbl_806D12B0) = 0;
+    NM_I(g_kartVariant) = -1;
+    NM_I(g_humanPlayerCount) = -1;
+    NM_I(g_consecutiveWinsTier) = 0;
+    NM_I(lbl_806CF12C) = -1;
+    memset((void *)g_playerData, 0, 0x1DC);
+    fn_801D7610((void *)g_playerData, 1);
+    fn_8018CC64();
+    TitleTracker_GetOrCreateSingleton();
+    noCredit = CreditMgr_GetCreditCount(0) <= 0; /* target: (1 rotl cntlzw(n)) & 1 */
+    NM_B(lbl_806D12E1) = 0;
+    NM_B(lbl_806D117C) = noCredit;
+    NM_B(lbl_806D12E2) = 0;
+    NM_A(lbl_806D12E4)[0] = 0;
+    NM_A(lbl_806D12E4)[1] = 0;
+    NM_A(lbl_806D12E4)[2] = 0;
+    return self;
+}
+#undef NM_B
+#undef NM_I
+#undef NM_A
+#else
 asm void RaceContext_InitDefaults(void) { /* 0x8009D6CC size:0x5B4 */
     nofralloc
     stwu r1, -0x30(r1)
     mflr r0
-    lis r5, lbl_8040E4DC@ha
-    lis r4, lbl_8040E4D0@ha
+    lis r5, SetCourseParams_data_8040E4DC@ha
+    lis r4, SetCourseParams_data_8040E4D0@ha
     stw r0, 0x34(r1)
-    lis r6, lbl_805AC600@ha
-    addi r0, r4, lbl_8040E4D0@l
+    lis r6, SetCourseParams_bss_805AC600@ha
+    addi r0, r4, SetCourseParams_data_8040E4D0@l
     stmw r22, 0x8(r1)
     mr r29, r3
-    addi r3, r5, lbl_8040E4DC@l
-    addi r30, r6, lbl_805AC600@l
+    addi r3, r5, SetCourseParams_data_8040E4DC@l
+    addi r30, r6, SetCourseParams_bss_805AC600@l
     addis r31, r30, 0x2
     stw r3, 0x0(r29)
     stw r29, lbl_806D12DC(r13)
     stw r0, 0x0(r29)
     bl ItemTable_PopulateAliasedSlots
-    lbz r0, lbl_806D1259(r13)
+    lbz r0, RaceContext_InitDefaults_bss_806D1259(r13)
     cmplwi r0, 0x1
     beq RaceContext_InitDefaults_L_8009D768
-    lis r4, lbl_805B2580@ha
+    lis r4, SetCourseParams_bss_805B2580@ha
     lis r3, lbl_80598A60@ha
-    addi r24, r4, lbl_805B2580@l
+    addi r24, r4, SetCourseParams_bss_805B2580@l
     li r25, 0x0
     addi r23, r3, lbl_80598A60@l
     lis r22, 0x1
@@ -2135,7 +2291,7 @@ asm void RaceContext_InitDefaults(void) { /* 0x8009D6CC size:0x5B4 */
     addi r24, r24, -0x8000
     ble RaceContext_InitDefaults_L_8009D730
     li r0, 0x1
-    stb r0, lbl_806D1259(r13)
+    stb r0, RaceContext_InitDefaults_bss_806D1259(r13)
     RaceContext_InitDefaults_L_8009D768:
     li r8, 0x0
     addi r6, r30, 0x0
@@ -2222,9 +2378,9 @@ asm void RaceContext_InitDefaults(void) { /* 0x8009D6CC size:0x5B4 */
     blt RaceContext_InitDefaults_L_8009D8B8
     stb r8, g_raceStarted(r13)
     RaceContext_InitDefaults_L_8009D8B8:
-    lbz r0, lbl_806D1258(r13)
+    lbz r0, SetCourseParams_bss_806D1258(r13)
     li r5, 0x0
-    stw r5, lbl_806CF10C(r13)
+    stw r5, SetCourseParams_data_806CF10C(r13)
     cmplwi r0, 0x0
     bne RaceContext_InitDefaults_L_8009DAE8
     addi r9, r30, 0x5ecc
@@ -2279,8 +2435,8 @@ asm void RaceContext_InitDefaults(void) { /* 0x8009D6CC size:0x5B4 */
     stw r5, 0x4(r4)
     stfs f1, 0x8(r4)
     stfs f0, 0xc(r4)
-    stw r3, lbl_806D1280(r13)
-    stb r7, lbl_806D1258(r13)
+    stw r3, SetCourseParams_bss_806D1280(r13)
+    stb r7, SetCourseParams_bss_806D1258(r13)
     stb r5, 0x0(r8)
     sth r5, 0x2(r8)
     stw r0, 0x10(r8)
@@ -2361,7 +2517,7 @@ asm void RaceContext_InitDefaults(void) { /* 0x8009D6CC size:0x5B4 */
     stfs f1, 0x154(r8)
     stfs f1, 0x158(r8)
     stb r7, 0x15c(r8)
-    stw r5, lbl_806D12D8(r13)
+    stw r5, SetCourseParams_bss_806D12D8(r13)
     RaceContext_InitDefaults_L_8009DAE8:
     li r22, 0x0
     li r24, 0x1
@@ -2466,6 +2622,7 @@ asm void RaceContext_InitDefaults(void) { /* 0x8009D6CC size:0x5B4 */
     addi r1, r1, 0x30
     blr
 }
+#endif
 #undef CreditMgr_GetCreditCount
 #undef InitializeWideRow
 #undef ItemTable_PopulateAliasedSlots
@@ -2493,20 +2650,20 @@ asm void RaceContext_InitDefaults(void) { /* 0x8009D6CC size:0x5B4 */
 #undef g_raceStarted
 #undef g_reverseRoundFlag
 #undef g_timerModeEnabled
-#undef lbl_8040E4D0
-#undef lbl_8040E4DC
+#undef SetCourseParams_data_8040E4D0
+#undef SetCourseParams_data_8040E4DC
 #undef lbl_80598A60
-#undef lbl_806CF10C
+#undef SetCourseParams_data_806CF10C
 #undef lbl_806CF110
 #undef lbl_806CF12C
 #undef lbl_806D117C
-#undef lbl_806D1258
-#undef lbl_806D1259
+#undef SetCourseParams_bss_806D1258
+#undef RaceContext_InitDefaults_bss_806D1259
 #undef lbl_806D1264
-#undef lbl_806D1280
+#undef SetCourseParams_bss_806D1280
 #undef lbl_806D1290
 #undef lbl_806D12B0
-#undef lbl_806D12D8
+#undef SetCourseParams_bss_806D12D8
 #undef lbl_806D12DC
 #undef lbl_806D12E1
 #undef lbl_806D12E2
@@ -2518,7 +2675,7 @@ asm void RaceContext_InitDefaults(void) { /* 0x8009D6CC size:0x5B4 */
 
 /* ==== RaceContext_EnsureSingleton.c ==== */
 #define RaceContext RaceContext_p13
-#define lbl_8040E4DC lbl_8040E4DC_p13
+#define SetCourseParams_data_8040E4DC lbl_8040E4DC_p13
 #define lbl_806D12DC lbl_806D12DC_p13
 #pragma exceptions on
 #pragma use_lmw_stmw off
@@ -2534,7 +2691,7 @@ struct RaceContext {
 extern "C" {
 void MemoryManager_TimedFree(void *p);
 extern RaceContext *lbl_806D12DC;
-extern void *lbl_8040E4DC[];
+extern void *SetCourseParams_data_8040E4DC[];
 }
 
 extern "C" RaceContext *RaceContext_EnsureSingleton(void)
@@ -2549,7 +2706,7 @@ extern "C" RaceContext *RaceContext_EnsureSingleton(void)
 extern "C" RaceContext *dtor_8009DCE0(RaceContext *self, short flag)
 {
     if (self) {
-        self->vtable = lbl_8040E4DC;
+        self->vtable = SetCourseParams_data_8040E4DC;
         if (flag > 0) {
             MemoryManager_TimedFree(self);
         }
@@ -2557,7 +2714,7 @@ extern "C" RaceContext *dtor_8009DCE0(RaceContext *self, short flag)
     return self;
 }
 #undef RaceContext
-#undef lbl_8040E4DC
+#undef SetCourseParams_data_8040E4DC
 #undef lbl_806D12DC
 #pragma cplusplus off
 
@@ -2565,8 +2722,8 @@ extern "C" RaceContext *dtor_8009DCE0(RaceContext *self, short flag)
 #define RaceContextArray_Dtor RaceContextArray_Dtor_p14
 #define RaceContextArray_Init RaceContextArray_Init_p14
 #define __register_global_object __register_global_object_p14
-#define lbl_805AC6C0 ((unsigned char *)lbl_805AC6C0)
-#define lbl_805AC6CC ((unsigned char *)lbl_805AC6CC)
+#define KartDriverArray_StaticCtor_bss_805AC6C0 ((unsigned char *)KartDriverArray_StaticCtor_bss_805AC6C0)
+#define SetCourseParams_bss_805AC6CC ((unsigned char *)SetCourseParams_bss_805AC6CC)
 #pragma exceptions on
 #pragma use_lmw_stmw off
 extern void *RaceContextArray_Init(void *);
@@ -2575,13 +2732,13 @@ extern void __register_global_object(void *object, void *dtor, void *regmem);
 
 void KartDriverArray_StaticCtor(void)
 {
-    __register_global_object(RaceContextArray_Init(lbl_805AC6CC), RaceContextArray_Dtor, lbl_805AC6C0);
+    __register_global_object(RaceContextArray_Init(SetCourseParams_bss_805AC6CC), RaceContextArray_Dtor, KartDriverArray_StaticCtor_bss_805AC6C0);
 }
 
 __declspec(section ".ctors") static void (*const s_KartDriverArray_StaticCtor_ctor)(void) = KartDriverArray_StaticCtor;
 #undef RaceContextArray_Dtor
 #undef RaceContextArray_Init
 #undef __register_global_object
-#undef lbl_805AC6C0
-#undef lbl_805AC6CC
+#undef KartDriverArray_StaticCtor_bss_805AC6C0
+#undef SetCourseParams_bss_805AC6CC
 #pragma cplusplus off

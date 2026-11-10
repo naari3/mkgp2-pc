@@ -14,11 +14,7 @@
  * isolating the exact methods into independently linked TUs.
  */
 
-typedef struct RoundInfo {
-    unsigned char pad0[0x18];
-    int lapA;
-    int lapB;
-} RoundInfo;
+#include "game/types/RoundInfo.h"
 
 typedef struct KartResult {
     unsigned char pad0[0x1F8];
@@ -29,8 +25,8 @@ extern int g_gameMode;
 extern int GetDisplayBufferIndex(void);
 extern RoundInfo *fn_8024F588(void);
 
-extern int lbl_806D13EC;
-extern int lbl_806D13F0;
+extern int RankLog_bss_806D13EC;
+extern int RankLog_bss_806D13F0;
 extern int g_technicalTitleGrade;
 extern int g_raceResult;
 extern int g_totalScore;
@@ -42,7 +38,7 @@ extern int g_matchCount;
 extern int g_undefeatedStreak;
 extern int g_hitCount;
 extern int g_perfectCount;
-extern int lbl_806D1434;
+extern int RankLog_bss_806D1434;
 extern int g_gpLossCount;
 extern int g_specificDefeatCount;
 extern int g_ghostDefeatCount;
@@ -59,33 +55,33 @@ extern int g_prevPrevRaceResult;
 extern int g_cupId;
 extern int g_longRoundFlag;
 extern int g_reverseRoundFlag;
-extern int lbl_806CF204;
-extern float lbl_806CF208;
-extern int lbl_806D1404;
-extern int lbl_806D1408;
-extern int lbl_806D140C;
+extern int RankLog_data_806CF204;
+extern float RankLog_data_806CF208;
+extern int RankLog_bss_806D1404;
+extern int RankLog_bss_806D1408;
+extern int RankLog_bss_806D140C;
 extern int g_consecutiveWins;
 extern int g_scoreThreshold;
 extern int g_playCount;
-extern unsigned char lbl_806D13D0;
+extern unsigned char RankLog_bss_806D13D0;
 extern int g_stagingTitleId;
 extern int g_titleParam;
 extern int g_nameId;
 extern int g_rankingPosition;
-extern unsigned char lbl_806D1448;
-extern unsigned char lbl_806D1449;
-extern unsigned char lbl_806D144A;
-extern int lbl_806CF1F4;
+extern unsigned char RankLog_bss_806D1448;
+extern unsigned char RankLog_bss_806D1449;
+extern unsigned char RankLog_InitStartRace_bss_806D144A;
+extern int RankLog_data_806CF1F4;
 extern int lbl_806CF1F8;
-extern int lbl_806D1424;
-extern int lbl_806CF21C;
+extern int RankLog_bss_806D1424;
+extern int RankLog_data_806CF21C;
 extern int g_hazardPassCount;
-extern int lbl_806CF20C;
+extern int RankLog_data_806CF20C;
 extern int g_maxCoins;
 extern const float lbl_806D4DD4;
 extern char lbl_80326B54[];
 extern char lbl_80326B70[];
-extern char lbl_80326B84[];
+extern char RankLog_InitStartRace_rodata_80326B84[];
 
 #pragma pack(push, 1)
 typedef struct PackedWords {
@@ -116,31 +112,27 @@ typedef struct PlayerData {
     unsigned char byte1D8, byte1D9, byte1DA;
 } PlayerData;
 
-typedef struct RankEntry {
-    int a, b;
-    float score;
-    float time;
-} RankEntry;
+#include "game/types/RankEntry.h"
 
 extern PlayerData g_playerData;
-extern PlayerData lbl_805D2F40;
+extern PlayerData RankLog_bss_805D2F40;
 extern void fn_801D5DD0(PlayerData *p);
 extern RankEntry *RaceResult_GetRankEntry(int i);
 extern void DebugPrintf(const char *fmt, ...);
 void DetermineTitle(unsigned char arg);
-extern unsigned char lbl_80324B98[];
-extern char *lbl_806CF1E8;
+extern unsigned char RankLog_rodata_80324B98[];
+extern char *RankLog_data_806CF1E8;
 extern char lbl_806D4A44[4];
 extern char lbl_806D4DD8[5];
 extern char lbl_806D4DE0[7];
-extern char lbl_805D311C[0x200];
+extern char RankLog_bss_805D311C[0x200];
 extern int isJapanese(void);
 extern int sprintf(char *buf, const char *fmt, ...);
 extern void *memset(void *p, int c, unsigned long n);
 extern void *Alloc(unsigned long size);
 extern void *lbl_806D10A0;
-extern void *lbl_80411DC0[];
-extern void *lbl_80411DB4[];
+extern void *TitleTracker_data_80411DC0[];
+extern void *TitleTracker_data_80411DB4[];
 
 typedef struct TitleEntry {
     int type;
@@ -148,25 +140,15 @@ typedef struct TitleEntry {
     char *jp;
 } TitleEntry;
 
-typedef struct NameEntry {
-    char *en;
-    char *jp;
-} NameEntry;
+#include "game/types/NameEntry.h"
 
-extern NameEntry lbl_80411B18[0x26];
+extern NameEntry RankLog_data_80411B18[0x26];
 
 typedef unsigned char (*TitleCheckFn)(void);
 
-typedef struct DisplayState {
-    unsigned char pad[0x20];
-    signed char mode;
-    unsigned char pad21[3];
-    unsigned char flag24;
-} DisplayState;
+#include "game/types/DisplayState.h"
 
-typedef struct OSCalendarTime {
-    int sec, min, hour, mday, mon, year, wday, yday, msec, usec;
-} OSCalendarTime;
+#include "game/types/OSCalendarTime.h"
 
 extern DisplayState lbl_80598A60;
 /* Per cup, CC class and round length: score and two floating limits. */
@@ -178,7 +160,7 @@ typedef struct TitleTarget {
 
 typedef TitleTarget TargetCup[3][2];
 
-TargetCup lbl_80411458[8] = {
+TargetCup RankLog_data_80411458[8] = {
     {
         { { 6, 120.0f, 15.0f }, { 4, 120.0f, 20.0f } },
         { { 6, 120.0f, 15.0f }, { 4, 120.0f, 20.0f } },
@@ -306,8 +288,8 @@ static TargetCup sBattleTargets[8] = {
         { { 5, 100.0f, 30.0f }, { 5, 100.0f, 30.0f } },
     },
 };
-extern TitleCheckFn lbl_806CF220[1];
-extern TitleCheckFn lbl_806CF224[1];
+extern TitleCheckFn DetermineTitle_data_806CF220[1];
+extern TitleCheckFn DetermineTitle_data_806CF224[1];
 extern int g_characterId;
 extern unsigned char fn_801D5B8C(PlayerData *p, int a, int b, int c);
 extern unsigned char fn_801D59F8(PlayerData *p, int a, int b);
@@ -319,9 +301,9 @@ extern void OSTicksToCalendarTime(long long t, OSCalendarTime *td);
 extern void MemoryManager_TimedFree(void *p);
 extern void *TaRecord_GetEntry_Indexed(int a, int b, int c, int d, int e);
 extern int wcscmp(const void *a, const void *b);
-extern int lbl_80326B04[8];
-extern int lbl_803269AC[8];
-extern int lbl_80326ADC[];
+extern int TitleCheck_NewClearedRecord_Race_rodata_80326B04[8];
+extern int TitleCheck_CupCleared_rodata_803269AC[8];
+extern int RankLog_rodata_80326ADC[];
 extern int g_roundIndex;
 extern int g_ccClass;
 extern int g_consecutiveWinsTier;
@@ -351,7 +333,7 @@ static inline unsigned char IsLocalSlot(int slot)
 void RankLog_SetRaceResult(void *self, int slot, void *result, int score)
 {
     if (IsLocalSlot(slot) == 1) {
-        if (lbl_806D13EC > 0 && lbl_806D13EC == lbl_806D13F0) {
+        if (RankLog_bss_806D13EC > 0 && RankLog_bss_806D13EC == RankLog_bss_806D13F0) {
             g_technicalTitleGrade = 1;
         }
         g_raceResult = (int)result;
@@ -362,7 +344,7 @@ void RankLog_SetRaceResult(void *self, int slot, void *result, int score)
 void TitleTracker_ResetPerRound(void *self, int slot, int newRound)
 {
     if (IsLocalSlot(slot) == 1) {
-        if (newRound == 1 && lbl_806D13EC > 0) {
+        if (newRound == 1 && RankLog_bss_806D13EC > 0) {
             if (fn_8024F588()->lapB == fn_8024F588()->lapA) {
                 g_technicalTitleGrade = 0;
             }
@@ -374,7 +356,7 @@ void TitleTracker_ResetPerRound(void *self, int slot, int newRound)
 
 void RankLog_UpdateTechnicalFlag(void *self, int v)
 {
-    lbl_806D13EC = v;
+    RankLog_bss_806D13EC = v;
     if (v > 0) {
         g_technicalTitleGrade = 2;
     }
@@ -431,7 +413,7 @@ void TitleStats_IncPerfectCount(void *self, int slot)
 void RankLog_OnOpponentDefeated(void *self, int slot, int kind)
 {
     if (IsLocalSlot(slot) == 1) {
-        lbl_806D1434++;
+        RankLog_bss_806D1434++;
         if (kind == 5) {
             g_gpLossCount++;
         } else if (kind == 4) {
@@ -496,11 +478,11 @@ void PlayerData_RefreshDerivedStats(void)
 
 void TitleStats_CaptureRoundContext(void *self, int v, float f)
 {
-    lbl_806CF204 = v;
-    lbl_806CF208 = f;
-    lbl_806D1404 = g_cupId - 1;
-    lbl_806D1408 = g_longRoundFlag;
-    lbl_806D140C = g_reverseRoundFlag;
+    RankLog_data_806CF204 = v;
+    RankLog_data_806CF208 = f;
+    RankLog_bss_806D1404 = g_cupId - 1;
+    RankLog_bss_806D1408 = g_longRoundFlag;
+    RankLog_bss_806D140C = g_reverseRoundFlag;
 }
 
 void Empty_NokoNokoHook(void)
@@ -557,13 +539,13 @@ void TitleTracker_Empty_PreFinalizeHook(void)
 
 void TitleStats_ResetRaceStagingState(void *self)
 {
-    lbl_806D13D0 = 0;
+    RankLog_bss_806D13D0 = 0;
     g_stagingTitleId = 0;
     g_titleParam = 0;
     g_nameId = 0;
     g_rankingPosition = -1;
-    lbl_806D1448 = 0;
-    lbl_806D1449 = 0;
+    RankLog_bss_806D1448 = 0;
+    RankLog_bss_806D1449 = 0;
     RankLog_InitStartRace(self);
 }
 
@@ -575,13 +557,13 @@ void RankLog_Reset(void *self)
     g_prevPrevRaceResult = 0;
     g_raceResult = -1;
     g_consecutiveWins = 0;
-    lbl_806D13D0 = 0;
+    RankLog_bss_806D13D0 = 0;
     g_stagingTitleId = 0;
     g_titleParam = 0;
     g_nameId = 0;
     g_rankingPosition = -1;
-    lbl_806D1448 = 0;
-    lbl_806D1449 = 0;
+    RankLog_bss_806D1448 = 0;
+    RankLog_bss_806D1449 = 0;
     RankLog_InitStartRace(self);
 }
 
@@ -589,47 +571,47 @@ extern void __copy(void *, const void *, unsigned long);
 
 void RankLog_InitStartRace(void *self)
 {
-    DebugPrintf(lbl_80326B84);
+    DebugPrintf(RankLog_InitStartRace_rodata_80326B84);
     g_raceResult = -1;
     g_totalScore = 0;
     g_playCount = -1;
-    lbl_806CF1F4 = -1;
+    RankLog_data_806CF1F4 = -1;
     lbl_806CF1F8 = -1;
     g_totalRaces = 0;
     g_allCoursesCleared = 0;
-    lbl_806D13EC = 0;
-    lbl_806D13F0 = 0;
+    RankLog_bss_806D13EC = 0;
+    RankLog_bss_806D13F0 = 0;
     g_technicalTitleGrade = -1;
     g_totalDistance = 0;
     g_matchCount = 0;
     g_undefeatedStreak = 0;
     g_defeatCount = 0;
-    lbl_806CF204 = -1;
-    lbl_806CF208 = lbl_806D4DD4;
-    lbl_806D1404 = 0;
-    lbl_806D1408 = 0;
-    lbl_806D140C = 0;
+    RankLog_data_806CF204 = -1;
+    RankLog_data_806CF208 = lbl_806D4DD4;
+    RankLog_bss_806D1404 = 0;
+    RankLog_bss_806D1408 = 0;
+    RankLog_bss_806D140C = 0;
     lbl_806D1420 = 0;
-    lbl_806D1424 = 0;
+    RankLog_bss_806D1424 = 0;
     lbl_806D1428 = 0;
     g_currentRaceScore = 0;
     g_prevRaceScore = 0;
-    lbl_806D1434 = 0;
+    RankLog_bss_806D1434 = 0;
     g_perfectCount = 0;
     g_gpWinCount = 0;
     g_gpLossCount = 0;
     g_specificDefeatCount = 0;
     g_ghostDefeatCount = 0;
-    lbl_806CF21C = -1;
+    RankLog_data_806CF21C = -1;
     lbl_806D1450 = 0;
     g_hazardPassCount = 0;
-    lbl_806CF20C = -1;
+    RankLog_data_806CF20C = -1;
     g_maxCoins = -1;
     g_scoreThreshold = -1;
-    lbl_806D144A = 0;
+    RankLog_InitStartRace_bss_806D144A = 0;
     g_hitCount = 0;
     {
-        PlayerData *__restrict dst = &lbl_805D2F40;
+        PlayerData *__restrict dst = &RankLog_bss_805D2F40;
         const PlayerData *__restrict src = &g_playerData;
         /* Copy the header independently of the remaining snapshot fields. */
         dst->word000 = src->word000;
@@ -641,7 +623,7 @@ void RankLog_InitStartRace(void *self)
     }
     {
         /* End these pointer lifetimes at the first byte-array copy. */
-        PlayerData *__restrict dst = &lbl_805D2F40;
+        PlayerData *__restrict dst = &RankLog_bss_805D2F40;
         const PlayerData *__restrict src = &g_playerData;
         dst->losses = src->losses;
         dst->word014 = src->word014;
@@ -685,11 +667,11 @@ void RankLog_InitStartRace(void *self)
         dst->w0A4 = src->w0A4;
         __copy(dst->bytes0A8, src->bytes0A8, sizeof(src->bytes0A8));
     }
-    __copy(lbl_805D2F40.bytes121, g_playerData.bytes121, sizeof(g_playerData.bytes121));
+    __copy(RankLog_bss_805D2F40.bytes121, g_playerData.bytes121, sizeof(g_playerData.bytes121));
     {
         /* The tail has its own non-aliasing copy region after both arrays. */
         const PlayerData *__restrict src = &g_playerData;
-        PlayerData *__restrict dst = &lbl_805D2F40;
+        PlayerData *__restrict dst = &RankLog_bss_805D2F40;
         dst->word18C = src->word18C;
         dst->word190 = src->word190;
         dst->word194 = src->word194;
@@ -727,7 +709,7 @@ void RankLog_InitStartRace(void *self)
 static inline char *TitleStr(TitleEntry *e, int title)
 {
     if (title < 0 || title >= 0xBB) {
-        return lbl_806CF1E8;
+        return RankLog_data_806CF1E8;
     }
     if (isJapanese() == 0) {
         return e->en;
@@ -738,12 +720,12 @@ static inline char *TitleStr(TitleEntry *e, int title)
 static inline char *NameStr(int name)
 {
     if (name < 0 || name >= 0x26) {
-        return lbl_806CF1E8;
+        return RankLog_data_806CF1E8;
     }
     if (isJapanese() == 0) {
-        return lbl_80411B18[name].en;
+        return RankLog_data_80411B18[name].en;
     }
-    return lbl_80411B18[name].jp;
+    return RankLog_data_80411B18[name].jp;
 }
 
 /* The target keeps title * sizeof(TitleEntry) in its own saved register, computed
@@ -759,7 +741,7 @@ static inline TitleEntry *TitleAt(TitleEntry *t, int off)
 static inline char *TitleStrAt(TitleEntry *tbl, int off, int title)
 {
     if (title < 0 || title >= 0xBB) {
-        return lbl_806CF1E8;
+        return RankLog_data_806CF1E8;
     }
     if (isJapanese() == 0) {
         return TitleAt(tbl, off)->en;
@@ -769,7 +751,7 @@ static inline char *TitleStrAt(TitleEntry *tbl, int off, int title)
 
 char *get_title_name(void *self, int title, unsigned char count, int unused, int name)
 {
-    unsigned char *pool = lbl_80324B98;
+    unsigned char *pool = RankLog_rodata_80324B98;
     int off;
     TitleEntry *tbl;
     char *tstr;
@@ -787,20 +769,20 @@ char *get_title_name(void *self, int title, unsigned char count, int unused, int
     tstr = TitleStrAt(tbl, off, title);
     switch (((TitleEntry *)((char *)tbl + off))->type) {
     case 0:
-        sprintf(lbl_805D311C, lbl_806D4DD8, tstr, NameStr(name));
+        sprintf(RankLog_bss_805D311C, lbl_806D4DD8, tstr, NameStr(name));
         break;
     case 1:
-        sprintf(lbl_805D311C, tstr);
+        sprintf(RankLog_bss_805D311C, tstr);
         break;
     case 2:
-        sprintf(lbl_805D311C, lbl_806D4DE0, count, tstr, NameStr(name));
+        sprintf(RankLog_bss_805D311C, lbl_806D4DE0, count, tstr, NameStr(name));
         break;
     default:
-        memset(lbl_805D311C, 0, 0x200);
+        memset(RankLog_bss_805D311C, 0, 0x200);
         DebugPrintf((char *)pool + 0x2068, title, count, name);
         break;
     }
-    return lbl_805D311C;
+    return RankLog_bss_805D311C;
 }
 
 char *get_title_name_global(void)
@@ -813,7 +795,7 @@ char *get_title_name_global(void)
     int name;
     int off;
 
-    pool = lbl_80324B98;
+    pool = RankLog_rodata_80324B98;
     title = g_playerData.b19B;
     name = g_playerData.byte1B1;
     count = g_playerData.b19C;
@@ -831,27 +813,27 @@ char *get_title_name_global(void)
     tstr = TitleStrAt(tbl, off, title);
     switch (((TitleEntry *)((char *)tbl + off))->type) {
     case 0:
-        sprintf(lbl_805D311C, lbl_806D4DD8, tstr, NameStr(name));
+        sprintf(RankLog_bss_805D311C, lbl_806D4DD8, tstr, NameStr(name));
         break;
     case 1:
-        sprintf(lbl_805D311C, tstr);
+        sprintf(RankLog_bss_805D311C, tstr);
         break;
     case 2:
-        sprintf(lbl_805D311C, lbl_806D4DE0, count, tstr, NameStr(name));
+        sprintf(RankLog_bss_805D311C, lbl_806D4DE0, count, tstr, NameStr(name));
         break;
     default:
-        memset(lbl_805D311C, 0, 0x200);
+        memset(RankLog_bss_805D311C, 0, 0x200);
         DebugPrintf((char *)pool + 0x2068, title, count, name);
         break;
     }
-    return lbl_805D311C;
+    return RankLog_bss_805D311C;
 }
 
 int get_title_result(void *self, int *title, int *param, int *name)
 {
-    if (lbl_806D13D0 == 0) {
+    if (RankLog_bss_806D13D0 == 0) {
         DetermineTitle(1);
-        lbl_806D13D0 = 1;
+        RankLog_bss_806D13D0 = 1;
     }
     if (g_stagingTitleId > 0) {
         *title = g_stagingTitleId;
@@ -878,9 +860,9 @@ TitleTracker *TitleTracker_GetOrCreateSingleton(void)
     if (tracker() == 0) {
         TitleTracker *t = (TitleTracker *)Alloc(4);
         if (t != 0) {
-            t->vt = lbl_80411DC0;
+            t->vt = TitleTracker_data_80411DC0;
             lbl_806D10A0 = t;
-            t->vt = lbl_80411DB4;
+            t->vt = TitleTracker_data_80411DB4;
         }
     }
     return tracker();
@@ -931,8 +913,8 @@ void DetermineTitle(unsigned char mode)
     int count = 0;
     TitleCheckFn pre = 0;
     int i;
-    unsigned char *tbl = (unsigned char *)lbl_80411458;
-    unsigned char *pool = lbl_80324B98;
+    unsigned char *tbl = (unsigned char *)RankLog_data_80411458;
+    unsigned char *pool = RankLog_rodata_80324B98;
 
     if (lbl_80598A60.mode == 2 || (lbl_80598A60.mode == 1 && lbl_80598A60.flag24 == 0)) {
         g_stagingTitleId = 0;
@@ -945,13 +927,13 @@ void DetermineTitle(unsigned char mode)
         return;
     }
     if (mode != 0) {
-        checks = lbl_806CF224;
+        checks = DetermineTitle_data_806CF224;
         count = 1;
     } else {
         switch (g_gameMode) {
         case 0:
             if (g_cupId >= 9) {
-                checks = lbl_806CF220;
+                checks = DetermineTitle_data_806CF220;
                 count = 1;
             } else {
                 checks = (TitleCheckFn *)(tbl + 0x7F0);
@@ -1043,7 +1025,7 @@ int DateTitle_GetMonthSeasonIndex(void)
 TitleTracker *TitleTrackerSingleton_Dtor(TitleTracker *self, short flag)
 {
     if (self != 0) {
-        self->vt = lbl_80411DC0;
+        self->vt = TitleTracker_data_80411DC0;
         if (flag > 0) {
             MemoryManager_TimedFree(self);
         }
@@ -1092,7 +1074,7 @@ unsigned char TitleCheck_NewClearedRecord_Race(void)
             if (fn_801D5B8C(pd, mode, j, 3) == 1) {
                 cur++;
             }
-            if (fn_801D5B8C(&lbl_805D2F40, mode, j, 3) == 1) {
+            if (fn_801D5B8C(&RankLog_bss_805D2F40, mode, j, 3) == 1) {
                 prev++;
             }
         }
@@ -1108,7 +1090,7 @@ unsigned char TitleCheck_NewClearedRecord_Race(void)
             if (fn_801D5B8C(pd, mode, j, 7) == 1) {
                 cur++;
             }
-            if (fn_801D5B8C(&lbl_805D2F40, mode, j, 7) == 1) {
+            if (fn_801D5B8C(&RankLog_bss_805D2F40, mode, j, 7) == 1) {
                 prev++;
             }
         }
@@ -1124,7 +1106,7 @@ unsigned char TitleCheck_NewClearedRecord_Race(void)
             if (fn_801D59F8(pd, j, mode) == 1) {
                 cur++;
             }
-            if (fn_801D59F8(&lbl_805D2F40, j, mode) == 1) {
+            if (fn_801D59F8(&RankLog_bss_805D2F40, j, mode) == 1) {
                 prev++;
             }
         }
@@ -1140,10 +1122,10 @@ unsigned char TitleCheck_NewClearedRecord_Race(void)
             for (j = 0; j < 8; j++) {
                 cur = 0;
                 prev = 0;
-                if (fn_801D5B8C(pd, i, lbl_80326B04[j], 3) == 1) {
+                if (fn_801D5B8C(pd, i, TitleCheck_NewClearedRecord_Race_rodata_80326B04[j], 3) == 1) {
                     cur = 1;
                 }
-                if (fn_801D5B8C(&lbl_805D2F40, i, lbl_80326B04[j], 3) == 1) {
+                if (fn_801D5B8C(&RankLog_bss_805D2F40, i, TitleCheck_NewClearedRecord_Race_rodata_80326B04[j], 3) == 1) {
                     prev = 1;
                 }
                 if (cur != prev && cur >= 1) {
@@ -1160,10 +1142,10 @@ unsigned char TitleCheck_NewClearedRecord_Race(void)
             for (j = 0; j < 8; j++) {
                 cur = 0;
                 prev = 0;
-                if (fn_801D5B8C(pd, i, lbl_80326B04[j], 7) == 1) {
+                if (fn_801D5B8C(pd, i, TitleCheck_NewClearedRecord_Race_rodata_80326B04[j], 7) == 1) {
                     cur = 1;
                 }
-                if (fn_801D5B8C(&lbl_805D2F40, i, lbl_80326B04[j], 7) == 1) {
+                if (fn_801D5B8C(&RankLog_bss_805D2F40, i, TitleCheck_NewClearedRecord_Race_rodata_80326B04[j], 7) == 1) {
                     prev = 1;
                 }
                 if (cur != prev && cur >= 1) {
@@ -1176,10 +1158,10 @@ unsigned char TitleCheck_NewClearedRecord_Race(void)
     for (j = 0; j < 8; j++) {
         cur = 0;
         prev = 0;
-        if (fn_801D59F8(pd, lbl_80326B04[j], 0) == 1) {
+        if (fn_801D59F8(pd, TitleCheck_NewClearedRecord_Race_rodata_80326B04[j], 0) == 1) {
             cur = 1;
         }
-        if (fn_801D59F8(&lbl_805D2F40, lbl_80326B04[j], 0) == 1) {
+        if (fn_801D59F8(&RankLog_bss_805D2F40, TitleCheck_NewClearedRecord_Race_rodata_80326B04[j], 0) == 1) {
             prev = 1;
         }
         if (cur != prev && cur >= 1) {
@@ -1190,10 +1172,10 @@ unsigned char TitleCheck_NewClearedRecord_Race(void)
     for (j = 0; j < 8; j++) {
         cur = 0;
         prev = 0;
-        if (fn_801D59F8(pd, lbl_80326B04[j], 1) == 1) {
+        if (fn_801D59F8(pd, TitleCheck_NewClearedRecord_Race_rodata_80326B04[j], 1) == 1) {
             cur = 1;
         }
-        if (fn_801D59F8(&lbl_805D2F40, lbl_80326B04[j], 1) == 1) {
+        if (fn_801D59F8(&RankLog_bss_805D2F40, TitleCheck_NewClearedRecord_Race_rodata_80326B04[j], 1) == 1) {
             prev = 1;
         }
         if (cur != prev && cur >= 1) {
@@ -1209,7 +1191,7 @@ static inline int CupSlot(int cup)
     int i;
 
     for (i = 0; i < 8; i++) {
-        if (cup == lbl_803269AC[i]) {
+        if (cup == TitleCheck_CupCleared_rodata_803269AC[i]) {
             return i;
         }
     }
@@ -1255,7 +1237,7 @@ unsigned char TitleCheck_MidpointMilestone(void)
 
 unsigned char fn_800A7C0C(void)
 {
-    if (lbl_805D2F40.wins + lbl_805D2F40.losses == 0 && g_playerData.wins + g_playerData.losses > 0) {
+    if (RankLog_bss_805D2F40.wins + RankLog_bss_805D2F40.losses == 0 && g_playerData.wins + g_playerData.losses > 0) {
         SetTitle((g_ccClass == 2) + 0x6E, 0);
         return 1;
     }
@@ -1295,7 +1277,7 @@ unsigned char fn_800A7CF4(void)
 unsigned char fn_800A7D20(void)
 {
     if (g_consecutiveWinsTier > 0) {
-        SetTitle(lbl_80326ADC[g_consecutiveWinsTier - 1], 0);
+        SetTitle(RankLog_rodata_80326ADC[g_consecutiveWinsTier - 1], 0);
         return 1;
     }
     return 0;
@@ -1307,15 +1289,13 @@ extern int *fn_8016CB44(void);
 extern int g_kartVariant;
 extern int GetCoinMilage(PlayerData *p);
 extern signed char fn_801D5970(PlayerData *p);
-extern int lbl_80326A64[13][2];
-extern int lbl_80326A24[16];
-extern int lbl_80326A14[4];
-extern int lbl_803269CC[18];
+extern int CheckTitle_OriginalKartCoinMilage_rodata_80326A64[13][2];
+extern int TitleCheck_NewClearedCountStep_rodata_80326A24[16];
+extern int RankLog_rodata_80326A14[4];
+extern int RankLog_rodata_803269CC[18];
 
-typedef struct Int4 {
-    int v[4];
-} Int4;
-extern Int4 lbl_80326ACC;
+#include "game/types/Int4.h"
+extern Int4 TitleCheck_BattleWinsMilestone_rodata_80326ACC;
 
 unsigned char TitleCheck_AllRecordsCleared(void)
 {
@@ -1371,7 +1351,7 @@ static inline int TargetScore(void)
     int n;
 
     if (g_gameMode == 0) {
-        t = LookupTarget((TargetCup *)lbl_80411458);
+        t = LookupTarget((TargetCup *)RankLog_data_80411458);
     } else if (g_gameMode == 1) {
         t = LookupTarget((TargetCup *)sBattleTargets);
     } else if (g_gameMode == 2) {
@@ -1593,7 +1573,7 @@ unsigned char TitleCheck_UndefeatedStreak15(void)
 
 unsigned char TitleCheck_BattleWinsMilestone(void)
 {
-    Int4 tbl = lbl_80326ACC;
+    Int4 tbl = TitleCheck_BattleWinsMilestone_rodata_80326ACC;
     int i;
 
     for (i = 0; i < 4; i++) {
@@ -1629,7 +1609,7 @@ unsigned char CheckTitle_OriginalKartCoinMilage(void)
     if (g_characterId < 0 || g_characterId >= 13) {
         return 0;
     }
-    if (milage >= lbl_80326A64[g_characterId][0] && milage <= lbl_80326A64[g_characterId][1]) {
+    if (milage >= CheckTitle_OriginalKartCoinMilage_rodata_80326A64[g_characterId][0] && milage <= CheckTitle_OriginalKartCoinMilage_rodata_80326A64[g_characterId][1]) {
         SetTitle(0x3F, 0);
         return 1;
     }
@@ -1644,13 +1624,13 @@ unsigned char TitleCheck_NewClearedCountStep(void)
     if (g_ccClass == 1) {
         int cur = fn_801D5970(&g_playerData);
 
-        if (cur != fn_801D5970(&lbl_805D2F40) && (signed char)cur > 0 && cur <= 16) {
+        if (cur != fn_801D5970(&RankLog_bss_805D2F40) && (signed char)cur > 0 && cur <= 16) {
             SetTitle(cur + 0x1B, 0);
             return 1;
         }
         return 0;
     } else {
-        unsigned char *a = (unsigned char *)&lbl_805D2F40;
+        unsigned char *a = (unsigned char *)&RankLog_bss_805D2F40;
         unsigned char *b = (unsigned char *)&g_playerData;
         int na = 0;
         int nb = 0;
@@ -1674,7 +1654,7 @@ unsigned char TitleCheck_NewClearedCountStep(void)
             return 0;
         }
         for (i = 0; i < 16; i++) {
-            if (na == lbl_80326A24[i]) {
+            if (na == TitleCheck_NewClearedCountStep_rodata_80326A24[i]) {
                 SetTitle(i + 0x2C, 0);
                 return 1;
             }
@@ -1693,7 +1673,7 @@ unsigned char fn_800A87E0(void)
         return 0;
     }
     for (i = 0; i < 4; i++) {
-        if (total % lbl_80326A14[i] == 0) {
+        if (total % RankLog_rodata_80326A14[i] == 0) {
             SetTitle(i + 0x18, 0);
             return 1;
         }
@@ -1733,11 +1713,11 @@ unsigned char fn_800A88FC(void)
     int wins = g_playerData.wins;
     int i;
 
-    if (wins == lbl_805D2F40.wins) {
+    if (wins == RankLog_bss_805D2F40.wins) {
         return 0;
     }
     for (i = 17; i >= 0; i--) {
-        if (wins == lbl_803269CC[i]) {
+        if (wins == RankLog_rodata_803269CC[i]) {
             SetTitle(i + 3, 0);
             return 1;
         }
@@ -1753,7 +1733,7 @@ unsigned char fn_800A8974(void)
     if (losses == 0) {
         return 0;
     }
-    if (lbl_805D2F40.losses == losses) {
+    if (RankLog_bss_805D2F40.losses == losses) {
         return 0;
     }
     if (pd->b19B == 0x2E) {

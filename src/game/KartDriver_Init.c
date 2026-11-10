@@ -5,13 +5,9 @@
 /* Observed views only; external constructors own opaque allocation storage. */
 struct Driver;
 struct Normal3D { unsigned char opaque[92]; Normal3D(const char *, int); };
-struct EffectBus { unsigned char opaque[88]; EffectBus(Driver *); };
-struct TireFX { unsigned char opaque[196]; TireFX(int,int,void*,void*,void*,void*); };
-struct DriverTail {
-    Driver *owner; int a04, a08, a0C, a10;
-    unsigned char a14,a15,pad16[2]; int a18;
-    DriverTail(Driver *p) { owner=p; a04=0; a0C=0; a10=0; a14=0; a15=0; a18=-1; }
-};
+#include "game/types/EffectBus.h"
+#include "game/types/TireFX.h"
+#include "game/types/DriverTail.h"
 struct Driver {
     Normal3D *kart; unsigned char pad04[8];
     Normal3D *character,*animation,*other,*shadow;
@@ -33,12 +29,12 @@ struct Driver {
     unsigned char pad369[11]; int a374,a378; unsigned char pad37C[4]; int a380;
 };
 struct ModelEntry { const char *file; unsigned char pad04[8]; };
-struct CharacterEntry { unsigned char pad00[4]; const char *file,*anim,*other; unsigned char pad10[8]; const char **motion; unsigned char pad1C[16]; };
-struct JointMatrix { unsigned char pad00[28]; float value; };
+#include "game/types/CharacterEntry.h"
+#include "game/types/JointMatrix.h"
 extern "C" {
 extern int g_kartStartSlot; extern void *g_raceCamera;
 extern const float lbl_806D2540,lbl_806D2570,lbl_806D2574;
-extern const char lbl_806D263C[7],lbl_806D2644[6],lbl_802E9F80[];
+extern const char lbl_806D263C[7],lbl_806D2644[6],KartDriver_rodata_802E9F80[];
 int HeapStats_DumpForTag(const char *,int);
 ModelEntry *GetKartModelNameEntry(int,int);
 CharacterEntry *GetCharacterDataEntry(int);
@@ -78,7 +74,7 @@ extern const char *mario_cart_tire_rr_joint[];
 extern const char *mario_shadow_dat[];
 }
 extern "C" int KartDriver_Init(Driver *self,int id,int characterId,void *matrix,int slot,int unused,int mode) {
-    const char *pool=lbl_802E9F80;
+    const char *pool=KartDriver_rodata_802E9F80;
     int heap=HeapStats_DumpForTag(lbl_806D263C,0);
     ModelEntry *model=GetKartModelNameEntry(characterId,mode);
     CharacterEntry *character=GetCharacterDataEntry(characterId);

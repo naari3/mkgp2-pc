@@ -1,28 +1,16 @@
 /*
  * 0x8021A7C8..0x8021B568: clCSOrgKartModel, the kart + driver model shown
- * on the result / course select screens (vtable lbl_804EDCFC, base
- * lbl_8048EAE8). One TU, built with -inline deferred and -RTTI on, so the
+ * on the result / course select screens (vtable clCSOrgKartModel_vtable_804EDCFC, base
+ * clCSModelInterface_vtable_8048EAE8). One TU, built with -inline deferred and -RTTI on, so the
  * functions are written in reverse address order (ctor, dtor, Update, Draw).
  * The class action (RTTI + vtable) runs before the deferred ctor is
  * generated, so the ctor reaches the vtable through the .data section anchor
  * (lbl_804EDC88 + 0x74), like TaMode (docs/matching_rules.md section 6).
  */
 
-struct HSD_JObj {
-    char pad00[0x14];
-    unsigned int flags;
-    char pad18[0x38 - 0x18];
-    float tx;
-    float ty;
-    float tz;
-    float mtx[3][4];
-};
+#include "game/types/HSD_JObj.h"
 
-struct Vec3 {
-    float x;
-    float y;
-    float z;
-};
+#include "game/types/Vec3.h"
 
 struct clNormal3D {
     char pad[0x5C];
@@ -109,18 +97,18 @@ static inline void JObjGetTranslation(HSD_JObj *jobj, Vec3 *t) {
     if (jobj == 0) {
         __assert(lbl_806DAFD8, 0x3E4, lbl_806DAFE0);
     }
-    t->x = jobj->tx;
-    t->y = jobj->ty;
-    t->z = jobj->tz;
+    t->x = jobj->translate.x;
+    t->y = jobj->translate.y;
+    t->z = jobj->translate.z;
 }
 
 static inline void JObjSetTranslate(HSD_JObj *jobj, Vec3 *t) {
     if (jobj == 0) {
         __assert(lbl_806DAFD8, 0x3A9, lbl_806DAFE0);
     }
-    jobj->tx = t->x;
-    jobj->ty = t->y;
-    jobj->tz = t->z;
+    jobj->translate.x = t->x;
+    jobj->translate.y = t->y;
+    jobj->translate.z = t->z;
     if (!(jobj->flags & 0x02000000)) {
         if (jobj != 0 && !JObjMtxIsDirty(jobj)) {
             HSD_JObjSetMtxDirtySub(jobj);

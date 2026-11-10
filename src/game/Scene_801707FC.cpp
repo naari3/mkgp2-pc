@@ -4,41 +4,19 @@
  * faces are added to the special face mesh and it scales in).
  */
 
-struct Vec3f {
-    float x, y, z;
-};
+#include "game/types/Vec3f.h"
 
-struct GrowSub {
-    char pad00[0x10];
-    unsigned char started;
-    unsigned char done;
-};
+#include "game/types/GrowSub.h"
 
 struct GrowFace {
     char pad00[0x34];
 };
 
-struct GrowEntry {
-    void *jobj;
-    GrowFace *faces;
-    int faceCount;
-    void *trigger;
-    int state;
-    float t;
-    float scale;
-    GrowSub *sub;
-};
+#include "game/types/GrowEntry.h"
 
-struct GrowSet {
-    char pad00[0x8];
-    GrowEntry *entries;
-    int count;
-};
+#include "game/types/GrowSet.h"
 
-struct KartDriver {
-    char pad00[0x240];
-    int lap;
-};
+#include "game/types/KartDriver.h"
 
 extern "C" {
 extern int g_totalLaps;

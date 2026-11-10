@@ -8,12 +8,12 @@
  * holding the two option buttons and a blinking cursor.
  *
  *   FlowTask
- *     YesNoTask    (vtable lbl_804EC4C0, size 0x24)
- *     YesNoCursor  (vtable lbl_804EC4D8, size 0x28)
- *     YesNoSpark   (vtable lbl_804EC504, size 0x2C)
- *     YesNoButton  (ctor fn_80207324, vtable lbl_804EC54C, size 0x6C)
- *       YesNoButtonL (vtable lbl_804EC534, size 0x84)
- *       YesNoButtonR (vtable lbl_804EC51C, size 0x74)
+ *     YesNoTask    (vtable YesNoTask_vtable_804EC4C0, size 0x24)
+ *     YesNoCursor  (vtable YesNoCursor_vtable_804EC4D8, size 0x28)
+ *     YesNoSpark   (vtable YesNoSpark_vtable_804EC504, size 0x2C)
+ *     YesNoButton  (ctor fn_80207324, vtable YesNoButton_vtable_804EC54C, size 0x6C)
+ *       YesNoButtonL (vtable YesNoButtonL_vtable_804EC534, size 0x84)
+ *       YesNoButtonR (vtable YesNoButtonR_vtable_804EC51C, size 0x74)
  */
 
 extern "C" {
@@ -33,10 +33,7 @@ extern const float lbl_806DAB4C;
 extern const float lbl_806DAB50;
 extern const float lbl_806DAB54;
 
-struct YesNoPos {
-    float x;
-    float y;
-};
+#include "game/types/YesNoPos.h"
 extern const YesNoPos lbl_806DAAF8;
 
 void fn_8020A734(FlowFader *fader, int frames, float from, float to);
@@ -48,75 +45,7 @@ void fn_8011FAFC(ResCtrl *ctrl, int layer);
 void fn_80121E10(ResCtrl *ctrl);
 }
 
-struct YesNoButton : FlowTask {
-    int layer;
-    int kind;
-    int field18;
-    const char *text0;
-    const char *text1;
-    int state;
-    VHolder<FlowFaderF> fade;
-    float x;
-    float y;
-    float field34;
-    float field38;
-    float scale;
-    float scaleX;
-    float scaleY;
-    int alpha;
-    bool selected;
-    VHolder<FlowFaderF> appear;
-    VHolder<FlowFaderF> offX;
-    VHolder<FlowFaderF> offY;
-    VHolder<FlowFaderI> alphaF;
-    VHolder<FlowFaderF> pulse;
-    VHolder<FlowFaderF> zoomX;
-    VHolder<FlowFaderF> zoomY;
-    YesNoButton(int kind_, bool flag, int layer_, int id);
-    ~YesNoButton() {}
-    virtual void _key2();
-    void Animate();
-
-    unsigned int Color() {
-        int c = 0x7FFFFF;
-        if (selected) {
-            c = -1;
-        }
-        return (c & ~0xFF) | alpha;
-    }
-    /* Fills colour, scale and the (ox, oy) button-space position of c. */
-    void Place(ResCtrl &c, unsigned int col, float ox, float oy) {
-        c.SetColor(col);
-        c.SetScaleXY(scaleX, scaleY);
-        c.Show(ox * scaleX + (x + field34), oy * scaleY + (y + field38), lbl_806DAB20);
-    }
-    /* Draws resource res at the absolute position (px, py). */
-    void PutAbs(ResCtrl &c, int res, unsigned int col, float px, float py, int lay) {
-        fn_80121E10(&c);
-        c.resId = res;
-        c.SetColor(col);
-        c.SetScaleXY(scaleX, scaleY);
-        c.Show(px, py, lbl_806DAB20);
-        fn_8011FAFC(&c, lay);
-    }
-
-    void SetSelected(bool sel) {
-        if (selected != sel) {
-            if (sel) {
-                fn_8020A734(fade.p, 5, lbl_806DAB10, lbl_806DAB14);
-                fn_8020A734(pulse.p, 5, lbl_806DAB18, lbl_806DAB1C);
-                fn_8020A734(zoomX.p, 0xF, lbl_806DAB20, lbl_806DAB24);
-                fn_8020A734(zoomY.p, 0xF, lbl_806DAB20, lbl_806DAB28);
-            } else {
-                fn_8020A734(fade.p, 5, lbl_806DAB2C, lbl_806DAB30);
-                fn_8020A734(pulse.p, 5, lbl_806DAB20, lbl_806DAB24);
-                fn_8020A734(zoomX.p, 1, lbl_806DAB20, lbl_806DAB20);
-                fn_8020A734(zoomY.p, 1, lbl_806DAB20, lbl_806DAB20);
-            }
-        }
-        selected = sel;
-    }
-};
+#include "game/types/YesNoButton.h"
 
 /* Draws resource res of a YesNoButton member function at (ox, oy) in button space. */
 #define YN_PUT(c, res, col, ox, oy, lay) \
@@ -192,26 +121,7 @@ struct YesNoButtonR : YesNoButton {
     void DrawLabel();
 };
 
-struct YesNoSpark : FlowTask {
-    VHolder<FlowFaderF> offset;
-    VHolder<FlowFaderF> scale;
-    VHolder<FlowFaderF> alpha;
-    int layer;
-    float x;
-    float y;
-    unsigned char flag;
-    YesNoSpark(int id, int layer_, float x_, float y_, unsigned char flag_)
-        : FlowTask(id), offset(new FlowFaderF(lbl_806DAB10)), scale(new FlowFaderF(lbl_806DAB10)), alpha(new FlowFaderF(lbl_806DAB10)),
-          layer(layer_), x(x_), y(y_), flag(flag_) {
-        fn_8020A734(offset.p, 0x14, lbl_806DAB10, lbl_806DAB54);
-        fn_8020A734(scale.p, 0xA, lbl_806DAB18, lbl_806DAB20);
-        fn_8020A734(alpha.p, 0xA, lbl_806DAB10, lbl_806DAB20);
-    }
-    ~YesNoSpark();
-    virtual void Update();
-    virtual void Draw();
-    virtual void _key2();
-};
+#include "game/types/YesNoSpark.h"
 
 struct YesNoCursor : FlowTask {
     VHolder<FlowSceneList> list;

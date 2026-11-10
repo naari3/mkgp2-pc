@@ -10,9 +10,7 @@ typedef struct HSD_JObj {
     Mtx mtx;
 } HSD_JObj;
 
-typedef struct Vec3 {
-    float x, y, z;
-} Vec3;
+#include "game/types/Vec3.h"
 
 extern char lbl_806D2548[7];
 extern char lbl_806D2550[5];
@@ -52,10 +50,7 @@ static inline float (*HSD_JObjGetMtxPtr(HSD_JObj *jobj))[4]
     return jobj->mtx;
 }
 
-typedef struct ItemKartFlag {
-    unsigned char pad0[4];
-    unsigned char active; /* 0x4 */
-} ItemKartFlag;
+#include "game/types/ItemKartFlag.h"
 
 typedef struct ItemKart {
     unsigned char pad000[0x1C];

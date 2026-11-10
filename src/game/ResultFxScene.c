@@ -1,12 +1,12 @@
 /* sdata symbols referenced from asm */
-extern unsigned char lbl_806CF6A8[4];
-extern unsigned char lbl_806CF6AC[4];
-extern unsigned char lbl_806CF6B0[4];
-extern unsigned char lbl_806CF6B4[4];
-extern char lbl_806CF6B8[4];
+extern unsigned char ResultFxScene_data_806CF6A8[4];
+extern unsigned char ResultFxScene_data_806CF6AC[4];
+extern unsigned char ResultFxScene_data_806CF6B0[4];
+extern unsigned char ResultFxScene_data_806CF6B4[4];
+extern char ResultFxScene_data_806CF6B8[4];
 /*
  * Result effect scene on the shared sprite-effect base (vtable
- * lbl_8048EC9C): trophy model zoom/spin, cup sprites and the caption
+ * ResultFx_vtable_8048EC9C): trophy model zoom/spin, cup sprites and the caption
  * text. The base declares a virtual that is not defined here first, so no
  * vtable is emitted.
  *
@@ -21,30 +21,17 @@ struct SpritePos {
     float x, y;
     float rest[9];
 };
-struct TexMgr {
-    unsigned char pad0[0x18];
-    int mode;
-    unsigned char pad1C[4];
-    unsigned int color;
-    unsigned char pad24[0x208];
-    float fade;
-    TexMgr();
-    ~TexMgr() {}
-    void SetColor(unsigned int c) {
-        mode = 1;
-        color = c;
-    }
-};
+#include "game/types/TexMgr.h"
 
 extern "C" {
 extern char lbl_8048EB44[];
-extern char lbl_8048EBCC[];
-extern char lbl_8048EC9C[];
-extern int lbl_803604D8[];
-extern int lbl_80360498[][2];
-extern unsigned int lbl_80360520[];
-extern char lbl_806CF688[4];
-extern char lbl_806CF68C[4];
+extern char TrophyFx_vtable_8048EBCC[];
+extern char ResultFx_vtable_8048EC9C[];
+extern int ResultFx_rodata_803604D8[];
+extern int ResultFx_rodata_80360498[][2];
+extern unsigned int ConfettiField_rodata_80360520[];
+extern char ResultFx_data_806CF688[4];
+extern char ResultFx_data_806CF68C[4];
 extern int g_cupId;
 extern const float lbl_806D77AC, lbl_806D77B0, lbl_806D77B8, lbl_806D7840, lbl_806D7860;
 extern const float lbl_806D7868;
@@ -130,15 +117,7 @@ static const int s_cupParam[8][3] = {
 };
 
 
-struct InputPlayer {
-    virtual void v0();
-    virtual void v1();
-    virtual float v2();
-    virtual void v3();
-    virtual float StickRight();
-    virtual float StickLeft();
-    virtual unsigned char Pressed(int mask);
-};
+#include "game/types/InputPlayer.h"
 
 struct ResCtrl {
     int resId;
@@ -193,7 +172,7 @@ extern void *GetInputManager(void);
 extern InputPlayer *InputMgr_GetPlayer(void *, int);
 extern void SetRumbleMode(unsigned int ch, unsigned int mode, int duration);
 extern struct { char pad[0x20]; signed char f20; } lbl_80598A60;
-extern char lbl_806CF690[4];
+extern char ResultFx_data_806CF690[4];
 extern const char lbl_806D77C4[4];
 extern const char lbl_806D780C[7];
 extern const char lbl_806D7824[5];
@@ -206,51 +185,17 @@ extern const float lbl_806D7850, lbl_806D7854, lbl_806D7858, lbl_806D785C;
 extern const float lbl_806DA870, lbl_806DA874;
 }
 
-struct FxData {
-    int obj;
-    unsigned char active;
-    float x, y;
-    float alpha;
-};
+#include "game/types/FxData.h"
 
-struct FxBase : FxData {
-    FxBase() {
-        obj = 0;
-        active = 0;
-        x = 0.0f;
-        y = 0.0f;
-        alpha = 1.0f;
-    }
-    virtual ~FxBase() {}
-    virtual void m0C();
-    virtual void m10();
-    virtual void Update();
-    virtual void Draw();
-    virtual void m1C();
-};
+#include "game/types/FxBase.h"
 
-struct Handle {
-    virtual ~Handle();
-    virtual void Stop();
-};
+#include "game/types/Handle.h"
 
-struct HandleF : Handle {
-    unsigned char pad[0x18];
-    float x, y;
-    void SetXY(float a, float b) {
-        x = a;
-        y = b;
-    }
-};
+#include "game/types/HandleF.h"
 
 extern "C" HandleF *fn_8020007C(int a, int obj, int b);
 
-struct SpriteRef {
-    struct Sprite {
-        char pad[0x20];
-        float t;
-    } *spr;
-};
+#include "game/types/SpriteRef.h"
 
 static inline float Lerp(float a, float b, float cur, float end) {
     return (b - a) * (cur / end) + a;
@@ -344,7 +289,7 @@ void ResultFx::Update() {
         if (t >= 30.0f) {
             state = 3;
             t = 0.0f;
-            SpriteGroup_CreateOrInit(&anims[2], lbl_806CF6B8, 0, pos.x, pos.y);
+            SpriteGroup_CreateOrInit(&anims[2], ResultFxScene_data_806CF6B8, 0, pos.x, pos.y);
             SpriteAnimParamBlock_SetAnimParamCached(anims[2], 0x1EA2, s_cupParam[f24][f3C]);
             SpriteAnimParamBlock_SetAnimParamCached(anims[2], 0x1EAA, s_cupParam[f24][f38]);
         }
@@ -469,10 +414,10 @@ ResultFx::ResultFx() {
     anims[2] = 0;
     anims[3] = 0;
     anims[4] = 0;
-    SpriteGroup_CreateOrInit(&anims[0], (const char *)lbl_806CF6A8, 0, 320.0f, 85.0f);
-    SpriteGroup_CreateOrInit(&anims[1], (const char *)lbl_806CF6AC, 0, 320.0f, 384.0f);
-    SpriteGroup_CreateOrInit(&anims[3], (const char *)lbl_806CF6B0, 1, 320.0f, 85.0f);
-    SpriteGroup_CreateOrInit(&anims[4], (const char *)lbl_806CF6B4, 1, 320.0f, 384.0f);
+    SpriteGroup_CreateOrInit(&anims[0], (const char *)ResultFxScene_data_806CF6A8, 0, 320.0f, 85.0f);
+    SpriteGroup_CreateOrInit(&anims[1], (const char *)ResultFxScene_data_806CF6AC, 0, 320.0f, 384.0f);
+    SpriteGroup_CreateOrInit(&anims[3], (const char *)ResultFxScene_data_806CF6B0, 1, 320.0f, 85.0f);
+    SpriteGroup_CreateOrInit(&anims[4], (const char *)ResultFxScene_data_806CF6B4, 1, 320.0f, 384.0f);
     SpriteAnimParamBlock_SetAnimParamCached(anims[0], 0x1529, s_cupAnim[f24]);
     ((SpriteRef *)anims[3])->spr->t = 0.0f;
     ((SpriteRef *)anims[4])->spr->t = 0.0f;

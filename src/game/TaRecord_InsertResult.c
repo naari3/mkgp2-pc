@@ -2,23 +2,15 @@
  * current course's best-time list and, for a top-10 time, its name record. */
 typedef unsigned short wchar;
 
-typedef struct HiScoreName {
-    wchar name[6];          /* 0x0 */
-    unsigned char kart;     /* 0xC */
-    unsigned char extra[3]; /* 0xD */
-} HiScoreName;
+#include "game/types/HiScoreName.h"
 
-typedef struct BackupHiScores {
-    unsigned char pad000[0x4E0];
-    HiScoreName names[2][9][2][2][10]; /* 0x04E0 */
-    float times[2][9][2][2][50];       /* 0x31E0 */
-} BackupHiScores;
+#include "game/types/BackupHiScores.h"
 
 extern int g_ccClass;
 extern int g_cupId;
 extern int g_longRoundFlag;
 extern int g_reverseRoundFlag;
-extern int lbl_806D112C; /* last inserted rank */
+extern int TaRecord_bss_806D112C; /* last inserted rank */
 extern BackupHiScores lbl_80598A60;
 
 #pragma exceptions on
@@ -36,7 +28,7 @@ int TaRecord_InsertResult(wchar *name, unsigned char e0, unsigned char e1, unsig
     int k;
     int n;
 
-    lbl_806D112C = -1;
+    TaRecord_bss_806D112C = -1;
     if (cc == 0) return -1;
     if (cls < 0 || cls >= 2) return -1;
     if (cup < 0 || cup >= 9) return -1;
@@ -47,17 +39,17 @@ int TaRecord_InsertResult(wchar *name, unsigned char e0, unsigned char e1, unsig
     times = lbl_80598A60.times[cls][cup][longRound][reverse];
     for (i = 0; i < 50; i++) {
         if (time < times[i]) {
-            lbl_806D112C = i;
+            TaRecord_bss_806D112C = i;
             break;
         }
     }
-    if (lbl_806D112C >= 0) {
-        for (j = 49; j > lbl_806D112C; j--) {
+    if (TaRecord_bss_806D112C >= 0) {
+        for (j = 49; j > TaRecord_bss_806D112C; j--) {
             times[j] = times[j - 1];
         }
-        times[lbl_806D112C] = time;
-        if (lbl_806D112C < 10) {
-            for (k = 9; k > lbl_806D112C; k--) {
+        times[TaRecord_bss_806D112C] = time;
+        if (TaRecord_bss_806D112C < 10) {
+            for (k = 9; k > TaRecord_bss_806D112C; k--) {
                 for (n = 0; n < 6; n++) {
                     names[k].name[n] = names[k - 1].name[n];
                 }
@@ -67,14 +59,14 @@ int TaRecord_InsertResult(wchar *name, unsigned char e0, unsigned char e1, unsig
                 names[k].extra[2] = names[k - 1].extra[2];
             }
             for (n = 0; n < 6; n++) {
-                names[lbl_806D112C].name[n] = name[n];
+                names[TaRecord_bss_806D112C].name[n] = name[n];
             }
-            names[lbl_806D112C].kart = kart;
-            names[lbl_806D112C].extra[0] = e0;
-            names[lbl_806D112C].extra[1] = e1;
-            names[lbl_806D112C].extra[2] = e2;
+            names[TaRecord_bss_806D112C].kart = kart;
+            names[TaRecord_bss_806D112C].extra[0] = e0;
+            names[TaRecord_bss_806D112C].extra[1] = e1;
+            names[TaRecord_bss_806D112C].extra[2] = e2;
         }
     }
-    return lbl_806D112C;
+    return TaRecord_bss_806D112C;
 }
 #pragma exceptions reset

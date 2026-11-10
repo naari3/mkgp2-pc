@@ -1,6 +1,6 @@
 /* Drift-spark shadow colour controller: observed local ABI views only. */
-struct Vec3 { float x, y, z; };
-struct KartState { unsigned char pad00[0x10]; unsigned long long flags; };
+#include "game/types/Vec3.h"
+#include "game/types/KartState.h"
 struct Kart { unsigned char pad00[0x238]; int enabled; unsigned char pad23C[0xC8]; KartState *state; };
 struct Effect {
     unsigned char pad00[0x2C]; float alpha; Vec3 color;
@@ -13,7 +13,7 @@ struct Effect {
 };
 struct ResourceView { unsigned char pad00[0x890]; Vec3 colors[3]; };
 extern "C" {
-extern ResourceView lbl_80329E20;
+extern ResourceView KartFxExhaustRay_rodata_80329E20;
 extern void *lbl_806D109C;
 extern const float lbl_806D51C0, lbl_806D51C4, lbl_806D51D4, lbl_806D51D8;
 extern const float lbl_806D528C, lbl_806D5274;
@@ -39,7 +39,7 @@ static inline bool Decay(float *value, float step, float minimum) {
     return false;
 }
 extern "C" void KartFx_Slot60_DriftSparkTick(Effect *e) {
-    ResourceView *resources = &lbl_80329E20;
+    ResourceView *resources = &KartFxExhaustRay_rodata_80329E20;
     KartState *s = e->kart->state;
     int red = 0;
     if (SparkFlag(s)) red = 1;

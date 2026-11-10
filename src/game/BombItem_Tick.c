@@ -5,9 +5,7 @@
  * phase 2 detonates it when the fuse runs out or the kart loses the bomb
  * flag, and phase 3 fades it out. While thrown it rides in front of the
  * kart, lerped from the hand matrix. State 3 frees the item. */
-typedef struct Vec {
-    float x, y, z;
-} Vec;
+#include "game/types/Vec.h"
 
 typedef float Mtx44[4][4];
 typedef float Mtx34[3][4];
@@ -42,8 +40,8 @@ typedef struct BombItem {
 } BombItem;
 
 typedef struct KartFlags {
-    unsigned char pad00[0x10];
-    unsigned long long flags; /* 0x10 */
+    char pad[0x10];
+    unsigned long long bits;
 } KartFlags;
 
 extern void BombExplosion_InitOrDestroy(BombItem *self);
@@ -136,7 +134,7 @@ void BombItem_Tick(BombItem *self)
                 }
                 break;
             case 2:
-                if ((KART_FLAGS(self->driver)->flags & 0x4000000) == 0) {
+                if ((KART_FLAGS(self->driver)->bits & 0x4000000) == 0) {
                     self->timers[0] = 0;
                 }
                 if (self->timers[0] == 0) {

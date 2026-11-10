@@ -4,7 +4,7 @@
 #include "game/anon_8021BC44Private.h"
 
 /*
- * 0x8021BC44..0x8021ED1C: time attack result scene (vtable lbl_804EDD98,
+ * 0x8021BC44..0x8021ED1C: time attack result scene (vtable TimeAttackResult_vtable_804EDD98,
  * base lbl_803FE0C8). Shows the lap time and rank, lets a new record enter
  * its name, then offers the coin continue panel.
  *
@@ -15,14 +15,7 @@
 void *operator new(unsigned long size);
 void operator delete(void *p) throw();
 
-struct InputState {
-    char pad00[4];
-    unsigned char enabled;
-    char pad05[0xF];
-    int dir;
-    int held;
-    int edge;
-};
+#include "game/types/InputState.h"
 
 struct ResCtrl {
     int resId;
@@ -743,14 +736,7 @@ static inline unsigned int PackColor(int r, int g, int b, int a) {
     return ((r & 0xFF) << 24) | ((g & 0xFF) << 16) | ((b & 0xFF) << 8) | (a & 0xFF);
 }
 
-struct SceneBase {
-    virtual ~SceneBase() {}
-    virtual void Destroy();
-    virtual void Update();
-    virtual void Draw();
-    bool done;
-    SceneBase() : done(false) {}
-};
+#include "game/types/SceneBase.h"
 
 struct TimeAttackResult : SceneBase {
     virtual void _key();

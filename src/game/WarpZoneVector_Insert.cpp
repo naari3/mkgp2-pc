@@ -12,32 +12,19 @@ void *FUN_8003b120(unsigned long);
 void *Alloc(unsigned long);
 void MemoryManager_TimedFree(void *);
 extern const char lbl_803284A4[];
-extern const char lbl_803284F8[];
+extern const char WarpZoneVector_Reserve_rodata_803284F8[];
 }
 inline void *operator new(unsigned long, void *p) { return p; }
 inline void operator delete(void *, void *) {}
 
 /* Four corners have nontrivial lifetime; the two remaining vectors are plain. */
-struct WarpPlainVector { float x, y, z; };
-struct WarpCorner : WarpPlainVector {
-    WarpCorner(const WarpCorner &v) : WarpPlainVector(v) {}
-    ~WarpCorner();
-};
-struct WarpZoneValue {
-    unsigned long flags;
-    WarpCorner corners[4];
-    WarpPlainVector vector1, vector2;
-    float distance;
-};
+#include "game/types/WarpPlainVector.h"
+#include "game/types/WarpCorner.h"
+#include "game/types/WarpZoneValue.h"
 inline void *operator new(unsigned long, WarpZoneValue *p) throw() { return p; }
 inline void operator delete(void *, WarpZoneValue *) throw() {}
 
-struct WarpErrorString {
-    char *ptr;
-    void *control;
-    WarpErrorString(void *);
-    ~WarpErrorString();
-};
+#include "game/types/WarpErrorString.h"
 struct WarpString {
     WarpErrorString storage;
     ~WarpString();
@@ -56,19 +43,7 @@ struct length_error : logic_error {
 };
 }
 
-struct WarpZoneVectorStorage {
-    unsigned long capacity, count;
-    WarpZoneValue *data;
-    WarpZoneVectorStorage() : capacity(0), count(0), data(0) {}
-    ~WarpZoneVectorStorage();
-    void swap(WarpZoneVectorStorage &other) {
-        if (this != &other) {
-            unsigned long c = capacity; capacity = other.capacity; other.capacity = c;
-            WarpZoneValue *p = data; data = other.data; other.data = p;
-            unsigned long n = count; count = other.count; other.count = n;
-        }
-    }
-};
+#include "game/types/WarpZoneVectorStorage.h"
 extern "C" {
 void WarpZoneVector_Clear(WarpZoneVectorStorage *);
 void WarpZoneArray_UninitFillN(WarpZoneValue *, unsigned long, const WarpZoneValue *);
@@ -104,7 +79,7 @@ WarpZoneVectorStorage::~WarpZoneVectorStorage() {
 #pragma auto_inline off
 extern "C" void WarpZoneVector_Reserve(WarpZoneVectorStorage *s, unsigned long n) {
     if (n > s->capacity) {
-        if (n > 0x03333333) throw std::length_error(lbl_803284F8);
+        if (n > 0x03333333) throw std::length_error(WarpZoneVector_Reserve_rodata_803284F8);
         WarpZoneVectorStorage temp;
         temp.data = (WarpZoneValue *)Alloc(n * sizeof(WarpZoneValue));
         temp.capacity = n;

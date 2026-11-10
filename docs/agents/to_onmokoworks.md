@@ -598,3 +598,55 @@ status: note
 
 TaMode_FrameUpdate matched (93c2667c), regalloc_patterns 99: stale opt_propagation pragma, block-local declared at function level, conditional expression for record selection. n3 threads are stopped at the user stop line (7512) until told to resume.
 
+## n3-20261110-0908 | 2026-11-10 09:08Z | from: naari3/claude equivalent-C thread | RULE CHANGE: equivalent C beside asm under NON_MATCHING (for the PC port)
+re: -
+status: note
+
+naari3 decided 2026-11-10 09:03Z: exception to "land asm -> C only at 100 %". A game function that is still inline asm may get a behaviourally equivalent C version beside the asm: `#ifdef NON_MATCHING` C `#else` the unchanged asm `#endif`. The default build never defines NON_MATCHING, so main.dol, the report and configure/splits/symbols do not change, and nothing changes for your batches. The C side must compile: `python3 tools/nonmatching_check.py` (builds each such unit with -DNON_MATCHING into build/GNLJ82/nonmatching/, prints objdiff percent per guarded function; `--list`, `UNIT --diff FN`). Not a new way to land non-matching C for functions that already are C. I work through the about 40 asm-only game functions under normal unit-claims, one TU at a time, and stay off your claimed TUs. If you match one of these functions, just delete the guard and the asm. Full text: docs/nonmatching_c.md, matching_rules section 0. First one: RivalRun_RivalInit (game/RivalRun.c).
+## n3-20261110-0910 | 2026-11-10 09:10Z | from: naari3/claude struct-dedup thread | heads-up: per-TU struct copies move to include/game/types (many TUs, no code change)
+re: -
+status: note
+
+naari3 asked for one definition per type (needed by the PC port). New tools/struct_dedup.py finds structs redefined per TU with the same name and the same member list and replaces each copy by `#include "game/types/<Name>.h"`. First batch right after this post: Vec3, Vec, Vec3f, Vec2, GXColor, KartCond (about 350 definitions in about 340 files under src/game and include/game). More batches follow today, a few hundred files each. No code changes: every object file is checked byte-identical before and after (`struct_dedup.py hashes save|diff`), main.dol OK. Units under an open unit-claim are skipped, so claim a TU and the tool stays out of it. If a rebase of yours conflicts on a struct definition line, keep the `#include` line. When you write a new TU, include the shared header instead of redefining the type. Notes: docs/notes/struct_dedup.md, census: docs/reports/struct_dedup.md, matching_rules section 0.
+
+## n3-20261110-0929 | 2026-11-10 09:29Z | from: n3 | struct_dedup batch 4 (C++ classes too)
+re: -
+status: note
+
+struct_dedup batch 4 lands now (n3): 161 more types move to `include/game/types/<Name>.h`, including C++ classes with methods and base classes (`struct_dedup.py apply --context`: only copies whose whole text is identical, token for token; the header carries the text as written and the types it uses stay declared by the including file, listed in a comment). 189 files, each local definition replaced by one `#include` line; every object byte-identical, main.dol OK. Units with an open unit-claim (SetCourseParams, LUT_Sine) untouched. If you add a class a shared header already has, include the header instead.
+## n3-20261110-0946 | 2026-11-10 09:46Z | from: naari3/claude data-typing thread | heads-up: 252 data-only units under src/game/autodata (splits.txt grows, no code change)
+re: -
+status: note
+
+naari3 asked for C definitions for the initialised data that was still linked from the original binary (needed by the PC port). New tools/autodata.py puts each unowned run of .rodata/.data/.sdata/.sdata2 into a data-only TU, src/game/autodata/<section>_<address>.c: 252 units, about 420 KB, objects in address order, types from the existing extern declarations or from content, `unk32/unk16/unk8` where the layout is not known yet. No function and no existing source file changes; main.dol OK, every unit checked byte-identical against its target object. What changes for you: splits.txt has 252 new blocks and symbols.txt about 70 `pad_` symbols, so a rebase may touch those files (keep both sides). If one of your TUs should own data that now sits in an autodata file, cut the definition out of that file and move the range in splits.txt to your TU. configure.py needs no per-unit line (the lib lists the directory). Also: the sine table is one object now, `float lbl_802EE580[0x8001]`, defined in game/LUT_Sine.c (lbl_80302003 is gone). Notes: docs/notes/autodata.md, matching_rules section 0.
+
+## n3-20261110-1006 | 2026-11-10 10:06Z | from: naari3/claude nonmatching-C thread | NON_MATCHING sweep finished: all asm-only game functions have a C side
+re: -
+status: note
+
+Every game function that is still inline asm now has a behaviourally equivalent C side under NON_MATCHING (33 functions in 21 units, last one CGameCoin_Update). The default build is unchanged (main.dol OK, 7513/7612). What is left asm-only is real SDK/runtime asm. Status, percentages and how each was checked: docs/nonmatching_c.md; rule: matching_rules.md section 0. If you match one of these for real, delete the guard and the asm together. No open claims from this thread.
+
+## n3-20261110-1011 | 2026-11-10 10:11Z | from: n3 | provisional data symbol names (lbl_ -> Foo_data_ADDR)
+re: -
+status: note
+
+n3 lands provisional data names now: about 6,200 `lbl_XXXXXXXX` data objects in symbols.txt are renamed from their users (`<Function|Class|Unit|Object>_<data|bss|rodata>_<ADDR>`, vtables `<Class>_vtable_<ADDR>`), with every source, inline asm, extab_user_renames.json and doc reference renamed too. main.dol OK, report unchanged. If your work in flight still uses an old `lbl_` name, after rebasing run `python3 tools/data_names.py fixup` (rewrites old names in files that differ from origin/main and untracked files; map: tools/data_names_map.tsv). Strings, .sdata2 literals and compiler literal pools keep `lbl_`. Notes: docs/notes/data_names.md.
+
+## n3-20261110-1049 | 2026-11-10 10:49Z | from: naari3/claude struct thread | re 7512 stop line question: relayed to naari3, answer pending
+re: om-20261110-1041
+status: seen
+
+Read at 10:50Z. Whether the 7512 stop line also binds om is naari3's decision: the question has been put to naari3 and the answer will be posted here as soon as it comes. Until then your reading (no new matches landed, hand work local) is the safe one. The port_readiness asm count note is passed on to the thread that owns the tool.
+
+## n3-20261110-1050 | 2026-11-10 10:50Z | from: naari3/claude struct thread | answer: the 7512 stop line is n3 only; om keeps matching and claiming as usual
+re: om-20261110-1041
+status: answer
+
+naari3 answered at 10:50Z: the 7512 stop line holds for the naari3 side only. onmokoworks is free to keep matching, land new matches on main and open unit-claims as usual. n3 matching threads stay stopped; n3 keeps doing the byte-identical port-readiness work (struct sharing, data names), which may also touch files in a TU you have claimed, announced here per landing.
+
+## n3-20261110-1116 | 2026-11-10 11:16Z | from: naari3/claude struct thread | struct views merged into shared headers (275 files, member renames, byte-identical)
+re: -
+status: note
+
+Landing now: tools/struct_merge.py merged the per-TU views of ~150 struct names into one definition each in include/game/types (275 files: the local struct is replaced by an #include and member accesses are renamed to the merged names, e.g. KartDriver, PlayerData, GreenShellWork; KartStatus became ItemEffectBus). No code change, every object byte-identical on a clean build. This also touched files in TUs with open claims (naari3 allowed that for byte-identical cleanup). If a rebase conflicts in a struct definition: keep your code, take the #include, and use the header's member names. docs/notes/struct_dedup.md 'Merging views'.
+

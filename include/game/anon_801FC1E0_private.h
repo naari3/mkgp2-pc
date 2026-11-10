@@ -7,8 +7,8 @@
  * Card / continue flow scenes @ 0x801FC1E0..0x801FD320.
  *
  * FlowScene (ctor fn_801FD41C, dtor dtor_801FD32C) is the shared base;
- * CardFlowScene (vtable lbl_804EC02C) and CoinFlowScene (vtable
- * lbl_804EBFAC) derive from it. Vtables live in the auto .data blob; the
+ * CardFlowScene (vtable CardFlowScene_vtable_804EC02C) and CoinFlowScene (vtable
+ * CoinFlowScene_vtable_804EBFAC) derive from it. Vtables live in the auto .data blob; the
  * undeclared key virtual keeps CW from emitting them here.
  */
 
@@ -20,9 +20,7 @@ void CreditMgr_SetActiveSlot(int slot);
 int CreditMgr_GetCoinCount(int slot, int mode);
 }
 
-struct VObject {
-    virtual ~VObject();
-};
+#include "game/types/VObject.h"
 
 struct FlowTask {
     virtual void _key();
@@ -80,10 +78,7 @@ struct TextManager {
     ~TextManager();
 };
 
-struct ItemMsgWnd {
-    char body[0x5C];
-    ItemMsgWnd();
-};
+#include "game/types/ItemMsgWnd.h"
 
 struct CoinCounter {
     char body[0x10];
@@ -95,10 +90,7 @@ struct CoinWindow {
     CoinWindow();
 };
 
-struct CoinPrompt {
-    char body[0x20];
-    CoinPrompt(int a, int b, int c, int d, int e);
-};
+#include "game/types/CoinPrompt.h"
 
 struct CoinPopupDetail;
 
@@ -143,11 +135,7 @@ struct CoinWindowHolder {
     ~CoinWindowHolder() throw() { fn_801D9F88(p, 1); }
 };
 
-struct CoinPromptHolder {
-    CoinPrompt *p;
-    CoinPromptHolder(CoinPrompt *q) : p(q) {}
-    ~CoinPromptHolder() throw() { fn_8023CFE0(p, 1); }
-};
+#include "game/types/CoinPromptHolder.h"
 
 struct CoinPopupDetail {
     ~CoinPopupDetail();

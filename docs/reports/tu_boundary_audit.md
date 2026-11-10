@@ -49,7 +49,7 @@ Every TU between the first and last user of a shared private object was one TU. 
 ### M1. 25 TUs 801EC4B0..801F0B58 (score 475.0)
 - **note: 20 Matching TU(s) lose the flag until the merged TU matches fully (allowed when the function count rises, matching_rules 2.5): game/EnemyRunType2_CalcSteering.c, game/EnemyRunType2_Init.c, game/EnemyRunType1_CalcSteering.c, game/EnemyRunType1_Init.c, game/fn_801EC698.c, game/fn_801EC6CC.c**
 - TUs: `game/EnemyRunType2_CalcSteering.c` (Matching), `game/EnemyRunType2_Init.c` (Matching), `game/EnemyRunType1_CalcSteering.c` (Matching), `game/EnemyRunType1_Init.c` (Matching), `game/fn_801EC698.c` (Matching), `game/fn_801EC6CC.c` (Matching), `game/fn_801EC700.c` (Matching), `game/PhysicsState_GetSpeed.c` (Matching), `game/PhysicsState_AccelInterpolate.c` (Matching), `game/PhysicsState.c` (Matching), `game/fn_801EC9AC.c` (Matching), `game/fn_801ECA14.c` (Matching), `game/fn_801ECAFC.c` (Matching), `game/fn_801ECB04.c` (Matching) ...
-- evidence: 25 shared objects {".sdata2": 21, ".rodata": 4}, e.g. `lbl_803BD920`, `lbl_803BDD28`, `lbl_803BDD58`, `lbl_803BDE24`, `lbl_806DA428`, `lbl_806DA42C`
+- evidence: 25 shared objects {".sdata2": 21, ".rodata": 4}, e.g. `lbl_803BD920`, `lbl_803BDD28`, `EnemyRun_BaseInit_rodata_803BDD58`, `lbl_803BDE24`, `lbl_806DA428`, `lbl_806DA42C`
 - not yet matching: 5: PhysicsState_KartCollisionCheck [other] 99.39%, PhysicsState_WallCollisionCheck [sched] 99.15%, KartPhysics_ApplyCollisionForce [other] 98.64%, AI_CalcRivalAvoidance [reloc] 97.26%, KartPhysics_GroundedMovement [other] 97.73%; touching the shared data: 5
   - smallest merge for `PhysicsState_KartCollisionCheck [other] 99.39%`: 25 TUs `game/EnemyRunType2_CalcSteering.c` .. `game/EnemyRun_BaseInit.cpp` (20 Matching)
 
@@ -63,7 +63,7 @@ Every TU between the first and last user of a shared private object was one TU. 
 ### M3. 41 TUs 800B7864..800C253C (score 203.0)
 - **note: 38 Matching TU(s) lose the flag until the merged TU matches fully (allowed when the function count rises, matching_rules 2.5): game/DrawEffect_Cb_KartItem_Bind6E_3Phase.c, game/DrawEffect_Cb_DualBurstSpawner_2x4.c, game/DrawEffect_Cb_KartWheel_DualSpawn.c, game/KartFxAuxAccel.cpp, game/KartFxSlot60.cpp, game/KartFxDustPiece.cpp**
 - TUs: `game/DrawEffect_Cb_KartItem_Bind6E_3Phase.c` (Matching), `game/DrawEffect_Cb_DualBurstSpawner_2x4.c` (Matching), `game/DrawEffect_Cb_KartWheel_DualSpawn.c` (Matching), `game/KartFxAuxAccel.cpp` (Matching), `game/KartFxSlot60.cpp` (Matching), `game/KartFxDustPiece.cpp` (Matching), `game/KartFxDust.cpp` (Matching), `game/KartFxJump.cpp` (Matching), `game/KartFxJumpSpawner.cpp` (Matching), `game/KartFxRingRay.cpp` (Matching), `game/KartFxRing.cpp` (Matching), `game/KartFxBoost.cpp` (Matching), `game/KartFxBoostFlame.cpp` (Matching), `game/KartFxLand.cpp` (Matching) ...
-- evidence: 29 shared objects {".sdata2": 24, ".rodata": 5}, e.g. `lbl_8032A21C`, `lbl_8032A30C`, `lbl_8032A348`, `lbl_8032A36C`, `lbl_8032A3F4`, `lbl_806D525C`
+- evidence: 29 shared objects {".sdata2": 24, ".rodata": 5}, e.g. `EffectVfx72_ItemStarAura_Tick_rodata_8032A21C`, `KartFx_BurnoutChargeTick_rodata_8032A30C`, `EffectVfx9_DriftSpark_Tick_rodata_8032A348`, `EffectItemChainIndicator_Tick_rodata_8032A36C`, `EffectVfx6D_KartSmokeSpark_Tick_rodata_8032A3F4`, `lbl_806D525C`
 - not yet matching: 3: EffectVfx10_KartTrail_Tick [other] 99.82%, EffectVfx29_30_Item4SubFlame_Tick [reg] 99.42%, EffectItemChainIndicator_Tick [sched] 99.70%; touching the shared data: 3
   - smallest merge for `EffectVfx10_KartTrail_Tick [other] 99.82%`: 20 TUs `game/KartFxBurnout.cpp` .. `game/EffectVfx72_ItemStarAura_Tick.c` (17 Matching)
   - smallest merge for `EffectVfx29_30_Item4SubFlame_Tick [reg] 99.42%`: 9 TUs `game/KartFxBurnout.cpp` .. `game/EffectVfx29_30_Item4SubFlame_Tick.c` (7 Matching)
@@ -71,7 +71,7 @@ Every TU between the first and last user of a shared private object was one TU. 
 ### M4. 30 TUs 8021F088..80224E20 (score 200.0)
 - **note: 28 Matching TU(s) lose the flag until the merged TU matches fully (allowed when the function count rises, matching_rules 2.5): game/anon_8021F088.cpp, game/anon_8021F088_nm_8021F508.cpp, game/anon_8021F088_m_8021F824.cpp, game/anon_8021F088_nm_8021FC4C.cpp, game/anon_8021F088_m_80220678.cpp, game/anon_8021F088_nm_80220780.cpp**
 - TUs: `game/anon_8021F088.cpp` (Matching), `game/anon_8021F088_nm_8021F508.cpp` (Matching), `game/anon_8021F088_m_8021F824.cpp` (Matching), `game/anon_8021F088_nm_8021FC4C.cpp` (Matching), `game/anon_8021F088_m_80220678.cpp` (Matching), `game/anon_8021F088_nm_80220780.cpp` (Matching), `game/anon_8021F088_m_80220860.cpp` (Matching), `game/anon_8021F088_nm_80220A54.cpp` (Matching), `game/anon_8021F088_nm_80220A54_m1.cpp` (Matching), `game/anon_8021F088_nm_80220A54_nm1.cpp` (NonMatching), `game/anon_8021F088_nm_8022134C.cpp` (Matching), `game/anon_8021F088_nm_80221674.cpp` (Matching), `game/anon_8021F088_m_80221AA8.cpp` (Matching), `game/anon_8021F088_nm_80221C94.cpp` (Matching) ...
-- evidence: 40 shared objects {".rodata": 8, ".sdata2": 32}, e.g. `lbl_803C6A18`, `lbl_803C6A24`, `lbl_803C6B84`, `lbl_803C6BC4`, `lbl_803C6BD4`, `lbl_803C6C2C`
+- evidence: 40 shared objects {".rodata": 8, ".sdata2": 32}, e.g. `CoinResultScene_Init_rodata_803C6A18`, `lbl_803C6A24`, `lbl_803C6B84`, `lbl_803C6BC4`, `lbl_803C6BD4`, `lbl_803C6C2C`
 - not yet matching: 2: fn_80221104 [reg] 98.90%, fn_80222968 [other] 98.79%; touching the shared data: 2
   - smallest merge for `fn_80221104 [reg] 98.90%`: 22 TUs `game/anon_8021F088_nm_8021F508.cpp` .. `game/anon_8021F088_m_80224300.cpp` (20 Matching)
   - smallest merge for `fn_80222968 [other] 98.79%`: 29 TUs `game/anon_8021F088_nm_8021F508.cpp` .. `game/anon_8021F088_nm_802249FC.cpp` (27 Matching)
@@ -126,7 +126,7 @@ Every TU between the first and last user of a shared private object was one TU. 
 ### M11. 11 TUs 800DFF34..800E3BD4 (score 51.0)
 - **note: 10 Matching TU(s) lose the flag until the merged TU matches fully (allowed when the function count rises, matching_rules 2.5): game/ItemObject_TickHornBlastShockwave.c, game/ItemObject_Tick_Kind28_BananaTrioChild.c, game/ItemObject_Tick_Kind28_BananaTrioSpawner.c, game/ItemObject_Tick_Kind27_TimedDrop.c, game/ItemObject_Tick_Kind2426_FastDrop.c, game/ItemObject_Tick_Dispatch24To29.c**
 - TUs: `game/ItemObject_TickHornBlastShockwave.c` (Matching), `game/ItemObject_Tick_Kind29_LightAttachment.c` (NonMatching), `game/ItemObject_Tick_Kind28_BananaTrioChild.c` (Matching), `game/ItemObject_Tick_Kind28_BananaTrioSpawner.c` (Matching), `game/ItemObject_Tick_Kind27_TimedDrop.c` (Matching), `game/ItemObject_Tick_Kind2426_FastDrop.c` (Matching), `game/ItemObject_Tick_Dispatch24To29.c` (Matching), `game/ItemObject_Tick_Dispatch1eTo23.c` (Matching), `game/ItemObject_Tick_Dispatch16To1d.c` (Matching), `game/ItemObject_Tick_DispatchcTo15.c` (Matching), `game/ItemObject_Tick_DispatchShellGroup.c` (Matching)
-- evidence: 17 shared objects {".sdata2": 16, ".rodata": 1}, e.g. `lbl_8032E060`, `lbl_806D5BB0`, `lbl_806D5BB4`, `lbl_806D5BB8`, `lbl_806D5BC4`, `lbl_806D5BC8`
+- evidence: 17 shared objects {".sdata2": 16, ".rodata": 1}, e.g. `ItemObject_Tick_rodata_8032E060`, `lbl_806D5BB0`, `lbl_806D5BB4`, `lbl_806D5BB8`, `lbl_806D5BC4`, `lbl_806D5BC8`
 - not yet matching: 1: ItemObject_Tick_Kind29_LightAttachment [reg] 99.73%; touching the shared data: 1
   - smallest merge for `ItemObject_Tick_Kind29_LightAttachment [reg] 99.73%`: 11 TUs `game/ItemObject_TickHornBlastShockwave.c` .. `game/ItemObject_Tick_DispatchShellGroup.c` (10 Matching)
 
@@ -147,7 +147,7 @@ Every TU between the first and last user of a shared private object was one TU. 
 
 ### M14. 25 TUs 800B0654..800B4A58 (score 40.0)
 - TUs: `game/VfxSpritePopup.cpp` (Matching), `game/VfxBannerSequence_Tick.cpp` (Matching), `game/CelebPop17Spawn.cpp` (Matching), `game/CelebPop17Update.cpp` (Matching), `game/CharaPop12_SpawnAll.c` (Matching), `game/CharaPop12_Update.c` (Matching), `game/CourseInteractMover_Update.c` (Matching), `game/KartAttachedSpin_Update.c` (Matching), `game/TwinSpriteOverlay.c` (Matching), `game/KartFadeInEffect_Update.c` (Matching), `game/KartBurstShard_Update.c` (Matching), `game/KartBurstShard_SpawnSet.c` (Matching), `game/CarrotItemEffect_Update.c` (Matching), `game/CarrotItemEffect_Render.c` (Matching) ...
-- evidence: 40 shared objects {".sdata2": 28, ".rodata": 12}, e.g. `lbl_80328EB8`, `lbl_803292B4`, `lbl_803292C8`, `lbl_803292D4`, `lbl_803292E0`, `lbl_803293D0`
+- evidence: 40 shared objects {".sdata2": 28, ".rodata": 12}, e.g. `CelebPop17Update_rodata_80328EB8`, `ParticleBurst_Draw_rodata_803292B4`, `ParticleBurst_DrawCb_rodata_803292C8`, `TripleBladeRing_SetWorldYaw_rodata_803292D4`, `Kart_rodata_803292E0`, `KartPair3ArmUpdate_rodata_803293D0`
 - not yet matching: none (already matched code); touching the shared data: 0
 
 ### M15. 18 TUs 801D43C4..801D7610 (score 38.4)
@@ -182,14 +182,14 @@ Every TU between the first and last user of a shared private object was one TU. 
 ### M19. 9 TUs 801654E0..8016730C (score 30.0)
 - **note: 8 Matching TU(s) lose the flag until the merged TU matches fully (allowed when the function count rises, matching_rules 2.5): game/Scene_801654E0.cpp, game/Scene_80165BCC.cpp, game/Scene_80165E90.cpp, game/Scene_801660EC.cpp, game/Scene_80166B28.cpp, game/Scene_80166BE8.cpp**
 - TUs: `game/Scene_801654E0.cpp` (Matching), `game/Scene_80165BCC.cpp` (Matching), `game/Scene_80165E90.cpp` (Matching), `game/Scene_801660EC.cpp` (Matching), `game/Scene_801661FC.cpp` (NonMatching), `game/Scene_80166B28.cpp` (Matching), `game/Scene_80166BE8.cpp` (Matching), `game/Scene_8016700C.cpp` (Matching), `game/Scene_801670FC.cpp` (Matching)
-- evidence: 10 shared objects {".sdata2": 6, ".rodata": 4}, e.g. `lbl_80369D78`, `lbl_8036A210`, `lbl_8036A24C`, `lbl_8036A37C`, `lbl_806D8918`, `lbl_806D891C`
+- evidence: 10 shared objects {".sdata2": 6, ".rodata": 4}, e.g. `Scene_801661FC_rodata_80369D78`, `lbl_8036A210`, `lbl_8036A24C`, `Scene_801670FC_rodata_8036A37C`, `lbl_806D8918`, `lbl_806D891C`
 - not yet matching: 1: fn_801661FC [other] 98.71%; touching the shared data: 1
   - smallest merge for `fn_801661FC [other] 98.71%`: 9 TUs `game/Scene_801654E0.cpp` .. `game/Scene_801670FC.cpp` (8 Matching)
 
 ### M20. 4 TUs 801721B0..80173F5C (score 30.0)
 - **note: 3 Matching TU(s) lose the flag until the merged TU matches fully (allowed when the function count rises, matching_rules 2.5): game/Scene_801721B0.cpp, game/Scene_80172844.cpp, game/Scene_801734B0.cpp**
 - TUs: `game/Scene_801721B0.cpp` (Matching), `game/Scene_80172844.cpp` (Matching), `game/HomingMarkerUpdate.cpp` (NonMatching), `game/Scene_801734B0.cpp` (Matching)
-- evidence: 10 shared objects {".sdata2": 5, ".rodata": 5}, e.g. `lbl_8036E8D4`, `lbl_8036E924`, `lbl_8036E934`, `lbl_8036E944`, `lbl_8036E954`, `lbl_806D8D90`
+- evidence: 10 shared objects {".sdata2": 5, ".rodata": 5}, e.g. `Scene_80172844_rodata_8036E8D4`, `HomingMarkerUpdate_rodata_8036E924`, `HomingMarkerUpdate_rodata_8036E934`, `HomingMarkerUpdate_rodata_8036E944`, `Scene_801734B0_rodata_8036E954`, `lbl_806D8D90`
 - not yet matching: 1: fn_80172948 [sched] 95.86%; touching the shared data: 1
   - smallest merge for `fn_80172948 [sched] 95.86%`: 4 TUs `game/Scene_801721B0.cpp` .. `game/Scene_801734B0.cpp` (3 Matching)
 
@@ -203,7 +203,7 @@ Every TU between the first and last user of a shared private object was one TU. 
 ### M22. 4 TUs 8015BF18..8016219C (score 29.2)
 - **note: 2 Matching TU(s) lose the flag until the merged TU matches fully (allowed when the function count rises, matching_rules 2.5): game/Scene_8015BF18.cpp, game/resultscene/resultscene_init.cpp**
 - TUs: `game/Scene_8015BF18.cpp` (Matching), `game/resultscene/resultscene.cpp` (NonMatching), `game/resultscene/resultscene_init.cpp` (Matching), `game/resultscene/resultscene_nm1.cpp` (NonMatching)
-- evidence: 9 shared objects {".sdata2": 6, ".rodata": 3}, e.g. `lbl_803682B0`, `lbl_80368C84`, `lbl_80368D80`, `lbl_806D866C`, `lbl_806D8670`, `lbl_806D8674`
+- evidence: 9 shared objects {".sdata2": 6, ".rodata": 3}, e.g. `resultscene_rodata_803682B0`, `Scene_8015BF18_rodata_80368C84`, `resultscene_nm1_rodata_80368D80`, `lbl_806D866C`, `lbl_806D8670`, `lbl_806D8674`
 - not yet matching: 2: fn_8015DEBC [reg] 99.62%, result_screen_update [other] 99.93%; touching the shared data: 1
   - smallest merge for `fn_8015DEBC [reg] 99.62%`: 2 TUs `game/Scene_8015BF18.cpp` .. `game/resultscene/resultscene.cpp` (1 Matching)
 
@@ -276,18 +276,18 @@ Every TU between the first and last user of a shared private object was one TU. 
 
 ### M34. 18 TUs 8009DD64..800A2B90 (score 19.0)
 - TUs: `game/RaceScene_RenderFrame.cpp` (Matching), `game/VSMode_FrameUpdate.c` (Matching), `game/BtMode_BaseDtor.c` (Matching), `game/Rand.c` (Matching), `game/RandSeedDebug_SetEnable.c` (Matching), `game/ReplayRandCursor.c` (Matching), `game/GameModeBase_FrameUpdate2.cpp` (Matching), `game/GameModeBase.cpp` (Matching), `game/GameMode_DispatchSceneInit.c` (Matching), `game/CarObjects_FindByEventType.c` (Matching), `game/RaceScene_PlayerSlots.c` (Matching), `game/CourseData_GetDefaultPathKey_Safe.c` (Matching), `game/CourseData.c` (Matching), `game/RaceScene_RenderPass.cpp` (Matching) ...
-- evidence: 19 shared objects {".sdata2": 18, ".rodata": 1}, e.g. `lbl_803211D8`, `lbl_806D47DC`, `lbl_806D47E0`, `lbl_806D47EC`, `lbl_806D47F4`, `lbl_806DC178`
+- evidence: 19 shared objects {".sdata2": 18, ".rodata": 1}, e.g. `RaceScene_rodata_803211D8`, `lbl_806D47DC`, `lbl_806D47E0`, `lbl_806D47EC`, `lbl_806D47F4`, `lbl_806DC178`
 - not yet matching: none (already matched code); touching the shared data: 0
 
 ### M35. 10 TUs 80210A50..80213D58 (score 19.0)
 - TUs: `game/JumpDistanceMode_PredictLanding.c` (Matching), `game/JumpDistanceMode_UpdateGameplay.c` (Matching), `game/JumpDistanceMode_HandlePhysics.c` (Matching), `game/anon_80211B10.cpp` (Matching), `game/JumpDistanceMode_Update.c` (Matching), `game/anon_802124FC.cpp` (Matching), `game/anon_802124FC_nm1.cpp` (Matching), `game/anon_802124FC_m1.cpp` (Matching), `game/JumpDistanceMode_Init.c` (Matching), `game/JumpDistanceMode_InitTimerDisplay.c` (Matching)
-- evidence: 19 shared objects {".sdata2": 15, ".rodata": 4}, e.g. `lbl_803C3CF0`, `lbl_803C3D54`, `lbl_803C3D64`, `lbl_803C3D80`, `lbl_806DAD70`, `lbl_806DAD74`
+- evidence: 19 shared objects {".sdata2": 15, ".rodata": 4}, e.g. `JumpDistanceMode_rodata_803C3CF0`, `JumpDistanceMode_UpdateGameplay_rodata_803C3D54`, `JumpDistanceMode_HandlePhysics_rodata_803C3D64`, `JumpDistanceMode_rodata_803C3D80`, `lbl_806DAD70`, `lbl_806DAD74`
 - not yet matching: none (already matched code); touching the shared data: 0
 
 ### M36. 3 TUs 802379F8..8023B318 (score 18.8)
 - **note: 2 Matching TU(s) lose the flag until the merged TU matches fully (allowed when the function count rises, matching_rules 2.5): game/clFlowItem.c, game/ItemSelectChoiceInit.cpp**
 - TUs: `game/clFlowItem.c` (Matching), `game/ItemSelectState.cpp` (NonMatching), `game/ItemSelectChoiceInit.cpp` (Matching)
-- evidence: 15 shared objects {".sdata2": 14, ".rodata": 1}, e.g. `lbl_803DC180`, `lbl_806DB888`, `lbl_806DB88C`, `lbl_806DB890`, `lbl_806DB894`, `lbl_806DB89C`
+- evidence: 15 shared objects {".sdata2": 14, ".rodata": 1}, e.g. `ItemSelectState_rodata_803DC180`, `lbl_806DB888`, `lbl_806DB88C`, `lbl_806DB890`, `lbl_806DB894`, `lbl_806DB89C`
 - not yet matching: 1: fn_802386E0 [other] 97.46%; touching the shared data: 0
 
 ### M37. 33 TUs 80066E10..80073E20 (score 18.2)
@@ -344,7 +344,7 @@ Every TU between the first and last user of a shared private object was one TU. 
 ### M44. 3 TUs 8008FA2C..80090C88 (score 15.0)
 - **note: 2 Matching TU(s) lose the flag until the merged TU matches fully (allowed when the function count rises, matching_rules 2.5): game/CardUnpackLegacy.cpp, game/Items.cpp**
 - TUs: `game/CardSaveData_Parser.c` (NonMatching), `game/CardUnpackLegacy.cpp` (Matching), `game/Items.cpp` (Matching)
-- evidence: 3 shared objects {".rodata": 3}, e.g. `lbl_80315378`, `lbl_803159B8`, `lbl_80315AA8`
+- evidence: 3 shared objects {".rodata": 3}, e.g. `CardSaveData_Parser_rodata_80315378`, `Items_rodata_803159B8`, `Items_rodata_80315AA8`
 - not yet matching: 2: CardSaveData_Parser [other] 99.08%, Card_VerifyChecksum [other] 96.38%; touching the shared data: 2
   - smallest merge for `CardSaveData_Parser [other] 99.08%`: 2 TUs `game/CardSaveData_Parser.c` .. `game/CardUnpackLegacy.cpp` (1 Matching)
 
@@ -409,7 +409,7 @@ Every TU between the first and last user of a shared private object was one TU. 
 ### M55. 22 TUs 801E66B4..801E8140 (score 12.0)
 - **note: 21 Matching TU(s) lose the flag until the merged TU matches fully (allowed when the function count rises, matching_rules 2.5): game/fn_801E66B4.c, game/fn_801E68B4.cpp, game/fn_801E6B0C.c, game/fn_801E6B38.c, game/fn_801E6B64.c, game/AI_UseItem.cpp**
 - TUs: `game/fn_801E66B4.c` (Matching), `game/fn_801E68B4.cpp` (Matching), `game/fn_801E6B0C.c` (Matching), `game/fn_801E6B38.c` (Matching), `game/fn_801E6B64.c` (Matching), `game/AI_UseItem.cpp` (Matching), `game/fn_801E6C10.c` (Matching), `game/fn_801E6C54.c` (Matching), `game/fn_801E6C68.c` (Matching), `game/AI_GetLapDifference.c` (Matching), `game/fn_801E6CC8.c` (Matching), `game/fn_801E6CFC.c` (Matching), `game/AI_GetYaw.c` (Matching), `game/fn_801E6D64.c` (Matching) ...
-- evidence: 4 shared objects {".sdata2": 3, ".rodata": 1}, e.g. `lbl_803BD770`, `lbl_806DA38C`, `lbl_806DA3A0`, `lbl_806DA3A8`
+- evidence: 4 shared objects {".sdata2": 3, ".rodata": 1}, e.g. `KartController_Update_rodata_803BD770`, `lbl_806DA38C`, `lbl_806DA3A0`, `lbl_806DA3A8`
 - not yet matching: 1: KartController_Update [other] 97.38%; touching the shared data: 1
   - smallest merge for `KartController_Update [other] 97.38%`: 22 TUs `game/fn_801E66B4.c` .. `game/KartController_Update.cpp` (21 Matching)
 

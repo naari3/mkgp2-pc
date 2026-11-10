@@ -16,9 +16,7 @@ void operator delete(void *p) throw();
 
 typedef float Mtx[3][4];
 
-struct Vec3f {
-    float x, y, z;
-};
+#include "game/types/Vec3f.h"
 
 struct HSD_JObj {
     char pad00[8];
@@ -30,28 +28,13 @@ struct HSD_JObj {
     Vec3f translate;
 };
 
-struct clNormal3D {
-    char _opaque[0x5C];
-    clNormal3D(const char *res, int flags);
-    ~clNormal3D();
-};
+#include "game/types/clNormal3D.h"
 
 struct KartRender;
 
-class GXChannel {
-public:
-    GXChannel(void *root, void *desc, int flags, int mode);
-    ~GXChannel();
-    void PushTransform(Mtx m);
+#include "game/types/GXChannel.h"
 
-private:
-    char pad[0x14];
-};
-
-struct FlashPoint {
-    Vec3f pos;
-    unsigned char used;
-};
+#include "game/types/FlashPoint.h"
 
 struct FlashPart {
     unsigned char active;
@@ -73,13 +56,7 @@ struct TriggerBox {
     Vec3f b;
 };
 
-struct clMapEffectParts {
-    virtual ~clMapEffectParts() {}
-    virtual void Update();
-    virtual void Draw();
-    virtual void Enable(int on);
-    clMapEffectParts() {}
-};
+#include "game/types/clMapEffectParts.h"
 
 struct clDNFlash : clMapEffectParts {
     clNormal3D *fx;
@@ -130,11 +107,11 @@ void DebugPrintf(const char *fmt, ...);
 int rand(void);
 }
 
-extern const unsigned int lbl_803D0390[0x102];
-extern const float lbl_803D0798[3];
+extern const unsigned int DNFlash_tail_rodata_803D0390[0x102];
+extern const float DNFlash_tail_rodata_803D0798[3];
 extern const float lbl_803D07A4[3];
 extern const float lbl_803D07B0[3];
-extern const TriggerBox lbl_803D07BC[4];
+extern const TriggerBox DNFlash_tail_rodata_803D07BC[4];
 extern const char lbl_803D081C[0xA];
 extern const char lbl_803D0828[0x11];
 extern const char lbl_803D083C[0x1E];

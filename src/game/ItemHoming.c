@@ -6,13 +6,9 @@
  * Inline target-yaw and candidate-selection helpers preserve the original
  * temporary lifetimes, stack vectors, and scan initialization.
  */
-typedef struct Vec3 {
-    float x, y, z;
-} Vec3;
+#include "game/types/Vec3.h"
 
-typedef struct Float3 {
-    float value[3];
-} Float3;
+#include "game/types/Float3.h"
 
 typedef struct ItemHomingView {
     char pad0[0xA0];
@@ -45,8 +41,8 @@ extern void *GetRaceContextPtr(void);
 extern RaceSlotView *RaceContextSlot_GetIfAlive(void *context, int index);
 extern double FAbs_FloatAsDouble(float value);
 extern float Vec3_HorizontalDistance(const Vec3 *a, const Vec3 *b);
-extern Float3 lbl_8032DDC4[];
-extern Float3 lbl_8032DDD0[];
+extern Float3 Item_HomingScanAndSteer_rodata_8032DDC4[];
+extern Float3 Item_HomingScanAndSteer_rodata_8032DDD0[];
 extern const float lbl_806D5AC4;
 extern float lbl_806D5AC8;
 extern const float lbl_806D5B00;
@@ -150,8 +146,8 @@ void Item_HomingScanAndSteer(ItemHomingView *item, float *yaw, int scanEnabled)
         probeDistance = probeDistances.value;
         turnFactor = turnFactors.value;
         for (index = 0; index < 3; index++, probeDistance++, turnFactor++) {
-            probeDistances = lbl_8032DDC4[0];
-            turnFactors = lbl_8032DDD0[0];
+            probeDistances = Item_HomingScanAndSteer_rodata_8032DDC4[0];
+            turnFactors = Item_HomingScanAndSteer_rodata_8032DDD0[0];
             GetSpawnPosition(&avoidProbe, lbl_806D5AC8, lbl_806D5AC8,
                              *probeDistance);
             Vec2_RotateY(&avoidProbe, &avoidProbe, BuildOrientationFromYaw(

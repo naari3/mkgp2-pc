@@ -1,23 +1,13 @@
-typedef struct KartCond {
-    signed char mode;
-    signed char cup;
-    signed char ccClass;
-    signed char round;
-    signed char kart;
-} KartCond;
+#include "game/types/KartCond.h"
 
 extern int g_gameMode;
 extern int g_cupId;
 extern int g_ccClass;
 extern int g_roundIndex;
 
-typedef struct ItemUseProbEntry {
-    KartCond cond;
-    int kart;
-    float probability;
-} ItemUseProbEntry;
+#include "game/types/ItemUseProbEntry.h"
 
-extern int lbl_806CFF04;
+extern int AI_RollItemUseProbability_data_806CFF04;
 extern ItemUseProbEntry g_itemUseProbTable[];
 extern float PseudoRandom_Next(void);
 
@@ -40,7 +30,7 @@ static inline unsigned char KartCond_MatchesRace(KartCond c) {
 int AI_RollItemUseProbability(int kart) {
     int i;
 
-    for (i = 0; i < lbl_806CFF04; i++) {
+    for (i = 0; i < AI_RollItemUseProbability_data_806CFF04; i++) {
         if (KartCond_MatchesRace(g_itemUseProbTable[i].cond)) {
             if (g_itemUseProbTable[i].kart == -1 || kart == g_itemUseProbTable[i].kart) {
                 if (PseudoRandom_Next() <= g_itemUseProbTable[i].probability) {

@@ -2,41 +2,20 @@
  * turn back on contact with another NokoNoko, the player or a wall, and keeps
  * it on the ground. */
 
-typedef struct { float x, y, z; } Vec;
+#include "game/types/Vec.h"
 
-typedef struct NokoKind {
-    int state;
-    int model;
-    int timer;
-    float speed;
-    float turn;
-} NokoKind;
+#include "game/types/NokoKind.h"
 
-typedef struct NokoNoko {
-    struct NokoNoko *next;
-    int kindTable;
-    int kindIndex;
-    int state;
-    int model;
-    float frame;
-    int timer;
-    Vec pos;
-    float yaw;
-    float speed;
-    float turn;
-    int model2;
-    float blend;
-    float frame2;
-} NokoNoko;
+#include "game/types/NokoNoko.h"
 
 extern NokoNoko *g_nokonokoHead;
-typedef struct { Vec v[4]; } Quad;
+#include "game/types/Quad.h"
 
-extern const Quad lbl_80377664;
-extern const Quad lbl_80377694;
-extern NokoKind *lbl_80495D28[];
+extern const Quad NokoNoko_Update_rodata_80377664;
+extern const Quad NokoNoko_Update_rodata_80377694;
+extern NokoKind *NokoNoko_data_80495D28[];
 extern Vec lbl_80677ED8;
-extern const float lbl_806CFBD8;
+extern const float NokoNoko_data_806CFBD8;
 extern float lbl_806D168C;
 extern const float lbl_806D931C;
 extern const float lbl_806D9320;
@@ -75,7 +54,7 @@ static inline void NokoNoko_TurnBack(NokoNoko *n) {
     n->model = 1;
     n->timer = 0x78;
     n->speed = lbl_806D9324;
-    n->turn = lbl_806D9334;
+    n->radius = lbl_806D9334;
 }
 
 #pragma exceptions on
@@ -97,7 +76,7 @@ void NokoNoko_Update(NokoNoko *self) {
     y0 = self->pos.y;
     z0 = self->pos.z;
     if (self->state < 4) {
-        self->yaw += self->turn;
+        self->yaw += self->radius;
         if (self->yaw < lbl_806D9324) {
             self->yaw += lbl_806D9328;
         }
@@ -105,9 +84,9 @@ void NokoNoko_Update(NokoNoko *self) {
         if (f >= lbl_806D9328) {
             self->yaw = f - lbl_806D9328;
         }
-        self->pos.x += lbl_806CFBD8 * (self->speed * LookupSin(self->yaw));
+        self->pos.x += NokoNoko_data_806CFBD8 * (self->speed * LookupSin(self->yaw));
         self->pos.y -= lbl_806D931C;
-        self->pos.z += lbl_806CFBD8 * (self->speed * LookupCos(self->yaw));
+        self->pos.z += NokoNoko_data_806CFBD8 * (self->speed * LookupCos(self->yaw));
         if (self->timer > 0) {
             self->timer--;
         }
@@ -121,15 +100,15 @@ void NokoNoko_Update(NokoNoko *self) {
             if (self->kindIndex < 0) {
                 self->kindIndex = 0;
             }
-            if (lbl_80495D28[self->kindTable][self->kindIndex].state == -1) {
+            if (NokoNoko_data_80495D28[self->kindTable][self->kindIndex].state == -1) {
                 self->kindIndex = 0;
             }
-            NokoNoko_SetModel(self, lbl_80495D28[self->kindTable][self->kindIndex].model);
-            self->state = lbl_80495D28[self->kindTable][self->kindIndex].state;
-            self->model = lbl_80495D28[self->kindTable][self->kindIndex].model;
-            self->timer = lbl_80495D28[self->kindTable][self->kindIndex].timer;
-            self->speed = lbl_80495D28[self->kindTable][self->kindIndex].speed;
-            self->turn = lbl_80495D28[self->kindTable][self->kindIndex].turn;
+            NokoNoko_SetModel(self, NokoNoko_data_80495D28[self->kindTable][self->kindIndex].model);
+            self->state = NokoNoko_data_80495D28[self->kindTable][self->kindIndex].state;
+            self->model = NokoNoko_data_80495D28[self->kindTable][self->kindIndex].model;
+            self->timer = NokoNoko_data_80495D28[self->kindTable][self->kindIndex].timer;
+            self->speed = NokoNoko_data_80495D28[self->kindTable][self->kindIndex].speed;
+            self->radius = NokoNoko_data_80495D28[self->kindTable][self->kindIndex].radius;
         }
         if (self->speed > lbl_806D9324) {
             for (n = g_nokonokoHead; n != 0; n = n->next) {
@@ -170,7 +149,7 @@ void NokoNoko_Update(NokoNoko *self) {
             self->model = -1;
         }
     }
-    from = lbl_80377664;
+    from = NokoNoko_Update_rodata_80377664;
     from.v[0].x = lbl_806D933C + x0;
     from.v[0].y = y0;
     from.v[0].z = z0;
@@ -183,7 +162,7 @@ void NokoNoko_Update(NokoNoko *self) {
     from.v[3].x = x0;
     from.v[3].y = y0;
     from.v[3].z = z0 - lbl_806D933C;
-    to = lbl_80377694;
+    to = NokoNoko_Update_rodata_80377694;
     to.v[0].x = lbl_806D933C + self->pos.x;
     to.v[0].y = self->pos.y;
     to.v[0].z = self->pos.z;

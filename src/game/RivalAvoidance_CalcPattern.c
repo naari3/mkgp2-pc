@@ -1,10 +1,4 @@
-typedef struct KartCond {
-    signed char mode;
-    signed char cup;
-    signed char ccClass;
-    signed char round;
-    signed char kart;
-} KartCond;
+#include "game/types/KartCond.h"
 
 extern int g_gameMode;
 extern int g_cupId;
@@ -19,7 +13,7 @@ typedef struct RivalPatternEntry {
     int pattern[3];
 } RivalPatternEntry;
 
-extern int lbl_806CFEF4;
+extern int RivalAvoidance_CalcPattern_data_806CFEF4;
 extern RivalPatternEntry lbl_804E21C4[];
 
 static inline unsigned char KartCond_MatchesRace(KartCond c) {
@@ -55,7 +49,7 @@ int RivalAvoidance_CalcPattern(int kart, int rank, float distance) {
     default:
         return -1;
     }
-    for (i = 0; i < lbl_806CFEF4; i++) {
+    for (i = 0; i < RivalAvoidance_CalcPattern_data_806CFEF4; i++) {
         if (KartCond_MatchesRace(lbl_804E21C4[i].cond)) {
             if ((lbl_804E21C4[i].kart == -1 || kart == lbl_804E21C4[i].kart) &&
                 distance < lbl_804E21C4[i].maxDistance &&

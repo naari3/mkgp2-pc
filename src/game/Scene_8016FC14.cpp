@@ -2,14 +2,9 @@
  * 0x8016FC14..0x8016FC70: draw a single course model when on screen.
  */
 
-struct Vec3f {
-    float x, y, z;
-};
+#include "game/types/Vec3f.h"
 
-struct CourseModel {
-    void *vtable;
-    void *model;
-};
+#include "game/types/CourseModel.h"
 
 extern "C" {
 void Object_GetJObjPositionVec(void *, Vec3f *);

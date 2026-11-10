@@ -9,7 +9,7 @@ void operator delete(void *p);
 
 extern "C" {
 /* .rodata 0x803C3858..0x803C3DD8 (owned by this TU so the pool base matches) */
-static const unsigned int lbl_803C3858[0x102] = {
+static const unsigned int JumpDistanceMode_Init_rodata_803C3858[0x102] = {
     0x00000000, 0x00000000, 0x00000000, 0x3F800000, 0x3F333333, 0x3F666666,
     0x00000000, 0x00000000, 0x43FA0000, 0x42855556, 0x447A0000, 0x42855556,
     0x44FA0000, 0x42855556, 0x453B8000, 0x42855556, 0x457A0000, 0x42855556,
@@ -66,24 +66,24 @@ static const unsigned int lbl_803C3CC0[12] = {
     0x44480000, 0x00000000, 0xC5D61000, 0x43C80000, 0x00000000, 0xC5D61000,
     0x43C80000, 0x00000000, 0xC48FC000, 0x44480000, 0x00000000, 0xC48FC000,
 };
-extern const float lbl_803C3CF0[14] = {
+extern const float JumpDistanceMode_rodata_803C3CF0[14] = {
     330.0f, 63.25f, 318.0f, 79.25f, 358.0f, 79.25f, 399.0f, 79.25f,
     355.0f, 38.25f, 380.0f, 38.25f, 405.0f, 38.25f,
 };
 static const float s_gridX[5] = { 490.0f, 523.0f, 556.0f, 589.0f, 622.0f };
 static const float s_gridY[3] = { 43.0f, 78.0f, 113.0f };
 static const Vec s_markerScale = { 0.0f, 0.0f, -5.0f };
-extern const float lbl_803C3D54[4] = { 300.0f, -7500.0f, 1000.0f, -800.0f };
-extern const float lbl_803C3D64[7] = { 1900.0f, -7800.0f, 2100.0f, -7400.0f, 0.0f, 0.0f, 0.0f };
-extern const unsigned int lbl_803C3D80[3] = { 0, 0, 0 };
+extern const float JumpDistanceMode_UpdateGameplay_rodata_803C3D54[4] = { 300.0f, -7500.0f, 1000.0f, -800.0f };
+extern const float JumpDistanceMode_HandlePhysics_rodata_803C3D64[7] = { 1900.0f, -7800.0f, 2100.0f, -7400.0f, 0.0f, 0.0f, 0.0f };
+extern const unsigned int JumpDistanceMode_rodata_803C3D80[3] = { 0, 0, 0 };
 extern const char lbl_803C3D8C[] = "clCGameDN";
-extern const char lbl_803C3D98[12] = "clJobRunner";
+extern const char JumpDistanceMode_Init_rodata_803C3D98[12] = "clJobRunner";
 static const char s_lakituFile[20] = "jyugemu_start.dat";
 static const char s_coinFile[16] = "mario_coin.dat";
 static const char s_kiraFile[16] = "k_kira13.dat";
 
 extern char lbl_8048E144[];
-extern char lbl_804ECC08[];
+extern char JumpDistanceMode_vtable_804ECC08[];
 extern int g_ccClass;
 extern int g_characterId;
 extern int g_kartStartSlot;
@@ -123,7 +123,7 @@ int GetKartStartSlot(void);
 void GetStartPosition(int idx, float *x, float *y, float *z);
 float GetCourseStartYaw(void);
 void CarObject_SetPosition(void *car, Vec *pos);
-struct RenderObj *CarObject_GetRenderObj(void *car);
+struct KartDriver *CarObject_GetRenderObj(void *car);
 void *CarObject_GetKartMovementPtr(void *car);
 void KartMovement_EquipItem(void *obj, int item);
 void fn_8023E1E4(void *obj, int item, int arg);
@@ -145,19 +145,11 @@ void InitRumbleController(int arg);
 void fn_801699D8(int a, int b);
 }
 
-struct RenderObj {
-    char pad0[0x238];
-    int x238;
-    char pad23C[0x94];
-    unsigned char x2D0;
-};
+#include "game/types/KartDriver.h"
 
-struct InputManager { char data[0x37C]; InputManager(); };
-struct Camera { char data[0x2C]; Camera(float a, float b, int w, int h, int target); };
-struct CarObject {
-    char data[0x118];
-    CarObject(int disp, int chara, int cc, int a, int b, int c, int d, int e, float x, float z, float yaw);
-};
+#include "game/types/InputManager.h"
+#include "game/types/Camera.h"
+#include "game/types/CarObject.h"
 static inline int GetCC() { return g_ccClass; }
 static inline int GetChara() { return g_characterId; }
 struct PlayerCar : CarObject {
@@ -165,16 +157,16 @@ struct PlayerCar : CarObject {
         : CarObject(GetDisplayBufferIndex(), chara, cc, 0, 1, 7, 0, 0, pos->x, pos->z, GetCourseStartYaw()) {}
 };
 struct ItemSlot { char data[0x44]; ItemSlot(int arg); };
-struct LakituStart { char data[0x58]; LakituStart(const void *data, int arg, float x, float y, float z); };
-struct Scene3D { char data[0x3084]; Scene3D(int name); };
-struct ChallengeGoalCamera { char data[8]; ChallengeGoalCamera(); };
+#include "game/types/LakituStart.h"
+#include "game/types/Scene3D.h"
+#include "game/types/ChallengeGoalCamera.h"
 struct KartMovement {
     char data[0x324];
     KartMovement(const KartMovement &src);
 };
-struct HUD { char data[0x80]; HUD(int arg); };
+#include "game/types/HUD.h"
 struct TimerDisplay { char data[0x2C]; TimerDisplay(int value); };
-struct WeatherSystem { char data[0x1B4]; WeatherSystem(int arg); };
+#include "game/types/WeatherSystem.h"
 struct LandingMarker { char data[0x20]; LandingMarker(const void *data, int arg); };
 
 struct ScenePos {
@@ -236,10 +228,7 @@ struct JumpGauge {
     }
 };
 
-struct GridSlot {
-    int id;
-    int pad[3];
-};
+#include "game/types/GridSlot.h"
 
 struct GridCell {
     float x, y, z, w;
@@ -289,11 +278,7 @@ inline LandingGrid::LandingGrid(const char *m0, const char *m1, const Vec *pos, 
     }
 }
 
-struct GameModeBase {
-    virtual void _key();
-    virtual ~GameModeBase();
-    GameModeBase();
-};
+#include "game/types/GameModeBase.h"
 
 struct ModeBase : GameModeBase {
     float x4;
@@ -392,12 +377,12 @@ JumpDistanceMode::JumpDistanceMode() {
     car = new PlayerCar(&pos, GetChara(), GetCC());
     CarObject_SetPosition(car, &pos);
     {
-        RenderObj *r = CarObject_GetRenderObj(car);
-        r->x238 = 1;
+        KartDriver *r = CarObject_GetRenderObj(car);
+        r->visible_238 = 1;
     }
     {
-        RenderObj *r = CarObject_GetRenderObj(car);
-        r->x2D0 = 1;
+        KartDriver *r = CarObject_GetRenderObj(car);
+        r->forceDraw = 1;
     }
     KartMovement_EquipItem(CarObject_GetRenderObj(car), 0x17);
     itemSlot = new ItemSlot(0);

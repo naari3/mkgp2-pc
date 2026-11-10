@@ -4,11 +4,11 @@
  * through the effect's transposed world matrix. Front ribbons in the
  * "stretched" id ranges are rebuilt from the texture's own size, centred on
  * the panel. The local tables are copied from the shared .rodata block
- * that starts at lbl_80328EB8.
+ * that starts at CelebPop17Update_rodata_80328EB8.
  *
  * The stretched-ribbon loop shares its half-scale value with the width
  * calculation. */
-typedef struct Vec { float x, y, z; } Vec;
+#include "game/types/Vec.h"
 
 typedef struct RibbonPts { Vec p[8]; } RibbonPts;
 typedef struct RibbonSigns { int s[8][2]; } RibbonSigns;
@@ -24,7 +24,7 @@ typedef struct RibbonRodata {
     RibbonUvIdx uvIdx;  /* 0x4F8 */
 } RibbonRodata;
 
-extern RibbonRodata lbl_80328EB8;
+extern RibbonRodata CelebPop17Update_rodata_80328EB8;
 extern const float lbl_806D6DE4;
 extern const float lbl_806D5028; /* 1.0f */
 extern const float lbl_806D5034; /* 0.0f */
@@ -61,10 +61,7 @@ extern float FAbs_FloatAsDouble(float f);
 extern unsigned char fn_8011D890(int id, float uv[2][2], int flags);
 extern void ResourceTable_GetSizeXY(int id, float *x, float *y);
 
-typedef union {
-    float f;
-    unsigned int u;
-} WGPipeWord;
+#include "game/types/WGPipeWord.h"
 
 #define GXWGFifo (*(volatile WGPipeWord *)0xCC008000)
 
@@ -122,7 +119,7 @@ static inline float Ribbon_ScaledHalfWidth(float half, float width)
 
 void KartShellRibbonDraw(unsigned char *self)
 {
-    RibbonRodata *rd = &lbl_80328EB8;
+    RibbonRodata *rd = &CelebPop17Update_rodata_80328EB8;
 
     if (Ribbon_SetupGX()) {
         int color;

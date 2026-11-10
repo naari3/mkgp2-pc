@@ -12,39 +12,14 @@ typedef struct { float x, y, z; } Vec;
 void *operator new(unsigned long size);
 void operator delete(void *p);
 
-struct Vec3 { float x, y, z; };
-struct LNode { char pad[8]; void *f8; };
-struct Trail { int age; Vec3 pos; };
-struct Shot {
-    char pad0[0x14];
-    int active;
-    char pad18[4];
-    int timer;
-    Vec3 pos;
-    Vec3 vel;
-    float rot;
-    float alpha;
-    Trail trail[18];
-    char pad160[0xc];
-};
-struct ShotSet {
-    Shot shots[6];
-};
-struct ShotOwner {
-    char pad0[4];
-    void *model;
-    void *trailModel;
-    int phaseA;
-    int phaseB;
-    char pad14[0x89c - 0x14];
-    int trailCount;
-};
+#include "game/types/Vec3.h"
+#include "game/types/LNode.h"
+#include "game/types/Trail.h"
+#include "game/types/Shot.h"
+#include "game/types/ShotSet.h"
+#include "game/types/ShotOwner.h"
 
-struct ModelPair {
-    void **vt;
-    void *a;
-    void *b;
-};
+#include "game/types/ModelPair.h"
 
 struct VObj {
     virtual ~VObj();
@@ -125,7 +100,7 @@ void SoundDriver_GetOrCreate(int arg);
 int GetDisplayBufferIndex(void);
 void GetStartPosition(int idx, float *x, float *y, float *z);
 float GetCourseStartYaw(void);
-struct RenderObj *CarObject_GetRenderObj(void *car);
+struct KartDriver *CarObject_GetRenderObj(void *car);
 void KartMovement_EquipItem(void *obj, int item);
 void SetPlayerCarObject(void *car);
 int *GetKartModelNameEntry(int chara, int arg);
@@ -172,7 +147,7 @@ extern unsigned int lbl_806DC190;
 extern unsigned int lbl_806DC1B0;
 extern unsigned int lbl_806DC1B8;
 extern const float lbl_806D7054;
-extern const unsigned int lbl_803561E8[0x10C];
+extern const unsigned int NokoNoko_801287F8_rodata_803561E8[0x10C];
 extern void dtor_80036E40();
 void ClRomTable_PurgeAll(void);
 void CourseEnvironment_Dtor(void *env, int del);
@@ -190,7 +165,7 @@ void fn_8016C634(void *w, int del);
 void fn_80188DA8(void);
 void fn_80254134(void *hud, int del);
 void dtor_80082960(void);
-extern void *lbl_8048E338[];
+extern void *NokoNokoChallenge_vtable_8048E338[];
 extern void Alloc();
 extern void Camera_Create();
 extern void CarObject_Init();
@@ -207,8 +182,8 @@ extern void clNormal3D_Construct();
 extern unsigned int lbl_806D7060;
 extern unsigned int ResCtrl_Init[];
 extern unsigned int lbl_8048E144[];
-extern void *lbl_8048E34C[];
-extern void *lbl_8048E36C[];
+extern void *CoinShotBase_vtable_8048E34C[];
+extern void *CoinShots_vtable_8048E36C[];
 extern void dtor_8012A5AC();
 struct LNode *LinkedNode_GetField10_OrFallback(void *o, int idx);
 void Object_RenderJObjEx(void *o, void *node, int mask);
@@ -257,7 +232,7 @@ ModelPair *fn_8012A52C(ModelPair *self, short flag);
 /* .rodata 0x803561E8..0x80356708, owned by this TU (pool base of the mode ctor). */
 struct IconPos { float x, y; };
 
-extern "C" const unsigned int lbl_803561E8[0x10C] = {
+extern "C" const unsigned int NokoNoko_801287F8_rodata_803561E8[0x10C] = {
     0x3F800000, 0x3F333333, 0x3F666666, 0x00000000, 0x00000000, 0x43FA0000,
     0x42855556, 0x447A0000, 0x42855556, 0x44FA0000, 0x42855556, 0x453B8000,
     0x42855556, 0x457A0000, 0x42855556, 0x459C4000, 0x42855556, 0x00000000,
@@ -309,7 +284,7 @@ static const IconPos s_iconPos[8] = {
     { 545.0f, 419.25f }, { 565.0f, 426.25f }, { 580.0f, 433.25f }, { 598.0f, 433.25f },
 };
 extern "C" const char lbl_80356658[] = "clCGameDK";
-extern "C" const char lbl_80356664[] = "clJobRunner";
+extern "C" const char NokoNoko_801287F8_rodata_80356664[] = "clJobRunner";
 
 extern "C" void TimeTrial_Render(TimeTrialMode *self)
 {
@@ -421,7 +396,7 @@ extern "C" {
 extern unsigned char lbl_806D1290;
 extern const float lbl_806D7074, lbl_806D7078, lbl_806D707C, lbl_806D7080, lbl_806D7094;
 extern const float lbl_806D7098, lbl_806D709C, lbl_806D70A0, lbl_806D70A4, lbl_806D70A8;
-extern Vec3 lbl_80677C58, lbl_80677C64;
+extern Vec3 NokoNokoChallenge_Update_bss_80677C58, NokoNokoChallenge_Update_bss_80677C64;
 void ItemObjectManager_PerFrameUpdate(void *);
 void *GetInputManager();
 NkInput *InputMgr_GetPlayer(void *, int);
@@ -707,10 +682,10 @@ extern "C" int NokoNokoChallenge_Update(NkView *self)
         }
     }
     self->shots->Update();
-    CObj_LoadProjMatrix(self->camera, &lbl_80677C58);
-    CObj_ApplyScissor(self->camera, &lbl_80677C64);
+    CObj_LoadProjMatrix(self->camera, &NokoNokoChallenge_Update_bss_80677C58);
+    CObj_ApplyScissor(self->camera, &NokoNokoChallenge_Update_bss_80677C64);
     ItemObjectManager_Update();
-    VfxSlotMgr_Update(lbl_80677C58, lbl_80677C64);
+    VfxSlotMgr_Update(NokoNokoChallenge_Update_bss_80677C58, NokoNokoChallenge_Update_bss_80677C64);
     if (IsRaceStarted() == 1 && g_raceEnded != 1) {
         if (g_raceTimeRemaining >= 0.0f) {
             g_raceTimeRemaining -= lbl_806D70A0;
@@ -798,7 +773,7 @@ static inline void ObjUnref(HsdObj *o)
 extern "C" TimeTrialMode *TimeTrial_Destroy(TimeTrialMode *self, short flag)
 {
     if (self) {
-        self->vt = lbl_8048E338;
+        self->vt = NokoNokoChallenge_vtable_8048E338;
         if (g_weatherSystem != 0) {
             fn_8016C634(g_weatherSystem, 1);
             g_weatherSystem = 0;
@@ -855,30 +830,22 @@ extern "C" TimeTrialMode *TimeTrial_Destroy(TimeTrialMode *self, short flag)
  * are mapped in tools/extab_user_renames.json. */
 #pragma exceptions on
 
-struct RenderObj {
-    char pad0[0x238];
-    int x238;
-    char pad23C[0x94];
-    unsigned char x2D0;
-};
+#include "game/types/KartDriver.h"
 
-struct InputManager { char data[0x37C]; InputManager(); };
-struct Camera { char data[0x2C]; Camera(float a, float b, int w, int h, int target); };
-struct CarObject {
-    char data[0x118];
-    CarObject(int disp, int chara, int cc, int a, int b, int c, int d, int e, float x, float z, float yaw);
-};
+#include "game/types/InputManager.h"
+#include "game/types/Camera.h"
+#include "game/types/CarObject.h"
 static inline int GetChara() { return g_characterId; }
 struct PlayerCar : CarObject {
     PlayerCar(const float *x, const float *z, int chara)
         : CarObject(GetDisplayBufferIndex(), chara, 0, 0, 1, 1, 0, 0, *x, *z, GetCourseStartYaw()) {}
 };
-struct LakituStart { char data[0x58]; LakituStart(const void *data, int arg, float x, float y, float z); };
-struct Scene3D { char data[0x3084]; Scene3D(int name); };
-struct ChallengeGoalCamera { char data[8]; ChallengeGoalCamera(); };
+#include "game/types/LakituStart.h"
+#include "game/types/Scene3D.h"
+#include "game/types/ChallengeGoalCamera.h"
 struct MapWaterEffect { char data[0x10]; MapWaterEffect(); };
-struct HUD { char data[0x80]; HUD(int arg); };
-struct WeatherSystem { char data[0x1B4]; WeatherSystem(int arg); };
+#include "game/types/HUD.h"
+#include "game/types/WeatherSystem.h"
 struct clNormal3D { char data[0x5C]; clNormal3D(const char *file, int arg); };
 
 struct ResCtrl {
@@ -942,16 +909,7 @@ struct CoinShot {
     CoinShotTrail trail[20];
 };
 
-struct CoinShotBase {
-    virtual ~CoinShotBase();
-    clNormal3D *model;
-    clNormal3D *trailModel;
-    int xC;
-    int x10;
-    CoinShot shots[6];
-    int trailCount;
-    CoinShotBase(const char *modelFile, const char *trailFile);
-};
+#include "game/types/CoinShotBase.h"
 
 inline CoinShotBase::CoinShotBase(const char *modelFile, const char *trailFile) {
     xC = 0;
@@ -985,11 +943,7 @@ struct CoinShots : CoinShotBase {
     virtual ~CoinShots();
 };
 
-struct GameModeBase {
-    virtual void _key();
-    virtual ~GameModeBase();
-    GameModeBase();
-};
+#include "game/types/GameModeBase.h"
 
 struct ModeBase : GameModeBase {
     float x4;
@@ -1047,12 +1001,12 @@ NokoNokoChallenge::NokoNokoChallenge() {
     GetStartPosition(0, &x, 0, &z);
     car = new PlayerCar(&x, &z, GetChara());
     {
-        RenderObj *r = CarObject_GetRenderObj(car);
-        r->x238 = 1;
+        KartDriver *r = CarObject_GetRenderObj(car);
+        r->visible_238 = 1;
     }
     {
-        RenderObj *r = CarObject_GetRenderObj(car);
-        r->x2D0 = 1;
+        KartDriver *r = CarObject_GetRenderObj(car);
+        r->forceDraw = 1;
     }
     SetPlayerCarObject(car);
     KartMovement_EquipItem(CarObject_GetRenderObj(car), 6);
@@ -1164,18 +1118,18 @@ extern "C" void fn_8012A22C(ShotOwner *self)
             }
             if ((s->timer & 3) == 0) {
                 for (j = 0; j < self->trailCount; j++) {
-                    if (Trail_Spawn(&trails[j], lbl_80495994[self->phaseA], lbl_80495A94[self->phaseB]) == 1) {
+                    if (Trail_Spawn(&trails[j], lbl_80495994[self->sinIdx], lbl_80495A94[self->cosIdx]) == 1) {
                         trails[j].pos.x += s->pos.x;
                         trails[j].pos.y += s->pos.y;
                         trails[j].pos.z += s->pos.z;
                         break;
                     }
                 }
-                if (++self->phaseA >= 0x40) {
-                    self->phaseA = 0;
+                if (++self->sinIdx >= 0x40) {
+                    self->sinIdx = 0;
                 }
-                if (++self->phaseB >= 0x30) {
-                    self->phaseB = 0;
+                if (++self->cosIdx >= 0x30) {
+                    self->cosIdx = 0;
                 }
             }
             if (++s->timer >= 0x5a) {
@@ -1188,9 +1142,9 @@ extern "C" void fn_8012A22C(ShotOwner *self)
 extern "C" ModelPair *fn_8012A52C(ModelPair *self, short flag)
 {
     if (self) {
-        self->vt = lbl_8048E36C;
+        self->vt = CoinShots_vtable_8048E36C;
         if (self) {
-            self->vt = lbl_8048E34C;
+            self->vt = CoinShotBase_vtable_8048E34C;
             Object_DtorWithGXSync(self->a, 1);
             Object_DtorWithGXSync(self->b, 1);
         }

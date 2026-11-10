@@ -8,10 +8,10 @@
 #include "game/StrPcb.h"
 
 extern const float lbl_806D241C;
-extern const float lbl_802E9848[3];
-extern int lbl_802E9838[];
+extern const float StrPcb_rodata_802E9848[3];
+extern int StrPcb_BeginEffect_rodata_802E9838[];
 extern u8 lbl_80598A60[];
-extern unsigned int lbl_806D1008;
+extern unsigned int StrPcb_bss_806D1008;
 
 extern int Clamp_Int(int value, int min, int max);
 extern void fn_802554DC(void);
@@ -144,13 +144,13 @@ void StrPcb_SetIntensityMode(StrPcbCmd *pcb, int mode)
 {
     int m = Clamp_Int(mode, 0, 2);
     pcb->intensityMode = m;
-    pcb->intensityScale = lbl_802E9848[m];
+    pcb->intensityScale = StrPcb_rodata_802E9848[m];
 }
 #pragma exceptions reset
 
 void StrPcb_BeginEffect(StrPcbCmd *pcb, int effect)
 {
-    pcb->effectId = lbl_802E9838[effect];
+    pcb->effectId = StrPcb_BeginEffect_rodata_802E9838[effect];
     pcb->state60 = 1;
 }
 
@@ -169,6 +169,6 @@ void StrPcb_DrainInputBuffer(void)
             }
         }
     }
-    lbl_806D1008 = OSGetTick();
+    StrPcb_bss_806D1008 = OSGetTick();
 }
 #pragma exceptions reset

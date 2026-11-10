@@ -1,27 +1,6 @@
-struct ResCtrl {
-    void *resId;
-    int field4, mode, fieldc;
-    unsigned char flag, pad11[3];
-    float x, y, z, width, height, field28, scaleX, scaleY;
-    unsigned int colors[4];
-    int tail[5];
-    ResCtrl();
-    ~ResCtrl() {}
-};
+#include "game/types/ResCtrl.h"
 
-struct FlowPanel {
-    int state;
-    char pad04[0xC];
-    int alpha;
-    int layer;
-    char pad18[8];
-    unsigned char showBg;
-    char pad21[0x27];
-    void *labelB;
-    void *labelA;
-    ResCtrl *icons[3];
-    void *texts[3];
-};
+#include "game/types/FlowPanel.h"
 
 extern "C" {
 void fn_8011FAFC(ResCtrl *rc, int layer);

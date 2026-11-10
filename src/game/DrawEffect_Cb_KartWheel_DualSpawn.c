@@ -5,9 +5,9 @@
 #include "game/DrawEffectAccess.h"
 #include "game/DrawEffectWheelPairState.h"
 
-typedef struct { float v[4]; } PhaseTable;
+#include "game/types/PhaseTable.h"
 
-extern const PhaseTable lbl_8032A6D4;
+extern const PhaseTable DrawEffect_Cb_KartWheel_DualSpawn_rodata_8032A6D4;
 extern int Rand_RangeInt(int lo, int hi);
 extern double sin(double x);
 extern void DrawEffect_KartWheel_TripleChildSpawn(unsigned char *self);
@@ -18,16 +18,13 @@ static inline float sinf(float x)
     return sin(x);
 }
 
-typedef struct KartStatus {
-    unsigned char pad[0x10];
-    unsigned long long flags;
-} KartStatus;
+#include "game/ItemEffectBusPrivate.h"
 
-static inline unsigned char has_flag(KartStatus *st, unsigned long long mask)
+static inline unsigned char has_flag(ItemEffectBus *st, unsigned long long mask)
 {
     unsigned char result;
 
-    if ((st->flags & mask) == 0) {
+    if ((st->mask & mask) == 0) {
         result = 0;
     } else {
         result = 1;
@@ -66,12 +63,12 @@ void DrawEffect_Cb_KartWheel_DualSpawn(unsigned char *self)
         return;
     }
     {
-        KartStatus *st = *(KartStatus **)(d->driver + 0x304);
+        ItemEffectBus *st = *(ItemEffectBus **)(d->driver + 0x304);
         int active = 0;
         if (has_flag(st, 8ULL)) {
             active = 1;
         }
-        if (st->flags & 0x10ULL) {
+        if (st->mask & 0x10ULL) {
             active = 1;
         }
         if (active != 0) {
@@ -108,7 +105,7 @@ void DrawEffect_Cb_KartWheel_DualSpawn(unsigned char *self)
             } else {
                 Mtx44_GetTranslation_RowMajor(&wheel, KartDriver_GetJointByIdx(d->driver, 3));
             }
-            offs = lbl_8032A6D4;
+            offs = DrawEffect_Cb_KartWheel_DualSpawn_rodata_8032A6D4;
             k = 0.8f * ((1.0f + sinf(BuildOrientationFromYaw(d->angle + offs.v[i]))) / 2.0f) + 0.2f;
             if (S8(0x28)) {
                 local = wheel;

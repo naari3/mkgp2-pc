@@ -3,8 +3,8 @@
  * joint/material/shape animation under the profiler timers. When the
  * rotations were converted to quaternions (see Object_DriveAnimAndSkin),
  * the saved rotations are restored first and converted again afterwards. */
-struct Quat { float x,y,z,w; };
-struct Vec3 { float x,y,z; };
+#include "game/types/Quat.h"
+#include "game/types/Vec3.h"
 struct JObj;
 typedef void (*AnimCallback)(void);
 struct JObjClass { unsigned char pad[0x50]; AnimCallback animate; };
@@ -17,7 +17,7 @@ struct JObj {
     unsigned char pad2C[0x50];
     void *aobj;
 };
-struct AnimRow { void *descriptor; void **joint; void **material; void **shape; };
+#include "game/types/AnimRow.h"
 struct Normal3D {
     unsigned char pad00[2]; unsigned char changed; unsigned char animated;
     int jointCount;

@@ -2,18 +2,14 @@
  * particles of the owned block, frees the block, then frees itself when
  * flag > 0. */
 
-typedef struct DebrisParticle {
-    unsigned char data[0x2c];
-} DebrisParticle;
+#include "game/types/DebrisParticle.h"
 
 typedef struct DebrisBlock {
     int header;
     DebrisParticle particles[15];
 } DebrisBlock;
 
-typedef struct DebrisArray {
-    DebrisBlock *block;
-} DebrisArray;
+#include "game/types/DebrisArray.h"
 
 extern void MemoryManager_TimedFree(void *p);
 extern void __destroy_arr(void *block, void *dtor, unsigned long size, unsigned long count);

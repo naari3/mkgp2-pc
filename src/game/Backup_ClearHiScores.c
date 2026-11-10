@@ -6,24 +6,16 @@
 
 typedef unsigned short wchar;
 
-typedef struct HiScoreName {
-    wchar name[6];           /* 0x0 */
-    unsigned char kart;      /* 0xC */
-    unsigned char pad[3];    /* 0xD */
-} HiScoreName;
+#include "game/types/HiScoreName.h"
 
-typedef struct BackupHiScores {
-    unsigned char pad000[0x4E0];
-    HiScoreName names[2][9][2][2][10]; /* 0x04E0 */
-    float times[2][9][2][2][50];       /* 0x31E0 */
-} BackupHiScores;
+#include "game/types/BackupHiScores.h"
 
 extern unsigned char lbl_806D1120; /* backup available */
 extern int lbl_806D1128;           /* backup busy */
 extern BackupHiScores lbl_80598A60;
 extern const float lbl_806D2EB4;   /* 599.999f */
-extern const wchar *lbl_803FDF70[9];
-extern const int lbl_8031128C[9];
+extern const wchar *Backup_ClearHiScores_data_803FDF70[9];
+extern const int Backup_ClearHiScores_rodata_8031128C[9];
 extern unsigned int wcslen(const wchar *s);
 
 int Backup_ClearHiScores(void)
@@ -57,13 +49,13 @@ int Backup_ClearHiScores(void)
                             rec->name[3] = 0;
                             rec->name[4] = 0;
                             rec->name[5] = 0;
-                            for (c = 0; c < wcslen(lbl_803FDF70[course]) && c < 5; c++) {
-                                rec->name[c] = lbl_803FDF70[course][c];
+                            for (c = 0; c < wcslen(Backup_ClearHiScores_data_803FDF70[course]) && c < 5; c++) {
+                                rec->name[c] = Backup_ClearHiScores_data_803FDF70[course][c];
                             }
-                            rec->kart = lbl_8031128C[course];
-                            rec->pad[0] = 0;
-                            rec->pad[1] = 0;
-                            rec->pad[2] = 0;
+                            rec->kart = Backup_ClearHiScores_rodata_8031128C[course];
+                            rec->extra[0] = 0;
+                            rec->extra[1] = 0;
+                            rec->extra[2] = 0;
                         }
                     }
                 }

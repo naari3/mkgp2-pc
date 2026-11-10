@@ -1,11 +1,6 @@
-typedef struct SpriteSlot {
-    unsigned char pad00[0x4];
-    void *object; /* 0x04 */
-} SpriteSlot;
+#include "game/types/SpriteSlot.h"
 
-typedef struct Vec3 {
-    float x, y, z;
-} Vec3;
+#include "game/types/Vec3.h"
 
 extern void Object_SetJObjPositionXYZ(void *object, float x, float y, float z);
 

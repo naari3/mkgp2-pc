@@ -18,11 +18,11 @@ struct ReverseJObj {
     ReverseVec3 scale;
 };
 extern "C" {
-extern unsigned char lbl_806CEFC0[8];
+extern unsigned char Jyugemu_ReverseFlag_data_806CEFC0[8];
 extern const float lbl_806D3078, lbl_806D307C, lbl_806D30A4;
 extern const char lbl_806D308C[7], lbl_806D3094[5];
 extern unsigned char lbl_80311E24[];
-extern const ReverseVec3 lbl_80311DF0;
+extern const ReverseVec3 Jyugemu_ReverseFlag_Ctor_rodata_80311DF0;
 void fn_8016C510(unsigned char);
 unsigned char clNormal3D_SetScale(ReverseNormal3D*, void*, float, float, float, float);
 ReverseJObj* Archive_GetRootJObj(ReverseNormal3D*);
@@ -64,7 +64,7 @@ struct JyugemuReverseFlagCtor {
 JyugemuReverseFlagCtor::JyugemuReverseFlagCtor(void* owner_)
 {
     ReverseVec3 scale;
-    lbl_806CEFC0[0] = 1;
+    Jyugemu_ReverseFlag_data_806CEFC0[0] = 1;
     normal = 0;
     phase = lbl_806D3078;
     counter = 180;
@@ -73,7 +73,7 @@ JyugemuReverseFlagCtor::JyugemuReverseFlagCtor(void* owner_)
     normal = new ReverseNormal3D(lbl_80311E24, 0);
     if (normal == 0) return;
     clNormal3D_SetScale(normal, 0, lbl_806D307C, lbl_806D3078, lbl_806D307C, lbl_806D30A4);
-    scale = lbl_80311DF0;
+    scale = Jyugemu_ReverseFlag_Ctor_rodata_80311DF0;
     set_scale(Archive_GetRootJObj(normal), &scale);
     owner = owner_;
 }

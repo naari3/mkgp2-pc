@@ -16,27 +16,9 @@
 
 struct ZoneDesc;
 
-struct JObj {
-    char pad00[0x8];
-    JObj *next;
-    JObj *parent;
-    JObj *child;
-    unsigned int flags;
-    char pad18[0x8];
-    float rotY;
-    char pad24[0x8];
-    float scaleX;
-    char pad30[0x4];
-    float scaleZ;
-    char pad38[0xC];
-    float mtx[3][4];
-};
+#include "game/types/JObj.h"
 
-struct MoveTexDesc {
-    const char *name;
-    float u;
-    float v;
-};
+#include "game/types/MoveTexDesc.h"
 
 struct DrawEffect;
 
@@ -77,7 +59,7 @@ extern const float lbl_80495994[];
 extern const float lbl_80495A94[];
 }
 
-extern const unsigned int lbl_80370870[0x102] = {
+extern const unsigned int mapeffect_rodata_80370870[0x102] = {
     0x3F800000, 0x3F333333, 0x3F666666, 0x00000000, 0x00000000, 0x43FA0000,
     0x42855556, 0x447A0000, 0x42855556, 0x44FA0000, 0x42855556, 0x453B8000,
     0x42855556, 0x457A0000, 0x42855556, 0x459C4000, 0x42855556, 0x00000000,
@@ -148,23 +130,23 @@ extern const char lbl_80370D78[0x1C] = "WC_dcity_wc_neon_nb_joint";
 extern const char lbl_80370D94[0x1C] = "WC_dcity_wc_neon_nc_joint";
 extern const char lbl_80370DB0[0x1C] = "WC_dcity_wc_neon_ra_joint";
 extern const char lbl_80370DCC[0x1C] = "WC_dcity_wc_neon_rb_joint";
-extern const char lbl_80370DE8[0x1C] = "WC_dcity_wc_neon_rc_joint";
+extern const char mapeffect_rodata_80370DE8[0x1C] = "WC_dcity_wc_neon_rc_joint";
 extern const MoveTexDesc lbl_80370E04[7] = {
     {lbl_80370D5C, 0.0f, 0.014999999664723873f},
     {lbl_80370D78, 0.0f, 0.014999999664723873f},
     {lbl_80370D94, 0.0f, 0.014999999664723873f},
     {lbl_80370DB0, 0.0f, 0.014999999664723873f},
     {lbl_80370DCC, 0.0f, 0.014999999664723873f},
-    {lbl_80370DE8, 0.0f, 0.014999999664723873f},
+    {mapeffect_rodata_80370DE8, 0.0f, 0.014999999664723873f},
     {0, 0.0f, 0.0f},
 };
-extern const MoveTexDesc lbl_80370E58[7] = {
+extern const MoveTexDesc mapeffect_rodata_80370E58[7] = {
     {lbl_80370D5C, 0.0f, 0.014999999664723873f},
     {lbl_80370D78, 0.0f, 0.014999999664723873f},
     {lbl_80370D94, 0.0f, 0.014999999664723873f},
     {lbl_80370DB0, 0.0f, 0.014999999664723873f},
     {lbl_80370DCC, 0.0f, 0.014999999664723873f},
-    {lbl_80370DE8, 0.0f, 0.014999999664723873f},
+    {mapeffect_rodata_80370DE8, 0.0f, 0.014999999664723873f},
     {0, 0.0f, 0.0f},
 };
 extern const char lbl_80370EAC[0x20] = "KP_castle_KP_yougan_taki_joint";
@@ -248,14 +230,14 @@ extern const unsigned int lbl_8037132C[0x3C] = {
     0x454090F1, 0x00000000, 0xC50A9FD9, 0x452B0427, 0x00000000, 0xC4EDDD98,
     0x450A086C, 0x00000000, 0xC50D7978, 0x00000004, 0x00000000, 0x00000000,
 };
-extern const unsigned int lbl_8037141C[0x1E] = {
+extern const unsigned int mapeffect_rodata_8037141C[0x1E] = {
     0xC517E5E2, 0x42ADF3A0, 0x43691D98, 0xC517D3FA, 0x42ABE153, 0xC3191FD9,
     0xC44F2268, 0x4293FE2F, 0xC3191F2B, 0xC44F225E, 0x429401CF, 0x43691E49,
     0x00000004, 0x00000000, 0x00000000, 0xC5491A14, 0x43960065, 0xC5D32564,
     0xC52A9A24, 0x43960016, 0xC5BAB927, 0xC550297A, 0x4395FA95, 0xC59F2FC7,
     0xC58C8FAD, 0x439605D0, 0xC5A40718, 0x00000004, 0x00000000, 0x00000000,
 };
-extern const unsigned int lbl_80371494[0x1E] = {
+extern const unsigned int mapeffect_rodata_80371494[0x1E] = {
     0xC517D3FA, 0x00000000, 0xC3191FD9, 0xC4272268, 0x00000000, 0xC3191F2B,
     0xC427225E, 0x00000000, 0x43691E49, 0xC517E5E2, 0x00000000, 0x43691D98,
     0x00000004, 0x00000000, 0x00000000, 0xC56EF3C3, 0x00000000, 0xC5D8B861,
@@ -405,25 +387,11 @@ static inline float (*JObjGetMtxPtr(JObj *jobj))[4] {
     return jobj->mtx;
 }
 
-struct Vec3f {
-    float x, y, z;
-};
+#include "game/types/Vec3f.h"
 
-struct ZoneVolume {
-    ZoneVolume(const ZoneDesc *desc, int closed);
-    ~ZoneVolume();
-    unsigned char Contains(Vec3f *pos);
-    void Draw();
-    char pad00[0x4];
-};
+#include "game/types/ZoneVolume.h"
 
-struct clMapEffectParts {
-    virtual ~clMapEffectParts() {}
-    virtual void Update();
-    virtual void Draw();
-    virtual void Enable(int on);
-    clMapEffectParts() {}
-};
+#include "game/types/clMapEffectParts.h"
 
 namespace {
 
@@ -525,285 +493,44 @@ struct P_fn_8016D2D0 : clMapEffectParts {
     P_fn_8016D2D0(JObj *);
 };
 
-struct P_fn_80171CD0 : clMapEffectParts {
-    char pad[0x78];
+#include "game/types/P_fn_80171CD0.h"
 
-    P_fn_80171CD0(const char *file, JObj *joint, float a, float b);
-};
+#include "game/types/PartsNode.h"
 
-struct PartsNode {
-    int kind;
-    int prio;
-    clMapEffectParts *parts;
-    unsigned char done;
-    PartsNode *next;
+#include "game/types/PartsList.h"
 
-    PartsNode(int kind, int prio, clMapEffectParts *parts) {
-        this->kind = kind;
-        this->prio = prio;
-        this->parts = parts;
-        done = 0;
-        next = 0;
-    }
+#include "game/types/PartsCtx.h"
 
-    int Append(int kind, int prio, clMapEffectParts *parts) {
-        if (parts) {
-            if (next) {
-                next->Append(kind, prio, parts);
-            } else {
-                next = new PartsNode(kind, prio, parts);
-            }
-            return 1;
-        }
-        return 0;
-    }
+#include "game/types/clMapEffect.h"
 
-    ~PartsNode();
-    clMapEffectParts *Find(unsigned int kind);
-    void Update();
-    void Draw(int mask);
-    void SetHidden(int mask, unsigned char hide);
-};
+#include "game/types/clMapEffectDN.h"
 
-struct PartsList {
-    PartsNode *head;
+#include "game/types/YIState.h"
 
-    PartsList() {
-        head = 0;
-    }
+#include "game/types/clMapEffectYI.h"
 
-    ~PartsList();
-    int Add(int kind, int prio, clMapEffectParts *parts);
-    clMapEffectParts *Find(unsigned int kind);
-    void Update();
-    void Draw(int mask);
-    void SetHidden(int mask, unsigned char hide);
-};
+#include "game/types/clMapEffectRB.h"
 
-struct PartsCtx {
-    char pad00[0xC];
-    int mode;
-};
+#include "game/types/clMapEffectKP.h"
 
-struct clMapEffect {
-    virtual ~clMapEffect() {}
-    virtual void Update();
-    virtual void Draw(int mask);
+#include "game/types/clMapEffectPC.h"
 
-    clMapEffect() {}
-};
+#include "game/types/clMapEffectWC.h"
 
-struct clMapEffectDN : clMapEffect {
-    PartsList *parts;
-    unsigned char done;
+#include "game/types/clMapEffectDK.h"
 
-    virtual ~clMapEffectDN();
-    virtual void Update();
-    virtual void Draw(int mask);
+#include "game/types/clMapEffectMR.h"
 
-    clMapEffectDN(JObj *root, int arg);
-};
+#include "game/types/clMapEffectWCC.h"
 
-struct YIState {
-    unsigned char a;
-    float x04;
-    unsigned char b;
-    int x0c;
-    unsigned char c;
-    float x14;
-    unsigned char d;
-    float x1c;
-    int x20;
-    int x24;
-    int x28;
-    int x2c;
+#include "game/types/clMapEffectKPC.h"
 
-    YIState() {
-        x20 = 0;
-        x24 = 0;
-        x2c = 0;
-        a = 0;
-        b = 0;
-        c = 0;
-        d = 0;
-        x14 = 0.0f;
-        x1c = 0.0f;
-    }
+#include "game/types/clMapEffectPCC.h"
 
-    ~YIState() {
-        if (a == 1) {
-            fn_8016C394(0x3E);
-        }
-        if (d == 1) {
-            fn_8016C394(0x3F);
-        }
-        if (c == 1) {
-            fn_8016C394(0x40);
-        }
-        if (b == 1) {
-            fn_8016C394(0x3B);
-        }
-    }
-
-    template <int N>
-    void UpdateT();
-
-    void Update() {
-        UpdateT<0>();
-    }
-};
-
-struct clMapEffectYI : clMapEffect {
-    PartsList *parts;
-    YIState *state;
-
-    virtual ~clMapEffectYI();
-    virtual void Update();
-    virtual void Draw(int mask);
-
-    clMapEffectYI(JObj *root, int arg);
-};
-
-struct clMapEffectRB : clMapEffect {
-    PartsList *parts;
-    PartsCtx *ctx;
-    unsigned char done;
-
-    virtual ~clMapEffectRB();
-    virtual void Update();
-    virtual void Draw(int mask);
-
-    clMapEffectRB(JObj *root, int arg);
-};
-
-struct clMapEffectKP : clMapEffect {
-    PartsList *parts;
-    ZoneVolume *zone;
-    float x0c;
-    JObj *x10;
-    float x14;
-    unsigned char x18;
-    JObj *x1c;
-    JObj *x20;
-    float x24;
-    float x28;
-    unsigned char x2c;
-
-    virtual ~clMapEffectKP();
-    virtual void Update();
-    virtual void Draw(int mask);
-
-    clMapEffectKP(JObj *root, int arg);
-};
-
-struct clMapEffectPC : clMapEffect {
-    PartsList *parts;
-    PartsCtx *ctx;
-    unsigned char done;
-
-    virtual ~clMapEffectPC();
-    virtual void Update();
-    virtual void Draw(int mask);
-
-    clMapEffectPC(JObj *root, int arg);
-};
-
-struct clMapEffectWC : clMapEffect {
-    PartsList *parts;
-    unsigned char done;
-
-    virtual ~clMapEffectWC();
-    virtual void Update();
-    virtual void Draw(int mask);
-
-    clMapEffectWC(JObj *root, int arg);
-};
-
-struct clMapEffectDK : clMapEffect {
-    PartsList *parts;
-    int x08;
-    int x0c;
-    int x10;
-    unsigned char done;
-
-    virtual ~clMapEffectDK();
-    virtual void Update();
-    virtual void Draw(int mask);
-
-    clMapEffectDK(JObj *root, int arg);
-};
-
-struct clMapEffectMR : clMapEffect {
-    PartsList *parts;
-    unsigned char done;
-
-    virtual ~clMapEffectMR();
-    virtual void Update();
-    virtual void Draw(int mask);
-
-    clMapEffectMR(JObj *root, int arg);
-};
-
-struct clMapEffectWCC : clMapEffect {
-    PartsList *parts;
-    unsigned char done;
-
-    virtual ~clMapEffectWCC();
-    virtual void Update();
-    virtual void Draw(int mask);
-
-    clMapEffectWCC(JObj *root, int arg);
-};
-
-struct clMapEffectKPC : clMapEffect {
-    unsigned char done;
-
-    virtual ~clMapEffectKPC();
-    virtual void Update();
-    virtual void Draw(int mask);
-
-    clMapEffectKPC() {
-        done = 0;
-    }
-};
-
-struct clMapEffectPCC : clMapEffect {
-    unsigned char done;
-
-    virtual ~clMapEffectPCC();
-    virtual void Update();
-    virtual void Draw(int mask);
-
-    clMapEffectPCC() {
-        done = 0;
-    }
-};
-
-struct clMapEffectDKC : clMapEffect {
-    int wait;
-    int volIdx;
-    int panIdx;
-    unsigned char done;
-
-    virtual ~clMapEffectDKC();
-    virtual void Update();
-    virtual void Draw(int mask);
-
-    clMapEffectDKC() {
-        wait = 0;
-        volIdx = 0;
-        panIdx = 0;
-        done = 0;
-        fn_8016B248(0);
-        fn_8016B178(2);
-        fn_8016B160(0.0f);
-        fn_8016B148(10000.0f);
-        fn_8016B0F0(0xC0, 0xC0, 0xC0);
-    }
-};
+#include "game/types/clMapEffectDKC.h"
 
 inline ZoneVolume *NewKPZone() {
-    static const unsigned int lbl_80371A34[0x2D] = {
+    static const unsigned int mapeffect_rodata_80371A34[0x2D] = {
         0xC4B18000, 0x00000000, 0xC52F0000, 0xC4B18000, 0x00000000, 0xC4918000,
         0xC31D0000, 0x00000000, 0xC4918000, 0xC31D0000, 0x00000000, 0xC52F0000,
         0x00000000, 0x00000000, 0x00000000, 0x4417C000, 0x00000000, 0xC544E000,
@@ -813,7 +540,7 @@ inline ZoneVolume *NewKPZone() {
         0x449A6000, 0x00000000, 0x440AC000, 0x449A6000, 0x00000000, 0x43910000,
         0x00000000, 0x00000000, 0x00000000,
     };
-    return new ZoneVolume((const ZoneDesc *)lbl_80371A34, 3);
+    return new ZoneVolume((const ZoneDesc *)mapeffect_rodata_80371A34, 3);
 }
 
 #pragma exceptions on
@@ -824,7 +551,7 @@ inline clMapEffectWCC::clMapEffectWCC(JObj *root, int arg) {
     parts = new PartsList();
     if (parts) {
         parts->Add(4, 2, new P_fn_801967F0());
-        parts->Add(0, 0, new clMoveTex(root, lbl_80370E58));
+        parts->Add(0, 0, new clMoveTex(root, mapeffect_rodata_80370E58));
     }
 }
 
@@ -997,10 +724,10 @@ inline clMapEffectPC::clMapEffectPC(JObj *root, int arg) {
     if (parts) {
         parts->Add(4, 2, new P_fn_8018D3E0());
         if (!g_longRoundFlag) {
-            parts->Add(0, 0, new clReverbCtrl(lbl_8037141C, 2));
+            parts->Add(0, 0, new clReverbCtrl(mapeffect_rodata_8037141C, 2));
         } else {
             parts->Add(8, 1, new P_fn_8018CFC4());
-            parts->Add(0, 0, new clReverbCtrl(lbl_80371494, 2));
+            parts->Add(0, 0, new clReverbCtrl(mapeffect_rodata_80371494, 2));
         }
     }
 }

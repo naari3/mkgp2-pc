@@ -1,28 +1,14 @@
 /*
  * 0x801709FC..0x80170B5C: deleting destructor of the grow-in entry set
- * (vtable lbl_8049128C, base vtable lbl_80490FE0).
+ * (vtable GrowSet_vtable_8049128C, base vtable lbl_80490FE0).
  */
 
-struct GrowEntry {
-    void *jobj;
-    void *faces;
-    int faceCount;
-    void *anim;
-    int state;
-    float t;
-    float scale;
-    void *sub;
-};
+#include "game/types/GrowEntry.h"
 
-struct GrowSet {
-    void *vtable;
-    void *model;
-    GrowEntry *entries;
-    int count;
-};
+#include "game/types/GrowSet.h"
 
 extern "C" {
-extern char lbl_8049128C[];
+extern char GrowSet_vtable_8049128C[];
 extern char lbl_80490FE0[];
 extern char lbl_8036E674[];
 void Object_DtorWithGXSync(void *, int);
@@ -36,7 +22,7 @@ GrowSet *fn_801709FC(GrowSet *self, short flag) {
     int i;
 
     if (self) {
-        self->vtable = lbl_8049128C;
+        self->vtable = GrowSet_vtable_8049128C;
         if (self->model) {
             Object_DtorWithGXSync(self->model, 1);
         }
@@ -47,9 +33,9 @@ GrowSet *fn_801709FC(GrowSet *self, short flag) {
                     self->entries[i].faces = 0;
                     self->entries[i].faceCount = 0;
                 }
-                if (self->entries[i].anim) {
-                    fn_80123B48(self->entries[i].anim, 1);
-                    self->entries[i].anim = 0;
+                if (self->entries[i].trigger) {
+                    fn_80123B48(self->entries[i].trigger, 1);
+                    self->entries[i].trigger = 0;
                 }
                 if (self->entries[i].sub) {
                     fn_8016F9A0(self->entries[i].sub, 1);

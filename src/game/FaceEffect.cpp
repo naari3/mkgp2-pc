@@ -10,9 +10,7 @@ void operator delete(void *p) throw();
 
 typedef float Mtx[3][4];
 
-struct Vec3 {
-    float x, y, z;
-};
+#include "game/types/Vec3.h"
 
 extern "C" {
 void PSMTXIdentity(Mtx m);
@@ -88,20 +86,24 @@ struct PcbSlot {
     unsigned short h6_11 : 5;
 };
 
-struct KartStatus {
-    char pad0[0x10];
-    unsigned long long bits;
-    unsigned long long bits2;
-};
+#include "game/ItemEffectBusPrivate.h"
 
+struct ItemEffectBus;
+
+/* Merged from 14 per-TU views by tools/struct_merge.py: members are
+ * the ones some TU accesses; the size is the largest any view declared. */
+typedef struct KartRender KartRender;
 struct KartRender {
-    char pad0[0x1F4];
-    int slot;
-    int chara;
-    char pad1FC[0x2D0 - 0x1FC];
-    unsigned char special;
-    char pad2D1[0x304 - 0x2D1];
-    KartStatus *status;
+    /* 0x000 */ unsigned char pad_000[0x1F4];
+    /* 0x1F4 */ int slot;
+    /* 0x1F8 */ int chara;
+    /* 0x1FC */ unsigned char pad_1FC[0x3C];
+    /* 0x238 */ int visible;
+    /* 0x23C */ unsigned char middle[0x90];
+    /* 0x2CC */ int coins;
+    /* 0x2D0 */ unsigned char special;  /* also: active */
+    /* 0x2D1 */ unsigned char pad_2D1[0x33];
+    /* 0x304 */ struct ItemEffectBus *status;
 };
 
 extern "C" int fn_8023D1B4(KartRender *kart);
@@ -134,11 +136,7 @@ void Sprite_SetAnimTime(Sprite *s, float t);
 unsigned char Sprite_AdvanceAnim(Sprite *s, float dt);
 }
 
-struct clNormal3D {
-    char _opaque[0x5C];
-    clNormal3D(const char *res, int flags);
-    ~clNormal3D();
-};
+#include "game/types/clNormal3D.h"
 
 extern "C" {
 void Object_JObjUpdate_870(clNormal3D *o, int flags);
@@ -150,17 +148,60 @@ void Object_RenderJObjTree(clNormal3D *o, int mask);
 }
 
 
-const unsigned int lbl_803DAF98[267] = {0x3F800000, 0x3F333333, 0x3F666666, 0x00000000, 0x00000000, 0x43FA0000, 0x42855556, 0x447A0000, 0x42855556, 0x44FA0000, 0x42855556, 0x453B8000, 0x42855556, 0x457A0000, 0x42855556, 0x459C4000, 0x42855556, 0x00000000, 0x00000000, 0x43FA0000, 0x42855556, 0x447A0000, 0x42855556, 0x44FA0000, 0x42855556, 0x453B8000, 0x42855556, 0x457A0000, 0x42855556, 0x459C4000, 0x42855556, 0x00000000, 0x00000000, 0x43FA0000, 0x42855556, 0x447A0000, 0x42855556, 0x44FA0000, 0x42855556, 0x453B8000, 0x42855556, 0x457A0000, 0x42855556, 0x459C4000, 0x42855556, 0x00000000, 0x00000000, 0x43FA0000, 0x42855556, 0x447A0000, 0x42855556, 0x44FA0000, 0x42855556, 0x453B8000, 0x42855556, 0x457A0000, 0x42855556, 0x459C4000, 0x42855556, 0x00000000, 0x00000000, 0x43FA0000, 0x42855556, 0x447A0000, 0x42855556, 0x44FA0000, 0x42855556, 0x453B8000, 0x42855556, 0x457A0000, 0x42855556, 0x459C4000, 0x42855556, 0x00000000, 0x00000000, 0x43FA0000, 0x42855556, 0x447A0000, 0x42855556, 0x44FA0000, 0x42855556, 0x453B8000, 0x42855556, 0x457A0000, 0x42855556, 0x459C4000, 0x42855556, 0x00000000, 0x00000000, 0x43FA0000, 0x42855556, 0x447A0000, 0x42855556, 0x44FA0000, 0x42855556, 0x453B8000, 0x42855556, 0x457A0000, 0x42855556, 0x459C4000, 0x42855556, 0x00000000, 0x00000000, 0x43FA0000, 0x42855556, 0x447A0000, 0x42855556, 0x44FA0000, 0x42855556, 0x453B8000, 0x42855556, 0x457A0000, 0x42855556, 0x459C4000, 0x42855556, 0x00000000, 0x00000000, 0x43FA0000, 0x42855556, 0x447A0000, 0x42855556, 0x44FA0000, 0x42855556, 0x453B8000, 0x42855556, 0x457A0000, 0x42855556, 0x459C4000, 0x42855556, 0x00000000, 0x00000000, 0x43FA0000, 0x42855556, 0x447A0000, 0x42855556, 0x44FA0000, 0x42855556, 0x453B8000, 0x42855556, 0x457A0000, 0x42855556, 0x459C4000, 0x42855556, 0x00000000, 0x00000000, 0x43FA0000, 0x42855556, 0x447A0000, 0x42855556, 0x44FA0000, 0x42855556, 0x453B8000, 0x42855556, 0x457A0000, 0x42855556, 0x459C4000, 0x42855556, 0x00000000, 0x00000000, 0x43FA0000, 0x42855556, 0x447A0000, 0x42855556, 0x44FA0000, 0x42855556, 0x453B8000, 0x42855556, 0x457A0000, 0x42855556, 0x459C4000, 0x42855556, 0x00000000, 0x00000000, 0x43FA0000, 0x42A6AAAB, 0x447A0000, 0x42A6AAAB, 0x44FA0000, 0x42A6AAAB, 0x453B8000, 0x42A6AAAB, 0x457A0000, 0x42A6AAAB, 0x459C4000, 0x42A6AAAB, 0x00000000, 0x00000000, 0x43FA0000, 0x42A6AAAB, 0x447A0000, 0x42A6AAAB, 0x44FA0000, 0x42A6AAAB, 0x453B8000, 0x42A6AAAB, 0x457A0000, 0x42A6AAAB, 0x459C4000, 0x42A6AAAB, 0x00000000, 0x00000000, 0x43FA0000, 0x42A6AAAB, 0x447A0000, 0x42A6AAAB, 0x44FA0000, 0x42A6AAAB, 0x453B8000, 0x42A6AAAB, 0x457A0000, 0x42A6AAAB, 0x459C4000, 0x42A6AAAB, 0x00000000, 0x00000000, 0x43FA0000, 0x42A6AAAB, 0x447A0000, 0x42A6AAAB, 0x44FA0000, 0x42A6AAAB, 0x453B8000, 0x42A6AAAB, 0x457A0000, 0x42A6AAAB, 0x459C4000, 0x42A6AAAB, 0x00000000, 0x00000000, 0x43FA0000, 0x42A6AAAB, 0x447A0000, 0x42A6AAAB, 0x44FA0000, 0x42A6AAAB, 0x453B8000, 0x42A6AAAB, 0x457A0000, 0x42A6AAAB, 0x459C4000, 0x42A6AAAB, 0x00000000, 0x00000000, 0x43FA0000, 0x42A6AAAB, 0x447A0000, 0x42A6AAAB, 0x44FA0000, 0x42A6AAAB, 0x453B8000, 0x42A6AAAB, 0x457A0000, 0x42A6AAAB, 0x459C4000, 0x42A6AAAB, 0x00000000, 0x00000000, 0xC3960000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000};
+/* element type read off the values (all floats), not from code */
+const float FaceEffect_rodata_803DAF98[267] = {
+    1.0f, 0.7f, 0.9f, 0.0f, 0.0f, 500.0f, 66.66667f, 1000.0f,
+    66.66667f, 2000.0f, 66.66667f, 3000.0f, 66.66667f, 4000.0f, 66.66667f, 5000.0f,
+    66.66667f, 0.0f, 0.0f, 500.0f, 66.66667f, 1000.0f, 66.66667f, 2000.0f,
+    66.66667f, 3000.0f, 66.66667f, 4000.0f, 66.66667f, 5000.0f, 66.66667f, 0.0f,
+    0.0f, 500.0f, 66.66667f, 1000.0f, 66.66667f, 2000.0f, 66.66667f, 3000.0f,
+    66.66667f, 4000.0f, 66.66667f, 5000.0f, 66.66667f, 0.0f, 0.0f, 500.0f,
+    66.66667f, 1000.0f, 66.66667f, 2000.0f, 66.66667f, 3000.0f, 66.66667f, 4000.0f,
+    66.66667f, 5000.0f, 66.66667f, 0.0f, 0.0f, 500.0f, 66.66667f, 1000.0f,
+    66.66667f, 2000.0f, 66.66667f, 3000.0f, 66.66667f, 4000.0f, 66.66667f, 5000.0f,
+    66.66667f, 0.0f, 0.0f, 500.0f, 66.66667f, 1000.0f, 66.66667f, 2000.0f,
+    66.66667f, 3000.0f, 66.66667f, 4000.0f, 66.66667f, 5000.0f, 66.66667f, 0.0f,
+    0.0f, 500.0f, 66.66667f, 1000.0f, 66.66667f, 2000.0f, 66.66667f, 3000.0f,
+    66.66667f, 4000.0f, 66.66667f, 5000.0f, 66.66667f, 0.0f, 0.0f, 500.0f,
+    66.66667f, 1000.0f, 66.66667f, 2000.0f, 66.66667f, 3000.0f, 66.66667f, 4000.0f,
+    66.66667f, 5000.0f, 66.66667f, 0.0f, 0.0f, 500.0f, 66.66667f, 1000.0f,
+    66.66667f, 2000.0f, 66.66667f, 3000.0f, 66.66667f, 4000.0f, 66.66667f, 5000.0f,
+    66.66667f, 0.0f, 0.0f, 500.0f, 66.66667f, 1000.0f, 66.66667f, 2000.0f,
+    66.66667f, 3000.0f, 66.66667f, 4000.0f, 66.66667f, 5000.0f, 66.66667f, 0.0f,
+    0.0f, 500.0f, 66.66667f, 1000.0f, 66.66667f, 2000.0f, 66.66667f, 3000.0f,
+    66.66667f, 4000.0f, 66.66667f, 5000.0f, 66.66667f, 0.0f, 0.0f, 500.0f,
+    66.66667f, 1000.0f, 66.66667f, 2000.0f, 66.66667f, 3000.0f, 66.66667f, 4000.0f,
+    66.66667f, 5000.0f, 66.66667f, 0.0f, 0.0f, 500.0f, 83.333336f, 1000.0f,
+    83.333336f, 2000.0f, 83.333336f, 3000.0f, 83.333336f, 4000.0f, 83.333336f, 5000.0f,
+    83.333336f, 0.0f, 0.0f, 500.0f, 83.333336f, 1000.0f, 83.333336f, 2000.0f,
+    83.333336f, 3000.0f, 83.333336f, 4000.0f, 83.333336f, 5000.0f, 83.333336f, 0.0f,
+    0.0f, 500.0f, 83.333336f, 1000.0f, 83.333336f, 2000.0f, 83.333336f, 3000.0f,
+    83.333336f, 4000.0f, 83.333336f, 5000.0f, 83.333336f, 0.0f, 0.0f, 500.0f,
+    83.333336f, 1000.0f, 83.333336f, 2000.0f, 83.333336f, 3000.0f, 83.333336f, 4000.0f,
+    83.333336f, 5000.0f, 83.333336f, 0.0f, 0.0f, 500.0f, 83.333336f, 1000.0f,
+    83.333336f, 2000.0f, 83.333336f, 3000.0f, 83.333336f, 4000.0f, 83.333336f, 5000.0f,
+    83.333336f, 0.0f, 0.0f, 500.0f, 83.333336f, 1000.0f, 83.333336f, 2000.0f,
+    83.333336f, 3000.0f, 83.333336f, 4000.0f, 83.333336f, 5000.0f, 83.333336f, 0.0f,
+    0.0f, -300.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+    0.0f, 0.0f, 0.0f
+};
 static const int kCpuNameRes[30] = {0x00000C49, 0x00000C4A, 0x00000C4B, 0x00000C4C, 0x00000C51, 0x00000C52, 0x00000C53, 0x00000C54, 0x00000C59, 0x00000C5A, 0x00000C5B, 0x00000C5C, 0x00000C5E, 0x00000C61, 0x00000C62, 0x00000C4D, 0x00000C4E, 0x00000C4F, 0x00000C50, 0x00000C55, 0x00000C56, 0x00000C57, 0x00000C58, 0x00000C5D, 0x00000C5A, 0x00000C5B, 0x00000C60, 0x00000C5F, 0x00000C61, 0x00000C62};
 static const int kNameRes[13] = {0x00000C32, 0x00000C33, 0x00000C3C, 0x00000C36, 0x00000C3E, 0x00000C3B, 0x00000C3D, 0x00000C37, 0x00000C34, 0x00000C3A, 0x00000C38, 0x00000C35, 0x00000C39};
 static const int kFlagRes[4] = {0x00002B00, 0x00002B01, 0x00002B02, 0x00002B03};
 static const int kEmblemRes[4] = {0x00000C24, 0x00000C25, 0x00000C26, 0x00000C27};
 static const int kModeRes[10] = {0x00000C66, 0x00000C66, 0x00000C68, 0x00000C69, 0x00000C6B, 0x00000C6A, 0x00000C67, 0x00000C63, 0x00000C65, 0x00000C64};
-const unsigned int lbl_803DB4B8[56] = {0x3F800000, 0x40800000, 0x3F000000, 0x40D00000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x41480000, 0x41080000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x41200000, 0x40800000, 0x41C00000, 0x40000000, 0x42000000, 0x40C00000, 0x41200000, 0x40C00000, 0x41900000, 0x41400000, 0x41E00000, 0x41C00000, 0x41A00000, 0x40800000, 0x42000000, 0x40E00000, 0x42240000, 0x41600000, 0xC1200000, 0x40800000, 0xC1C00000, 0x40000000, 0xC2000000, 0x40C00000, 0xC1200000, 0x40C00000, 0xC1900000, 0x41400000, 0xC1E00000, 0x41C00000, 0xC1A00000, 0x40800000, 0xC2000000, 0x40E00000, 0xC2240000, 0x41600000};
-
-struct Vec2 {
-    float x, y;
+/* element type read off the values (all floats), not from code */
+const float lbl_803DB4B8[56] = {
+    1.0f, 4.0f, 0.5f, 6.5f, 0.0f, 0.0f, 0.0f, 0.0f,
+    12.5f, 8.5f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+    0.0f, 0.0f, 0.0f, 0.0f, 10.0f, 4.0f, 24.0f, 2.0f,
+    32.0f, 6.0f, 10.0f, 6.0f, 18.0f, 12.0f, 28.0f, 24.0f,
+    20.0f, 4.0f, 32.0f, 7.0f, 41.0f, 14.0f, -10.0f, 4.0f,
+    -24.0f, 2.0f, -32.0f, 6.0f, -10.0f, 6.0f, -18.0f, 12.0f,
+    -28.0f, 24.0f, -20.0f, 4.0f, -32.0f, 7.0f, -41.0f, 14.0f
 };
+
+#include "game/types/Vec2.h"
 
 static const Vec2 kIconOffset[13] = {{0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 8.0f}, {0.0f, 0.0f}, {0.0f, 10.0f}, {0.0f, 0.0f}, {0.0f, -16.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 8.0f}};
 static const Vec3 sPenOrigin = {0.0f, 0.0f, -3.0f};
@@ -226,12 +267,12 @@ public:
     void UpdateIcon(unsigned char draw, float px, float py);
 
     void UpdateSprites(unsigned char draw, float px, float py) {
-        KartStatus *st = kart->status;
+        ItemEffectBus *st = kart->status;
         if (!fn_8019FE78(sprL)) {
             animOn = 0;
         }
-        unsigned long long b = st->bits;
-        b |= st->bits2;
+        unsigned long long b = st->mask;
+        b |= st->snapshot;
         if (b & 0x10000) {
             Sprite_SetAnimTime(sprL, 0.0f);
             Sprite_SetAnimTime(sprR, 0.0f);
@@ -251,9 +292,9 @@ public:
     }
 };
 
-static inline unsigned char TestBits(KartStatus *st, unsigned long long mask) {
+static inline unsigned char TestBits(ItemEffectBus *st, unsigned long long mask) {
     unsigned char hit;
-    if ((st->bits & mask) == 0) {
+    if ((st->mask & mask) == 0) {
         hit = 0;
     } else {
         hit = 1;
@@ -535,7 +576,7 @@ clFaceEffect::~clFaceEffect() {
 }
 
 void clFaceEffect::UpdateIcon(unsigned char draw, float px, float py) {
-    KartStatus *st = kart->status;
+    ItemEffectBus *st = kart->status;
     int prev = mode;
     if (TestBits(st, 0x10000) == 1) {
         mode = -1;
@@ -544,17 +585,17 @@ void clFaceEffect::UpdateIcon(unsigned char draw, float px, float py) {
     }
     if (TestBits(st, 0x800000000ULL)) {
         mode = 0;
-    } else if (st->bits & 0x1000000000ULL) {
+    } else if (st->mask & 0x1000000000ULL) {
         mode = 4;
-    } else if (st->bits & 0x4000000000000ULL) {
+    } else if (st->mask & 0x4000000000000ULL) {
         mode = 5;
-    } else if (st->bits & 0x8000000000000ULL) {
+    } else if (st->mask & 0x8000000000000ULL) {
         mode = 6;
-    } else if (st->bits & 0x200ULL) {
+    } else if (st->mask & 0x200ULL) {
         mode = 2;
-    } else if (st->bits & 0x80000000000ULL) {
+    } else if (st->mask & 0x80000000000ULL) {
         mode = 3;
-    } else if (st->bits & 0x10000000000000ULL) {
+    } else if (st->mask & 0x10000000000000ULL) {
         int n = fn_8023D1B4(kart);
         if (n < 0) {
             mode = 7;

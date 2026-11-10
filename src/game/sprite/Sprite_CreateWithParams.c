@@ -1,24 +1,8 @@
-typedef struct SpriteAnimData {
-    unsigned char pad[0x14];
-    float length;
-    void *frames;
-    short *params;
-} SpriteAnimData;
+#include "game/types/SpriteAnimData.h"
 
-typedef struct SpriteAnim {
-    unsigned char flag;
-    unsigned char pad1[3];
-    int mode;
-    float time;
-    float c[6];
-    const char *name;
-    SpriteAnimData *data;
-} SpriteAnim;
+#include "game/types/SpriteAnim.h"
 
-typedef struct Remap {
-    int from;
-    int to;
-} Remap;
+#include "game/types/Remap.h"
 
 typedef struct GameCfg {
     unsigned char pad[0x20];

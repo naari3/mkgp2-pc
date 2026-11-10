@@ -17,10 +17,7 @@ typedef struct InputView {
     int fields[8];
 } InputView;
 
-typedef struct GameModeTitle {
-    void *vtable;
-    int counter;
-} GameModeTitle;
+#include "game/types/GameModeTitle.h"
 
 typedef struct GameModeSelect {
     void *vtable;
@@ -37,9 +34,9 @@ extern void DEMOPuts(int x, int y, int color, const char *text);
 extern VObj *fn_8015CB5C(int arg);
 extern void fn_801A1280(void);
 extern void fn_8011FAB8(void);
-extern char lbl_80419E3C[];
-extern char lbl_80419E1C[];
-extern char lbl_80419DFC[];
+extern char GameMode_Title_data_80419E3C[];
+extern char GameMode_TitleSelect_data_80419E1C[];
+extern char GameMode_TitleSelect_data_80419DFC[];
 extern char lbl_80328DC8[];
 extern char lbl_80328DB8[];
 extern void *lbl_803FDF28[];
@@ -84,13 +81,13 @@ struct SelectBase {
 };
 struct SelectStage : SelectBase {
     int counter;
-    SelectStage() { vtable = lbl_80419E1C; counter = 0; }
+    SelectStage() { vtable = GameMode_TitleSelect_data_80419E1C; counter = 0; }
 };
 struct SelectCharacter : SelectBase {
     int state;
     VObj *scene;
     SelectCharacter() {
-        vtable = lbl_80419DFC;
+        vtable = GameMode_TitleSelect_data_80419DFC;
         state = 0;
         scene = 0;
         if (input_state() == 0) CreateInputState();
@@ -103,7 +100,7 @@ struct SelectCharacter : SelectBase {
 extern "C" GameModeTitle *GameMode_Title_Dtor(GameModeTitle *self, short flag)
 {
     if (self != 0) {
-        self->vtable = lbl_80419E3C;
+        self->vtable = GameMode_Title_data_80419E3C;
         dtor_8002CDF4(self, 0);
         if (flag > 0) {
             MemoryManager_TimedFree(self);
@@ -133,7 +130,7 @@ extern "C" GameModeTitle *GameMode_StageSelect_Ctor(void)
 extern "C" GameModeTitle *GameMode_StageSelect_Dtor(GameModeTitle *self, short flag)
 {
     if (self != 0) {
-        self->vtable = lbl_80419E1C;
+        self->vtable = GameMode_TitleSelect_data_80419E1C;
         dtor_8002CDF4(self, 0);
         if (flag > 0) {
             MemoryManager_TimedFree(self);
@@ -162,7 +159,7 @@ extern "C" GameModeSelect *GameMode_CharacterSelect_Ctor(void)
 extern "C" GameModeSelect *GameMode_CharacterSelect_Dtor(GameModeSelect *self, short flag)
 {
     if (self != 0) {
-        self->vtable = lbl_80419DFC;
+        self->vtable = GameMode_TitleSelect_data_80419DFC;
         delete (VObj *)g_pInputState;
         g_pInputState = 0;
         delete self->scene;

@@ -1,11 +1,8 @@
 #ifndef GAME_ITEMSELECTREFILLPRIVATE_H
 #define GAME_ITEMSELECTREFILLPRIVATE_H
 #include "game/ItemSelectState.h"
-struct RefillSprite {
-    int field0, layer, field8;
-    float x, y, sx, sy, field1c, alpha;
-};
-struct RefillGroup { RefillSprite *sprite; };
+#include "game/types/RefillSprite.h"
+#include "game/types/RefillGroup.h"
 struct RefillChoice {
     RefillGroup *groups[4];
     TextManager *text[4];
@@ -21,7 +18,7 @@ struct RefillLayout {
     int resources[3];
 };
 extern "C" {
-extern const RefillLayout lbl_803DC0C0;
+extern const RefillLayout ItemSelectState_rodata_803DC0C0;
 extern unsigned char g_playerData[];
 extern int g_characterId;
 void fn_8023AA0C(RefillChoice *, int);

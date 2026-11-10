@@ -5,62 +5,20 @@
  * Fading logo task (0x8020E2D8..0x8020F220).
  *
  *   PopupRoot (vtable lbl_8048ECF8, inline) -> PopupTask (vtable lbl_8048ED10, inline)
- *     FadeLogoScene (vtable lbl_804ECAA8): owns a task list holding one FadeLogo.
- *     FadeTaskBase (vtable lbl_804ECB1C) -> FadeLogo (vtable lbl_804ECB04).
+ *     FadeLogoScene (vtable FadeLogoScene_vtable_804ECAA8): owns a task list holding one FadeLogo.
+ *     FadeTaskBase (vtable FadeTaskBase_vtable_804ECB1C) -> FadeLogo (vtable FadeLogo_vtable_804ECB04).
  *   TaskListBase (vtable lbl_804ECAC0) -> TaskListImpl (vtable lbl_804ECB44).
  */
 
 #include "game/FlowScene.h"
 
-struct PopupRoot {
-    virtual ~PopupRoot() {}
-    virtual void Finish() = 0;
-    virtual void Update() = 0;
-    virtual void Draw() = 0;
-    virtual void _keyR();
-    unsigned int id;
-    int field08;
-    int field0C;
-    PopupRoot(int id_) : id(id_), field08(0), field0C(0) {}
-    bool CanDraw() {
-        if (field08 > 0) {
-            field08--;
-            return 0;
-        }
-        if (field0C == 1) {
-            field0C = 2;
-        }
-        return field0C <= 0;
-    }
-    bool CanUpdate() {
-        if (field08 > 0) {
-            return 0;
-        }
-        return field0C <= 0;
-    }
-};
+#include "game/types/PopupRoot.h"
 
-struct PopupTask : PopupRoot {
-    PopupTask(int id_) : PopupRoot(id_) {}
-    virtual ~PopupTask() {}
-    virtual void _keyT();
-};
+#include "game/types/PopupTask.h"
 
-struct TaskNode {
-    TaskNode *prev;
-    TaskNode *next;
-    PopupTask *task;
-};
+#include "game/types/TaskNode.h"
 
-struct TaskIter {
-    TaskNode *node;
-    TaskIter() {}
-    TaskIter(TaskNode *n) : node(n) {}
-    TaskIter &operator=(const TaskIter &o) {
-        node = o.node;
-        return *this;
-    }
-};
+#include "game/types/TaskIter.h"
 
 /* count + sentinel node {prev = last, next = first}. */
 struct TaskEntriesBase {
@@ -73,9 +31,7 @@ struct TaskEntriesBase {
     void Clear() { EraseRange(TaskIter(first), TaskIter(End())); }
 };
 
-struct TaskEntriesMid : TaskEntriesBase {
-    ~TaskEntriesMid() {}
-};
+#include "game/types/TaskEntriesMid.h"
 
 struct TaskEntries : TaskEntriesMid {
     TaskEntries();

@@ -3,21 +3,9 @@ typedef struct SpeedPt {
     float speed;
 } SpeedPt;
 
-typedef struct SpeedTable {
-    SpeedPt *pts;
-    int count;
-    float ref;
-    unsigned char pad[0xc];
-} SpeedTable;
+#include "game/types/SpeedTable.h"
 
-typedef struct KartMove {
-    unsigned char pad0[8];
-    int table;
-    unsigned char padc[0x22 - 0xc];
-    unsigned char limited;
-    unsigned char pad23;
-    SpeedTable *tables;
-} KartMove;
+#include "game/types/KartMove.h"
 
 extern const float lbl_806D96D0;
 extern const float lbl_806D96D4;
@@ -30,7 +18,7 @@ static inline float LookupSpeed(KartMove *k) {
     float s = lbl_806D96D0;
     for (i = 0; i < k->tables[k->table].count; i++) {
         SpeedTable *t = &k->tables[k->table];
-        if ((float)__fabs(t->pts[i].key - t->ref) < lbl_806D96D4) {
+        if ((float)__fabs(t->pts[i].key - t->maxProgress) < lbl_806D96D4) {
             s = k->tables[k->table].pts[i].speed;
             break;
         }

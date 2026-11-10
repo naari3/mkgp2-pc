@@ -1,17 +1,5 @@
-struct Vec3 {
-    float x, y, z;
-};
-struct RaceSlot {
-    char pad0[0x90];
-    int targetId;
-    int sourceId;
-    int hitCount;
-    void *target;
-    float distance;
-    char padA4[0x10];
-    void *driver;
-    void *targetDriver;
-};
+#include "game/types/Vec3.h"
+#include "game/types/RaceSlot.h"
 extern "C" {
 extern int g_gameMode;
 extern unsigned char g_isCommHost;
@@ -25,10 +13,7 @@ void *KartDriver_GetJObjRootIfReady(void *driver);
 void Object_GetJObjPositionVec(void *jobj, Vec3 *out);
 float Vec3_Distance(Vec3 *a, Vec3 *b);
 }
-struct Kart {
-    char pad0[0x248];
-    void *link;
-};
+#include "game/types/KartDriver.h"
 class ItemUser {
 public:
     virtual void v08();
@@ -36,7 +21,7 @@ public:
     virtual void v10();
     virtual void v14();
     virtual bool CanUse();
-    Kart *kart;
+    KartDriver *kart;
     char pad08[0xC];
     int selfId;
     int targetId;
@@ -52,9 +37,9 @@ void ItemUser::Update()
     void *dstDriver;
     void *link;
     int target;
-    Kart *k;
+    KartDriver *k;
     k = kart;
-    link = k->link;
+    link = k->raceSlot;
     if (g_gameMode == 2) {
         if (g_isCommHost == 1) {
             fn_801DC6E4(link, -1);

@@ -54,10 +54,10 @@ extern void fn_8016B0C4(void);
 extern void fn_8016DA30(void *);
 extern void fn_8016EACC(void *);
 extern void fn_8017218C(void *);
-extern float lbl_806CF58C;
-extern float lbl_806CF590;
-extern float lbl_806CF594;
-extern float lbl_806CF598;
+extern float CGameCoin_8012BF5C_data_806CF58C;
+extern float CGameCoin_8012BF5C_data_806CF590;
+extern float CGameCoin_8012BF5C_data_806CF594;
+extern float CGameCoin_8012BF5C_data_806CF598;
 extern CoinVObj *lbl_806D109C;
 extern CoinVObj *lbl_806D10AC;
 extern unsigned int lbl_806D7138;
@@ -69,91 +69,363 @@ extern void HSD_StateInvalidate(int);
 extern void fn_80253448(void *, unsigned int);
 extern void fn_802535D4(void *);
 extern const unsigned int lbl_806DC1B8;
+#ifdef NON_MATCHING
+extern void CObj_ApplyScissor(void *, void *);
+#else
 extern void CObj_ApplyScissor();
+#endif
+#ifdef NON_MATCHING
+extern void CObj_ApplyViewport(void *, void *);
+#else
 extern void CObj_ApplyViewport();
+#endif
+#ifdef NON_MATCHING
+extern void CObj_LoadIntoGX(void *, void *);
+#else
 extern void CObj_LoadIntoGX();
+#endif
+#ifdef NON_MATCHING
+extern void CObj_LoadProjMatrix(void *, void *);
+#else
 extern void CObj_LoadProjMatrix();
+#endif
+#ifdef NON_MATCHING
+extern void ChallengeGoalCamera_Update(void *, void *, float (*)[4]);
+#else
 extern void ChallengeGoalCamera_Update();
+#endif
+#ifdef NON_MATCHING
+extern float Cosf_LUT_Wrap(float);
+#else
 extern void Cosf_LUT_Wrap();
+#endif
+#ifdef NON_MATCHING
+extern void CourseEnvironment_UpdateAndCullZones_Timed(void *);
+#else
 extern void CourseEnvironment_UpdateAndCullZones_Timed();
+#endif
+#ifdef NON_MATCHING
+extern void DebugPrintf(const char *, ...);
+#else
 extern void DebugPrintf();
+#endif
+#ifdef NON_MATCHING
+extern void Fog_UpdateFromCourseScene3D(void);
+#else
 extern void Fog_UpdateFromCourseScene3D();
+#endif
 int GetDisplayBufferIndex(void);
 extern void *GetInputManager(void);
 extern void *GetRaceContextPtr(void);
 extern void HSD_JObjSetMtxDirtySub(struct CoinJObj *);
 extern void HSD_JObjSetupMatrixSub(struct CoinJObj *);
+#ifdef NON_MATCHING
+extern void HUD_FrameUpdate(void *);
+#else
 extern void HUD_FrameUpdate();
+#endif
+#ifdef NON_MATCHING
+extern unsigned char InputCmd_GetDetectedFlag(void *);
+#else
 extern void InputCmd_GetDetectedFlag();
+#endif
+#ifdef NON_MATCHING
+extern void InputCmd_PushSample(void *, int, float, float, float);
+#else
 extern void InputCmd_PushSample();
+#endif
+#ifdef NON_MATCHING
+extern void InputCmd_TickAndDetectAndClear(void *);
+#else
 extern void InputCmd_TickAndDetectAndClear();
+#endif
 extern struct CoinInputPlayer *InputMgr_GetPlayer(void *, int);
+#ifdef NON_MATCHING
+extern unsigned char Input_IsItemButtonPressed(unsigned int);
+#else
 extern void Input_IsItemButtonPressed();
+#endif
+#ifdef NON_MATCHING
+extern unsigned char IsCardValid(void);
+#else
 extern void IsCardValid();
+#endif
 extern unsigned char IsRaceStarted(void);
+#ifdef NON_MATCHING
+extern void ItemEffectBus_ApplyItemEventClear(void *, int);
+#else
 extern void ItemEffectBus_ApplyItemEventClear();
+#endif
+#ifdef NON_MATCHING
+extern void ItemEffectBus_ApplyItemEventSet(void *, int, int);
+#else
 extern void ItemEffectBus_ApplyItemEventSet();
+#endif
+#ifdef NON_MATCHING
+extern void ItemEffectBus_SnapshotAndFullReset(void *);
+#else
 extern void ItemEffectBus_SnapshotAndFullReset();
+#endif
+#ifdef NON_MATCHING
+extern void ItemEffectBus_TickTornadoCooldown(void *);
+#else
 extern void ItemEffectBus_TickTornadoCooldown();
+#endif
+#ifdef NON_MATCHING
+extern void ItemObjectManager_PerFrameUpdate(void *);
+#else
 extern void ItemObjectManager_PerFrameUpdate();
+#endif
+#ifdef NON_MATCHING
+extern void ItemObjectManager_Update(void);
+#else
 extern void ItemObjectManager_Update();
+#endif
 extern float LUT_Sin12Bit(float);
+#ifdef NON_MATCHING
+extern void LakituStart_UpdateCountdown(void *);
+#else
 extern void LakituStart_UpdateCountdown();
+#endif
+#ifdef NON_MATCHING
+extern void *NokoNokoChallenge_CalcResultText(struct CGameCoin *, int, int);
+#else
 extern void NokoNokoChallenge_CalcResultText();
+#endif
+#ifdef NON_MATCHING
+extern int *NokoNokoChallenge_GetCoinDivisor(void);
+#else
 extern void NokoNokoChallenge_GetCoinDivisor();
+#endif
+#ifdef NON_MATCHING
+extern void NokoNokoChallenge_SaveResult(struct CGameCoin *, int, int);
+#else
 extern void NokoNokoChallenge_SaveResult();
+#endif
+#ifdef NON_MATCHING
+extern int NokoNokoChallenge_TransitionToResult(struct CGameCoin *);
+#else
 extern void NokoNokoChallenge_TransitionToResult();
+#endif
+#ifdef NON_MATCHING
+extern void Object_SetByte10_Return1(void *, int);
+#else
 extern void Object_SetByte10_Return1();
+#endif
 extern void PSMTXCopy(float (*)[4], float (*)[4]);
+#ifdef NON_MATCHING
+extern void PSMTXTrans(float (*)[4], float, float, float);
+#else
 extern void PSMTXTrans();
+#endif
+#ifdef NON_MATCHING
+extern float PSVECSquareMag(struct CoinVec *);
+#else
 extern void PSVECSquareMag();
+#endif
+#ifdef NON_MATCHING
+extern void RenderObj_ItemStateMachine_Timed(void *, int, float, float);
+#else
 extern void RenderObj_ItemStateMachine_Timed();
+#endif
+#ifdef NON_MATCHING
+extern void RumbleUpdate(void);
+#else
 extern void RumbleUpdate();
+#endif
+#ifdef NON_MATCHING
+extern void SetCoinCount(int);
+#else
 extern void SetCoinCount();
+#endif
 extern void SetCourseScene3D(void *);
+#ifdef NON_MATCHING
+extern void SetRumbleMode(int, int, int);
+#else
 extern void SetRumbleMode();
+#endif
+#ifdef NON_MATCHING
+extern float Sinf_LUT_Wrap(float);
+#else
 extern void Sinf_LUT_Wrap();
+#endif
 extern void SoundMgr_Play(int);
 extern void SoundMgr_PlaySE(int);
+#ifdef NON_MATCHING
+extern void SoundObj_PlaySE(void *, int);
+#else
 extern void SoundObj_PlaySE();
+#endif
+#ifdef NON_MATCHING
+extern void SoundObj_PlaySE_Direct(void *, int);
+#else
 extern void SoundObj_PlaySE_Direct();
+#endif
+#ifdef NON_MATCHING
+extern void SoundVolumePan_Update(void *);
+#else
 extern void SoundVolumePan_Update();
+#endif
+#ifdef NON_MATCHING
+extern void TornadoEffect_ApplyItemVisual_Primary(void *, int);
+#else
 extern void TornadoEffect_ApplyItemVisual_Primary();
+#endif
+#ifdef NON_MATCHING
+extern void TornadoEffect_ApplyItemVisual_Secondary(void *, int, int);
+#else
 extern void TornadoEffect_ApplyItemVisual_Secondary();
+#endif
+#ifdef NON_MATCHING
+extern void TornadoEffect_ClearFlagC0AndSetC4(void *, float);
+#else
 extern void TornadoEffect_ClearFlagC0AndSetC4();
+#endif
+#ifdef NON_MATCHING
+extern void TornadoEffect_SetFlagC0(void *);
+#else
 extern void TornadoEffect_SetFlagC0();
+#endif
+#ifdef NON_MATCHING
+extern void TornadoEffect_Tick(void *, int);
+#else
 extern void TornadoEffect_Tick();
+#endif
+#ifdef NON_MATCHING
+extern void TransitionEffect_Tick(CoinVObj *);
+#else
 extern void TransitionEffect_Tick();
+#endif
 extern void Vec3_Normalize(struct CoinVec *, struct CoinVec *);
+#ifdef NON_MATCHING
+extern void Vec3_Subtract(struct CoinVec *, struct CoinVec *, struct CoinVec *);
+#else
 extern void Vec3_Subtract();
+#endif
+#ifdef NON_MATCHING
+extern void VfxSlotMgr_Update(struct CoinVec *, struct CoinVec *);
+#else
 extern void VfxSlotMgr_Update();
+#endif
 extern void __assert(const char *, int, const char *);
+#ifdef NON_MATCHING
+extern void fn_8012A71C(void *, float);
+#else
 extern void fn_8012A71C();
+#endif
+#ifdef NON_MATCHING
+extern void fn_8012B924(void *);
+#else
 extern void fn_8012B924();
+#endif
+#ifdef NON_MATCHING
+extern unsigned char fn_8012B9AC(void *);
+#else
 extern void fn_8012B9AC();
+#endif
+#ifdef NON_MATCHING
+extern unsigned char fn_8012BA38(void *);
+#else
 extern void fn_8012BA38();
+#endif
+#ifdef NON_MATCHING
+extern void fn_8012BAC4(void *);
+#else
 extern void fn_8012BAC4();
+#endif
+#ifdef NON_MATCHING
+extern void fn_8012BB58(void *);
+#else
 extern void fn_8012BB58();
+#endif
+#ifdef NON_MATCHING
+extern void fn_8012BD2C(void *);
+#else
 extern void fn_8012BD2C();
+#endif
+#ifdef NON_MATCHING
+extern void fn_8012BDA4(void *);
+#else
 extern void fn_8012BDA4();
+#endif
+#ifdef NON_MATCHING
+extern void fn_801699D8(int, int);
+#else
 extern void fn_801699D8();
+#endif
+#ifdef NON_MATCHING
+extern void fn_8016B32C(void *);
+#else
 extern void fn_8016B32C();
+#endif
 extern unsigned char fn_8016C360(int);
 extern void fn_8016C394(int);
+#ifdef NON_MATCHING
+extern void fn_8016C554(int);
+#else
 extern void fn_8016C554();
+#endif
+#ifdef NON_MATCHING
+extern void fn_8016DA78(void *);
+#else
 extern void fn_8016DA78();
+#endif
+#ifdef NON_MATCHING
+extern int fn_8016DC90(void *, struct CoinVec *, float);
+#else
 extern void fn_8016DC90();
+#endif
+#ifdef NON_MATCHING
+extern int fn_8016DEF4(void *);
+#else
 extern void fn_8016DEF4();
+#endif
+#ifdef NON_MATCHING
+extern unsigned char fn_8016DF50(void *);
+#else
 extern void fn_8016DF50();
+#endif
+#ifdef NON_MATCHING
+extern void fn_8016EC80(void *);
+#else
 extern void fn_8016EC80();
+#endif
+#ifdef NON_MATCHING
+extern void fn_801734B0(void *, struct CoinVec *);
+#else
 extern void fn_801734B0();
+#endif
+#ifdef NON_MATCHING
+extern void fn_80173500(void *);
+#else
 extern void fn_80173500();
+#endif
+#ifdef NON_MATCHING
+extern void fn_8017351C(void *);
+#else
 extern void fn_8017351C();
+#endif
 extern void fn_80182B50(void *, float, float);
+#ifdef NON_MATCHING
+extern void fn_80192688(int, int);
+#else
 extern void fn_80192688();
+#endif
+#ifdef NON_MATCHING
+extern unsigned char fn_80253C40(void *);
+#else
 extern void fn_80253C40();
+#endif
+#ifdef NON_MATCHING
+extern void fn_80253C74(void *, int, void *, int);
+#else
 extern void fn_80253C74();
+#endif
+#ifdef NON_MATCHING
+extern void fn_80253FD8(void *, float);
+#else
 extern void fn_80253FD8();
+#endif
 extern unsigned char g_lakituStartAnimDone;
 extern struct CoinInputView *g_pInputState;
 extern unsigned char g_raceEnded;
@@ -201,7 +473,7 @@ extern unsigned int lbl_806D7200;
 extern unsigned int lbl_806D7204;
 extern unsigned int lbl_806D7208;
 
-extern const char lbl_80356730[];
+extern const char CGameCoin_8012BF5C_rodata_80356730[];
 extern void HSD_CObjAnim(void *);
 extern void HSD_CObjReqAnim(void *, float);
 extern void HSD_JObjClearFlagsAll(struct CoinJObj *, int);
@@ -219,7 +491,7 @@ extern unsigned int lbl_806D7220;
 extern unsigned int lbl_806D7224;
 extern unsigned int lbl_806D7228;
 extern unsigned int lbl_806D722C;
-extern const char lbl_80356C58[];
+extern const char DefeatDemo_Update_rodata_80356C58[];
 extern unsigned int lbl_806D7134;
 extern unsigned int lbl_806D7234;
 extern unsigned int lbl_806D7238;
@@ -233,12 +505,12 @@ extern float lbl_80495994[];
 extern float lbl_80495A94[];
 extern void PSMTXMultVec(float (*)[4], struct CoinVec *, struct CoinVec *);
 extern float Vec3_Dot(struct CoinVec *, struct CoinVec *);
-extern float lbl_806CF578;
-extern float lbl_806CF57C;
-extern float lbl_806CF580;
-extern float lbl_806CF584;
-extern float lbl_806CF588;
-extern int lbl_806D1510;
+extern float KoopaFireball_Update_data_806CF578;
+extern float KoopaFireball_Update_data_806CF57C;
+extern float KoopaFireball_Update_data_806CF580;
+extern float KoopaFireball_Update_data_806CF584;
+extern float KoopaFireball_Update_data_806CF588;
+extern int KoopaFireball_Update_bss_806D1510;
 extern unsigned int lbl_806D7254;
 extern unsigned int lbl_806D7258;
 extern unsigned int lbl_806D725C;
@@ -322,16 +594,16 @@ extern int lbl_806D12BC;
 extern void *lbl_803FDF28[];
 extern void *lbl_803FDF40[];
 extern unsigned int lbl_8048E144[];
-extern unsigned int lbl_8048E34C[];
-extern unsigned int lbl_8048E3C0[];
+extern unsigned int CoinShotBase_vtable_8048E34C[];
+extern unsigned int KPCoinShots_vtable_8048E3C0[];
 extern void HSD_CObjAddAnim(void *, void *);
 extern struct CoinJObj *ResolveJointByName(void *, const char *);
 extern void clNormal3D_SetScale(void *, int, float, float, float, float);
 extern unsigned int lbl_80419EF8[];
 extern unsigned long OSGetTick(void);
 extern void Object_SetJObjPositionXYZ(void *, float, float, float);
-extern float lbl_806CF570;
-extern float lbl_806CF574;
+extern float BossKoopa_Init_data_806CF570;
+extern float BossKoopa_Init_data_806CF574;
 extern void PSMTXIdentity(float (*)[4]);
 extern void *LinkedNode_GetField10_OrFallback(void *, int);
 extern void Object_RenderJObjEx(void *, void *, int);
@@ -351,7 +623,11 @@ extern unsigned int lbl_806D7270;
 struct CGameCoin;
 void fn_8012BF5C(CGameCoin *self);
 void CGameCoin_Draw(CGameCoin *self);
+#ifdef NON_MATCHING
+extern "C" int CGameCoin_Update(CGameCoin *self);
+#else
 asm void CGameCoin_Update(void);
+#endif
 struct DefeatDemo;
 void DefeatDemo_Update(DefeatDemo *self);
 struct BossKoopa;
@@ -566,34 +842,7 @@ struct CoinShellSet {
     void *shells;
 };
 
-struct CGameCoin {
-    void *vt;
-    unsigned char pad4[0x4];
-    void *input;
-    void *driver;
-    void *effects;
-    void *audio;
-    unsigned char pad18[0x30];
-    void *m48;
-    CoinShellSet *shellSet;
-    void *lakitu;
-    void *env;
-    CoinScene3D *scene;
-    void *goalCam;
-    CoinVObj *m60;
-    CoinHsdObj *lights;
-    void *hud;
-    BossKoopa *koopa;
-    void *m70;
-    void *m74;
-    DefeatDemo *defeatDemo;
-    unsigned char active;
-    unsigned char m7D;
-    unsigned char demoMode;
-    unsigned char defeated;
-    unsigned char pad80[0x40];
-    CoinVObj *particles;
-};
+#include "game/types/CGameCoin.h"
 
 
 
@@ -628,8 +877,8 @@ static inline void KoopaFireball_Draw(KoopaFireball *self) {
         if (self->flames[i].life < 0.0f) {
             continue;
         }
-        scale = self->flames[i].scale * lbl_806CF58C;
-        alpha = self->flames[i].alpha * lbl_806CF590;
+        scale = self->flames[i].scale * CGameCoin_8012BF5C_data_806CF58C;
+        alpha = self->flames[i].alpha * CGameCoin_8012BF5C_data_806CF590;
         PSMTXScale(m, scale, scale, 1.0f);
         PSMTXConcat(m, proj, m);
         PSMTXRotRad(rot, 'X', -0.7853982f);
@@ -639,8 +888,8 @@ static inline void KoopaFireball_Draw(KoopaFireball *self) {
         m[2][3] = self->flames[i].pos.z;
         Object_SetColorAlphaOnly(self->model, 0, alpha);
         GXChannel_PushTransform(&channel, m);
-        scale = self->flames[i].scale * lbl_806CF594;
-        alpha = self->flames[i].alpha * lbl_806CF598;
+        scale = self->flames[i].scale * CGameCoin_8012BF5C_data_806CF594;
+        alpha = self->flames[i].alpha * CGameCoin_8012BF5C_data_806CF598;
         if (self->flames[i].life < 10.0f) {
             alpha *= 0.1f * self->flames[i].life;
         }
@@ -741,7 +990,7 @@ extern "C" void CGameCoin_Draw(CGameCoin *self) { /* 0x8012C2CC size:0x26C */
 }
 
 /* .rodata pool 0x80356730..0x80357008: defined before the Update asm references it */
-extern "C" const char lbl_80356730[0x418] = {
+extern "C" const char CGameCoin_8012BF5C_rodata_80356730[0x418] = {
     0x3F, 0x80, 0x00, 0x00, 0x3F, 0x33, 0x33, 0x33, 0x3F, 0x66, 0x66, 0x66, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x43, 0xFA, 0x00, 0x00, 0x42, 0x85, 0x55, 0x56, 0x44, 0x7A, 0x00, 0x00,
     0x42, 0x85, 0x55, 0x56, 0x44, 0xFA, 0x00, 0x00, 0x42, 0x85, 0x55, 0x56, 0x45, 0x3B, 0x80, 0x00,
@@ -822,13 +1071,13 @@ static const unsigned int s_defaultCourse[5] = {
     0x00000078, 0x40A00000, 0x00000014, 0x00000078, 0x01000000,
 };
 extern "C" const char lbl_80356BF4[12] = "clCGameKP";
-extern "C" const unsigned int lbl_80356C00[0x16] = {
+extern "C" const unsigned int CGameCoin_8012BF5C_rodata_80356C00[0x16] = {
     0x636C4A6F, 0x6252756E, 0x6E657200, 0x48697420, 0x4E6F203D, 0x2025640A,
     0x00000000, 0x53746172, 0x7420746F, 0x204B5043, 0x6F696E2E, 0x20436F69,
     0x6E206B69, 0x6E642069, 0x73202564, 0x2E202025, 0x73202D20, 0x25640A00,
     0x4347616D, 0x65436F69, 0x6E2E6870, 0x70000000,
 };
-extern "C" const char lbl_80356C58[40] = "!(jobj->flags & JOBJ_USE_QUATERNION)";
+extern "C" const char DefeatDemo_Update_rodata_80356C58[40] = "!(jobj->flags & JOBJ_USE_QUATERNION)";
 static const char s_lakituFile[20] = "jyugemu_start.dat";
 static const char s_shellFile[24] = "it_a_03_black_shell.dat";
 static const char s_lavaJoint1[28] = "KP_castle_zyougan01_joint";
@@ -867,11 +1116,12 @@ extern "C" const unsigned int lbl_80356D60[0x9C] = {
     0x6E676C65, 0x746F6E3C, 0x636C4D65, 0x6E75496E, 0x7075743E, 0x00000000,
 };
 extern "C" const char lbl_80356FD0[16] = "clCGameCoinBase";
-extern "C" const unsigned int lbl_80356FE0[0xA] = {
+extern "C" const unsigned int sdata_806CF1C0_rodata_80356FE0[0xA] = {
     0x636C4347, 0x616D654B, 0x50436F69, 0x6E000000, 0x636C4143, 0x616D6572,
     0x61000000, 0x636C4361, 0x6D657261, 0x00000000,
 };
 
+#ifndef NON_MATCHING /* C version: end of this file */
 extern "C" asm void CGameCoin_Update(void) { /* 0x8012C538 size:0x2164 */
     nofralloc
     stwu r1, -0x1c0(r1)
@@ -885,9 +1135,9 @@ extern "C" asm void CGameCoin_Update(void) { /* 0x8012C538 size:0x2164 */
     psq_st f29, 0x198(r1), 0, 0
     stmw r25, 0x174(r1)
     mr r28, r3
-    lis r3, lbl_80356730@ha
+    lis r3, CGameCoin_8012BF5C_rodata_80356730@ha
     lbz r0, 0x7c(r28)
-    addi r31, r3, lbl_80356730@l
+    addi r31, r3, CGameCoin_8012BF5C_rodata_80356730@l
     cmplwi r0, 0x0
     bne CGameCoin_Update_L_8012C580
     li r0, 0x1
@@ -3183,6 +3433,7 @@ extern "C" asm void CGameCoin_Update(void) { /* 0x8012C538 size:0x2164 */
     addi r1, r1, 0x1c0
     blr
 }
+#endif
 
 
 static inline void CoinJObj_SetMtxDirty(CoinJObj *jobj) {
@@ -3209,7 +3460,7 @@ static inline void CoinJObj_SetRotationY(CoinJObj *jobj, float y) {
         __assert(lbl_806D7174, 0x2B8, lbl_806D717C);
     }
     if (jobj->flags & 0x00020000) {
-        __assert(lbl_806D7174, 0x2B9, lbl_80356C58);
+        __assert(lbl_806D7174, 0x2B9, DefeatDemo_Update_rodata_80356C58);
     }
     jobj->rotate.y = y;
     if (!(jobj->flags & 0x02000000)) {
@@ -3517,8 +3768,8 @@ extern "C" void KoopaFireball_Update(KoopaFireball *self) { /* 0x8012F07C size:0
                 self->flames[i].vel.z = mtx[2][2];
                 PSMTXRotRad(m, 'X', 0.017453292f * self->angle);
                 PSMTXMultVec(m, &self->flames[i].vel, &self->flames[i].vel);
-                self->flames[i].scale = lbl_806CF57C * KoopaFireball_Rand64(self) + lbl_806CF578;
-                self->flames[i].grow = lbl_806CF588 * KoopaFireball_Rand48(self) + lbl_806CF584;
+                self->flames[i].scale = KoopaFireball_Update_data_806CF57C * KoopaFireball_Rand64(self) + KoopaFireball_Update_data_806CF578;
+                self->flames[i].grow = KoopaFireball_Update_data_806CF588 * KoopaFireball_Rand48(self) + KoopaFireball_Update_data_806CF584;
                 self->flames[i].alpha = 1.0f - 0.2f * KoopaFireball_Rand48(self);
                 if (self->cooldown != 0) {
                     self->flames[i].alpha *= 0.5f;
@@ -3526,7 +3777,7 @@ extern "C" void KoopaFireball_Update(KoopaFireball *self) { /* 0x8012F07C size:0
                 self->flames[i].life = 0.0f;
                 if (self->cooldown == 0) {
                     if (self->first) {
-                        self->cooldown = lbl_806D1510;
+                        self->cooldown = KoopaFireball_Update_bss_806D1510;
                         self->first = 0;
                         self->dir.x = mtx[0][2];
                         self->dir.y = mtx[1][2];
@@ -3542,7 +3793,7 @@ extern "C" void KoopaFireball_Update(KoopaFireball *self) { /* 0x8012F07C size:0
                             dot = -dot;
                         }
                         if (dot > 0.999f) {
-                            self->cooldown = lbl_806D1510;
+                            self->cooldown = KoopaFireball_Update_bss_806D1510;
                         } else {
                             self->cooldown = 0;
                         }
@@ -3557,9 +3808,9 @@ extern "C" void KoopaFireball_Update(KoopaFireball *self) { /* 0x8012F07C size:0
     }
     for (i = 0; i < 64; i++) {
         if (self->flames[i].life >= 0.0f) {
-            self->flames[i].pos.x += self->flames[i].vel.x * lbl_806CF580;
-            self->flames[i].pos.y += self->flames[i].vel.y * lbl_806CF580;
-            self->flames[i].pos.z += self->flames[i].vel.z * lbl_806CF580;
+            self->flames[i].pos.x += self->flames[i].vel.x * KoopaFireball_Update_data_806CF580;
+            self->flames[i].pos.y += self->flames[i].vel.y * KoopaFireball_Update_data_806CF580;
+            self->flames[i].pos.z += self->flames[i].vel.z * KoopaFireball_Update_data_806CF580;
             if (self->flames[i].vel.y < 0.5f) {
                 self->flames[i].vel.y += 0.01f;
                 if (self->flames[i].vel.y > 0.5f) {
@@ -3841,7 +4092,7 @@ static inline void CreateInputState(void)
     }
 }
 
-struct InputManager { char data[0x37C]; InputManager(); };
+#include "game/types/InputManager.h"
 struct InputCmd { char data[0x30]; InputCmd(int frames); };
 struct KartDriver {
     char pad0[0x238];
@@ -3862,11 +4113,11 @@ struct KPRival {
     int x164;
     KPRival(int chara, void *start);
 };
-struct LakituStart { char data[0x58]; LakituStart(const void *data, int arg, float x, float y, float z); };
-struct Scene3D { char data[0x3084]; Scene3D(int name); };
-struct ChallengeGoalCamera { char data[8]; ChallengeGoalCamera(); };
-struct HUD { char data[0x80]; HUD(int arg); };
-struct WeatherSystem { char data[0x1B4]; WeatherSystem(int arg); };
+#include "game/types/LakituStart.h"
+#include "game/types/Scene3D.h"
+#include "game/types/ChallengeGoalCamera.h"
+#include "game/types/HUD.h"
+#include "game/types/WeatherSystem.h"
 struct KPShellPath { char data[0x20]; KPShellPath(); };
 struct KPShellTrack { int data; KPShellTrack(const void *path, int arg); };
 struct KPUnk70 { char data[0x10]; KPUnk70(); };
@@ -3964,11 +4215,7 @@ struct KPShell {
     }
 };
 
-struct GameModeBase {
-    virtual void _key();
-    virtual ~GameModeBase();
-    GameModeBase();
-};
+#include "game/types/GameModeBase.h"
 
 struct ModeBase : GameModeBase {
     float x4;
@@ -4097,7 +4344,7 @@ KPCoinMode::KPCoinMode() {
 }
 
 DefeatDemo::DefeatDemo() { /* 0x801303E4 size:0x2A8 */
-    const char *pool = lbl_80356730;
+    const char *pool = CGameCoin_8012BF5C_rodata_80356730;
 
     body = 0;
     hand = 0;
@@ -4139,7 +4386,7 @@ DefeatDemo::DefeatDemo() { /* 0x801303E4 size:0x2A8 */
 #define OSTicksToSeconds(ticks) ((ticks) / OS_TIMER_CLOCK)
 
 BossKoopa::BossKoopa(int waitMin, int waitMax) { /* 0x8013068C size:0x3FC */
-    const char *pool = lbl_80356730;
+    const char *pool = CGameCoin_8012BF5C_rodata_80356730;
 
     anims[0] = 0;
     anims[1] = 0;
@@ -4164,14 +4411,14 @@ BossKoopa::BossKoopa(int waitMin, int waitMax) { /* 0x8013068C size:0x3FC */
         anims[2] = new CoinNormal3D(pool + 0x78C, 0);
         anims[3] = new CoinNormal3D(pool + 0x7AC, 0);
         fireball->jobj = ResolveJointByName(anims[1], pool + 0x7CC);
-        fireball->angle = lbl_806CF574;
+        fireball->angle = BossKoopa_Init_data_806CF574;
     } else {
         anims[0] = new CoinNormal3D(pool + 0x7F4, 0);
         anims[1] = new CoinNormal3D(pool + 0x808, 0);
         anims[2] = new CoinNormal3D(pool + 0x820, 0);
         anims[3] = new CoinNormal3D(pool + 0x838, 0);
         fireball->jobj = ResolveJointByName(anims[1], pool + 0x850);
-        fireball->angle = lbl_806CF570;
+        fireball->angle = BossKoopa_Init_data_806CF570;
     }
     clNormal3D_SetScale(anims[0], 0, 0.0f, 1.0f, 0.0f, 0.0f);
     Object_SetJObjPositionXYZ(anims[0], 0.0f, 15.0f, 40.0f);
@@ -4371,7 +4618,7 @@ extern "C" void CoinParticle_Update(CoinParticleManager *self) { /* 0x80130D2C s
 
 static inline void CoinParticleManagerBase_Dtor(CoinParticleManager *self) {
     if (self != 0) {
-        self->vtbl = lbl_8048E34C;
+        self->vtbl = CoinShotBase_vtable_8048E34C;
         Object_DtorWithGXSync(self->jobj, 1);
         Object_DtorWithGXSync(self->trailJobj, 1);
     }
@@ -4379,7 +4626,7 @@ static inline void CoinParticleManagerBase_Dtor(CoinParticleManager *self) {
 
 extern "C" CoinParticleManager *CoinParticleManager_Destroy(CoinParticleManager *self, short flag) { /* 0x80130FDC size:0x80 */
     if (self != 0) {
-        self->vtbl = lbl_8048E3C0;
+        self->vtbl = KPCoinShots_vtable_8048E3C0;
         CoinParticleManagerBase_Dtor(self);
         if (flag > 0) {
             MemoryManager_TimedFree(self);
@@ -4547,3 +4794,596 @@ extern "C" void CGameCoin_ProcessInput(CoinInput *s)
     s->cmd = cmd;
 }
 
+#ifdef NON_MATCHING
+/* Equivalent C++ for CGameCoin_Update (kept as asm in the matching build).
+ * Written from the asm; field names past 0x80 are descriptive guesses. */
+struct CoinCourseParams {
+    int shellWait;             /* 0x00 */
+    unsigned char pad4[0xC];
+    unsigned char loseShellOnHit; /* 0x10 */
+};
+
+struct CGameCoinTail {         /* CGameCoin + 0x80 */
+    int demoFrame;             /* 0x80 */
+    CoinCourseParams *course;  /* 0x84 */
+    int lane;                  /* 0x88 */
+    int laneTarget;            /* 0x8C */
+    float laneT;               /* 0x90 */
+    float jumpT;               /* 0x94 */
+    float hitT;                /* 0x98 */
+    int shellWait;             /* 0x9C */
+    float yaw;                 /* 0xA0 */
+    void *spinA;               /* 0xA4 */
+    void *spinB;               /* 0xA8 */
+    void *spinC;               /* 0xAC */
+    CoinJObj *wheelA;          /* 0xB0 */
+    CoinJObj *wheelB;          /* 0xB4 */
+    float wheelAngleA;         /* 0xB8 */
+    float wheelAngleB;         /* 0xBC */
+};
+
+/* same vtable as CoinInputPlayer, with the slot at 0x28 typed */
+struct CoinUpdatePad {
+    virtual void v08();
+    virtual void v0C();
+    virtual float Steer();
+    virtual void v14();
+    virtual float Accel();
+    virtual float Brake();
+    virtual unsigned char Pressed(int mask);
+    virtual unsigned char Held(int mask);
+    virtual unsigned int Buttons(int mask);
+};
+
+#define COIN_STR_HIT_NO     ((const char *)CGameCoin_8012BF5C_rodata_80356C00 + 0x0C) /* "Hit No = %d\n" */
+#define COIN_STR_START_COIN ((const char *)CGameCoin_8012BF5C_rodata_80356C00 + 0x1C) /* "Start to KPCoin. Coin kind is %d.  %s - %d\n" */
+#define COIN_STR_HPP        ((const char *)CGameCoin_8012BF5C_rodata_80356C00 + 0x48) /* "CGameCoin.hpp" */
+#define COIN_SHELL_START    ((const float *)&s_shellPathData[15])
+#define COIN_LANE_TARGETS   ((const float *)&s_shellPathData[18]) /* 5 x Vec */
+#define COIN_LANE_YAW       ((const float *)&s_shellPathData[33]) /* 5 floats */
+
+static inline void CoinJObj_SetupMatrixNM(CoinJObj *jobj) {
+    unsigned int flags;
+    unsigned char clean;
+
+    if (jobj == 0) { /* HSD_JObjGetMtxPtr */
+        __assert(lbl_806D7174, 0x47C, lbl_806D717C);
+    }
+    if (jobj == 0) { /* HSD_JObjSetupMatrix */
+        __assert(lbl_806D7174, 0x25D, lbl_806D717C);
+    }
+    flags = jobj->flags;
+    clean = 0;
+    if (!(flags & 0x00800000) && (flags & 0x40)) {
+        clean = 1;
+    }
+    if (clean) {
+        HSD_JObjSetupMatrixSub(jobj);
+    }
+}
+
+static inline void CoinParticleManager_Spawn(CoinParticleManager *pm, int kind, const CoinVec &pos, float angle) {
+    int idx;
+    CoinParticle *p;
+
+    if (!IsCardValid()) {
+        return;
+    }
+    DebugPrintf(COIN_STR_START_COIN, kind, COIN_STR_HPP, 0x1F2);
+    if (fn_8016C360(0xAB) == 1) {
+        fn_8016C394(0xAB);
+    }
+    SoundMgr_PlaySE(0xAB);
+    idx = 0;
+    if (pm->particles[0].active == 0) {
+        idx = 0;
+    } else if (pm->particles[1].active == 0) {
+        idx = 1;
+    } else if (pm->particles[2].active == 0) {
+        idx = 2;
+    } else if (pm->particles[3].active == 0) {
+        idx = 3;
+    } else if (pm->particles[4].active == 0) {
+        idx = 4;
+    } else if (pm->particles[5].active == 0) {
+        idx = 5;
+    }
+    p = &pm->particles[idx];
+    p->active = 1;
+    p->timer = 0;
+    p->alpha = 0.0f;
+    p->rotY = 0.0f;
+    p->pos[0] = pos.x;
+    p->pos[1] = pos.y;
+    p->pos[2] = pos.z;
+    p->vel[0] = 3.0f * Cosf_LUT_Wrap(angle);
+    p->vel[1] = 3.0f;
+    p->vel[2] = 3.0f * Sinf_LUT_Wrap(angle);
+    switch (kind) {
+    case 0:
+        p->vel[0] *= 0.9f;
+        p->vel[2] *= 0.9f;
+        break;
+    case 1:
+        p->vel[0] *= 1.45f;
+        p->vel[2] *= 1.45f;
+        p->vel[1] *= 0.73f;
+        break;
+    case 2:
+        p->vel[0] *= 0.9f;
+        p->vel[2] *= 0.9f;
+        p->vel[1] *= 1.4f;
+        pm->trailCount = 10;
+        break;
+    }
+}
+
+static inline void CoinShell_Aim(CoinShell *ss, const float *target) {
+    CoinVec *aim = (CoinVec *)((char *)ss + 0x50);
+
+    aim->x = target[0];
+    aim->y = target[1];
+    aim->z = target[2];
+    fn_801734B0(ss->effect, aim);
+}
+
+static inline float CoinQuantize(float v) {
+    return (float)(int)(10000.0f * v) / 10000.0f;
+}
+
+extern "C" int CGameCoin_Update(CGameCoin *self) { /* 0x8012C538 size:0x2164 */
+    CGameCoinTail *t = (CGameCoinTail *)self->pad80;
+    float (*kartMtx)[4] = (float (*)[4])self->pad18;
+    void *bus;
+    CoinUpdatePad *pad;
+    CoinShell *ss;
+    CoinJObj *j;
+    CoinVec pos;
+    CoinVec eye;
+    CoinVec at;
+    CoinVec eye2;
+    CoinVec at2;
+    CoinVec side;
+    CoinVec fwd;
+    CoinVec shellPos;
+    CoinVec d;
+    CoinVec coinPos;
+    float tmp[3][4];
+    float steer;
+    float accel;
+    float brake;
+    float steer2;
+    float dy;
+    unsigned char busy;
+    unsigned char hitFlame;
+    int hit;
+    int kind;
+    int i;
+    int n;
+    int coins;
+    int *divisor;
+    int dir;
+    KoopaFireball *fb;
+
+    if (!self->active) {
+        self->active = 1;
+    }
+    if (!IsRaceStarted()) {
+        if (self->m7D == 0) {
+            SoundMgr_Play(0x33);
+            self->m7D = 1;
+        }
+    } else if (self->m7D == 1) {
+        fn_80192688(0x33, 1);
+        self->m7D = 0;
+    }
+    CGameCoin_ProcessInput((CoinInput *)SINGLETON_INSTANCE(g_pInputState));
+    ItemObjectManager_PerFrameUpdate(GetRaceContextPtr());
+    pad = (CoinUpdatePad *)InputMgr_GetPlayer(GetInputManager(), 0);
+    pos.x = 0.0f;
+    pos.y = 0.0f;
+    pos.z = 370.0f;
+
+    if (self->demoMode == 0) {
+        steer = pad->Steer();
+        bus = *(void **)((char *)self->driver + 0x304);
+        ItemEffectBus_SnapshotAndFullReset(bus);
+        if (IsRaceStarted()) {
+            busy = 0;
+            if (t->jumpT >= 0.0f || t->hitT >= 0.0f || t->lane != t->laneTarget) {
+                busy = 1;
+            }
+            brake = pad->Brake();
+            accel = pad->Accel();
+            steer2 = pad->Steer();
+            InputCmd_PushSample(self->input, 0, CoinQuantize(steer2), CoinQuantize(accel), CoinQuantize(brake));
+            InputCmd_TickAndDetectAndClear(self->input);
+            Shell_UpdateState((CoinShell *)self->shellSet);
+
+            ss = (CoinShell *)self->shellSet;
+            switch (ss->state) {
+            case 0:
+                if (t->shellWait > 0) {
+                    t->shellWait--;
+                } else if (ss->state == 0) {
+                    ss->state = 1;
+                    ss->t = 0.0f;
+                    ss->alpha = 1.0f;
+                    PSMTXRotRad(ss->mtx, 'Y', -1.5707964f);
+                    PSMTXScale(tmp, 0.8f, 0.8f, 0.8f);
+                    PSMTXConcat(ss->mtx, tmp, ss->mtx);
+                    ss->mtx[0][3] = COIN_SHELL_START[0];
+                    ss->mtx[1][3] = 50.0f + COIN_SHELL_START[1];
+                    ss->mtx[2][3] = COIN_SHELL_START[2];
+                }
+                break;
+            case 1:
+                if (ss->mtx[1][3] < 12.0f + kartMtx[1][3]) {
+                    if (ss->state == 1) {
+                        ss->state = 2;
+                        ss->t = 0.0f;
+                        ss->alpha = 0.0f;
+                    }
+                }
+                break;
+            case 2:
+                if (fn_8012BA38(self->m48)) {
+                    ss = (CoinShell *)self->shellSet;
+                    if (ss->state == 2) {
+                        CoinShell_Aim(ss, COIN_LANE_TARGETS + t->laneTarget * 3);
+                        fn_8017351C(ss->effect);
+                        ss->state = 3;
+                        ss->t = 0.0f;
+                        ss->alpha = 0.0f;
+                        j = ss->joint;
+                        if (j != 0) {
+                            CoinJObj_SetupMatrixNM(j);
+                            PSMTXCopy(j->mtx, ss->mtx);
+                            PSMTXRotRad(tmp, 'Z', -1.5707964f);
+                            PSMTXConcat(ss->mtx, tmp, ss->mtx);
+                            PSMTXScale(tmp, 1.0f, 1.0f, 1.0f);
+                            PSMTXConcat(ss->mtx, tmp, ss->mtx);
+                            ss->mtx[0][3] = 2.5f * ss->mtx[0][1] + j->mtx[0][3];
+                            ss->mtx[1][3] = 2.5f * ss->mtx[1][1] + j->mtx[1][3];
+                            ss->mtx[2][3] = 2.5f * ss->mtx[2][1] + j->mtx[2][3];
+                        }
+                    }
+                    t->shellWait = t->course->shellWait;
+                    fn_801699D8(0, 1);
+                    fn_801699D8(1, 1);
+                }
+                break;
+            case 3:
+                if (!busy) {
+                    if (ss->state == 3 && ss->t >= 60.0f
+                        && Input_IsItemButtonPressed(pad->Buttons(0xE3FF))
+                        && fn_8012B9AC(self->m48)) {
+                        fn_801699D8(0, 0);
+                        fn_801699D8(1, 0);
+                        SetRumbleMode(0, 4, 0x1E);
+                        SoundMgr_PlaySE(0x68);
+                        ss = (CoinShell *)self->shellSet;
+                        if (ss->state == 3 && ss->t >= 60.0f) {
+                            CoinVec *aim = (CoinVec *)((char *)ss + 0x50);
+
+                            fn_80173500(ss->effect);
+                            ss->state = 4;
+                            ss->t = 0.0f;
+                            ss->alpha = 1.0f;
+                            ss->landed = 0;
+                            j = ss->joint;
+                            if (j != 0) {
+                                CoinJObj_SetupMatrixNM(j);
+                                PSMTXRotRad(ss->mtx, 'Y', 3.1415927f);
+                                PSMTXScale(tmp, 1.0f, 1.0f, 1.0f);
+                                PSMTXConcat(ss->mtx, tmp, ss->mtx);
+                                ss->mtx[0][3] = 2.5f * ss->mtx[0][1] + j->mtx[0][3];
+                                ss->mtx[1][3] = 2.5f * ss->mtx[1][1] + j->mtx[1][3];
+                                ss->mtx[2][3] = 2.5f * ss->mtx[2][1] + j->mtx[2][3];
+                                ss->vel.x = aim->x - ss->mtx[0][3];
+                                ss->vel.y = aim->y - ss->mtx[1][3];
+                                ss->vel.z = aim->z - ss->mtx[2][3];
+                                Vec3_Normalize(&ss->vel, &ss->vel);
+                            }
+                        }
+                        busy = 1;
+                    }
+                }
+                break;
+            case 4:
+                shellPos.x = ss->mtx[0][3];
+                shellPos.y = ss->mtx[1][3];
+                shellPos.z = ss->mtx[2][3];
+                hit = fn_8016DC90(self->m70, &shellPos, 5.0f);
+                if (hit >= 0) {
+                    ss = (CoinShell *)self->shellSet;
+                    if (ss->state == 4) {
+                        ss->state = 5;
+                        ss->t = 0.0f;
+                        ss->alpha = 1.0f;
+                        SoundMgr_PlaySE(0xC9);
+                    }
+                    if (hit == 0 || hit == 3) {
+                        self->koopa->reqState = 2;
+                    }
+                    if (hit == 1 || hit == 2) {
+                        self->koopa->reqState = 3;
+                    }
+                    SoundObj_PlaySE(self->audio, 0xB);
+                    fn_8012BAC4(self->m48);
+                    if (fn_8016DEF4(self->m70) < 4) {
+                        DebugPrintf(COIN_STR_HIT_NO, hit);
+                        kind = (hit <= 1) ? 1 : 0;
+                        CoinParticleManager_Spawn((CoinParticleManager *)self->particles, kind, shellPos, 30.0f);
+                        CoinParticleManager_Spawn((CoinParticleManager *)self->particles, kind, shellPos, 0.0f);
+                        CoinParticleManager_Spawn((CoinParticleManager *)self->particles, kind, shellPos, -30.0f);
+                    }
+                }
+                break;
+            }
+
+            if (!busy && InputCmd_GetDetectedFlag(self->input)) {
+                t->jumpT = 0.0f;
+                TornadoEffect_SetFlagC0(self->effects);
+                SoundObj_PlaySE_Direct(self->audio, 0x56);
+                fn_8012BB58(self->m48);
+                busy = 1;
+            }
+            if (!busy && SINGLETON_INSTANCE(g_pInputState) != 0) {
+                dir = ((CoinInput *)SINGLETON_INSTANCE(g_pInputState))->dir;
+                if (dir == 1) {
+                    if (t->lane < 4) {
+                        t->laneTarget = t->lane + 1;
+                        t->laneT = 0.0f;
+                    }
+                } else if (dir == -1) {
+                    if (t->lane > 0) {
+                        t->laneTarget = t->lane - 1;
+                        t->laneT = 0.0f;
+                    }
+                }
+                if (t->lane != t->laneTarget) {
+                    ss = (CoinShell *)self->shellSet;
+                    if (ss->state == 3) {
+                        CoinShell_Aim(ss, COIN_LANE_TARGETS + t->laneTarget * 3);
+                    }
+                    TornadoEffect_SetFlagC0(self->effects);
+                    SoundObj_PlaySE_Direct(self->audio, 0x56);
+                    fn_8012BB58(self->m48);
+                }
+            }
+        }
+
+        if (t->jumpT >= 0.0f && self->demoMode == 0) {
+            t->jumpT += 1.0f;
+            if (t->jumpT < 30.0f) {
+                pos.y += 10.0f * LUT_Sin12Bit(6.0f * t->jumpT);
+            }
+            if (30.0f == t->jumpT) {
+                TornadoEffect_ClearFlagC0AndSetC4(self->effects, 0.5f);
+                SoundObj_PlaySE_Direct(self->audio, 0x57);
+            } else if (t->jumpT > 35.0f) {
+                t->jumpT = -1.0f;
+            }
+        }
+        if (t->lane != t->laneTarget) {
+            t->laneT += 1.0f;
+            if (t->laneT < 15.0f) {
+                t->yaw = COIN_LANE_YAW[t->lane]
+                    + t->laneT * (COIN_LANE_YAW[t->laneTarget] - COIN_LANE_YAW[t->lane]) / 15.0f;
+                pos.y += 5.0f * LUT_Sin12Bit(12.0f * t->laneT);
+            } else {
+                t->yaw = COIN_LANE_YAW[t->laneTarget];
+            }
+            if (15.0f == t->laneT) {
+                TornadoEffect_ClearFlagC0AndSetC4(self->effects, 0.2f);
+                SoundObj_PlaySE_Direct(self->audio, 0x57);
+            } else if (t->laneT > 20.0f) {
+                t->lane = t->laneTarget;
+            }
+        }
+
+        PSMTXScale(kartMtx, 1.0f, 1.0f, 1.0f);
+        PSMTXRotRad(tmp, 'Y', 0.017453292f * (180.0f + t->yaw));
+        PSMTXConcat(tmp, kartMtx, kartMtx);
+        PSMTXTrans(tmp, pos.x, pos.y, pos.z);
+        PSMTXConcat(tmp, kartMtx, kartMtx);
+
+        BossKoopa_UpdateAnim(self->koopa);
+        fb = self->koopa->fireball;
+        hitFlame = 0;
+        for (i = 0; i < 64; i++) {
+            if (fb->flames[i].life < 0.0f) {
+                continue;
+            }
+            Vec3_Subtract(&pos, &fb->flames[i].pos, &d);
+            d.y = 0.0f;
+            if (!(PSVECSquareMag(&d) < 400.0f)) {
+                continue;
+            }
+            dy = pos.y - d.y;
+            if (dy < 0.0f) {
+                dy = -dy;
+            }
+            if (dy < 5.0f) {
+                hitFlame = 1;
+                break;
+            }
+        }
+        if (hitFlame) {
+            ss = (CoinShell *)self->shellSet;
+            if (ss->state == 3 && t->course->loseShellOnHit) {
+                fn_801699D8(0, 0);
+                fn_801699D8(1, 0);
+                ss = (CoinShell *)self->shellSet;
+                if (ss->state == 3) {
+                    ss->state = 6;
+                    ss->t = 0.0f;
+                    fn_80173500(ss->effect);
+                }
+                fn_8012B924(self->m48);
+            }
+            ss = (CoinShell *)self->shellSet;
+            if (ss->state == 4) {
+                ss->state = 5;
+                ss->t = 0.0f;
+                ss->alpha = 1.0f;
+                SoundMgr_PlaySE(0xC9);
+            }
+            ItemEffectBus_ApplyItemEventSet(*(void **)((char *)self->driver + 0x304), 0x5F, 1);
+            TornadoEffect_ApplyItemVisual_Secondary(self->effects, 0x5F, 1);
+            SoundObj_PlaySE(self->audio, 0xC);
+            fn_8012BD2C(self->m48);
+            t->hitT = 0.0f;
+        }
+        if (t->hitT >= 0.0f) {
+            t->hitT += 1.0f;
+            if (t->hitT > 60.0f) {
+                ItemEffectBus_ApplyItemEventClear(*(void **)((char *)self->driver + 0x304), 0x5F);
+                TornadoEffect_ApplyItemVisual_Primary(self->effects, 0x5F);
+                t->hitT = -1.0f;
+            }
+        }
+        RenderObj_ItemStateMachine_Timed(self->driver, 0, 0.0f, 0.0f);
+        TornadoEffect_Tick(self->effects, GetDisplayBufferIndex());
+        SoundVolumePan_Update(self->audio);
+        fn_8012A71C(self->m48, -steer);
+        ItemEffectBus_TickTornadoCooldown(*(void **)((char *)self->driver + 0x304));
+
+        eye.x = at.x = 0.0f;
+        eye.y = at.y = 0.0f;
+        eye.z = at.z = 370.0f;
+        side.x = kartMtx[0][1];
+        side.y = kartMtx[1][1];
+        side.z = kartMtx[2][1];
+        fwd.x = kartMtx[0][2];
+        fwd.y = kartMtx[1][2];
+        fwd.z = kartMtx[2][2];
+        Vec3_Normalize(&side, &side);
+        Vec3_Normalize(&fwd, &fwd);
+        eye.x = eye.x - 40.0f * fwd.x;
+        eye.y = eye.y - 40.0f * fwd.y;
+        eye.z = eye.z - 40.0f * fwd.z;
+        eye.y = eye.y + 23.0f;
+        at.y = at.y + 17.3f;
+        CObj_LoadIntoGX(self->scene, &eye);
+        CObj_ApplyViewport(self->scene, &at);
+    } else if (self->defeated == 0) {
+        PSMTXScale(kartMtx, 1.0f, 1.0f, 1.0f);
+        PSMTXRotRad(tmp, 'Y', 3.1415927f);
+        PSMTXConcat(tmp, kartMtx, kartMtx);
+        PSMTXTrans(tmp, pos.x, pos.y, pos.z);
+        PSMTXConcat(tmp, kartMtx, kartMtx);
+        RenderObj_ItemStateMachine_Timed(self->driver, 0, 0.0f, 0.0f);
+        TornadoEffect_Tick(self->effects, GetDisplayBufferIndex());
+        fn_8012A71C(self->m48, 0.0f);
+        ChallengeGoalCamera_Update(self->goalCam, self->scene, kartMtx);
+    }
+
+    Fog_UpdateFromCourseScene3D();
+    LakituStart_UpdateCountdown(self->lakitu);
+    CourseEnvironment_UpdateAndCullZones_Timed(self->env);
+    self->particles->Begin(); /* vtable slot 0xC: the particle manager's update */
+    fn_8016DA78(self->m70);
+    fn_8016EC80(self->m74);
+    fn_80182B50(t->spinA, 0.0f, 0.002f);
+    fn_80182B50(t->spinB, 0.0f, -0.002f);
+    fn_80182B50(t->spinC, 0.0f, -0.002f);
+    t->wheelAngleA += 0.00087266444f;
+    if (t->wheelAngleA >= 6.283184f) {
+        t->wheelAngleA -= 6.283184f;
+    }
+    t->wheelAngleB += 0.0005817763f;
+    if (t->wheelAngleB >= 6.283184f) {
+        t->wheelAngleB -= 6.283184f;
+    }
+    CoinJObj_SetRotationY(t->wheelA, t->wheelAngleA);
+    CoinJObj_SetRotationY(t->wheelB, t->wheelAngleB);
+
+    if (IsRaceStarted() && self->demoMode == 0) {
+        if (fn_8016DF50(self->m70)) {
+            self->demoMode = 1;
+            self->defeated = 1;
+            fn_801699D8(0, 0);
+            fn_801699D8(1, 0);
+        } else if (g_raceTimeRemaining >= 0.0f) {
+            g_raceTimeRemaining -= 0.016666668f;
+            if (g_raceTimeRemaining < 0.0f) {
+                g_raceTimeRemaining = 0.0f;
+                self->demoMode = 1;
+                fn_801699D8(0, 0);
+                fn_801699D8(1, 0);
+            }
+        }
+    }
+    fn_80253FD8(self->hud, g_raceTimeRemaining);
+    HUD_FrameUpdate(self->hud);
+    TransitionEffect_Tick(SINGLETON_INSTANCE(lbl_806D109C));
+
+    if (self->demoMode != 0) {
+        if (t->demoFrame == 0) {
+            coins = 0;
+            n = fn_8016DEF4(self->m70);
+            divisor = NokoNokoChallenge_GetCoinDivisor();
+            if (divisor != 0) {
+                if (n > 0 && n <= 4) {
+                    coins = divisor[n - 1];
+                } else {
+                    coins = 0;
+                }
+                SetCoinCount(coins);
+            }
+            if (self->defeated) {
+                self->koopa->reqState = 4;
+                if (fn_8016C360(0x37) == 1) {
+                    fn_8016C394(0x37);
+                }
+                n = fn_8016DEF4(self->m70);
+                fn_80253C74(self->hud, 1, NokoNokoChallenge_CalcResultText(self, 1, 0), n);
+                SetCourseScene3D(self->defeatDemo->scene);
+                g_raceEnded = 1;
+                g_lakituStartAnimDone = 0;
+            } else {
+                self->koopa->reqState = 4;
+                if (fn_8016C360(0x37) == 1) {
+                    fn_8016C394(0x37);
+                }
+                fn_8012BDA4(self->m48);
+                n = fn_8016DEF4(self->m70);
+                fn_80253C74(self->hud, 0, NokoNokoChallenge_CalcResultText(self, 0, 0), n);
+                Object_SetByte10_Return1(self->scene, 1);
+                fn_8016C554(0);
+                g_lakituStartAnimDone = 0;
+            }
+            NokoNokoChallenge_SaveResult(self, coins, self->defeated);
+        } else if (self->defeated) {
+            DefeatDemo_Update(self->defeatDemo);
+        }
+        t->demoFrame++;
+        if (t->demoFrame == 200 && self->defeated == 1) {
+            CObj_ApplyScissor(self->defeatDemo->scene, &coinPos);
+            CoinParticleManager_Spawn((CoinParticleManager *)self->particles, 2, coinPos, 10.0f);
+            CoinParticleManager_Spawn((CoinParticleManager *)self->particles, 2, coinPos, 25.0f);
+            CoinParticleManager_Spawn((CoinParticleManager *)self->particles, 2, coinPos, 50.0f);
+            CoinParticleManager_Spawn((CoinParticleManager *)self->particles, 2, coinPos, -10.0f);
+            CoinParticleManager_Spawn((CoinParticleManager *)self->particles, 2, coinPos, -25.0f);
+            CoinParticleManager_Spawn((CoinParticleManager *)self->particles, 2, coinPos, -50.0f);
+        }
+        if (fn_80253C40(self->hud)) {
+            return NokoNokoChallenge_TransitionToResult(self);
+        }
+    } else {
+        CObj_LoadProjMatrix(self->scene, &eye);
+        CObj_ApplyScissor(self->scene, &at);
+        ItemObjectManager_Update();
+        at2 = at;
+        eye2 = eye;
+        VfxSlotMgr_Update(&eye2, &at2);
+    }
+    if (g_weatherSystem != 0) {
+        fn_8016B32C(g_weatherSystem);
+    }
+    RumbleUpdate();
+    return -2;
+}
+#endif

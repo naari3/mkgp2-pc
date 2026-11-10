@@ -48,7 +48,7 @@ extern OSTime g_voiceTickTimeHi;
 extern OSTime lbl_806D1728;
 extern OSTime lbl_806D17C8;
 extern OSTime lbl_806D17D0;
-extern OSTime lbl_806D17D8;
+extern OSTime Voice_bss_806D17D8;
 extern OSTime g_voiceStreamTime;
 extern OSTime lbl_806D1798;
 extern OSTime g_bgmStateTimeHi;
@@ -64,10 +64,10 @@ extern unsigned char g_goalFanfareSubState;
 extern unsigned char g_voiceQueueMuted;
 extern unsigned char g_goalFanfareTriggered;
 extern unsigned char lbl_806D178D;
-extern unsigned char lbl_806D178E;
+extern unsigned char VoiceSystem_Init_bss_806D178E;
 extern unsigned char lbl_806D17B4;
 extern unsigned char lbl_806D1750;
-extern float lbl_806D1790;
+extern float VoiceSystem_Init_bss_806D1790;
 
 
 #endif

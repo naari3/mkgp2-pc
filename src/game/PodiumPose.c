@@ -1,7 +1,7 @@
 /*
  * 0x8014219C..0x8014388C: podium pose effect. A camera fly-in over a stage
  * model with up to six posed character models (PoseChar). Vtable
- * lbl_8048EDE4, base FxBase (lbl_8048EB44, see SpriteEffects.c). Two shared
+ * WinPose_vtable_8048EDE4, base FxBase (lbl_8048EB44, see SpriteEffects.c). Two shared
  * prop models (s_propA/s_propB) are reference-counted across PoseChars and
  * have their matrices copied from character joints each frame.
  */
@@ -10,9 +10,7 @@
 typedef float Mtx[3][4];
 typedef float (*MtxPtr)[4];
 
-struct Vec3 {
-    float x, y, z;
-};
+#include "game/types/Vec3.h"
 
 struct JObj {
     unsigned char pad0[0x8];
@@ -50,14 +48,14 @@ void *operator new(unsigned long);
 void operator delete(void *);
 
 extern "C" {
-extern const char *lbl_8048ED58[6];
-extern const char *lbl_8048ED70[13];
-extern const char *lbl_8048EDA4[13];
-extern clNormal3D *lbl_806D1568;
-extern clNormal3D *lbl_806D156C;
-extern JObj *lbl_806D1570;
-extern JObj *lbl_806D1574;
-extern int lbl_806D1578;
+extern const char *PodiumPose_data_8048ED58[6];
+extern const char *PodiumPose_data_8048ED70[13];
+extern const char *PodiumPose_data_8048EDA4[13];
+extern clNormal3D *PodiumPose_bss_806D1568;
+extern clNormal3D *PodiumPose_bss_806D156C;
+extern JObj *PodiumPose_bss_806D1570;
+extern JObj *PodiumPose_bss_806D1574;
+extern int PodiumPose_bss_806D1578;
 
 extern const char lbl_806D7AA0[7]; /* lbl_806D7AA0 */
 extern const char lbl_806D7AA8[5]; /* "jobj" */
@@ -95,11 +93,11 @@ extern void PSMTXScale(Mtx m, float x, float y, float z);
 extern void PSMTXConcat(const Mtx a, const Mtx b, Mtx ab);
 }
 
-#define s_propA lbl_806D1568
-#define s_propB lbl_806D156C
-#define s_jointA lbl_806D1570
-#define s_jointB lbl_806D1574
-#define s_propRef lbl_806D1578
+#define s_propA PodiumPose_bss_806D1568
+#define s_propB PodiumPose_bss_806D156C
+#define s_jointA PodiumPose_bss_806D1570
+#define s_jointB PodiumPose_bss_806D1574
+#define s_propRef PodiumPose_bss_806D1578
 
 extern "C" {
 extern void Alloc();
@@ -107,6 +105,7 @@ extern void clNormal3D_Construct();
 extern unsigned int lbl_806D7A78;
 extern unsigned int lbl_806D7A88;
 extern void MemoryManager_TimedFree();
+#ifndef NON_MATCHING
 asm void __ct__8PoseCharFiiP4Vec3P4Vec3Pf(void);
 
 #pragma section R ".extab_user"
@@ -117,6 +116,7 @@ __declspec(section ".extabindex_user") static const struct { void *fn; unsigned 
     (void *)&__ct__8PoseCharFiiP4Vec3P4Vec3Pf, 0x00000430, (void *)&extab_fn_80143450
 };
 
+#endif
 }
 
 static inline unsigned char JObjMtxIsDirty(JObj *jobj) {
@@ -221,28 +221,9 @@ static inline void InvWorldScale(JObj *jobj, Mtx m) {
     }
 }
 
-struct FxData {
-    int obj;
-    unsigned char active;
-    float x, y;
-    float alpha;
-};
+#include "game/types/FxData.h"
 
-struct FxBase : FxData {
-    FxBase() {
-        obj = 0;
-        active = 0;
-        x = 0.0f;
-        y = 0.0f;
-        alpha = 1.0f;
-    }
-    virtual ~FxBase() {}
-    virtual void m0C();
-    virtual void m10();
-    virtual void Update();
-    virtual void Draw();
-    virtual void m1C();
-};
+#include "game/types/FxBase.h"
 
 /* .rodata 0x803608D0..0x80360C70 (TU-owned). The PoseChar ctor addresses the
  * scale table (+0x164), the joint-name format table (+0x2B4) and the two
@@ -294,7 +275,7 @@ static const char *const sPoseJointFmt[12] = {
 };
 extern "C" {
 extern const char lbl_80360BB4[0x9] = "mspacman";
-extern const Vec3 lbl_80360BC0[6] = {
+extern const Vec3 PodiumPose_rodata_80360BC0[6] = {
     {0.0f, 20.0f, 36.5f},
     {0.0f, 13.0f, -28.0f},
     {-0.0f, 4.197254f, 43.202705f},
@@ -302,7 +283,7 @@ extern const Vec3 lbl_80360BC0[6] = {
     {0.0f, 3.0f, 64.57f},
     {0.0f, 13.0f, -28.0f},
 };
-extern const int lbl_80360C08[5] = {40, 140, 0, 40, 10};
+extern const int PodiumPose_rodata_80360C08[5] = {40, 140, 0, 40, 10};
 extern const char lbl_80360C1C[0x12] = "clCSPartsPlatform";
 extern const char lbl_80360C30[0x12] = "clCSPartsInerface";
 }
@@ -432,43 +413,43 @@ void WinPose::Update() {
         CObj_ApplyScissor(cam, &viewport);
         switch (state) {
         case 0:
-            if (timer >= lbl_80360C08[0]) {
+            if (timer >= PodiumPose_rodata_80360C08[0]) {
                 timer = 0;
                 state = 1;
             }
             break;
         case 1: {
-            t = 0.5f * Sinf_LUT_Wrap(180.0f * (1.0f - (float)timer / (float)lbl_80360C08[1])) + 0.5f;
-            p0 = lbl_80360BC0[0];
-            p1 = lbl_80360BC0[2];
-            p2 = lbl_80360BC0[4];
+            t = 0.5f * Sinf_LUT_Wrap(180.0f * (1.0f - (float)timer / (float)PodiumPose_rodata_80360C08[1])) + 0.5f;
+            p0 = PodiumPose_rodata_80360BC0[0];
+            p1 = PodiumPose_rodata_80360BC0[2];
+            p2 = PodiumPose_rodata_80360BC0[4];
             fn_80181F18(&p0, &p1, &p2, &eye, t);
-            if (timer >= lbl_80360C08[1]) {
+            if (timer >= PodiumPose_rodata_80360C08[1]) {
                 timer = 0;
                 state = 4;
             }
             break;
         }
         case 2:
-            if (timer >= lbl_80360C08[2]) {
+            if (timer >= PodiumPose_rodata_80360C08[2]) {
                 timer = 0;
                 state = 3;
             }
             break;
         case 3: {
-            t = 0.5f * ((float)timer / (float)lbl_80360C08[3]) + 0.5f;
-            p0 = lbl_80360BC0[0];
-            p1 = lbl_80360BC0[2];
-            p2 = lbl_80360BC0[4];
+            t = 0.5f * ((float)timer / (float)PodiumPose_rodata_80360C08[3]) + 0.5f;
+            p0 = PodiumPose_rodata_80360BC0[0];
+            p1 = PodiumPose_rodata_80360BC0[2];
+            p2 = PodiumPose_rodata_80360BC0[4];
             fn_80181F18(&p0, &p1, &p2, &eye, t);
-            if (timer >= lbl_80360C08[3]) {
+            if (timer >= PodiumPose_rodata_80360C08[3]) {
                 timer = 0;
                 state = 4;
             }
             break;
         }
         case 4:
-            if (timer >= lbl_80360C08[4]) {
+            if (timer >= PodiumPose_rodata_80360C08[4]) {
                 timer = 0;
                 state = 5;
             }
@@ -505,9 +486,9 @@ unsigned char WinPose::Spawn(int slot, int kind) {
     } else {
         mode = -1;
     }
-    joint = ResolveJointByName(stage, lbl_8048ED58[slot]);
+    joint = ResolveJointByName(stage, PodiumPose_data_8048ED58[slot]);
     JObjGetTranslation(joint, &pos);
-    joint = ResolveJointByName(stage, lbl_8048ED58[slot]);
+    joint = ResolveJointByName(stage, PodiumPose_data_8048ED58[slot]);
     rot.x = 0.0f;
     rot.y = 0.0f;
     rot.z = 0.0f;
@@ -561,13 +542,13 @@ WinPose::WinPose(unsigned char setCam) {
     lights = new SceneModel(sCeremonyFile, 1);
     if (setCam == 1) {
         Vec3 v;
-        v.x = lbl_80360BC0[0].x;
-        v.y = lbl_80360BC0[0].y;
-        v.z = lbl_80360BC0[0].z;
+        v.x = PodiumPose_rodata_80360BC0[0].x;
+        v.y = PodiumPose_rodata_80360BC0[0].y;
+        v.z = PodiumPose_rodata_80360BC0[0].z;
         CObj_LoadIntoGX(cam, &v);
-        v.x = lbl_80360BC0[1].x;
-        v.y = lbl_80360BC0[1].y;
-        v.z = lbl_80360BC0[1].z;
+        v.x = PodiumPose_rodata_80360BC0[1].x;
+        v.y = PodiumPose_rodata_80360BC0[1].y;
+        v.z = PodiumPose_rodata_80360BC0[1].z;
         CObj_ApplyViewport(cam, &v);
     }
 }
@@ -637,6 +618,88 @@ void PoseChar::Draw() {
     }
 }
 
+#ifdef NON_MATCHING
+/* Equivalent C++ for the PC port (docs/nonmatching_c.md); 13 FPR instructions
+ * off the target (docs/gave_up.md). */
+static inline void PoseVecSet(Vec3 *v, float x, float y, float z) {
+    v->x = x;
+    v->y = y;
+    v->z = z;
+}
+
+PoseChar::PoseChar(int kind, int mode, Vec3 *pos, Vec3 *rot, float *scale) {
+    char nameA[32];
+    char nameB[32];
+    char nameC[32];
+    char nameD[32];
+    float s;
+
+    if (s_propRef == 0) {
+        s_propA = 0;
+        s_propB = 0;
+        s_jointA = 0;
+        s_jointB = 0;
+        s_propA = new clNormal3D(sTrophyFile, 0);
+        s_propB = new clNormal3D(sFlowerFile, 0);
+        if (s_propA) {
+            s_jointA = Archive_GetRootJObj(s_propA);
+        }
+        if (s_propB) {
+            s_jointB = Archive_GetRootJObj(s_propB);
+        }
+    }
+    s_propRef++;
+    this->kind = kind;
+    this->mode = mode;
+    PoseVecSet(&this->pos, pos->x, pos->y, pos->z);
+    PoseVecSet(&this->rot, rot->x, rot->y, rot->z);
+    model = 0;
+    head = 0;
+    propJointB = 0;
+    propJointA = 0;
+    frame = 0.0f;
+    if (this->kind < 0 || this->kind >= 13) {
+        return;
+    }
+    s = *scale * sPoseScale[this->kind];
+    model = new clNormal3D(PodiumPose_data_8048ED70[this->kind], 0);
+    Object_SetJObjScaleXYZ(model, s, s, s);
+    clNormal3D_SetScale(model, 0, 0.0f, 1.0f, 0.0f, 0.0f);
+    sprintf(nameA, sPoseJointFmt[0], PodiumPose_data_8048EDA4[kind]);
+    sprintf(nameB, sPoseJointFmt[2], PodiumPose_data_8048EDA4[kind]);
+    sprintf(nameC, sPoseJointFmt[1], PodiumPose_data_8048EDA4[kind]);
+    sprintf(nameD, sPoseJointFmt[3], PodiumPose_data_8048EDA4[kind]);
+    if (this->mode == 0) {
+        head = ResolveJointByName(model, nameA);
+        propJointB = ResolveJointByName(model, sPoseJointFmt[4]);
+        propJointA = ResolveJointByName(model, sPoseJointFmt[5]);
+        HSD_JObjSetFlagsAll(ResolveJointByName(model, nameB), 0x10);
+        HSD_JObjSetFlagsAll(ResolveJointByName(model, nameC), 0x10);
+        HSD_JObjSetFlagsAll(ResolveJointByName(model, nameD), 0x10);
+    } else if (this->mode == 1) {
+        head = ResolveJointByName(model, nameB);
+        propJointB = ResolveJointByName(model, sPoseJointFmt[8]);
+        propJointA = ResolveJointByName(model, sPoseJointFmt[9]);
+        HSD_JObjSetFlagsAll(ResolveJointByName(model, nameA), 0x10);
+        HSD_JObjSetFlagsAll(ResolveJointByName(model, nameC), 0x10);
+        HSD_JObjSetFlagsAll(ResolveJointByName(model, nameD), 0x10);
+    } else if (this->mode == 2) {
+        head = ResolveJointByName(model, nameC);
+        propJointB = ResolveJointByName(model, sPoseJointFmt[6]);
+        propJointA = ResolveJointByName(model, sPoseJointFmt[7]);
+        HSD_JObjSetFlagsAll(ResolveJointByName(model, nameA), 0x10);
+        HSD_JObjSetFlagsAll(ResolveJointByName(model, nameB), 0x10);
+        HSD_JObjSetFlagsAll(ResolveJointByName(model, nameD), 0x10);
+    } else {
+        head = ResolveJointByName(model, nameD);
+        propJointB = ResolveJointByName(model, sPoseJointFmt[10]);
+        propJointA = ResolveJointByName(model, sPoseJointFmt[11]);
+        HSD_JObjSetFlagsAll(ResolveJointByName(model, nameA), 0x10);
+        HSD_JObjSetFlagsAll(ResolveJointByName(model, nameB), 0x10);
+        HSD_JObjSetFlagsAll(ResolveJointByName(model, nameC), 0x10);
+    }
+}
+#else
 extern "C" asm void __ct__8PoseCharFiiP4Vec3P4Vec3Pf(void) { /* 0x80143450 size:0x430 */
     nofralloc
     stwu r1, -0xc0(r1)
@@ -645,7 +708,7 @@ extern "C" asm void __ct__8PoseCharFiiP4Vec3P4Vec3Pf(void) { /* 0x80143450 size:
     stfd f31, 0xb0(r1)
     psq_st f31, 0xb8(r1), 0, 0
     stmw r24, 0x90(r1)
-    lwz r0, lbl_806D1578(r13)
+    lwz r0, PodiumPose_bss_806D1578(r13)
     lis r9, lbl_803608D0@ha
     mr r29, r3
     mr r30, r4
@@ -658,10 +721,10 @@ extern "C" asm void __ct__8PoseCharFiiP4Vec3P4Vec3Pf(void) { /* 0x80143450 size:
     bne fn_80143450_L_80143510
     li r0, 0x0
     li r3, 0x5c
-    stw r0, lbl_806D1568(r13)
-    stw r0, lbl_806D156C(r13)
-    stw r0, lbl_806D1570(r13)
-    stw r0, lbl_806D1574(r13)
+    stw r0, PodiumPose_bss_806D1568(r13)
+    stw r0, PodiumPose_bss_806D156C(r13)
+    stw r0, PodiumPose_bss_806D1570(r13)
+    stw r0, PodiumPose_bss_806D1574(r13)
     bl Alloc
     mr. r24, r3
     beq fn_80143450_L_801434C4
@@ -669,7 +732,7 @@ extern "C" asm void __ct__8PoseCharFiiP4Vec3P4Vec3Pf(void) { /* 0x80143450 size:
     li r5, 0x0
     bl clNormal3D_Construct
     fn_80143450_L_801434C4:
-    stw r24, lbl_806D1568(r13)
+    stw r24, PodiumPose_bss_806D1568(r13)
     li r3, 0x5c
     bl Alloc
     mr. r24, r3
@@ -678,25 +741,25 @@ extern "C" asm void __ct__8PoseCharFiiP4Vec3P4Vec3Pf(void) { /* 0x80143450 size:
     li r5, 0x0
     bl clNormal3D_Construct
     fn_80143450_L_801434E4:
-    lwz r3, lbl_806D1568(r13)
-    stw r24, lbl_806D156C(r13)
+    lwz r3, PodiumPose_bss_806D1568(r13)
+    stw r24, PodiumPose_bss_806D156C(r13)
     cmplwi r3, 0x0
     beq fn_80143450_L_801434FC
     bl Archive_GetRootJObj
-    stw r3, lbl_806D1570(r13)
+    stw r3, PodiumPose_bss_806D1570(r13)
     fn_80143450_L_801434FC:
-    lwz r3, lbl_806D156C(r13)
+    lwz r3, PodiumPose_bss_806D156C(r13)
     cmplwi r3, 0x0
     beq fn_80143450_L_80143510
     bl Archive_GetRootJObj
-    stw r3, lbl_806D1574(r13)
+    stw r3, PodiumPose_bss_806D1574(r13)
     fn_80143450_L_80143510:
-    lwz r3, lbl_806D1578(r13)
+    lwz r3, PodiumPose_bss_806D1578(r13)
     li r0, 0x0
     lfs f1, 0x0(r26)
     addi r3, r3, 0x1
     lfs f0, 0x4(r26)
-    stw r3, lbl_806D1578(r13)
+    stw r3, PodiumPose_bss_806D1578(r13)
     lfs f4, 0x8(r26)
     stw r30, 0x0(r29)
     lfs f3, 0x0(r27)
@@ -734,8 +797,8 @@ extern "C" asm void __ct__8PoseCharFiiP4Vec3P4Vec3Pf(void) { /* 0x80143450 size:
     mr. r24, r3
     beq fn_80143450_L_801435CC
     lwz r0, 0x0(r29)
-    lis r4, lbl_8048ED70@ha
-    addi r4, r4, lbl_8048ED70@l
+    lis r4, PodiumPose_data_8048ED70@ha
+    addi r4, r4, PodiumPose_data_8048ED70@l
     li r5, 0x0
     slwi r0, r0, 2
     lwzx r4, r4, r0
@@ -754,9 +817,9 @@ extern "C" asm void __ct__8PoseCharFiiP4Vec3P4Vec3Pf(void) { /* 0x80143450 size:
     lfs f2, lbl_806D7A78(r2)
     fmr f4, f1
     bl clNormal3D_SetScale
-    lis r3, lbl_8048EDA4@ha
+    lis r3, PodiumPose_data_8048EDA4@ha
     slwi r28, r30, 2
-    addi r30, r3, lbl_8048EDA4@l
+    addi r30, r3, PodiumPose_data_8048EDA4@l
     lwz r4, 0x2b4(r31)
     lwzx r5, r30, r28
     addi r3, r1, 0x68
@@ -920,6 +983,7 @@ extern "C" asm void __ct__8PoseCharFiiP4Vec3P4Vec3Pf(void) { /* 0x80143450 size:
     addi r1, r1, 0xc0
     blr
 }
+#endif
 
 void WinPose::m0C() {
     started = 1;

@@ -4,10 +4,7 @@
 
 #include "game/FlowScene.h"
 
-struct FlowController {
-    void *vt;
-    FlowSceneList *owner;
-};
+#include "game/types/FlowController.h"
 
 extern "C" {
 extern int lbl_806D19C8;
@@ -27,12 +24,7 @@ void card_eject_init(void);
 void fn_801D7610(unsigned char *data, int mode);
 }
 
-struct CardEjectTask : FlowTask {
-    TextManager *texts;
-    CardEjectTask(int id);
-    ~CardEjectTask();
-    virtual void _key3();
-};
+#include "game/types/CardEjectTask.h"
 
 extern "C" void fn_801FD320(void) {
     lbl_806D19C8 = lbl_806DA848;

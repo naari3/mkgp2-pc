@@ -11,14 +11,14 @@ struct Vec {
     Vec(const Vec& other) { *(int*)&x=*(const int*)&other.x; *(int*)&y=*(const int*)&other.y; *(int*)&z=*(const int*)&other.z; }
 };
 struct EulerAngles { float x,y,z; };
-struct Matrix { float m[16]; };
+#include "game/types/Matrix.h"
 struct Camera { Matrix view,inverse; Vec position,target; };
 struct Slot {
     signed char active; char pad1[3]; void (*tick)(Slot*);
     char pad8[0x84]; Vec position; char pad98[0x18]; float scale;
     char padB4[4]; Vec renderPosition; float renderScale; char padC8[0x104];
 };
-class Resource { public: virtual ~Resource(); };
+#include "game/types/Resource.h"
 extern "C" {
 unsigned int OSGetTick();
 void Profiler_RecordFrame(int,float);

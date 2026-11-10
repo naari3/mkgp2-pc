@@ -4,7 +4,7 @@
  * a breath sound starts and fire/frost particles (two variants, picked by the
  * reverse-course flag) are spawned through pointer-to-member tables. Four
  * smoke puffs rise over the lake. The class data (spawn ranges, member
- * function tables, vtable) lives in lbl_804EDF80 and is addressed off one
+ * function tables, vtable) lives in DNBress_nm3_data_804EDF80 and is addressed off one
  * base; the static initializer (fn_80227FA4) stays in asm.
  */
 
@@ -13,9 +13,7 @@ void operator delete(void *p) throw();
 
 typedef float Mtx[3][4];
 
-struct Vec3f {
-    float x, y, z;
-};
+#include "game/types/Vec3f.h"
 
 struct HSD_JObj {
     char pad00[0x14];
@@ -25,47 +23,15 @@ struct HSD_JObj {
     Mtx mtx;
 };
 
-struct clNormal3D {
-    char _opaque[0x5C];
-    clNormal3D(const char *res, int flags);
-    ~clNormal3D();
-};
+#include "game/types/clNormal3D.h"
 
-struct AnimCtrl {
-    char _opaque[0x180];
-    AnimCtrl();
-    ~AnimCtrl();
-};
+#include "game/types/AnimCtrl.h"
 
-struct KartRender {
-    char pad000[0x23C];
-    int x23c;
-};
+#include "game/types/KartDriver.h"
 
-class GXChannel {
-public:
-    GXChannel(void *root, void *desc, int flags, int mode);
-    ~GXChannel();
-    void PushTransform(Mtx m);
+#include "game/types/GXChannel.h"
 
-private:
-    char pad[0x14];
-};
-
-struct Particle {
-    unsigned char active;
-    Vec3f v;
-    Vec3f pos;
-    float scale;
-    float alpha;
-    float c[3];
-    float speed;
-    float grow;
-    float dvx;
-    float dvy;
-    float dvz;
-    int delay;
-};
+#include "game/types/Particle.h"
 
 extern "C" const char lbl_80490FE0[];
 
@@ -137,28 +103,28 @@ struct clDNBress : clMapEffectParts {
 };
 
 extern "C" {
-extern const char lbl_803C6ED0[];
+extern const char DNBress_nm3_rodata_803C6ED0[];
 extern int g_gameMode;
 extern int g_longRoundFlag;
 extern int g_reverseRoundFlag;
-extern KartRender *g_playerRenderObj;
+extern KartDriver *g_playerRenderObj;
 extern const char lbl_806DB3F0[7];
 extern const char lbl_806DB3F8[5];
 extern const int lbl_806DB3E8[2];
 extern float lbl_806D0548[2];
-extern float lbl_806D0580;
-extern float lbl_806D0584;
-extern float lbl_806D0588;
+extern float DNBress_breath_data_806D0580;
+extern float DNBress_breath_data_806D0584;
+extern float DNBress_breath_data_806D0588;
 extern const int lbl_803D0240[4][2];
-extern const float lbl_803D0260[3];
+extern const float DNBress_tick_rodata_803D0260[3];
 extern const float lbl_803D026C[3];
-extern const float lbl_803D0278[4];
+extern const float DNBress_breath_rodata_803D0278[4];
 extern const Vec3f lbl_803D02A0[2];
 extern float lbl_80495A94[48];
 extern const char lbl_803D01BC[];
 extern const char lbl_803D01CC[];
 extern const char *lbl_803D01DC[];
-extern const char lbl_803D0300[];
+extern const char DNBress_breath_rodata_803D0300[];
 extern const char lbl_803D0320[];
 extern const char lbl_803D0340[];
 extern const char lbl_803D0354[];
@@ -210,10 +176,10 @@ float PSVECSquareMag(Vec3f *v);
 void Object_SetColorRGBA(clNormal3D *m, int idx, float r, float g, float b, float a);
 void Object_DriveAnimMatrix(clNormal3D *m);
 void clNormal3D_SetScale(clNormal3D *m, int idx, float x, float y, float z, float w);
-KartRender *GetKartSlotKartVariant(int slot);
+KartDriver *GetKartSlotKartVariant(int slot);
 void *GetPlayerCarObject(void);
-KartRender *CarObject_GetRenderObj(void *car);
-const float *KartDriver_GetKartRootMtx(KartRender *k);
+KartDriver *CarObject_GetRenderObj(void *car);
+const float *KartDriver_GetKartRootMtx(KartDriver *k);
 void fn_80240014(AnimCtrl *a);
 void fn_8023FE74(AnimCtrl *a, int b, int frame);
 void fn_80240378(AnimCtrl *a, const char *file, int b, clNormal3D *m, const char **names);
@@ -284,8 +250,8 @@ struct DNBressDispatch {
     void (*slots[5])();
 };
 extern "C" {
-extern const char lbl_806D058C[];
-extern const char lbl_806D0594[];
+extern const char DNBress_nm3_data_806D058C[];
+extern const char DNBress_nm3_data_806D0594[];
 void fn_80227AA4();
 void fn_80226B20();
 void fn_80226954();
@@ -295,26 +261,26 @@ void fn_802271A4();
 void fn_8022760C();
 void fn_80227490();
 #pragma force_active on
-float lbl_804EDF80[2][3] = {{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
+float DNBress_nm3_data_804EDF80[2][3] = {{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
 struct FireRecords { MemberFn spawn; MemberFn upd; } lbl_804EDF98[2] = {
     {{0, -1, fn_80227318}, {0, -1, fn_802271A4}},
     {{0, -1, fn_8022760C}, {0, -1, fn_80227490}}
 };
-DNBressTypeInfo lbl_804EDFC8 = {lbl_806D058C, 0, 0};
-DNBressDispatch lbl_804EDFD4 = {
-    lbl_806D0594, 0,
+DNBressTypeInfo sdata_806D0540_data_804EDFC8 = {DNBress_nm3_data_806D058C, 0, 0};
+DNBressDispatch clDNBress_vtable_804EDFD4 = {
+    DNBress_nm3_data_806D0594, 0,
     {fn_80227AA4, fn_80226B20, fn_80226954, fn_8016A26C, 0}
 };
 #pragma force_active reset
 }
 
 static inline const char *DNBressStrings() {
-    const char *strings = lbl_803C6ED0 + 0x10000;
+    const char *strings = DNBress_nm3_rodata_803C6ED0 + 0x10000;
     return strings;
 }
 
 clDNBress::clDNBress() {
-    const char *data = (const char *)lbl_804EDF80;
+    const char *data = (const char *)DNBress_nm3_data_804EDF80;
     const FireFuncs *fireFuncs = (const FireFuncs *)(data + 0x18);
     // The original unit addresses its shared strings from one retained base.
     const char *strings = DNBressStrings();

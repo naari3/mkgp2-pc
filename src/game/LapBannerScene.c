@@ -17,21 +17,7 @@
  * 0x25D) matches the already-matched src/game/Object_SetJObjRotation.c.
  */
 
-typedef struct HSD_JObj {
-    unsigned char pad[0x14];
-    unsigned int flags;
-    unsigned int pad_18;
-    float rotation_x;
-    float rotation_y;
-    float rotation_z;
-    unsigned char pad_28[4];
-    float scale_x;
-    float scale_y;
-    float scale_z;
-    float position_x;
-    float position_y;
-    float field_40;
-} HSD_JObj;
+#include "game/types/HSD_JObj.h"
 
 typedef struct LapBannerScene {
     void *obj;            /* 0x0 */
@@ -40,11 +26,7 @@ typedef struct LapBannerScene {
     float timer;          /* 0xC */
 } LapBannerScene;
 
-typedef struct Vec3 {
-    float x;
-    float y;
-    float z;
-} Vec3;
+#include "game/types/Vec3.h"
 
 extern const float lbl_806D3250; /* 0.0f */
 extern const float lbl_806D3254; /* timer step */
@@ -53,7 +35,7 @@ extern char lbl_806D325C[7]; /* assert file string */
 extern char lbl_806D3264[5]; /* assert expr string ("jobj") */
 extern const float lbl_806D326C;   /* Y offset */
 extern const float lbl_806D3270;   /* yaw offset */
-extern char lbl_803127B8[0x58]; /* quaternion assert message */
+extern char LapBannerScene_UpdateAndDriveAnim_rodata_803127B8[0x58]; /* quaternion assert message */
 
 extern void __assert(char *, int, char *);
 extern void HSD_JObjSetMtxDirtySub(HSD_JObj *);
@@ -110,7 +92,7 @@ static void set_position_x(void *obj, float v) {
     if (jobj == 0) {
         __assert(lbl_806D325C, 0x3B8, lbl_806D3264);
     }
-    jobj->position_x = v;
+    jobj->translate.x = v;
     set_mtx_dirty(jobj);
 }
 
@@ -120,7 +102,7 @@ static void set_position_y(void *obj, float v) {
     if (jobj == 0) {
         __assert(lbl_806D325C, 0x3C6, lbl_806D3264);
     }
-    jobj->position_y = v;
+    jobj->translate.y = v;
     set_mtx_dirty(jobj);
 }
 
@@ -130,7 +112,7 @@ static void set_position_z(void *obj, float v) {
     if (jobj == 0) {
         __assert(lbl_806D325C, 0x3D4, lbl_806D3264);
     }
-    jobj->field_40 = v;
+    jobj->translate.z = v;
     set_mtx_dirty(jobj);
 }
 
@@ -141,9 +123,9 @@ static void set_rotation_y(void *obj, float v) {
         __assert(lbl_806D325C, 0x2B8, lbl_806D3264);
     }
     if (jobj->flags & 0x00020000) {
-        __assert(lbl_806D325C, 0x2B9, lbl_803127B8);
+        __assert(lbl_806D325C, 0x2B9, LapBannerScene_UpdateAndDriveAnim_rodata_803127B8);
     }
-    jobj->rotation_y = v;
+    jobj->rotate.y = v;
     set_mtx_dirty(jobj);
 }
 

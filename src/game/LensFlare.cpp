@@ -5,9 +5,7 @@
  * actions; mangled names are bridged in tools/extab_user_renames.json.
  */
 
-struct Vec3f {
-    float x, y, z;
-};
+#include "game/types/Vec3f.h"
 
 struct HSD_JObj {
     char pad00[0x14];
@@ -16,11 +14,7 @@ struct HSD_JObj {
     Vec3f translate;
 };
 
-struct HSD_DObj {
-    void *parent;
-    HSD_DObj *next;
-    void *mobj;
-};
+#include "game/types/HSD_DObj.h"
 
 struct GXRenderModeObj {
     unsigned int viTVmode;
@@ -81,7 +75,7 @@ struct clLensFlare : clMapEffectParts {
 };
 
 extern "C" {
-extern char lbl_804912DC[];
+extern char clLensFlare_vtable_804912DC[];
 extern char lbl_80490FE0[];
 extern char lbl_8036E860[];
 extern char lbl_8036E880[];
@@ -241,7 +235,7 @@ void fn_80171940(clLensFlare *self) {
 
 clLensFlare *fn_80171C2C(clLensFlare *self, short flag) {
     if (self) {
-        *(void **)self = lbl_804912DC;
+        *(void **)self = clLensFlare_vtable_804912DC;
         if (self->model) {
             Object_DtorWithGXSync(self->model, 1);
             self->model = 0;

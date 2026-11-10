@@ -3,17 +3,12 @@
  * and light attachment). Holds the item in the character's hand with a
  * per-kind offset/rotation, launches or drops it on the hold flag, then runs
  * the kind's own tick. A child effect follows the item each frame. */
-typedef struct Vec { float x, y, z; } Vec;
+#include "game/types/Vec.h"
 
-typedef struct HandheldPose {
-    int pad;
-    float scale;
-    Vec ofs;
-    Vec rot;
-} HandheldPose;
+#include "game/types/HandheldPose.h"
 
-extern const char lbl_8032E060[];
-extern HandheldPose lbl_80420E18[];
+extern const char ItemObject_Tick_rodata_8032E060[];
+extern HandheldPose ItemObject_Tick_Dispatch24To29_data_80420E18[];
 extern void SpriteSlot_InitNonLoop(void *slot, int animId);
 extern void SpriteSlot_SetAnimFrameAndApplyScale(void *slot, int frame, float f);
 extern void SpriteSlot_SetMatrixSourceEnabled_WithReseed(void *slot, int en);
@@ -109,7 +104,7 @@ void ItemObject_Tick_Dispatch24To29(unsigned char *self)
     Vec ofs;
     Vec rot;
     Vec v;
-    const char *names = lbl_8032E060;
+    const char *names = ItemObject_Tick_rodata_8032E060;
     unsigned char *sub = self + 0xEC;
 
     switch (S8(0xC8)) {
@@ -187,16 +182,16 @@ void ItemObject_Tick_Dispatch24To29(unsigned char *self)
         if (1.0f < F(0x2C)) {
             F(0x2C) = 1.0f;
         }
-        Vec3_Copy(&ofs, &lbl_80420E18[I(0x10)].ofs);
-        rot.x = 0.017453289f * lbl_80420E18[I(0x10)].rot.x;
-        rot.y = 0.017453289f * lbl_80420E18[I(0x10)].rot.y;
-        rot.z = 0.017453289f * lbl_80420E18[I(0x10)].rot.z;
+        Vec3_Copy(&ofs, &ItemObject_Tick_Dispatch24To29_data_80420E18[I(0x10)].ofs);
+        rot.x = 0.017453289f * ItemObject_Tick_Dispatch24To29_data_80420E18[I(0x10)].rot.x;
+        rot.y = 0.017453289f * ItemObject_Tick_Dispatch24To29_data_80420E18[I(0x10)].rot.y;
+        rot.z = 0.017453289f * ItemObject_Tick_Dispatch24To29_data_80420E18[I(0x10)].rot.z;
         if (I(0x8) == 0x24 || I(0x8) == 0x25 || I(0x8) == 0x26) {
             SF(0x14) = BuildOrientationFromYaw(0.08726645f + SF(0x14));
             rot.y = BuildOrientationFromYaw(rot.y + SF(0x14));
             ofs.y = (1.0f + sinf(SF(0x14))) / 2.0f + ofs.y;
         }
-        Item_RenderHandheldByCharacter(self, ofs, rot, 0, lbl_80420E18[I(0x10)].scale);
+        Item_RenderHandheldByCharacter(self, ofs, rot, 0, ItemObject_Tick_Dispatch24To29_data_80420E18[I(0x10)].scale);
         if (FinalLapCoinJump_CheckActiveForObject(SP(0x98))) {
             self[0x28] = 0;
         } else {

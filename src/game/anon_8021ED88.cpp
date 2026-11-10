@@ -1,6 +1,6 @@
 #include "game/singleton.h"
 /*
- * 0x8021ED88..0x8021F088: clCSSceneChangeSingle (vtable lbl_804EDE1C, base
+ * 0x8021ED88..0x8021F088: clCSSceneChangeSingle (vtable clCSSceneChangeSingle_vtable_804EDE1C, base
  * clSceneInterface lbl_803FE0C8). Shows one FlowPanel message, then drops
  * the local PCB role back to 0.
  */
@@ -8,14 +8,7 @@
 void *operator new(unsigned long size);
 void operator delete(void *p) throw();
 
-struct InputState {
-    char pad00[4];
-    unsigned char enabled;
-    char pad05[0xF];
-    int dir;
-    int held;
-    int edge;
-};
+#include "game/types/InputState.h"
 
 struct FlowPanel {
     int state;

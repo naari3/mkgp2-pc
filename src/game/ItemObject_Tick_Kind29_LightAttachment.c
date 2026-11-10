@@ -3,17 +3,12 @@
  * trigger flag switches to its second animation for 180 frames with a
  * child effect, and fades out. Its offset eases toward a rest point and
  * its scale pulses along a 4-segment keyframe curve. */
-typedef struct Vec { float x, y, z; } Vec;
+#include "game/types/Vec.h"
 
-typedef struct ScaleCurve {
-    float x[5];
-    float y[5];
-    float z[5];
-    float t[5];
-} ScaleCurve;
+#include "game/types/ScaleCurve.h"
 
-extern Vec lbl_8032E534;
-extern ScaleCurve lbl_80420ED8;
+extern Vec ItemObject_Tick_Kind29_LightAttachment_rodata_8032E534;
+extern ScaleCurve ItemObject_Tick_Kind29_LightAttachment_data_80420ED8;
 extern void SpriteSlot_SetAnimFrameAndApplyScale(void *slot, int frame, float f);
 extern void SpriteSlot_SetScale(void *slot, float s);
 extern void Item_PropagateHitToAllDrivers(unsigned char *self, void *driver);
@@ -106,7 +101,7 @@ void ItemObject_Tick_Kind29_LightAttachment(unsigned char *self, unsigned char *
         SF(0x14) = 1.0f;
     }
     b = *(Vec *)(sub + 0x34);
-    a = lbl_8032E534;
+    a = ItemObject_Tick_Kind29_LightAttachment_rodata_8032E534;
     Vec3_Lerp(sub + 0x34, &a, &b, SF(0x14));
     t = SF(0x14);
     F(0xAC) = LerpScalar(0.0f, F(0xAC), t);
@@ -123,7 +118,7 @@ void ItemObject_Tick_Kind29_LightAttachment(unsigned char *self, unsigned char *
         t = 80.0f + F(0x20);
         sp = &scale;
         Vec_SetUniform(sp, F(0xC4));
-        c = &lbl_80420ED8;
+        c = &ItemObject_Tick_Kind29_LightAttachment_data_80420ED8;
         off = 0;
         for (i = 0; i < 4; i++, off += 4) {
             if (c->t[i] <= t && t <= c->t[i + 1]) {

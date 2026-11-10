@@ -1,5 +1,5 @@
 /*
- * 0x80224ECC..0x802253EC: fade-in/out banner scene (vtable lbl_804EDF14,
+ * 0x80224ECC..0x802253EC: fade-in/out banner scene (vtable clCSSceneGetRace_vtable_804EDF14,
  * base clSceneInterface lbl_803FE0C8). Fades the screen in, shows a sprite
  * for up to two seconds (or until the button is pressed) and fades out.
  */
@@ -47,13 +47,7 @@ struct Sprite {
     ~Sprite();
 };
 
-struct SceneObj {
-    char pad00[0x20];
-    SceneObj(int a, int b, int c, int d, int e);
-    ~SceneObj();
-    void Update();
-    void Draw();
-};
+#include "game/types/SceneObj.h"
 
 struct RoundInfo {
     unsigned char flag;
@@ -80,7 +74,7 @@ RoundInfo *fn_8024F588(void);
 void fn_80169C44(void);
 void CreditMgr_SetActiveSlot(int slot);
 int InitRumbleController(int deviceId);
-struct SpriteResourceId { int id; };
+#include "game/types/SpriteResourceId.h"
 void fn_8023F5B4(Sprite **out, const SpriteResourceId *resource, int enabled, float x, float y);
 void fn_801A0004(Sprite *spr);
 unsigned char Sprite_AdvanceAnim(Sprite *spr, float dt);
@@ -101,14 +95,7 @@ static inline InputState *GetInput() {
     return g_pInputState == 0 ? (InputState *)0 : g_pInputState;
 }
 
-struct clSceneInterface {
-    virtual ~clSceneInterface() {}
-    virtual void Destroy();
-    virtual void Update();
-    virtual void Draw();
-    unsigned char done;
-    clSceneInterface() : done(false) {}
-};
+#include "game/types/clSceneInterface.h"
 
 struct clCSSceneGetRace : clSceneInterface {
     SceneObj *obj;

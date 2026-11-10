@@ -10,11 +10,7 @@ unsigned char Terrain_GetGroundHeight(float *pos, float *height, int, int);
 extern char lbl_8037DA7C[];
 }
 
-class Normal3D {
-public:
-    Normal3D(void *desc, int flags);
-    unsigned char data[0x5C];
-};
+#include "game/types/Normal3D.h"
 
 struct SpawnEntry {
     float pos[3];
@@ -36,7 +32,7 @@ struct BananaPositionData {
     BananaPositionData(int course);
 };
 
-extern SpawnEntry *lbl_806CFCD0[2];
+extern SpawnEntry *BananaPositionData_Init_data_806CFCD0[2];
 
 BananaPositionData::BananaPositionData(int course) {
     SpawnEntry *spawn;
@@ -53,7 +49,7 @@ BananaPositionData::BananaPositionData(int course) {
     clNormal3D_SetScale(model, 0, 0.0f, 1.0f, 0.0f, 0.0f);
     Object_SetField8_AndDirty(model, 153.0f);
     clNormal3D_Exec(model);
-    spawn = lbl_806CFCD0[course];
+    spawn = BananaPositionData_Init_data_806CFCD0[course];
     count = 0;
     while (1) {
         if (IsSpawnTableTerminator(&spawn[count])) {

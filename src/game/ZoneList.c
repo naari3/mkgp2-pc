@@ -12,20 +12,18 @@
  */
 #pragma cplusplus on
 
-typedef struct Vec3 {
-    float x, y, z;
-} Vec3;
+#include "game/types/Vec3.h"
 
 extern "C" {
 extern int g_cupId;
 extern int g_roundIndex;
 extern int g_ccClass;
-extern int lbl_80355078[][3][2];
-extern int lbl_803554E0[][3][2];
-extern char lbl_8048E184[];
-extern char lbl_8048E1A0[];
-extern char lbl_8048E1B0[];
-extern char lbl_8048E1CC[];
+extern int MiniGame_GetTimerValue_rodata_80355078[][3][2];
+extern int MiniGame_GetTimerValue_rodata_803554E0[][3][2];
+extern char QuadZone_vtable_8048E184[];
+extern char BoxZone_vtable_8048E1A0[];
+extern char Zone_vtable_8048E1B0[];
+extern char TaskMode_vtable_8048E1CC[];
 extern const float lbl_806D6E50;
 extern unsigned char IsCardValid(void);
 extern float Vec3_Magnitude(const Vec3 *v);
@@ -46,7 +44,11 @@ extern unsigned int lbl_806D6E2C;
 extern unsigned int lbl_806D6E30;
 extern unsigned int lbl_806D6E34;
 extern unsigned int lbl_8048DAA8[];
+#ifdef NON_MATCHING
+void fn_801232E0(void);
+#else
 asm void fn_801232E0(void);
+#endif
 
 #pragma section R ".extab_user"
 __declspec(section ".extab_user") static const unsigned char extab_fn_801232E0[8] = {
@@ -99,9 +101,9 @@ extern "C" int MiniGame_GetTimerValue(void) {
         return 0;
     }
     if (IsCardValid() == 0) {
-        return lbl_803554E0[cup][cc][ura];
+        return MiniGame_GetTimerValue_rodata_803554E0[cup][cc][ura];
     }
-    return lbl_80355078[cup][cc][ura];
+    return MiniGame_GetTimerValue_rodata_80355078[cup][cc][ura];
 }
 
 extern "C" void fn_801232D8(void) {
@@ -110,6 +112,30 @@ extern "C" void fn_801232D8(void) {
 extern "C" void fn_801232DC(void) {
 }
 
+#ifdef NON_MATCHING
+/*
+ * Equivalent C for the PC port (docs/nonmatching_c.md). Dynamic initializer
+ * of 24 {int,int} tables that follow the 0xC0-byte pointer table at
+ * lbl_8048DAA8: it writes the terminating pair of each table from four
+ * constant {-1,-1}-style end markers in .sdata2 (see docs/gave_up.md for the
+ * original shape: `Pair tbl[N] = { ..., kEndX };`).
+ */
+static void ZoneList_SetEnd(unsigned int base, unsigned int pairOff, unsigned int a, unsigned int b) {
+    unsigned int *p = (unsigned int *)((char *)lbl_8048DAA8 + base + pairOff);
+    p[0] = a;
+    p[1] = b;
+}
+
+extern "C" void fn_801232E0(void) {
+    int i;
+    for (i = 0; i < 6; i++) {
+        ZoneList_SetEnd(0x0C0 + i * 0x30, 0x28, lbl_806D6E18, lbl_806D6E1C);
+        ZoneList_SetEnd(0x1E0 + i * 0x28, 0x20, lbl_806D6E28, lbl_806D6E2C);
+        ZoneList_SetEnd(0x2D0 + i * 0x28, 0x20, lbl_806D6E20, lbl_806D6E24);
+        ZoneList_SetEnd(0x3C0 + i * 0x38, 0x30, lbl_806D6E30, lbl_806D6E34);
+    }
+}
+#else
 extern "C" asm void fn_801232E0(void) { /* 0x801232E0 size:0x19C */
     nofralloc
     stwu r1, -0x80(r1)
@@ -216,6 +242,7 @@ extern "C" asm void fn_801232E0(void) { /* 0x801232E0 size:0x19C */
     addi r1, r1, 0x80
     blr
 }
+#endif
 
 extern "C" void fn_8012347C(void) {
 }

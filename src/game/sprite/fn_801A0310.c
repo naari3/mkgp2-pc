@@ -1,18 +1,6 @@
-typedef struct SpriteAnimData {
-    unsigned char pad[0x14];
-    float length;
-    void *frames;
-    short *params;
-} SpriteAnimData;
+#include "game/types/SpriteAnimData.h"
 
-typedef struct SpriteAnim {
-    unsigned char flag;
-    unsigned char pad1[7];
-    float time;
-    float c[6];
-    const char *name;
-    SpriteAnimData *data;
-} SpriteAnim;
+#include "game/types/SpriteAnim.h"
 
 short *fn_801A0310(SpriteAnim *s, short key) {
     int i;

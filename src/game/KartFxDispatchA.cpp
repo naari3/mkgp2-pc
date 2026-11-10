@@ -1,16 +1,17 @@
 /* Dispatch-only ABI views. The flags and latches are independent: callbacks
  * can mutate kart state, so later dispatches deliberately reload their flags.
  */
+/* Merged from 2 per-TU views by tools/struct_merge.py: members are
+ * the ones some TU accesses; the size is the largest any view declared. */
+typedef struct DispatchKart DispatchKart;
 struct DispatchKart {
-    unsigned char pad00[0x238];
-    int field238;
+    /* 0x000 */ unsigned char pad_000[0x238];
+    /* 0x238 */ int wingEnabled;
+    /* 0x23C */ unsigned char pad_23C[0x94];
+    /* 0x2D0 */ unsigned char mode2Enabled;
+    /* 0x2D1 */ unsigned char pad_2D1[0x3];
 };
-struct DispatchEffect {
-    unsigned char pad00[0x10];
-    unsigned int side;
-    unsigned char pad14[0x108];
-    DispatchKart *kart;
-};
+#include "game/types/DispatchEffect.h"
 struct DispatchMotion {
     unsigned char pad00[0x10];
     unsigned long long flags;
@@ -18,24 +19,7 @@ struct DispatchMotion {
     float horn;
     int boostSide;
 };
-struct DispatchPayload {
-    DispatchKart *kart;
-    unsigned char pad04[0x20];
-    float wheelSpeed;
-    unsigned char pad28[0x10];
-    signed char auxAccel;
-    unsigned char pad39[0x13];
-    DispatchEffect *horn, *drift;
-    unsigned char flashDelay, flashIndex, landDelay, boostPrevious[2];
-    unsigned char pad59[3];
-    DispatchEffect *streak, *spark;
-    unsigned char auxDelay;
-    unsigned char pad65[3];
-    DispatchEffect *wheel;
-    unsigned char wheelPrevious, wheelDelay;
-    unsigned char pad6e[2];
-    DispatchEffect *fire, *status, *matrix, *trail;
-};
+#include "game/types/DispatchPayload.h"
 struct DispatchFlames { unsigned char side[2]; };
 extern "C" {
 extern const DispatchFlames lbl_806DCF30;
@@ -89,14 +73,14 @@ extern "C" void KartFx_DispatchGroupA(void *, DispatchPayload *payload,
         DispatchEffect *effect = DrawEffect_SpawnDirect(KartFx_FlashOrbitTick);
         if (effect) {
             effect->kart = payload->kart;
-            effect->side = payload->flashIndex;
+            effect->index = payload->flashIndex;
             payload->flashIndex = (payload->flashIndex + 1) % 4;
         }
         payload->flashDelay = 10;
     }
     if (payload->flashDelay) --payload->flashDelay;
     if ((motion->flags & 0x80000ULL) != 0) payload->landDelay = 30;
-    else if (payload->landDelay && enabled && payload->kart->field238) {
+    else if (payload->landDelay && enabled && payload->kart->wingEnabled) {
         DispatchEffect *effect = DrawEffect_SpawnDirect(KartFx_JumpLandPuffTick);
         if (effect) effect->kart = payload->kart;
     }
@@ -115,7 +99,7 @@ extern "C" void KartFx_DispatchGroupA(void *, DispatchPayload *payload,
                 DispatchEffect *effect = DrawEffect_SpawnDirect(KartFx_Slot57_BoostFlameTick);
                 if (effect) {
                     effect->kart = payload->kart;
-                    effect->side = i;
+                    effect->index = i;
                 }
             }
         }
@@ -130,16 +114,16 @@ extern "C" void KartFx_DispatchGroupA(void *, DispatchPayload *payload,
         DispatchEffect *effect = DrawEffect_SpawnDirect(KartFx_Slot50_RingExplodeTick);
         if (effect) effect->kart = payload->kart;
     }
-    if ((motion->flags & 0x2000ULL) != 0 && payload->kart->field238) {
+    if ((motion->flags & 0x2000ULL) != 0 && payload->kart->wingEnabled) {
         DispatchEffect *effect = DrawEffect_SpawnDirect(KartFx_Slot68_JumpDustSpawner);
         if (effect) effect->kart = payload->kart;
     }
-    if ((motion->flags & 0x200ULL) != 0 && payload->kart->field238) {
+    if ((motion->flags & 0x200ULL) != 0 && payload->kart->wingEnabled) {
         DispatchEffect *effect = DrawEffect_SpawnDirect(KartFx_DustStreamerSpawnerTick);
         if (effect) effect->kart = payload->kart;
     }
     if ((Flag(motion, 0x800ULL) || (motion->flags & 0x200000000ULL) != 0 ||
-         (motion->flags & 0x4000000000ULL) != 0) && payload->kart->field238 && !payload->spark) {
+         (motion->flags & 0x4000000000ULL) != 0) && payload->kart->wingEnabled && !payload->spark) {
         payload->spark = DrawEffect_SpawnDirect(KartFx_Slot60_DriftSparkTick);
         if (payload->spark) {
             payload->spark->kart = payload->kart;
@@ -170,7 +154,7 @@ extern "C" void KartFx_DispatchGroupA(void *, DispatchPayload *payload,
         for (int i = 0; i < 2; ++i) {
             DispatchEffect *effect = DrawEffect_SpawnDirect(DrawEffect_Cb_WheelSpark_Bind4D);
             if (effect) {
-                effect->side = (unsigned char)i;
+                effect->index = (unsigned char)i;
                 effect->kart = payload->kart;
             }
             payload->wheelDelay = 3;
@@ -194,13 +178,13 @@ extern "C" void KartFx_DispatchGroupA(void *, DispatchPayload *payload,
         if (payload->trail) payload->trail->kart = payload->kart;
     }
     if ((Flag(motion, 0x800ULL) || (motion->flags & 0x200000000ULL) != 0 ||
-         (motion->flags & 0x2000000000ULL) != 0) && payload->kart->field238 == 0) {
+         (motion->flags & 0x2000000000ULL) != 0) && payload->kart->wingEnabled == 0) {
         DispatchEffect *effect = DrawEffect_SpawnDirect(DrawEffect_Cb_BurstSpawner_30Frame);
         if (effect) {
             effect->kart = payload->kart;
-            if (Flag(motion, 0x800ULL)) effect->side = 0;
-            else if ((motion->flags & 0x200000000ULL) != 0) effect->side = 1;
-            else effect->side = 2;
+            if (Flag(motion, 0x800ULL)) effect->index = 0;
+            else if ((motion->flags & 0x200000000ULL) != 0) effect->index = 1;
+            else effect->index = 2;
         }
     }
 }

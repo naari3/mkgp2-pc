@@ -6,15 +6,12 @@
  * by the end code in 0xCB (orbit the bound kart, tether back, fall and fade
  * out). Every frame the children follow the parent's null joint, scaled by
  * a keyframe curve of the parent's animation. */
-typedef struct Vec { float x, y, z; } Vec;
+#include "game/types/Vec.h"
 
-typedef struct ChainScaleKey {
-    float t[4];
-    float v[4];
-} ChainScaleKey;
+#include "game/types/ChainScaleKey.h"
 
 extern const char lbl_8032EA98[];
-extern ChainScaleKey lbl_80421120[2];
+extern ChainScaleKey ItemObject_Tick_Kind2d_ChainShellPair_data_80421120[2];
 extern void fn_800D748C(unsigned char *self);
 extern unsigned char *ItemObject_AllocFromPool(void (*fn)(unsigned char *));
 extern void SpriteSlot_InitNonLoop(void *slot, int animId);
@@ -210,7 +207,7 @@ void ItemObject_Tick_Kind2d_ChainShellPair(unsigned char *self)
         if (sub->children[i] != 0) {
             sub->children[i][0x28] = self[0x28];
             if (*(signed char *)(sub->children[i] + 0x28)) {
-                k = &lbl_80421120[i];
+                k = &ItemObject_Tick_Kind2d_ChainShellPair_data_80421120[i];
                 s = 1.0f;
                 switch (S8(0x1D)) {
                 case 0:

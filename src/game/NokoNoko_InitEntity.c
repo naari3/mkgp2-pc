@@ -2,39 +2,18 @@
  * kind from the shared random table and faces it along the nearest path
  * segment. */
 
-typedef struct { float x, y, z; } Vec;
+#include "game/types/Vec.h"
 
-typedef struct NokoKind {
-    int model;
-    int anim;
-    int extra;
-    float speed;
-    float radius;
-} NokoKind;
+#include "game/types/NokoKind.h"
 
-typedef struct NokoNoko {
-    struct NokoNoko *next;
-    int kindTable;
-    int kindIndex;
-    int model;
-    int anim;
-    float frame;
-    int extra;
-    Vec pos;
-    float yaw;
-    float speed;
-    float radius;
-    int model2;
-    float blend;
-    float frame2;
-} NokoNoko;
+#include "game/types/NokoNoko.h"
 
 extern int lbl_806D1684;
 extern const float lbl_806D9324;
 extern const float lbl_806D9350;
 extern float lbl_80495994[];
-extern NokoKind *lbl_80495D28[];
-extern Vec lbl_80377450[];
+extern NokoKind *NokoNoko_data_80495D28[];
+extern Vec NokoNoko_InitEntity_rodata_80377450[];
 extern void Vec3_Subtract(Vec *a, Vec *b, Vec *out);
 extern float PSVECSquareMag(Vec *v);
 extern void Vec3_Normalize(Vec *src, Vec *dst);
@@ -70,28 +49,28 @@ NokoNoko *NokoNoko_InitEntity(NokoNoko *self, Vec *pos) {
         self->kindTable = lbl_806D9350 * r;
     }
     self->kindIndex = 0;
-    self->model = lbl_80495D28[self->kindTable][self->kindIndex].model;
-    self->anim = lbl_80495D28[self->kindTable][self->kindIndex].anim;
-    self->extra = lbl_80495D28[self->kindTable][self->kindIndex].extra;
-    self->speed = lbl_80495D28[self->kindTable][self->kindIndex].speed;
-    self->radius = lbl_80495D28[self->kindTable][self->kindIndex].radius;
+    self->state = NokoNoko_data_80495D28[self->kindTable][self->kindIndex].state;
+    self->model = NokoNoko_data_80495D28[self->kindTable][self->kindIndex].model;
+    self->timer = NokoNoko_data_80495D28[self->kindTable][self->kindIndex].timer;
+    self->speed = NokoNoko_data_80495D28[self->kindTable][self->kindIndex].speed;
+    self->radius = NokoNoko_data_80495D28[self->kindTable][self->kindIndex].radius;
     self->frame = lbl_806D9324;
     for (i = 0; i < 21; i++) {
-        Vec3_Subtract(lbl_80377450, &self->pos, &d);
+        Vec3_Subtract(NokoNoko_InitEntity_rodata_80377450, &self->pos, &d);
         dist = PSVECSquareMag(&d);
         if ((int)i == 0 || dist < bestDist) {
             best = i;
             bestDist = dist;
         }
     }
-    nearest.x = lbl_80377450[best].x;
-    nearest.y = lbl_80377450[best].y;
-    nearest.z = lbl_80377450[best].z;
+    nearest.x = NokoNoko_InitEntity_rodata_80377450[best].x;
+    nearest.y = NokoNoko_InitEntity_rodata_80377450[best].y;
+    nearest.z = NokoNoko_InitEntity_rodata_80377450[best].z;
     next = best + 1;
     if (next == 21) {
         next = 0;
     }
-    Vec3_Subtract(&lbl_80377450[next], &lbl_80377450[best], &d);
+    Vec3_Subtract(&NokoNoko_InitEntity_rodata_80377450[next], &NokoNoko_InitEntity_rodata_80377450[best], &d);
     Vec3_Normalize(&d, &d);
     Vec3_Subtract(&self->pos, &nearest, &rel);
     t = Vec3_Dot(&rel, &d);

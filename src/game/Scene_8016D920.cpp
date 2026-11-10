@@ -1,6 +1,6 @@
 /*
  * 0x8016D920..0x8016DA30: constructor of the JObj-chain marker (vtable
- * lbl_80491134, base vtable lbl_80490FE0). Real C++ for its EH actions;
+ * MarkerChain_vtable_80491134, base vtable lbl_80490FE0). Real C++ for its EH actions;
  * mangled names are bridged in tools/extab_user_renames.json.
  */
 
@@ -27,11 +27,7 @@ void clNormal3D_SetScale(clNormal3D *, int, float, float, float, float);
 void Object_SetJObjScaleXYZ(clNormal3D *, float, float, float);
 }
 
-struct CourseMarkerBase {
-    virtual void vKeyFunction();
-    virtual ~CourseMarkerBase();
-    CourseMarkerBase() {}
-};
+#include "game/types/CourseMarkerBase.h"
 
 struct MarkerChain : CourseMarkerBase {
     clNormal3D *model;

@@ -8,35 +8,11 @@ unsigned int OSGetTick(void);
 void Profiler_RecordFrame(int slot, float value);
 }
 
-typedef struct TerrainTri {
-    float minX;
-    float minZ;
-    float maxX;
-    float maxZ;
-    float v[3][3];
-    float edgeNormal[3][3];
-    unsigned int wallEdges;
-    unsigned char pad_5C[4];
-    float plane[4];
-} TerrainTri;
+#include "game/types/TerrainTri.h"
 
-typedef struct TerrainCell {
-    TerrainTri *tris;
-    int triCount;
-    void *walls;
-    int wallCount;
-} TerrainCell;
+#include "game/types/TerrainCell.h"
 
-typedef struct TerrainGrid {
-    int width;
-    int height;
-    float cellWidth;
-    float cellDepth;
-    unsigned char pad_10[0x10];
-    float offsetX;
-    float offsetZ;
-    TerrainCell *cells;
-} TerrainGrid;
+#include "game/types/TerrainGrid.h"
 
 extern "C" {
 extern TerrainGrid *lbl_806CED58;

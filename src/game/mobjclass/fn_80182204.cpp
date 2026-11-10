@@ -1,21 +1,8 @@
-struct HSD_MObj {
-    unsigned char pad[0x23];
-    unsigned char x23;
-};
+#include "game/types/HSD_MObj.h"
 
-struct HSD_DObj {
-    void *parent;
-    HSD_DObj *next;
-    HSD_MObj *mobj;
-};
+#include "game/types/HSD_DObj.h"
 
-struct HSD_JObj {
-    unsigned char pad[0x8];
-    HSD_JObj *next;
-    HSD_JObj *parent;
-    HSD_JObj *child;
-    unsigned int flags;
-};
+#include "game/types/HSD_JObj.h"
 
 extern "C" {
 extern unsigned char lbl_80495B58[];

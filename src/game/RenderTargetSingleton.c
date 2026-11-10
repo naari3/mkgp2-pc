@@ -3,62 +3,23 @@
  * (0x8013C334..0x8013C4A4), same shape as OrthoCam.
  */
 
-typedef struct HSD_JObj {
-    unsigned char pad[0x14];
-    unsigned int flags;
-    unsigned char pad18[0x44 - 0x18];
-    unsigned char anim[1];
-} HSD_JObj;
+#include "game/types/HSD_JObj.h"
 
-typedef struct RenderTargetHolder {
-    unsigned char active;
-    void *rt;
-} RenderTargetHolder;
+#include "game/types/RenderTargetHolder.h"
 
-typedef struct CharacterData {
-    int pad0;
-    void *driver_model;
-    void *kart_model;
-    int pad0C[4];
-    float anim1C;
-    float pad20;
-    float anim24;
-} CharacterData;
+#include "game/types/CharacterData.h"
 
-typedef struct KartPreview {
-    void *vtbl;
-    void *kart;
-    void *obj8;
-    void *driver;
-    void *obj10;
-    void *anims14[4];
-    void *obj24;
-    HSD_JObj *jobj28;
-    HSD_JObj *jobj2C;
-    HSD_JObj *jobj30;
-    HSD_JObj *jobj34;
-    HSD_JObj *jobj38;
-    HSD_JObj *jobj3C;
-    HSD_JObj *jobj40;
-    HSD_JObj *jobj44;
-    int chara;
-    int anim_state;
-    float frame;
-    float end_frame;
-    unsigned char pad58[0x88 - 0x58];
-    float view_x;
-    float view_y;
-} KartPreview;
+#include "game/types/KartPreview.h"
 
-extern unsigned int lbl_806D1558;
-extern RenderTargetHolder *lbl_806D155C;
-extern char lbl_8048EA78[];
+extern unsigned int RenderTargetSingleton_bss_806D1558;
+extern RenderTargetHolder *RenderTargetSingleton_bss_806D155C;
+extern char RenderTargetSingleton_data_8048EA78[];
 extern char lbl_806D76D0[];
 extern char lbl_806D76D8[];
 extern float lbl_806D76E0;
 extern float lbl_806D76E4;
-extern char lbl_8048EAD8[];
-extern char lbl_8048EAE8[];
+extern char KartPreview_data_8048EAD8[];
+extern char clCSModelInterface_vtable_8048EAE8[];
 
 extern void HSD_LObjDeleteCurrentAll(int);
 extern void HSD_LObjAddCurrent(void *rt);
@@ -111,7 +72,7 @@ int fn_8013C34C(RenderTargetHolder *h) {
 }
 
 RenderTargetHolder *fn_8013C3B8(void) {
-    return lbl_806D155C;
+    return RenderTargetSingleton_bss_806D155C;
 }
 
 static inline void RenderTargetHolder_Free(RenderTargetHolder *h) {
@@ -124,10 +85,10 @@ static inline void RenderTargetHolder_Free(RenderTargetHolder *h) {
 }
 
 void fn_8013C3C0(void) {
-    if (lbl_806D1558 != 0) {
-        if (--lbl_806D1558 == 0) {
-            RenderTargetHolder_Free(lbl_806D155C);
-            lbl_806D155C = 0;
+    if (RenderTargetSingleton_bss_806D1558 != 0) {
+        if (--RenderTargetSingleton_bss_806D1558 == 0) {
+            RenderTargetHolder_Free(RenderTargetSingleton_bss_806D155C);
+            RenderTargetSingleton_bss_806D155C = 0;
         }
     }
 }
@@ -140,19 +101,19 @@ struct RenderTargetObj {
     void *rt;
     RenderTargetObj() {
         active = 0;
-        rt = HSD_LObjLoadDesc(lbl_8048EA78);
+        rt = HSD_LObjLoadDesc(RenderTargetSingleton_data_8048EA78);
     }
 };
 
 extern "C" int fn_8013C428(void) {
-    if (lbl_806D1558 == 0) {
+    if (RenderTargetSingleton_bss_806D1558 == 0) {
         RenderTargetObj *h = new RenderTargetObj;
-        lbl_806D155C = (RenderTargetHolder *)h;
+        RenderTargetSingleton_bss_806D155C = (RenderTargetHolder *)h;
         if (h == 0) {
             return 0;
         }
     }
-    lbl_806D1558++;
+    RenderTargetSingleton_bss_806D1558++;
     return 1;
 }
 #pragma cplusplus reset

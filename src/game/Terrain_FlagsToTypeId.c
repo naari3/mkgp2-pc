@@ -13,12 +13,9 @@ typedef struct TerrainState {
     int j;                       /* 0x94 */
 } TerrainState;
 
-typedef struct TerrainTypeEntry {
-    unsigned int mask;
-    signed char id;
-} TerrainTypeEntry;
+#include "game/types/TerrainTypeEntry.h"
 
-extern TerrainTypeEntry lbl_8040F100[9];
+extern TerrainTypeEntry Terrain_FlagsToTypeId_data_8040F100[9];
 extern int g_cupId;
 extern int g_courseVariantIdx;
 extern const float lbl_806D48B0;
@@ -52,8 +49,8 @@ int Terrain_FlagsToTypeId(unsigned int flags)
     int i;
 
     for (i = 0; i < 9; i++) {
-        if (Terrain_TestMask(lbl_8040F100[i].mask, flags) == 1) {
-            id = lbl_8040F100[i].id;
+        if (Terrain_TestMask(Terrain_FlagsToTypeId_data_8040F100[i].mask, flags) == 1) {
+            id = Terrain_FlagsToTypeId_data_8040F100[i].id;
             break;
         }
     }
