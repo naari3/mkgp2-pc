@@ -91,7 +91,7 @@ def write_stubs(missing, groups, path):
     # Anything the 32-bit host C library exports is taken from there (memset,
     # memcpy, ...), except the wide-character functions: wchar_t is 16 bits in
     # the game and 32 bits on Linux, so those need their own implementations.
-    for lib in ("/usr/lib32/libc.so.6", "/usr/lib32/libm.so.6"):
+    for lib in ("/usr/lib32/libc.so.6", "/usr/lib32/libm.so.6", "/usr/lib32/libz.so.1"):
         if os.path.exists(lib):
             r = subprocess.run(["llvm-nm", "-D", "--defined-only", "--format=posix", lib],
                                capture_output=True, text=True)
@@ -499,7 +499,7 @@ def main():
         with open(rsp, "w") as f:
             f.write("\n".join(objs) + "\n")
         cmd = ["clang", "-m32", "-O0", "-g", "-fcommon", "-no-pie", "-o", exe, stubs, thunks] + port_objs + [
-               "@" + rsp] + defsyms + ["-lm", "-lpthread", "-Wl,--allow-multiple-definition", "-Wl,--no-warn-rwx-segments"]
+               "@" + rsp] + defsyms + ["-lm", "-lpthread"] + (["-lz"] if os.path.exists("/usr/lib32/libz.so") else []) + [ "-Wl,--allow-multiple-definition", "-Wl,--no-warn-rwx-segments"]
         r = subprocess.run(cmd, capture_output=True, text=True)
         errs = [l for l in r.stderr.splitlines() if "error" in l or "undefined" in l]
         print(f"link: {'ok -> ' + os.path.relpath(exe, ROOT) if r.returncode == 0 else 'FAILED'}")
