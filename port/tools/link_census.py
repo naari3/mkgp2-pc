@@ -27,6 +27,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import compile_census as cc  # noqa: E402
 import mwcc_cxx_abi
 import mwcc_data_layout  # noqa: E402
+import mwcc_int_div  # noqa: E402
 
 ROOT = cc.ROOT
 OUT = os.path.join(ROOT, "build", "pc-census")
@@ -62,6 +63,7 @@ def compile_one(path, target):
         notes = []
         text, _ = mwcc_cxx_abi.rewrite(open(ll, encoding="utf-8", errors="surrogateescape").read(), notes.append)
         text, _ = mwcc_data_layout.rewrite(text, DATA_OBJECTS)
+        text, _ = mwcc_int_div.rewrite(text)
         open(ll, "w", encoding="utf-8", errors="surrogateescape").write(text)
         if notes:
             with open(obj[:-2] + ".abi-notes", "w") as f:
@@ -79,6 +81,7 @@ def compile_one(path, target):
     if r.returncode != 0:
         return path, None
     text, n = mwcc_data_layout.rewrite(open(ll, encoding="utf-8", errors="surrogateescape").read(), DATA_OBJECTS)
+    text, _ = mwcc_int_div.rewrite(text)
     open(ll, "w", encoding="utf-8", errors="surrogateescape").write(text)
     r = subprocess.run(["clang", "-target", target, "-c", "-Wno-override-module", ll, "-o", obj], cwd=ROOT, capture_output=True, text=True, errors="replace")
     return path, (obj if r.returncode == 0 else None)
@@ -608,7 +611,16 @@ def main():
             f.write("\n".join(bnotes) + "\n")
         print(f"zero-initialised objects kept out of the original layout (larger here): {len(bnotes)} (build/pc-census/bss_layout.notes)")
         print(f"data objects placed at their original distances: {len(inputs) - len(lnotes)} of {len(inputs)} (rest: build/pc-census/data_layout.notes)")
-        cmd = ["clang", "-m32", "-O0", "-g", "-fcommon", "-no-pie", "-Wl,-T," + script, "-Wl,-T," + bss_ld, "-o", exe, stubs, thunks] + port_objs + [
+        # The game has data objects called `errno` and `time` (its C library's
+        # own). Exported from the executable they would replace the host C
+        # library's symbols of those names for the shared libraries too (libm
+        # then stores an error code through the game's `errno` as if it were
+        # a thread-local offset). Keep them out of the dynamic symbol table.
+        private = os.path.join(OUT, "private_names.ver")
+        host_names = sorted(n for n in ("errno", "time") if n in info)
+        with open(private, "w") as f:
+            f.write("{ local: %s };\n" % " ".join(n + ";" for n in host_names))
+        cmd = ["clang", "-m32", "-O0", "-g", "-fcommon", "-no-pie", "-Wl,--version-script=" + private, "-Wl,-T," + script, "-Wl,-T," + bss_ld, "-o", exe, stubs, thunks] + port_objs + [
                "@" + rsp] + defsyms + ["-lm", "-lpthread", "-lstdc++"] + (["-lz"] if os.path.exists("/usr/lib32/libz.so") else []) + [ "-Wl,--allow-multiple-definition", "-Wl,--no-warn-rwx-segments"]
         r = subprocess.run(cmd, capture_output=True, text=True)
         errs = [l for l in r.stderr.splitlines() if "error" in l or "undefined" in l]

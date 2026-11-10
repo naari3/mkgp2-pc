@@ -497,3 +497,48 @@ MusyX files (10), stream headers (11).
   and the collision file. Stop: a `void` function whose caller uses the
   result (upstream request 19).
 
+
+## 18. The demo race runs without rendering (2026-11-10, upstream `08f7eb7`)
+
+The attract mode now builds the whole demo race (course, eight karts, HUD)
+and keeps running it: update and draw paths of the race scene execute every
+frame, with GX still stubbed. Checked for 1,000 frames after the race starts
+(retrace 4,947 to 5,968). What it took, in the order the run stopped:
+
+- Upstream requests 19 to 23 (`docs/port/upstream_requests.md`): results of
+  `void` functions, `new[]` paired with `delete[]`, text and HSD descriptors
+  typed with their real field widths, constructor argument order, arguments
+  that only travelled through r3.
+- `__assert` is sysdolphin's handler (file, line, expression). Its unit holds
+  PowerPC assembly and is not built, so the calls bound to the C library's
+  function of the same name with other parameters. Defined in
+  `port/nogfx/os_min.c`.
+- `GXGetTexBufferSize` returns a real size in the build without rendering
+  (`port/nogfx/gx_min.c`); HSD allocates its shadow texture from it.
+- Template names in `tools/extab_user_renames.json`
+  (`erase__12ListImpl<Pv>F...` -> `DoublyLinkedList_EraseRange`) are now
+  paired with the host's names (`port/tools/mwcc_names.py`). The shared list
+  functions used by about a hundred units were stubs until then. 382 of the
+  533 template keys are understood.
+- Matrix, vector and quaternion maths come from Aurora's
+  `lib/dolphin/mtx/*.c`. Aurora has the `C_` functions only; the link wires
+  the `PS` names, and the five names this game gives them (`Vec3_Dot`, ...),
+  to those. Built with `NDEBUG`: the game normalises zero vectors, which the
+  console does without complaint. Still missing: `PSMTX44Copy`,
+  `PSMTX44Identity`.
+- A vtable whose destructors the compiler found identical lists the pair as
+  D2/D0 instead of D1/D0; the destructor-slot rule of
+  `port/tools/mwcc_cxx_abi.py` now takes both (22 vtables). Before, `Update()`
+  of the course's map effect called its destructor.
+- The game has data objects called `errno` and `time`. Exported from the
+  executable they replaced the C library's symbols for the shared libraries
+  as well, and libm crashed storing an error code. The link keeps them local
+  (version script).
+- Integer division by zero: PowerPC does not trap, x86 does. The game does
+  `rand() % counts[i]` with empty entries (`DNFlash_tail.cpp:121`) and then
+  discards the result. `port/tools/mwcc_int_div.py` turns every division by a
+  non-constant into a call that returns what the console returns (87 units).
+  A build that does not go through LLVM IR needs another answer for this.
+
+Not converted yet and reported at run time: data kind 10 (MusyX project
+files). Functions still stubbed in this build: 228, of which 100 are GX.

@@ -108,6 +108,35 @@ uint32_t __cvt_fp2unsigned(double d) {
   return (uint32_t)d;
 }
 
+/* Integer division as the console's CPU does it (port/tools/mwcc_int_div.py
+ * routes every division by a non-constant here): no trap. With a zero
+ * divisor, or INT_MIN / -1, the quotient register holds -1 for a negative
+ * dividend of a signed divide and 0 otherwise. (Behaviour of the Gekko as
+ * Dolphin's interpreter documents it; the architecture calls it undefined.)
+ * The remainder is what MWCC's `a - (a / b) * b` then gives. */
+int32_t __mw_sdiv32(int32_t a, int32_t b) {
+  if (b == 0 || (a == INT32_MIN && b == -1)) {
+    return a < 0 ? -1 : 0;
+  }
+  return a / b;
+}
+int32_t __mw_srem32(int32_t a, int32_t b) {
+  return (int32_t)((uint32_t)a - (uint32_t)__mw_sdiv32(a, b) * (uint32_t)b);
+}
+uint32_t __mw_udiv32(uint32_t a, uint32_t b) { return b != 0 ? a / b : 0; }
+uint32_t __mw_urem32(uint32_t a, uint32_t b) { return b != 0 ? a % b : a; }
+int64_t __mw_sdiv64(int64_t a, int64_t b) {
+  if (b == 0 || (a == INT64_MIN && b == -1)) {
+    return a < 0 ? -1 : 0;
+  }
+  return a / b;
+}
+int64_t __mw_srem64(int64_t a, int64_t b) {
+  return (int64_t)((uint64_t)a - (uint64_t)__mw_sdiv64(a, b) * (uint64_t)b);
+}
+uint64_t __mw_udiv64(uint64_t a, uint64_t b) { return b != 0 ? a / b : 0; }
+uint64_t __mw_urem64(uint64_t a, uint64_t b) { return b != 0 ? a % b : a; }
+
 int64_t __div2i(int64_t a, int64_t b) { return b != 0 ? a / b : 0; }
 int64_t __mod2i(int64_t a, int64_t b) { return b != 0 ? a % b : 0; }
 uint64_t __div2u(uint64_t a, uint64_t b) { return b != 0 ? a / b : 0; }
