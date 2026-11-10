@@ -38,7 +38,8 @@ def _class_dtor_slots(text):
     comp = {}    # id -> name
     scope = {}   # id -> scope id
     ns = {}      # id -> namespace name
-    dtor = {}    # class id -> index
+    dtor = {}    # class id -> (unusable) index of its virtual destructor
+    used = {}    # class id -> slots of its other virtual functions
     bases = {}   # class id -> [base id]
     alias = {}   # typedef id -> base type id
     for m in re.finditer(r"^(!\d+) = (?:distinct )?!(DICompositeType|DISubprogram|DIDerivedType|DINamespace)\((.*)\)$", text, re.M):
@@ -56,8 +57,11 @@ def _class_dtor_slots(text):
                 scope[ident] = sc.group(1)
         elif kind == "DISubprogram":
             v = re.search(r"\bvirtualIndex: (\d+)", body)
-            if name and sc and v and name.group(1).startswith("~"):
-                dtor[sc.group(1)] = int(v.group(1))
+            if name and sc and v:
+                if name.group(1).startswith("~"):
+                    dtor[sc.group(1)] = int(v.group(1))
+                else:
+                    used.setdefault(sc.group(1), set()).add(int(v.group(1)))
         else:
             bt = re.search(r"\bbaseType: (!\d+)", body)
             if "DW_TAG_inheritance" in body and sc and bt:
@@ -65,17 +69,28 @@ def _class_dtor_slots(text):
             elif "DW_TAG_typedef" in body and bt:
                 alias[ident] = bt.group(1)
 
-    def slot(c, depth=0):
-        while c in alias:
-            c = alias[c]
-        if c in dtor:
-            return dtor[c]
-        if depth < 32:
-            for b in bases.get(c, [])[:1]:   # the primary base chain
-                s = slot(b, depth + 1)
-                if s is not None:
-                    return s
-        return None
+    # The index the debug description gives a virtual destructor is 0
+    # wherever it is declared, so it cannot be used. The other virtual
+    # functions carry their real slots, and the destructor's pair is the gap
+    # they leave: the first slot no other virtual function of the class or of
+    # its bases has.
+    def slot(c):
+        seen, has_dtor = set(), False
+        for _ in range(32):
+            while c in alias:
+                c = alias[c]
+            has_dtor = has_dtor or c in dtor
+            seen |= used.get(c, set())
+            b = bases.get(c, [])[:1]   # the primary base chain
+            if not b:
+                break
+            c = b[0]
+        if not has_dtor:
+            return None
+        k = 0
+        while k in seen:
+            k += 1
+        return k
 
     def mangled(c):
         parts = []

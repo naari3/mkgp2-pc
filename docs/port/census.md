@@ -542,3 +542,44 @@ frame, with GX still stubbed. Checked for 1,000 frames after the race starts
 
 Not converted yet and reported at run time: data kind 10 (MusyX project
 files). Functions still stubbed in this build: 228, of which 100 are GX.
+
+## 19. From a coin to the start of a real race (2026-11-10, upstream `b5862a5`)
+
+The scripted session (section 16) now leaves the demo race, goes through the
+six menu scenes and the pre-race scene, and enters the race scene (flow 42),
+which starts loading its course. What that needed:
+
+- `delete p` through a class that has no debug description in the unit: the
+  destructor slot is learnt from the `delete` itself
+  (`port/tools/mwcc_cxx_abi.py`).
+- The slot of a virtual destructor is no longer read from the debug
+  description. The compiler writes index 0 there wherever the destructor is
+  declared; the slot is now the gap the other virtual functions leave. Until
+  this, every class whose destructor is not its first virtual function had
+  its calls shifted by one (a call of the second virtual function became a
+  deleting destructor call).
+- `-fno-strict-return`: `card_pack` is declared with a result and returns
+  none; C++ puts a trap instruction at the end of such a function.
+- Wide strings: the game's `wchar_t` has 16 bits. `wcscpy`, `wcslen`,
+  `wcscmp`, `wcsncpy`, `wcschr`, `wmemset` are in `port/compat/wchar16.c`
+  and stay local to the executable. `vswprintf` is still a stub.
+- Upstream request 24: the card name check compares 16-bit Shift-JIS codes
+  with byte functions; its patterns are 16-bit arrays now, and the calls go
+  through `NAMECODE_*` macros (`include/game/types/namecode_str.h`) that a
+  build may point at big-endian-view helpers. Not done here yet: with the
+  plain functions, names with half-width codes compare differently from the
+  console.
+- `inline` is defined away for C units: a plain `inline` function that is
+  called without being inlined needs an ordinary definition (C99 gives
+  none, GNU89 gives none for `extern inline`, and the sources use both).
+- Struct results (`port/tools/mwcc_struct_return.py`): the hidden result
+  pointer is an ordinary first argument, as with MWCC. The shared list
+  functions are declared both as returning an iterator and as `void` with
+  an explicit result pointer; on x86 those are two conventions and the
+  stack ended up 4 bytes off.
+- The arena starts at 0x806ECFA0 as on the console (it started at
+  0x80800000, 1.1 MB less heap).
+
+Open: the race scene runs out of heap while loading its course
+(`YI_land_short_a.dat`, 1.3 MB wanted, 2 MB free in pieces, although 11 MB
+were free when the scene change began).
