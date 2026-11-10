@@ -366,3 +366,42 @@ pointer at that position, measured with GC/1.3.2; about 17 base-less classes
 in `src` and `include`), data files other than TPL and sprite animation
 (HSD archives first), `AnimState_Init(self, 0.0f)` (upstream
 `docs/notes/port_abi.md`).
+
+## 15. HSD archives and the simple record files are converted (2026-11-10)
+
+`port/platform/data/hsd_archive.c` converts an HSD archive in place at the
+`PORT_DATA_ARCHIVE` hook: relocation, public and extern tables, every pointer
+field the relocation table names, then the typed fields found by walking the
+graph from `scene_data` and the `*_joint` symbols (scene, model sets, joints,
+display / material / texture / polygon objects, vertex descriptions,
+envelopes, shape sets, splines, reference objects, the four animation trees,
+camera, lights, fog). Layouts are the sysdolphin ones in the game tree's
+`libs/melee/src/sysdolphin/baselib` headers.
+
+Checked outside the game on all 1,917 archives of the disc (220 MB):
+- a Python prototype of the walk compared the pointer fields it expects with
+  the relocation tables: 506,051 of 512,437 entries are fields of reached
+  blocks; the rest sit in blocks nothing points at (every archive carries an
+  unreferenced copy of its scene struct, some carry unreferenced lights);
+- the C converter ran over all of them under ASan and UBSan with no finding
+  and met nothing it does not handle. Only these occur in the data: public
+  symbols `scene_data` and `*_joint`; reference objects of the joint and
+  IK-hint kinds; perspective cameras; no particle joints, no render
+  animations, no expressions or bytecode. Two archives have fog.
+
+Two layout facts the headers did not give: `scene_data`'s camera and fog
+fields point at a pair { descriptor, animation list }, and a shape set's
+vertex description may point into the middle of the list its polygon object
+uses (lists are therefore converted element by element).
+
+Left in console byte order on purpose, to be settled with the GX layer:
+vertex buffers, display lists, texture images and palettes, shape index
+lists. `pobj.c` reads display lists and vertex data on the CPU for skinned
+and shape-animated meshes, so that code will need either converted buffers
+or byte-wise reads. Animation track data is a byte stream; how `fobj.c`
+assembles multi-byte values from it has not been checked on a little-endian
+host yet.
+
+Also converted now: course path tables (kind 4), ghost recordings (5), demo
+input recordings (9). Not yet: course BGM table (7), collision files (8),
+MusyX files (10), stream headers (11).

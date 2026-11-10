@@ -134,8 +134,59 @@ static void sprite_anim(uint8_t* d) {
   }
 }
 
+/* Course path table: u32 offsets from the file start, ended by 0; each leads
+ * to a list of { int flag; float x, y, z; } ended by an entry with flag < 0. */
+static void path_table(uint8_t* d, uint32_t size) {
+  uint8_t* done = (uint8_t*)calloc(size / 4 + 1, 1); /* lists may share entries */
+  if (done == NULL) {
+    return;
+  }
+  for (uint32_t i = 0; i + 4 <= size && !done[i / 4]; i += 4) {
+    uint32_t o = mkgp2pc_be32(d + i);
+    done[i / 4] = 1;
+    swap32(d + i);
+    if (o == 0) {
+      break;
+    }
+    for (; o + 16 <= size && !done[o / 4]; o += 16) {
+      int32_t flag = (int32_t)mkgp2pc_be32(d + o);
+      done[o / 4] = 1;
+      swap32n(d + o, 4);
+      if (flag < 0) {
+        break;
+      }
+    }
+  }
+  free(done);
+}
+
+/* 16-byte records. words: how many leading 32-bit words to swap. */
+static void records16(uint8_t* d, uint32_t size, int words) {
+  for (uint32_t o = 0; o + 16 <= size; o += 16) {
+    swap32n(d + o, words);
+  }
+}
+
+void mkgp2pc_hsd_archive_header(void* header);
+void mkgp2pc_hsd_archive(void* archive);
+
 void mkgp2pc_data_loaded(int kind, void* data, uint32_t size) {
   switch (kind) {
+  case MKGP2PC_DATA_ARCHIVE_HEADER:
+    mkgp2pc_hsd_archive_header(data);
+    break;
+  case MKGP2PC_DATA_ARCHIVE:
+    mkgp2pc_hsd_archive(data);
+    break;
+  case MKGP2PC_DATA_PATH_TABLE:
+    path_table((uint8_t*)data, size);
+    break;
+  case MKGP2PC_DATA_GHOST: /* TaGhostFrame: three floats, four bytes */
+    records16((uint8_t*)data, size, 3);
+    break;
+  case MKGP2PC_DATA_DEMO_INPUT: /* TraceInput163: three floats, an int */
+    records16((uint8_t*)data, size, 4);
+    break;
   case MKGP2PC_DATA_TPL:
     tpl((uint8_t*)data, size);
     break;
