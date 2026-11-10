@@ -27,6 +27,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import compile_census as cc  # noqa: E402
 import mwcc_cxx_abi
+import mwcc_byvalue
 import mwcc_data_layout  # noqa: E402
 import mwcc_int_div  # noqa: E402
 import mwcc_struct_return  # noqa: E402
@@ -258,6 +259,7 @@ def compile_one(path, target):
         text, _ = mwcc_data_layout.rewrite(text, DATA_OBJECTS)
         text, _ = mwcc_int_div.rewrite(text)
         text, _ = mwcc_struct_return.rewrite(text)
+        text, _ = mwcc_byvalue.rewrite(text)
         if WIN:
             text = win_ir(text)
         if GFX:
@@ -283,6 +285,7 @@ def compile_one(path, target):
     text, n = mwcc_data_layout.rewrite(open(ll, encoding="utf-8", errors="surrogateescape").read(), DATA_OBJECTS)
     text, _ = mwcc_int_div.rewrite(text)
     text, _ = mwcc_struct_return.rewrite(text)
+    text, _ = mwcc_byvalue.rewrite(text)
     if GFX:
         text, _ = mwcc_fifo.rewrite(text)
     open(ll, "w", encoding="utf-8", errors="surrogateescape").write(text)
