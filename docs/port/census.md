@@ -268,3 +268,57 @@ Known gaps behind this run, not yet problems: vtables written by hand in C
 compiler-made Itanium vtables; `throw` in two units (built with
 `-fno-exceptions`); thread priorities are not modelled; the 12-byte MWCC
 pointer-to-member.
+
+## 13. MainGameLoop is reached; data byte order and the C++ object model (2026-11-10, upstream `de53dc8`)
+
+With the load hooks upstream added (`PORT_DATA_LOADED`, kinds 1-11 in
+`include/game/types/port_hooks.h`, notes in upstream
+`docs/notes/byte_order.md`) and two converters in
+`port/platform/data/data_loaded.c` (TPL, sprite animation), the first scene
+is built (`CourseModeInit`, 27 textures and its sprite animations) and
+`main` enters `MainGameLoop`. The first frame stops at its first virtual
+call: `MainGameLoop.cpp:73` `Scene_Draw(self->current)` -> `scene->Draw()`
+jumps to 0.
+
+Why: the scene's vtable is `lbl_8049A734`, a table written out as data in
+MWCC's layout (RTTI pointer, offset, then the functions from +8) and stored
+into the object as it is. `Scene_Draw.cpp` is C++ compiled by the host
+compiler, which expects the Itanium layout (the object points at the first
+function). The same object is seen through both conventions.
+
+This is one of a family. MWCC's C++ object model against the host's:
+
+| | MWCC (CW for GC) | Itanium (clang / GCC) |
+| --- | --- | --- |
+| where the object's vtable pointer points | start of the table; functions from +8 | first function; RTTI and offset before it |
+| where the vtable pointer sits in an object | after the data members of the class that introduces the first virtual (upstream `docs/notes/approachA-roadmap.md`) | offset 0 |
+| virtual destructor | one slot, one function with a hidden flag | two slots (complete, deleting) |
+| constructor | returns `this` | returns nothing |
+| pointer to member function | 12 bytes | 8 bytes |
+
+The link-time bridges of section 12 cover constructors and non-virtual
+destructors. The vtable rows are not solved. They matter wherever one object
+is built or called by C-style code in one unit and by C++ in another, which
+this code base does all the time (hand-written tables: 315 distinct vtable
+names are attached to C++ classes by the rename table alone).
+
+Options, not yet decided:
+1. Rewrite the host compiler's output to MWCC's conventions. LLVM IR shows
+   virtual calls and vtable address points explicitly (`%vfn = getelementptr
+   ptr %vtable, N`; `getelementptr (@_ZTV..., 0, 0, 2)`), so a pass can move
+   the address point to the table start and add 2 to every slot. Destructor
+   slots need the class of each call (obtainable with `-fwhole-program-vtables`
+   type tests or the vtable layout dump); the position of the vtable pointer
+   inside objects needs struct rewriting and is the hard part.
+2. Change the sources upstream so that, off MWCC, polymorphic classes are
+   plain structs with an explicit vtable pointer member and virtual calls go
+   through a macro. Large (about 700 class copies), but it makes the layout
+   explicit and compiler-independent, MSVC included.
+3. A compiler ABI that matches better. The Microsoft ABI has the single
+   destructor slot with a flag; nothing has the vtable pointer after the
+   members.
+
+Data byte order status: converters exist for kinds 1 (TPL) and 6 (sprite
+animation). HSD archives (kind 3, 1,918 `.dat` files) are the big one: the
+converter has to walk the object graph from the roots with the standard
+sysdolphin descriptor layouts.
