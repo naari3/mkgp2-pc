@@ -276,7 +276,8 @@ kept for reference. Item 10 is open.
     both ends come from the same compiler), or the allocation side written
     with the explicit `__construct_new_array` as well.
 21. Text stored as numbers inside word and pointer arrays (added
-    2026-11-10; open). The mirror image of request 15: objects typed as
+    2026-11-10; first landing upstream `2d64875`, `TEXT_WORD`; rest to
+    follow). The mirror image of request 15: objects typed as
     `void *[]`, `int[]` or `unsigned int[]` (usually because some of their
     words are relocated pointers) that also hold strings, written as 32-bit
     numbers. On the host the bytes of each word come out reversed. First
@@ -291,4 +292,15 @@ kept for reference. Item 10 is open.
     (46 words in a row), `Tornado_FlightTick_rodata_8032FE8C` (30),
     `lbl_803DB630` (12), `DebugOverlay_GetDaytimeLabel_data_8040E1C4` (11),
     `lbl_8039DFC4` (10); some hits are floats that happen to look like text.
+22. Constructor called with its float and integer arguments in another
+    order than the definition (added 2026-11-10; open). `RaceSceneC` does
+    `new RaceCamera(lbl_806D80C0, 0x200, lbl_806D8184, 0x200, lights)`
+    (`Scene_8014E0C4.cpp:4965`, float, int, float, int, pointer); the
+    function behind it is `clShadow::clShadow(int width, int height,
+    HSD_LObj *lobj, float far, float near)` (`Camera_Create.cpp:90`). On the
+    console floats and integers travel in separate registers, so the order
+    between the two kinds does not matter; on the host it does. Wanted: the
+    caller's class declared with the definition's order, and the earlier
+    argument-order sweep extended to constructors that reach their
+    definition through `tools/extab_user_renames.json`.
 
