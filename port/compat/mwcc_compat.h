@@ -28,6 +28,7 @@ double mkgp2pc_frsqrte(double x);
 #endif
 #define __frsqrte(x) mkgp2pc_frsqrte(x)
 #define __fabs(x) __builtin_fabs(x)
+#define __fabsf(x) __builtin_fabsf(x)
 
 /* rlwimi: rotate `src` left by `sh` and insert bits mb..me (IBM numbering,
  * bit 0 = most significant) into `dst`. */

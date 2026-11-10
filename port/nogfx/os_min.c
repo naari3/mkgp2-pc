@@ -69,3 +69,30 @@ int64_t OSGetTime(void) {
 }
 uint32_t OSGetTick(void) { return (uint32_t)OSGetTime(); }
 int64_t __OSGetSystemTime(void) { return OSGetTime(); }
+
+void* OSAllocFromArenaLo(uint32_t size, uint32_t align) {
+  uintptr_t p = ((uintptr_t)s_arenaLo + align - 1) & ~(uintptr_t)(align - 1);
+  s_arenaLo = (void*)((p + size + align - 1) & ~(uintptr_t)(align - 1));
+  return (void*)p;
+}
+void* OSAllocFromArenaHi(uint32_t size, uint32_t align) {
+  uintptr_t p = ((uintptr_t)s_arenaHi & ~(uintptr_t)(align - 1)) - size;
+  p &= ~(uintptr_t)(align - 1);
+  s_arenaHi = (void*)p;
+  return (void*)p;
+}
+
+/* The disc ID lives at the very start of main memory on the console. */
+void* DVDGetCurrentDiskID(void) { return (void*)MEM1_BASE; }
+
+/* GXInit hands back the FIFO object; nothing reads its fields here. */
+void* GXInit(void* base, uint32_t size) {
+  static char fifo[0x80];
+  (void)base, (void)size;
+  return fifo;
+}
+
+void HSD_Panic(const char* file, int line, const char* msg) {
+  fprintf(stderr, "HSD_Panic: %s:%d: %s\n", file ? file : "?", line, msg ? msg : "");
+  abort();
+}

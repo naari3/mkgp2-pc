@@ -188,3 +188,28 @@ not compile yet (see `upstream_requests.md` item 9).
 
 Also noted: `rand` / `srand` must be the MSL ones (`src/MSL_C/rand.c`), not
 the host's, or anything seeded diverges from the console.
+
+## 10. After upstream `df21da4` (same day)
+
+Files accepted: 2807 / 2848 (`src/game` 2633 / 2664, `src/sysdolphin`
+52 / 53). The bring-up link now also
+
+- folds the `_pN` suffixes of merged translation units back
+  (`tools/merge_tus.py` upstream renames them in the MWCC objects; 2132
+  names), and
+- wires a call to its definition when the two only differ in C / C++
+  linkage (53 left after upstream's C regions).
+
+Missing after that: 3124 symbols, of which about 2000 functions and 1000
+objects get generated stubs. Two known sources inside the game itself:
+files that still do not compile (for example `SetCourseParams.c`, which
+defines `g_playerData`, 74 users), and functions defined `inline` in one C++
+file and called from others (`fn_80120A08` in `SpriteHandle.cpp`, 56 users):
+MWCC emits them, clang does not. `-fkeep-inline-functions` is not usable (it
+breaks 1900 files), so those need `inline` dropped outside MWCC or a list.
+
+Run: `main` -> `BootDispatcher` -> am* boot -> `HSD_InitComponent`, which now
+runs (arena, `GXInit`, disc ID from `port/nogfx/os_min.c`) and stops at
+`initialize.c:99` because the render mode pointer is NULL: `fn_80255640`
+(acLib init) reports failure, since nothing answers on EXI where the Triforce
+baseboard should be. Next step is that device.

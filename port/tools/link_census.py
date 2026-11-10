@@ -113,6 +113,62 @@ def write_stubs(missing, groups, path):
     return nfun, nobj
 
 
+def unsuffix(sym):
+    """`Foo_p17` -> `Foo`, also inside Itanium names (`_Z7Foo_p17v` -> `_Z3Foov`).
+
+    Merged translation units upstream keep clashing per-file declarations
+    apart with a `_pN` suffix (tools/merge_tus.py); the matching build renames
+    the symbols back in the object. The PC objects need the same."""
+    if not re.search(r"_p\d+", sym):
+        return sym
+    if not sym.startswith("_Z"):
+        return re.sub(r"_p\d+$", "", sym)
+    out, i = [], 0
+    while i < len(sym):
+        m = re.match(r"\d+", sym[i:])
+        if m:
+            n = int(m.group())
+            name = sym[i + len(m.group()):i + len(m.group()) + n]
+            mm = re.match(r"^([A-Za-z_]\w*?)_p\d+$", name)
+            if len(name) == n and mm:
+                out.append(f"{len(mm.group(1))}{mm.group(1)}")
+                i += len(m.group()) + n
+                continue
+            if len(name) == n and re.match(r"^[A-Za-z_]\w*$", name):
+                out.append(m.group() + name)
+                i += len(m.group()) + n
+                continue
+        out.append(sym[i])
+        i += 1
+    return "".join(out)
+
+
+def unsuffix_objects(objs):
+    """Rename `_pN` symbols in place; returns how many names changed."""
+    names = set()
+    for i in range(0, len(objs), 200):
+        out = subprocess.run(["llvm-nm", "-g", "--format=posix"] + objs[i:i + 200],
+                             capture_output=True, text=True).stdout
+        for line in out.splitlines():
+            f = line.split()
+            if len(f) >= 2 and "_p" in f[0]:
+                names.add(f[0])
+    table = {n: unsuffix(n) for n in names}
+    table = {a: b for a, b in table.items() if a != b}
+    if not table:
+        return 0
+    path = os.path.join(OUT, "unsuffix.syms")
+    with open(path, "w") as f:
+        for a, b in sorted(table.items()):
+            f.write(f"{a} {b}\n")
+
+    def one(obj):
+        subprocess.run(["llvm-objcopy", "--redefine-syms=" + path, obj], check=True)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count()) as ex:
+        list(ex.map(one, objs))
+    return len(table)
+
+
 def group_of(unit):
     parts = unit.split("/")
     if parts[0] in ("dolphin", "sysdolphin", "musyx") and len(parts) > 2:
@@ -140,6 +196,8 @@ def main():
     with concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count()) as ex:
         built = dict(ex.map(lambda p: compile_one(p, target), files))
     objs = [o for o in built.values() if o]
+
+    renamed = unsuffix_objects(objs)
 
     defined = collections.defaultdict(list)
     undefined = collections.defaultdict(set)
@@ -214,7 +272,7 @@ def main():
             if len(cands) == 1:
                 proto[n] = next(iter(cands))
     alias.update(proto)
-    print(f"objects built: {len(objs)} / {len(files)}")
+    print(f"objects built: {len(objs)} / {len(files)}; `_pN` symbol names folded back: {renamed}")
     print(f"external symbols defined: {len(defined)}; defined more than once: {len(dups)}")
     print(f"used but not defined by these directories: {len(missing)}")
     for g in sorted(groups, key=lambda g: -len(groups[g])):
