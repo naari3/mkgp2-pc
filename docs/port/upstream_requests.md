@@ -92,3 +92,17 @@ kept for reference. Item 10 is open.
     The other 705 stubbed objects are `.bss` / `.sbss` that no C file
     defines at all; zero-filled storage of the `symbols.txt` size is the
     right definition for those, so they are not a problem for now.
+11. Calls with fewer arguments than the callee takes (added 2026-11-10,
+    upstream `da0081e`). `src/game/GameBoot_Init.cpp:50` calls
+    `fn_80288574(0, &lbl_80598A60)` through the two-argument prototype in
+    `include/game/GameBootPrivate.h:50`, but `src/triforce/ambackup_access.c`
+    defines `fn_80288574(u32 chan, void* data, BackupConfig* cfg)` and
+    dereferences `cfg`. The two lines before the call fill
+    `GameBoot_Init_bss_805A5EB0` (8-byte id, size 0x6A20, type 0x11), which is
+    that `BackupConfig`: the original passes it as the third argument and the
+    match only holds because the register still has it. On PC the third
+    argument is garbage and the game crashes there. Wanted: the real third
+    argument at this call, and a sweep for the same pattern (a caller's local
+    prototype with fewer parameters than the definition). The same sweep
+    would catch the reverse (more arguments than the definition takes), which
+    is harmless on PowerPC and on cdecl x86 but not on every ABI.
