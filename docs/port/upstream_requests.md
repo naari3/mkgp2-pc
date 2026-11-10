@@ -263,7 +263,8 @@ kept for reference. Item 10 is open.
     the match (a macro that is empty under MWCC is fine), or the callers
     corrected where the value is not really used.
 20. Arrays made with `new T[n]` and destroyed by an explicit
-    `__destroy_new_array(p, dtor)` (added 2026-11-10; open). MWCC's `new[]`
+    `__destroy_new_array(p, dtor)` (added 2026-11-10; done upstream in
+    `72ea434`). MWCC's `new[]`
     puts a 16-byte header {element size, count} in front of the array and
     `__destroy_new_array` reads it. The host compiler's `new[]` writes its
     own 4-byte count instead, so the explicit call reads garbage sizes and
@@ -274,4 +275,20 @@ kept for reference. Item 10 is open.
     type as a class with its destructor and `delete[]` at these sites (then
     both ends come from the same compiler), or the allocation side written
     with the explicit `__construct_new_array` as well.
+21. Text stored as numbers inside word and pointer arrays (added
+    2026-11-10; open). The mirror image of request 15: objects typed as
+    `void *[]`, `int[]` or `unsigned int[]` (usually because some of their
+    words are relocated pointers) that also hold strings, written as 32-bit
+    numbers. On the host the bytes of each word come out reversed. First
+    failure: `lbl_8037D7DC` in `src/game/autodata/rodata_8037D61C.c:83` is
+    `void *const [9] = { 0x65665F73, 0x745F6469, ... }`, i.e.
+    "ef_st_dino_sazanami.dat" followed by three pointers; the demo race asks
+    the disc for "s_feid_ts_onnaza.ima" forever.
+    Wanted: such objects as structs with `char` members for the text.
+    A scan for arrays (no string literal in the initialiser) with two or more
+    consecutive hex words whose four bytes are all printable ASCII or
+    trailing NULs finds 233 objects in 39 files, among them `lbl_80356D60`
+    (46 words in a row), `Tornado_FlightTick_rodata_8032FE8C` (30),
+    `lbl_803DB630` (12), `DebugOverlay_GetDaytimeLabel_data_8040E1C4` (11),
+    `lbl_8039DFC4` (10); some hits are floats that happen to look like text.
 
