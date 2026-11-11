@@ -112,7 +112,7 @@ def link_gfx_windows(stubs, thunks, cxxrt, replaced, aurora_fns, aurora_data, po
         fetched = os.path.join(ROOT, "build", "aurora-win32", "_deps", "sdl-src", "include")
         if os.path.isdir(fetched):
             sdl_inc = [fetched]
-    aurora =os.path.join(ROOT, "port", "extern", "aurora")
+    aurora = os.path.join(ROOT, "port", "extern", "aurora")
     for src in sorted(glob.glob(os.path.join(ROOT, "port", "gfx", "*.c*"))):
         if os.path.basename(src).startswith("dawn_"):
             continue   # needs Dawn's headers: CMake compiles it
