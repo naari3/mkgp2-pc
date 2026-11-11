@@ -893,3 +893,38 @@ How it was found: gdb Python breakpoints that print only on change
 (scene index, kind and vtable in `fn_8014E804`; state in the scene's update).
 A first attempt called a game function from the breakpoint and hung; print
 variables only.
+
+## 28. Rendering differences reported from play (2026-11-11)
+
+- **Pure red backgrounds** (attract captions, Bowser close-up): not a
+  loading problem. `lbl_806D7F70`, two RGB triples for the frame clear
+  colour, was defined `int [2]` and read as bytes
+  (`Scene_8014E0C4.cpp`, `fn_8002CFB8`): black read as (255,0,0).
+  Upstream request 39; `port/tools/data_width_census.py` lists every
+  definition / declaration pair that disagrees on element width. The same
+  request fixed 22 `unsigned long long` item-effect masks whose halves were
+  swapped and 7 colour constants of the item render callbacks.
+- **Kart shadows: black bands across the ground.** The shadow is a 512x512
+  image drawn into a corner of the frame buffer before the frame and copied
+  out with `GXCopyTex` (`HSD_ShadowStartRender` / `HSD_ShadowEndRender`,
+  called from `SceneRender_DrawObjectWithLights`). The console's frame
+  buffer is 640x528 for every render mode; Aurora's is `efbHeight` (480)
+  high, so the last 32 lines of the image, with the white border that
+  clamping repeats outside the image, were never drawn. Fixed in the port
+  layer: `__wrap_HSD_ShadowSetSize` keeps the image within 480x480
+  (`port/gfx/gx_shim.cpp`). Tried first and dropped: telling Aurora the
+  frame buffer is 528 high with `emulateXfb`; the picture is then scaled by
+  480/528 and the copy rectangle no longer falls on whole pixels.
+- **Tyres of the special karts**: `KartTireFX` loads
+  `sp_tire_set_<name>.dat` correctly (vertices and joints read as in the
+  normal set) and the game itself sets the wheel scale to 1000 for modes 2
+  and 3 (`KartTireFX::KartTireFX`). Whether that hides them on the console
+  too is not known; open.
+- The demo scene after the title (`DemoScene`) installs no frame hook, so
+  no shadow pass runs there; races and the race intro do run it.
+- Reference read for the comparison: OpenGP (GPL-3, `1a6aae4`),
+  `docs/architecture.md` and `runtime/gx`: it recompiles the game together
+  with the SDK's GX library and emulates the graphics chip at the FIFO /
+  register level (640x528 frame buffer, copies cleared over the copy
+  rectangle only), so neither the byte-order class nor the GX-API class of
+  difference exists there. Facts only; no code taken.

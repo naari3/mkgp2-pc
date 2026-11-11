@@ -24,6 +24,15 @@
  * either id, so the game's "set the alpha" call (HSD_SetupChannel does one
  * per lit material) turned the material colour black. The wrappers keep the
  * register's value and always hand Aurora the whole colour.
+ *
+ * HSD_ShadowSetSize: before each frame the game draws its 512x512 shadow
+ * image into a corner of the frame buffer and copies it out
+ * (HSD_ShadowStartRender, GXCopyTex). The console's frame buffer is 528
+ * lines high whatever the render mode says; Aurora's is as high as the
+ * render mode's efbHeight, 480, so the image lost its last 32 lines, among
+ * them the white border that texture clamping repeats over the ground
+ * outside the image. The wrapper keeps the image inside 480x480. Everything
+ * else (viewport, scissor, copy, texture matrix) follows the image's size.
  */
 #include <dolphin/gx.h>
 
@@ -200,4 +209,10 @@ void __wrap_GXInvalidateTexAll(void) {
   sTextures.clear();
   __real_GXInvalidateTexAll();
 }
+}
+
+extern "C" void __real_HSD_ShadowSetSize(void* shadow, u16 width, u16 height);
+extern "C" void __wrap_HSD_ShadowSetSize(void* shadow, u16 width, u16 height) {
+  const u16 limit = 480;
+  __real_HSD_ShadowSetSize(shadow, width > limit ? limit : width, height > limit ? limit : height);
 }
