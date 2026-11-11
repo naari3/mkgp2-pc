@@ -1220,7 +1220,10 @@
     "fn_80159BD0",
     "fn_8015A6E4",
     "fn_8015AE3C",
-    "fn_8015AFCC"
+    "fn_8015AFCC",
+    "fn_8015B698",
+    "dtor_8007D0D4",
+    "PrintPartsInterfaceName__19clCSSceneCardBrowseFv"
   ],
   "src/game/RankPanel_80144430.cpp": [
     "fn_80144430",
@@ -1354,21 +1357,6 @@
     "dtor_80082960",
     "dtor_801F4A80",
     "dtor_8021617C"
-  ],
-  "src/game/SceneRoleVariantCFactory.cpp": [
-    "fn_8024CA18",
-    "dtor_801F2724",
-    "fn_801F26C8",
-    "dtor_801F4B10",
-    "dtor_8007D0D4"
-  ],
-  "src/game/SceneRoleVariantCDtor.cpp": [
-    "fn_8024CBC0",
-    "fn_801F26C8"
-  ],
-  "src/game/SceneRoleVariantCUpdate.cpp": [
-    "fn_8024CD54",
-    "dtor_80082960"
   ],
   "src/game/TripletFaderOwner.cpp": [
     "fn_802499F4",
@@ -1710,6 +1698,10 @@
     "fn_8020C21C",
     "fn_8020C254",
     "fn_8020C290",
+    "fn_8020C38C",
+    "dtor_801F2724",
+    "dtor_801F4B10",
+    "dtor_8007D0D4",
     "dtor_80082960",
     "__dt__10FlowFaderIFv"
   ],
@@ -2625,13 +2617,6 @@
   "src/game/anon_80205DCC_m2.cpp": [
     "fn_802064D8",
     "dtor_80082960"
-  ],
-  "src/game/anon_8020BD68_nm1.cpp": [
-    "fn_8020C38C",
-    "dtor_801F2724",
-    "__dt__10FlowFaderIFv",
-    "dtor_801F4B10",
-    "dtor_8007D0D4"
   ],
   "src/game/anon_8020007C_nm1.cpp": {
     "extab": [
@@ -3567,5 +3552,31 @@
     "fn_8014A8FC",
     "fn_8014AA38",
     "fn_8014AC48"
+  ],
+  "src/game/SceneRoleTransitions.cpp": [
+    "fn_8024BE64",
+    "fn_8024BE9C",
+    "fn_8024C018",
+    "fn_8024C0BC",
+    "fn_8024C0F4",
+    "fn_8024C284",
+    "fn_8024C3AC",
+    "fn_8024C4B4",
+    "fn_8024C52C",
+    "fn_8024C564",
+    "fn_8024C6F0",
+    "fn_8024C818",
+    "fn_8024C944",
+    "fn_8024C9E0",
+    "fn_8024CA18",
+    "fn_8024CBC0",
+    "fn_8024CCE8",
+    "fn_8024CD54",
+    "dtor_8024CED0",
+    "dtor_801F2724",
+    "fn_801F26C8",
+    "dtor_801F4B10",
+    "dtor_8007D0D4",
+    "dtor_80082960"
   ]
 }

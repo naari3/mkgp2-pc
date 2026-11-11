@@ -282,3 +282,13 @@ clRsContinueTaskBT converted in game/BattleContinueScene.cpp using canonical clM
 Source: Codex worker r3_c21_20261111 (gpt-6.1-sol/medium) + coordinator acceptance (independent main build, DOL SHA-1 OK, actual main.elf ranges). Native gain: 0 fn / 0 B.
 
 clStartNum/clStartGo: deferred reverse function definitions plus -inline deferred,noauto preserve the out-of-line clStartGo constructor (auto would inline it into the factory). Existing reorder_extab declarations match the complete function-name set exactly; preserve the legacy weak-base-destructor bridge when renaming the real base class, otherwise the reorder silently does not apply. Six owned sections and all 15 functions match; full DOL SHA-1 unchanged.
+
+## r4_c2_20261111
+Source: Codex worker r4_c2_20261111 (gpt-6.1-sol/medium) + coordinator acceptance (independent main build, DOL SHA-1 OK, actual main.elf ranges). Native gain: 0 fn / 0 B.
+
+clCSSceneCardBrowse converted in game/SceneList_80157EA8.cpp, merging game/Scene_8015B698.cpp. Deferred reverse definitions and direct member Update/Draw preserve 13 native functions; compiler vtable 8049003C, base list, RTTI/name pool exact. Uncalled marked diagnostic member preserves the final clCSPartsInerface pooled string, following clLineManager precedent. Canonical clSceneInterface explicitly spells its three tail-padding bytes. Clang OK; coordinator full DOL SHA-1 unchanged. No new general compiler rule traced.
+
+## r4_c17_20261111
+Source: Codex worker r4_c17_20261111 (gpt-6.1-sol/medium) + coordinator acceptance (independent main build, DOL SHA-1 OK, actual main.elf ranges). Native gain: 0 fn / 0 B.
+
+clResultType01 (HudResultFlow.cpp) is a deferred multiple-inheritance case. A public clSceneInterface ancestor and a private 8-byte polymorphic list-owner base reproduce its primary/secondary table layout without adding a list-owner RTTI record. Inherited clResultInterface ctor/dtor/Update/Draw can stay external under per-TU bridges. Reverse definitions emit all six functions, including the secondary destructor thunk, exactly; existing EH ordering remains valid. Remove the old DATA_ALIGN4_TUS opt-in when expanding the jump-table-only range backwards to 8-aligned class data. These are object/full-link observations, not a compiler-source trace.
