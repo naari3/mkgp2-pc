@@ -293,12 +293,12 @@ Ubuntu 24.04 source packages: abseil 20240722.0, freetype 2.13.2, sqlite
 `/usr/i686-w64-mingw32/lib/libdxgi.a`; `libcomsuppw.a` is
 `i686-w64-mingw32-ar rcs` of one object compiled from an empty function.
 
-Configure (both `build/aurora-win32` from `port/extern/aurora`... no: one
-tree, `port/gfx` into `build/pc-gfx-win/cmake`, after
-`link_census.py ... --gfx --os windows --link` wrote the link inputs; a
-second tree `build/aurora-win32` configured the same way from `port/gfx`
-exists only because `link_census.py` reads SDL's include path and
-`_deps/zlib-build/libzlib.dll.a` from it):
+Two trees are configured with the same options: `build/aurora-win32` from
+`port/extern/aurora` (first; `link_census.py --gfx --os windows` reads
+Aurora's libraries, SDL's include path and `_deps/zlib-build/libzlib.dll.a`
+from it), then, after `link_census.py ... --gfx --os windows --link` wrote
+the link inputs, `build/pc-gfx-win/cmake` from `port/gfx`. nlohmann_json
+is the one dependency still fetched from the network at configure time.
 
     PKG_CONFIG_LIBDIR=<empty dir> cmake -S port/gfx -B build/pc-gfx-win/cmake -G Ninja \
       -DCMAKE_TOOLCHAIN_FILE=$PWD/port/gfx/cmake/mingw-i686.cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo \
@@ -317,5 +317,6 @@ MusyX for Windows: the cmake line in "Sound" with
 Package (no script): a folder `mkgp2-gfx-win32` with `mkgp2-gfx.exe`
 (from `build/pc-gfx-win/cmake`), `SDL3.dll`, `libpng16.dll`, `libzlib1.dll`
 (from `_deps/*-build` there), `webgpu_dawn.dll`, `dxcompiler.dll`,
-`dxil.dll` (from the Dawn package), `run-gfx.cmd`, `KEYS.txt`; zipped.
+`dxil.dll` (from the Dawn package), `run-gfx.cmd`, `KEYS.txt` (both in
+`port/gfx/package`); zipped.
 Run `port/tools/pe_check.py` on the exe first.

@@ -1,0 +1,8 @@
+Keyboard (the game window needs the focus)
+  5 or C         coin
+  left / right   steering wheel
+  up or Z        accelerator
+  down or X      brake
+  space, enter   item button (also "decide" in the menus)
+  F1 / F2        test / service button
+Sound: effects and music through the default playback device.
