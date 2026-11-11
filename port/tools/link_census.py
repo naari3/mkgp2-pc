@@ -525,6 +525,17 @@ def cxx_renames(built):
     for unit, entries in json.load(open(path), object_pairs_hook=lambda p: p):
         if not isinstance(entries, list):
             continue
+        # A unit merged from several parts names its classes `X_p2` in the
+        # table where the source says `X`: try the key without the suffix too.
+        def unpart(k):
+            return re.sub(r"(\d+)([A-Za-z_]\w*?)_p\d+", lambda m: (
+                "%d%s" % (len(m.group(2)), m.group(2))
+                if int(m.group(1)) == len(m.group(0)) - len(m.group(1)) else m.group(0)), k)
+        have = {k for k, v in entries}
+        entries = list(entries) + [(unpart(k), v) for k, v in entries
+                                   if k.startswith("__") and unpart(k) != k and unpart(k) not in have]
+        for k, v in entries:
+            c = mwcc_names.canon_mwcc(k)
         for k, v in entries:
             c = mwcc_names.canon_mwcc(k)
             if c and not v.startswith("@"):
@@ -1003,6 +1014,19 @@ def main():
             t = renamed.get("_Z" + m.group(2), "_Z" + m.group(2))
             if t in defined or t in weak or t.startswith("mkgp2pc_"):
                 this_thunks.append((n, int(m.group(1)), t))
+        # The same thunks under address names: the rename table has them as
+        # `@N@member` -> `fn_X` next to `member` -> `fn_Y` (destructors of
+        # classes with a second base, referenced from data vtables).
+        import json
+        for unit, entries in json.load(open(os.path.join(ROOT, "tools", "extab_user_renames.json")),
+                                       object_pairs_hook=lambda p: p):
+            if not isinstance(entries, list):
+                continue
+            plain = {k: v for k, v in entries if isinstance(v, str)}
+            for k, v in plain.items():
+                m = re.match(r"@(\d+)@(.+)$", k)
+                if m and v in missing and plain.get(m.group(2)) in defined and v not in {t[0] for t in this_thunks}:
+                    this_thunks.append((v, int(m.group(1)), plain[m.group(2)]))
         missing = {n: u for n, u in missing.items() if n not in {t[0] for t in this_thunks}}
         print(f"non-virtual thunks generated: {len(this_thunks)}")
         stubs = os.path.join(OUT, "stubs.c")

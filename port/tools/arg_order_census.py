@@ -106,13 +106,19 @@ def main():
                     if not name.startswith("_Z"):
                         cdefs.setdefault(name, (len(split_params(m.group(2))), unit, "..." in m.group(2)))
             m = re.match(r"(define|declare) .*?@([\w.$]+)\((.*)\)[^)]*$", line.rstrip())
-            if not m or m.group(2).startswith(("llvm.", "_Z", "__mw")):
+            if not m:
+                continue
+            # a definition under a C++ name counts under the C name the link
+            # census gave it (`Tween::Set(float, float, short)` is
+            # `fn_8020A734`, which 30 units declare `(void *, int, float, float)`)
+            oname = renamed[unit].get(m.group(2), m.group(2)) if m.group(1) == "define" else m.group(2)
+            if oname.startswith(("llvm.", "_Z", "__mw")):
                 continue
             k = kinds(split_params(m.group(3)))
             if m.group(1) == "define":
-                defs.setdefault(m.group(2), (k, unit))
+                defs.setdefault(oname, (k, unit))
             else:
-                decls[m.group(2)][unit] = k
+                decls[oname][unit] = k
     n = 0
     for name in sorted(decls):
         if name not in defs:

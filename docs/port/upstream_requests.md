@@ -411,3 +411,10 @@ kept for reference. Item 10 is open.
     the lead-byte test `& 0x8000` and the glyph lookup saw the bytes
     swapped: the name "マリオ" was drawn as "マリI". Places:
     `TexMgr_SetTexture.cpp`, `TitleNameHud_nm1.cpp`, `RankPanel_80144430.cpp`.
+34. `fn_8020A734` (`Tween::Set(float from, float to, short frames)`) is
+    declared `(void *, int frames, float from, float to)` in about 30 units
+    (added 2026-11-11). The host callee reads the frame count as `from`:
+    every HUD tween set through those declarations was garbage (the
+    remaining-time digits at a fraction of their size). The port's census
+    did not follow a C++ definition to its renamed C name; fixed
+    (`port/tools/arg_order_census.py`), this is the only function it lists.
