@@ -58,8 +58,11 @@ GFX_REPLACED = ("video_min.c", "gx_min.c")
 # link sends the game's calls to port/gfx/gx_shim.cpp (ld --wrap).
 GFX_WRAPPED = ("GXInitTexObj", "GXInitTexObjCI", "GXInitTexObjLOD", "GXLoadTexObj",
                "GXInitTlutObj", "GXLoadTlut", "GXSetArray", "GXInvalidateTexAll",
-               "GXSetChanAmbColor", "GXSetChanMatColor", "HSD_ShadowSetSize",
+               "GXSetChanAmbColor", "GXSetChanMatColor",
                "sndInit")  # port/gfx/audio_musyx.c
+# Functions of the game itself that the glue wraps the same way (the
+# original stays reachable as __real_<name>).
+GAME_WRAPPED = ("HSD_ShadowSetSize",)  # port/gfx/gx_shim.cpp
 
 
 def asm_name(name):
@@ -160,6 +163,19 @@ def link_gfx_windows(stubs, thunks, cxxrt, replaced, aurora_fns, aurora_data, po
         for n in sorted(wrapped):
             jump(n, "___wrap_" + n)
             jump("___real_" + n, "_" + n)
+        # a wrapped function of the game: its own object gets the definition
+        # renamed, callers elsewhere reach the wrapper under the old name
+        for n in GAME_WRAPPED:
+            real = "mkgp2pc_real_" + n
+            for i in range(0, len(objs), 400):
+                out = subprocess.run(["llvm-nm", "-g", "--defined-only", "--format=posix", "-A"] + objs[i:i + 400],
+                                     capture_output=True, text=True).stdout
+                for l in out.splitlines():
+                    q = l.split()
+                    if len(q) >= 2 and q[1] == n:
+                        subprocess.run(["llvm-objcopy", f"--redefine-sym={n}={real}", q[0].rstrip(":")], check=True)
+            jump(n, "___wrap_" + n)
+            jump("___real_" + n, real)
         jump("_main", "___wrap_main")
         jump("___real_main", "main")
     gen = list(glue_objs)
@@ -1150,7 +1166,7 @@ def main():
             link = os.path.join(OUT, "gfx_link.rsp")
             with open(link, "w") as f:
                 f.write("\n".join(["-no-pie", "-fcommon", "-Wl,--version-script=" + private, "-Wl,-T," + script, "-Wl,-T," + bss_ld]
-                                  + gen + port_objs + objs + defsyms + ["-Wl,--wrap=" + n for n in GFX_WRAPPED + ("main",)]
+                                  + gen + port_objs + objs + defsyms + ["-Wl,--wrap=" + n for n in GFX_WRAPPED + GAME_WRAPPED + ("main",)]
                                   + [musyx_lib, "-lz", "-lm", "-lpthread", "-Wl,--allow-multiple-definition", "-Wl,--no-warn-rwx-segments"]) + "\n")
             print(f"link inputs for CMake: {os.path.relpath(link, ROOT)}")
             return 0
