@@ -920,8 +920,10 @@ variables only.
   normal set) and the game itself sets the wheel scale to 1000 for modes 2
   and 3 (`KartTireFX::KartTireFX`). Whether that hides them on the console
   too is not known; open.
-- The demo scene after the title (`DemoScene`) installs no frame hook, so
-  no shadow pass runs there; races and the race intro do run it.
+- In the demo scene after the title (`DemoScene`) no shadow pass ran in
+  the frames measured (`Frame_Begin` did not reach
+  `SceneRender_DrawObjectWithLights`); races and the race intro run it
+  every frame. Why, and whether the console does the same, is not checked.
 - Reference read for the comparison: OpenGP (GPL-3, `1a6aae4`),
   `docs/architecture.md` and `runtime/gx`: it recompiles the game together
   with the SDK's GX library and emulates the graphics chip at the FIFO /
