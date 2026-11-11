@@ -35,7 +35,8 @@ if (MINGW)
   # match names with and without the COFF underscore); see dawn_mingw.cpp
   # for the one file left here.
   add_executable(mkgp2-gfx dawn_mingw.cpp)
-  target_link_libraries(mkgp2-gfx PRIVATE dawn::webgpu_dawn)
+  # gdi32 / user32: the dump's window picture (shot_win32.c)
+  target_link_libraries(mkgp2-gfx PRIVATE dawn::webgpu_dawn gdi32 user32)
   target_compile_options(mkgp2-gfx PRIVATE -femulated-tls)
 else ()
   add_executable(mkgp2-gfx video_aurora.c gx_shim.cpp audio_musyx.c shot_win32.c)
