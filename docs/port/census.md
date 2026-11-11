@@ -995,3 +995,45 @@ credit display after a race the player finished, log line
 - Still a stub that play reaches: `dtor_801C1B78` (a folded destructor of
   `KeyVecBase<KeyGroup>` and others; called from `CardPrintOwner.cpp` and
   `anon_8021BC44_nm1.cpp`). It returns without freeing; not looked into.
+
+## 31. Reports from play, 2026-11-11 evening
+
+- **Name entry: empty key grid** (fixed, upstream request 45). The keyboard
+  tables are Shift-JIS text read as 16-bit numbers. Script that reaches the
+  screen: coins at frames 5823, 5906, 6000 and an item press every 300
+  frames from 6300 to 8100, card service on.
+- **Window resize or maximize on Windows ends in webgpu_dawn.dll** (worked
+  around, cause unknown): see `MKGP2PC_SCALE` in build.md.
+- **"coins until next prize!" popup after the coin tally, in English, digits
+  on top of the text** (open; reproduced on Linux, card service on, at the
+  end of the first race). What is known:
+  - The popup is sprite 0x149, `sp_next_goods.bin`. Its resource list is
+    0x1140, 0x1141, 0x1142, 0x114E, 0x114F: pieces of
+    `tpl2_E_sp_next_goods.tpl` (English text) and the digits 0 and 1 of
+    `tpl2_E_sp_rare_goods.tpl`.
+  - The positions in that file fit the Japanese picture
+    (`tpl2_JP_sp_next_goods.tpl`, ids 0x1924..0x1926: one line, then a short
+    piece, two digits, a short piece). `E_sp_next_goods.bin` has the same
+    ids and the English positions.
+  - The program hides the two digit placeholders with
+    `SetAnimParam(0x1931, ...)` and `(0x1932, ...)`: the Japanese digit ids.
+    With the list from the disc these calls find nothing, and the
+    placeholders stay visible under the real digits (seen in the picture as
+    doubled outlines).
+  - So the program expects the list 0x1924, 0x1925, 0x1926, 0x1931, 0x1932.
+    No such list is in main.dol or anywhere on the disc (searched as bytes),
+    and nothing in the load and draw chain rewrites ids:
+    `Sprite_InitWithAnim`, `fn_801A1494`, `fn_801A0D90`, `fn_8019FA30`,
+    `fn_801A1174`, `SpriteLayer_SetResource`, `ResourceSlot_Load`,
+    `TEXLoadPalette`, the `ResourceTable_*` readers. The anim id remap
+    (`lbl_806CFD00`) is empty and only used when the region byte is not 0.
+  - Of the 495 animation files on the disc, five without the `E_` prefix
+    point at English textures: `sp_next_goods.bin`, `sp_rare_goods.bin`,
+    `tab_at_namCAM_msg.bin`, and the unused `sp_coin_mileage.bin` and
+    `sp_coin_mileage_bar.bin` (the scene uses the `JP_sp_coin_mileage_*`
+    files).
+  - `isJapanese()` returns 0 on the arcade as well; 0 is the Japanese
+    branch (comment in `GetTextureByIdAndLang.c`).
+  The user reports this as wrong against the arcade. How the arcade gets
+  the Japanese ids is not found. A run of the original in an emulator at
+  this screen would settle what the list is at draw time.
