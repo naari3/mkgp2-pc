@@ -914,6 +914,12 @@ def main():
                 proto[n] = next(iter(cands))
     alias.update(proto)
     print(f"objects built: {len(objs)} / {len(files)}; `_pN` symbol names folded back: {renamed}")
+    # a unit that does not compile leaves the link silently: everything it
+    # defines becomes a generated stub (the result flow stopped on a black
+    # screen that way, 2026-11-11). Name them every time.
+    for f in files:
+        if not built.get(f):
+            print(f"    NOT BUILT: {f}")
     print(f"C++ symbols renamed as the matching build does: {cxx_done} "
           f"(table entries with no counterpart in the object: {cxx_unmatched}); bridges: {len(thunk_defs)}")
     print(f"external symbols defined: {len(defined)}; defined more than once: {len(dups)}")
