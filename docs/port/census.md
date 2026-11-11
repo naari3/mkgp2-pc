@@ -1034,6 +1034,11 @@ credit display after a race the player finished, log line
     files).
   - `isJapanese()` returns 0 on the arcade as well; 0 is the Japanese
     branch (comment in `GetTextureByIdAndLang.c`).
+  Port side (data_loaded.c, `goods_lists`): the lists of `sp_next_goods.bin`
+  and `sp_rare_goods.bin` are replaced at load by the ids the program hides
+  (0x1924, 0x1925, 0x1926, 0x1931, 0x1932 and 0x1930..0x1934). Linux then
+  shows the Japanese popup with the digits in their gap and no placeholder
+  under them. `MKGP2PC_GOODS_DISC=1` keeps the disc's lists.
   The user reports this as wrong against the arcade. How the arcade gets
   the Japanese ids is not found. A run of the original in an emulator at
   this screen would settle what the list is at draw time.

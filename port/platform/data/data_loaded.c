@@ -117,8 +117,49 @@ static void sprite_frames(uint8_t* d, uint32_t offset, Visited* v, int depth) {
   }
 }
 
+/* The two "goods" popups of the coin tally (sp_next_goods.bin,
+ * sp_rare_goods.bin) list pieces of the English textures on the disc, while
+ * their positions fit the Japanese pictures and the program hides their
+ * digit placeholders by the Japanese ids (SetAnimParam(0x1931, ...) and so
+ * on, which find nothing in the lists as they are). With the lists from the
+ * disc the popup reads "coins until next prize!" with the digits on top of
+ * the words. The user reports that as wrong against the arcade, so the
+ * lists the program expects are put in here. How the arcade arrives at them
+ * is not known (docs/port/census.md section 31); MKGP2PC_GOODS_DISC=1 keeps
+ * the lists of the disc. Called with the file still big-endian. */
+static void goods_lists(uint8_t* d, uint32_t resources) {
+  static const uint16_t next_disc[] = {0x1140, 0x1141, 0x1142, 0x114E, 0x114F, 0xFFFF};
+  static const uint16_t next_jp[] = {0x1924, 0x1925, 0x1926, 0x1931, 0x1932};
+  static const uint16_t rare_disc[] = {0x114C, 0x114E, 0x114F, 0x1150, 0x1151, 0xFFFF};
+  static const uint16_t rare_jp[] = {0x1930, 0x1931, 0x1932, 0x1933, 0x1934};
+  const uint16_t* to = NULL;
+  int next = 1, rare = 1;
+  if (resources == 0 || getenv("MKGP2PC_GOODS_DISC") != NULL) {
+    return;
+  }
+  for (int i = 0; i < 6; i++) {
+    uint16_t id = mkgp2pc_be16(d + resources + 2 * i);
+    next = next && id == next_disc[i];
+    rare = rare && id == rare_disc[i];
+  }
+  /* E_sp_next_goods.bin has the same list; its first piece sits at x = 89,
+   * the Japanese layout's at 0. */
+  if (next && mkgp2pc_be32(d + 0x30) == 0) {
+    to = next_jp;
+  } else if (rare) {
+    to = rare_jp;
+  }
+  if (to != NULL) {
+    for (int i = 0; i < 5; i++) {
+      d[resources + 2 * i] = (uint8_t)(to[i] >> 8);
+      d[resources + 2 * i + 1] = (uint8_t)to[i];
+    }
+  }
+}
+
 static void sprite_anim(uint8_t* d) {
   uint32_t frames = mkgp2pc_be32(d + 0x18), resources = mkgp2pc_be32(d + 0x1C);
+  goods_lists(d, resources);
   Visited v = {0, 0, 0};
   swap32n(d, 8);
   sprite_frames(d, frames, &v, 0);
