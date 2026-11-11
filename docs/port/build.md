@@ -318,6 +318,15 @@ program is started from (`MKGP2PC_CARD_FILE` names another file).
   `card.bin.bak<n>`.
 - What is printed on the card's face is not kept. There is no camera: the
   stand-in turns the game's camera option off during the power-on checks.
+- `MKGP2PC_SCALE=N` opens the window at N times 640x480. On Windows the
+  window cannot be resized or maximized (`MKGP2PC_RESIZABLE=1` allows it
+  again): every size change ended in `webgpu_dawn.dll` + 0xb6b58, on the
+  render worker thread, below `Surface::Configure` called from
+  `aurora::gfx::present::submit` (crash record of 2026-11-12 04:44 JST,
+  build 2502a6b). Why the reconfiguration fails is not known; the crashes
+  at exit (before 01791c5) and during play were at the same offset.
+- `MKGP2PC_BACKEND=d3d12|d3d11|vulkan|opengl` asks Aurora for that backend
+  instead of its own order. Not tried on Windows yet.
 - `MKGP2PC_CARD=0` starts the game with the baseboard DIP switch that turns
   the card service off, as all builds before this did. Input recordings
   (dumps) made by those builds need it to play back in step.

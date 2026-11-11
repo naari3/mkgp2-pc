@@ -416,8 +416,24 @@ int __wrap_main(int argc, char** argv) {
   memset(&config, 0, sizeof(config));
   config.appName = "mkgp2-pc";
   config.logCallback = &log_callback;
-  config.windowWidth = 640;
-  config.windowHeight = 480;
+  /* MKGP2PC_SCALE=2 opens a 1280x960 window, and so on. */
+  const char* scaleText = getenv("MKGP2PC_SCALE");
+  long scale = scaleText != NULL ? strtol(scaleText, NULL, 10) : 1;
+  if (scale < 1 || scale > 8) {
+    scale = 1;
+  }
+  config.windowWidth = 640 * (uint32_t)scale;
+  config.windowHeight = 480 * (uint32_t)scale;
+  /* MKGP2PC_BACKEND picks the rendering backend instead of Aurora's own
+   * order (Windows: d3d12 first). */
+  const char* backend = getenv("MKGP2PC_BACKEND");
+  if (backend != NULL) {
+    if (strcmp(backend, "d3d12") == 0) config.desiredBackend = BACKEND_D3D12;
+    else if (strcmp(backend, "d3d11") == 0) config.desiredBackend = BACKEND_D3D11;
+    else if (strcmp(backend, "vulkan") == 0) config.desiredBackend = BACKEND_VULKAN;
+    else if (strcmp(backend, "opengl") == 0) config.desiredBackend = BACKEND_OPENGL;
+    else fprintf(stderr, "MKGP2PC_BACKEND: unknown backend '%s'\n", backend);
+  }
   /* (0, 0) would put the client area in the screen corner and the title
    * bar above the screen: nothing to drag the window by. Negative leaves
    * the place to the system. */
@@ -434,6 +450,16 @@ int __wrap_main(int argc, char** argv) {
   mkgp2pc_script_extra = &script_extra;
   mkgp2pc_script_record = &rec_script;
   s_window = aurora_initialize(argc, argv, &config).window;
+#ifdef _WIN32
+  /* Every change of the window's size on Windows (drag, maximize) ended in
+   * webgpu_dawn.dll, in the surface reconfiguration that Aurora's present
+   * step does after a resize (crash record 2026-11-12, docs/port/build.md).
+   * Until that is understood the window keeps its size; MKGP2PC_SCALE sets
+   * it, MKGP2PC_RESIZABLE=1 gives the frame back. */
+  if (s_window != NULL && getenv("MKGP2PC_RESIZABLE") == NULL) {
+    SDL_SetWindowResizable(s_window, false);
+  }
+#endif
   s_inFrame = aurora_begin_frame();
   return __real_main(argc, argv);
 }
