@@ -1039,6 +1039,12 @@ credit display after a race the player finished, log line
   (0x1924, 0x1925, 0x1926, 0x1931, 0x1932 and 0x1930..0x1934). Linux then
   shows the Japanese popup with the digits in their gap and no placeholder
   under them. `MKGP2PC_GOODS_DISC=1` keeps the disc's lists.
+  USER 2026-11-11 20:44Z: the same wrong popup is seen in Dolphin. That fits:
+  every step from the sprite id to the texture file is a constant or fixed
+  data (the caller passes 0 for the alternative list, the remap table is
+  empty, no table reader looks at language, region, backup or network
+  state), so with this ROM and this disc no machine state can give the
+  Japanese list. Only another revision of the disc or ROM could.
   The user reports this as wrong against the arcade. How the arcade gets
   the Japanese ids is not found. A run of the original in an emulator at
   this screen would settle what the list is at draw time.
