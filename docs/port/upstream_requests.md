@@ -401,3 +401,13 @@ kept for reference. Item 10 is open.
     kind in plain prototypes. Those are NOT converted upstream: the port
     passes every struct argument by address (`port/tools/mwcc_byvalue.py`),
     which is what MWCC does, so both spellings meet.
+32. The seven MusyX units that did not compile on the host (added
+    2026-11-11; done upstream in `b210d84`). Not linked by the port in the
+    end: the MusyX PC target in `port/extern/musyx` answers `snd*`.
+33. Shift-JIS text in char strings read two bytes at a time through
+    `*(unsigned short *)p` (added 2026-11-11; done upstream in `3eec64d`,
+    `include/game/types/sjis_word.h`: `SJIS_WORD`, `SJIS_WORD_LOAD`, defined
+    for the host in `port/compat/mwcc_compat.h`). On a little-endian host
+    the lead-byte test `& 0x8000` and the glyph lookup saw the bytes
+    swapped: the name "マリオ" was drawn as "マリI". Places:
+    `TexMgr_SetTexture.cpp`, `TitleNameHud_nm1.cpp`, `RankPanel_80144430.cpp`.

@@ -566,9 +566,8 @@ which starts loading its course. What that needed:
 - Upstream request 24: the card name check compares 16-bit Shift-JIS codes
   with byte functions; its patterns are 16-bit arrays now, and the calls go
   through `NAMECODE_*` macros (`include/game/types/namecode_str.h`) that a
-  build may point at big-endian-view helpers. Not done here yet: with the
-  plain functions, names with half-width codes compare differently from the
-  console.
+  build may point at big-endian-view helpers: `port/compat/namecode_be.c`
+  (since 2026-11-11), defined in `mwcc_compat.h`.
 - `inline` is defined away for C units: a plain `inline` function that is
   called without being inlined needs an ordinary definition (C99 gives
   none, GNU89 gives none for `extern inline`, and the sources use both).
@@ -795,5 +794,6 @@ unstubbed, wrap `sndInit` in `port/gfx` and feed an SDL audio stream from
   time (software rendering) sounded slowed down, with the effects spaced
   out; `MKGP2PC_AUDIO_DUMP=<file>` renders one frame's worth of sound per
   video frame instead (raw 16-bit stereo, 32 kHz).
-- Open: text drawn from name codes shows wrong glyphs (the player name
-  reads "マリ" plus a wrong glyph; `NAMECODE_*` host helpers).
+- Text: Shift-JIS char strings were read two bytes at a time in host
+  byte order (the player name read "マリI"); upstream request 33,
+  `SJIS_WORD` defined in `mwcc_compat.h`.

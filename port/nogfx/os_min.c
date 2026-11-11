@@ -112,6 +112,30 @@ int64_t OSGetTime(void) {
   return (int64_t)ts.tv_sec * TICKS_PER_SEC + (int64_t)ts.tv_nsec * TICKS_PER_SEC / 1000000000ll;
 }
 uint32_t OSGetTick(void) { return (uint32_t)OSGetTime(); }
+
+/* Calendar time of a tick count: the host's local time at the moment the
+ * timer read (or will read) that count. */
+typedef struct {
+  int sec, min, hour, mday, mon, year, wday, yday, msec, usec;
+} PortCalendarTime;
+void OSTicksToCalendarTime(int64_t ticks, PortCalendarTime* td) {
+  struct timespec rt;
+  struct tm tm;
+  int64_t d = ticks - OSGetTime();
+  int64_t us;
+  time_t s;
+  clock_gettime(CLOCK_REALTIME, &rt);
+  us = (int64_t)rt.tv_sec * 1000000ll + rt.tv_nsec / 1000 + d * 1000000ll / TICKS_PER_SEC;
+  s = (time_t)(us / 1000000ll);
+#ifdef _WIN32
+  localtime_s(&tm, &s);
+#else
+  localtime_r(&s, &tm);
+#endif
+  td->sec = tm.tm_sec, td->min = tm.tm_min, td->hour = tm.tm_hour, td->mday = tm.tm_mday;
+  td->mon = tm.tm_mon, td->year = tm.tm_year + 1900, td->wday = tm.tm_wday, td->yday = tm.tm_yday;
+  td->msec = (int)(us / 1000 % 1000), td->usec = (int)(us % 1000);
+}
 int64_t __OSGetSystemTime(void) { return OSGetTime(); }
 
 void* OSAllocFromArenaLo(uint32_t size, uint32_t align) {

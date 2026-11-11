@@ -1019,7 +1019,8 @@ def main():
                     text = open(os.path.join(base, fn), encoding="utf-8", errors="replace").read()
                     if '".ctors"' in text:
                         ctor_fns |= set(re.findall(r'section\s*\(?"\.ctors"\)?\)[^=;]*=\s*(?:\([^)]*\)\s*)?&?(\w+)\s*;', text))
-        ctor_sym = {n: (n if n in defined else f"_Z{len(n)}{n}v") for n in ctor_fns}   # C or C++ linkage
+        ctor_sym = {n: (n if n in defined else renamed.get(f"_Z{len(n)}{n}v", f"_Z{len(n)}{n}v"))
+                    for n in ctor_fns}   # C linkage, or C++ linkage (perhaps renamed to its original name)
         ctor_fns = sorted((n for n in ctor_fns if ctor_sym[n] in defined and n != "__init_cpp_exceptions"),
                           key=lambda n: ({v: k for k, v in at.items()}.get(n, 0), n))
         print(f"start-up functions registered in .ctors by hand: {len(ctor_fns)}")
@@ -1082,7 +1083,7 @@ def main():
         # a thread-local offset). Keep them out of the dynamic symbol table.
         private = os.path.join(OUT, "private_names.ver")
         host_names = sorted(n for n in ("errno", "time") if n in info) + [
-            "wcslen", "wcscpy", "wcsncpy", "wcscmp", "wcschr", "wmemset"]  # port/compat/wchar16.c
+            "wcslen", "wcscpy", "wcsncpy", "wcscmp", "wcschr", "wmemset", "vswprintf"]  # port/compat/wchar16.c
         with open(private, "w") as f:
             f.write("{ local: %s };\n" % " ".join(n + ";" for n in host_names))
         if GFX and WIN:
