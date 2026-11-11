@@ -446,7 +446,8 @@ kept for reference. Item 10 is open.
     in `port/compat/mwcc_compat.h`; and a search for other CPU-side readers
     of display lists or vertex buffers outside `dlistutil`.
 37. The cabinet-link packet header is read and written through two views
-    that only agree on a big-endian machine (asked 2026-11-11).
+    that only agree on a big-endian machine (asked 2026-11-11; done
+    upstream in `224e450`, `include/game/types/pcb_link.h`).
     `PCBCommBroadcast.c` writes it through
     `union BroadcastHeader { struct { HeaderByte first; unsigned char
     second; StateByte state; StatusByte status; } bytes; struct {
@@ -476,7 +477,8 @@ kept for reference. Item 10 is open.
     mix of views.
 38. Tables written as word arrays (`void *x[]`, `unsigned int x[]`) whose
     readers take single bytes or 16-bit halves of a word (asked
-    2026-11-11). `(void *)0x8000000` is the byte 0x08 followed by three
+    2026-11-11; done upstream in `2012310`, `9087544`, `c530fd9`; what was
+    left and why is in upstream `docs/notes/port_abi.md`, "The sweep"). `(void *)0x8000000` is the byte 0x08 followed by three
     padding bytes on the console and the word 0x08000000 on the host,
     whose first byte is 0. Seen: the item-in-hand animation table
     `lbl_80422064` in `fn_80116DD0.c`, read as `AnimEntry { char type;

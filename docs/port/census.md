@@ -862,3 +862,34 @@ read as 768 and the walk left the list. Upstream request 36: access macros
 defined for the host in `port/compat/mwcc_compat.h`. Not converted: the
 shape-animation path of the HSD library (`src/sysdolphin/baselib/pobj.c`),
 to be asked for if a model turns out to use it.
+
+## 27. The attract loop goes round (2026-11-11)
+
+With section 26 the Windows build ran 8 minutes of attract mode, but stayed
+on the last screen of the sequence ("ただいまカメラは使えません") for ever.
+Three more places where data is seen through two views:
+
+- **Cabinet-link header** (request 37). The scene number of a cabinet is
+  written through a 32-bit bit-field and read with `word >> 15`, next to
+  byte views of the same four bytes. On the host the 32-bit view fell on
+  the flag bits of the next byte, the scene a cabinet read back for itself
+  was garbage, and `PcbSync_AllKartsInValidSelectState()` never let the
+  screen end. It only showed with the frame limiter on: unpaced, the link
+  code had not yet filled the slot when the check ran. Host accessors work
+  on bytes (`port/compat/mwcc_compat.h`, `PCB_*`).
+- **Byte-in-word tables** (request 38). `(void *)0x8000000` in a `void *[]`
+  is the byte 8 on the console and a word whose first byte is 0 here. The
+  item-in-hand animation table was read without its end marker and the
+  second round of the loop crashed in `AnimState_InitEntries`. Upstream
+  retyped the animation tables, the item class and descriptor tables, 504
+  joint animation tracks and more.
+
+Checked on Linux: three rounds of the loop (about 150 s each unpaced), and
+a scripted race, with no panic and no crash. The sequence, from the table
+`fn_8014E804` walks: logo and notices, title, demo race (60 s), entry
+prompt, character demo, entry prompt, how-to-play, camera screen (10.5 s).
+
+How it was found: gdb Python breakpoints that print only on change
+(scene index, kind and vtable in `fn_8014E804`; state in the scene's update).
+A first attempt called a game function from the breakpoint and hung; print
+variables only.
