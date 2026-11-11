@@ -802,3 +802,36 @@ unstubbed, wrap `sndInit` in `port/gfx` and feed an SDL audio stream from
 - Also since section 23: `vswprintf` for 16-bit units (`wchar16.c`),
   `OSTicksToCalendarTime` (host local time, `os_min.c`), all 28
   hand-registered start-up functions called.
+
+
+## 25. Windows start-up, black models, memory size (2026-11-11)
+
+- **Windows start-up** (details in build.md): PE sections on multiples of
+  the section alignment (`mwcc_data_layout.py`, checked by `pe_check.py`),
+  runtime names such as `___main` never stubbed, emulated TLS with a fixed
+  image base, `-fpcc-struct-return` for the game's units (i686 Windows
+  returns structs of up to 8 bytes in registers; callers that the port
+  rewrote to the hidden-pointer form crashed in `ListImpl<void*>::erase`).
+  The executable can be built on a Windows PC through WSL and docker
+  (`port/docker`).
+- **Black karts, drivers, Lakitu, item boxes.** Lit HSD materials set the
+  channel's material alpha separately (`HSD_SetupChannel`, `GX_ALPHA0`,
+  alpha 0). In the SDK `GX_COLORn` replaces only RGB and `GX_ALPHAn` only
+  alpha (`src/dolphin/gx/GXLight.c`); Aurora's `GXSetChanMatColor` and
+  `GXSetChanAmbColor` write all four components, so the material colour
+  became black and every lit colour 0. The game's calls go through
+  `port/gfx/gx_shim.cpp`, which keeps both registers.
+  How it was found, for the next rendering bug: breakpoints with raw stack
+  reads on the GX entry points (uniq by caller), forcing arguments from gdb
+  (lighting off, number of TEV stages 1 or 2), Aurora's `EnableDebugPrints`
+  (`lib/gx/gx.hpp`) for the generated WGSL, and finally printing
+  `'aurora::gx::g_gxState'` after `finish` from `GXCallDisplayList`.
+  Uninitialised-looking values in `GXSetTevKColor`/`GXSetTevColor` calls
+  from `HSD_TExpSetReg` are normal (components no stage selects).
+- **48 MB of main memory.** The Triforce board has 48 MB; `os_min.c`
+  assumed 24. The heap was 14.6 MB and the attract mode used it up loading
+  its third scene (`HSD_InitMemAlloc`, initialize.c:458, about 139 s on
+  Windows; on Linux only without a coin). The arena now ends at 0x82F00000,
+  a choice of this port: the real boot program's value is not known.
+- Next stop in the attract mode: `GXProject` called with another argument
+  order in `CObjProject.c` (upstream request 35).

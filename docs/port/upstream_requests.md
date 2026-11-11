@@ -418,3 +418,11 @@ kept for reference. Item 10 is open.
     remaining-time digits at a fraction of their size). The port's census
     did not follow a C++ definition to its renamed C name; fixed
     (`port/tools/arg_order_census.py`), this is the only function it lists.
+35. `src/game/CObjProject.c` calls `GXProject(*matrix, projection, viewport,
+    outX, outY, outDepth, x, y, z)` through a declaration in another order
+    than the SDK's `GXProject(x, y, z, mtx, pm, vp, sx, sy, sz)` (asked
+    2026-11-11). On the host the pointers arrive where the floats are read;
+    the attract mode crashes in `GXProject`. Also asked: a sweep for local
+    declarations of library functions (SDK, MSL, HSD) whose float/integer
+    order differs from the real prototype, which the port's census does not
+    cover.
