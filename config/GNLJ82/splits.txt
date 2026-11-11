@@ -5862,19 +5862,22 @@ game/ChallengeDemoObj.cpp:
 	.data       start:0x8048E270 end:0x8048E2A8
 	.sdata      start:0x806CF4E8 end:0x806CF500
 
-game/autodata/sdata_806CF500.c:
-	.sdata      start:0x806CF500 end:0x806CF5C8
-
-game/autodata/data_8048E2A8.c:
-	.data       start:0x8048E2A8 end:0x8048E3D8
-
-game/autodata/rodata_803560F0.c:
-	.rodata     start:0x803560F0 end:0x803561E8
-
 game/ChallengeDemoTornado.cpp:
 	extab       start:0x8000C268 end:0x8000C344
 	extabindex  start:0x8002495C end:0x8002498C
 	.text       start:0x80127584 end:0x80127ECC
+	.rodata     start:0x803560F0 end:0x80356168
+	.data       start:0x8048E2A8 end:0x8048E2E0
+	.sdata      start:0x806CF500 end:0x806CF520
+
+game/autodata/sdata_806CF520.c:
+	.sdata      start:0x806CF520 end:0x806CF5C8
+
+game/autodata/data_8048E2E0.c:
+	.data       start:0x8048E2E0 end:0x8048E3D8
+
+game/autodata/rodata_80356168.c:
+	.rodata     start:0x80356168 end:0x803561E8
 
 game/ChallengeDemoUra.cpp:
 	extab       start:0x8000C344 end:0x8000C444
@@ -5941,7 +5944,7 @@ game/SuikaBall_801313D0.cpp:
 	.sdata      start:0x806CF5C8 end:0x806CF5E0
 
 game/autodata/sdata_806CF5E0.c:
-	.sdata      start:0x806CF5E0 end:0x806CF708
+	.sdata      start:0x806CF5E0 end:0x806CF6E8
 
 game/autodata/data_8048E40C.c:
 	.data       start:0x8048E40C end:0x8048E4B8
@@ -6076,13 +6079,13 @@ game/ResultFxScene.c:
 	.data       start:0x8048EC50 end:0x8048EC90
 
 game/autodata/data_8048EC90.c:
-	.data       start:0x8048EC90 end:0x8048EE08
+	.data       start:0x8048EC90 end:0x8048ED28
 
 game/autodata/rodata_80360744.c:
 	.rodata     start:0x80360744 end:0x8036076C
 
 game/autodata/rodata_80360770.c:
-	.rodata     start:0x80360770 end:0x803608D0
+	.rodata     start:0x80360770 end:0x803607A8
 
 game/LogoAnim.c:
 	extab       start:0x8000D7AC end:0x8000D7DC
@@ -6097,6 +6100,15 @@ game/PushPrompt.c:
 	extab       start:0x8000D7DC end:0x8000D838
 	extabindex  start:0x80025094 end:0x800250E8
 	.text       start:0x80141A6C end:0x8014219C
+	.rodata     start:0x803607A8 end:0x803608D0
+	.data       start:0x8048ED28 end:0x8048ED58
+	.sdata      start:0x806CF6E8 end:0x806CF6F8
+
+game/autodata/sdata_806CF6F8.c:
+	.sdata      start:0x806CF6F8 end:0x806CF708
+
+game/autodata/data_8048ED58.c:
+	.data       start:0x8048ED58 end:0x8048EE08
 
 game/PodiumPose.c:
 	extab       start:0x8000D838 end:0x8000D92C
@@ -6129,10 +6141,10 @@ game/CSPartsResultTimeNum.c:
 	.sdata      start:0x806CF738 end:0x806CF750
 
 game/autodata/sdata_806CF750.c:
-	.sdata      start:0x806CF750 end:0x806CF7C8
+	.sdata      start:0x806CF750 end:0x806CF788
 
 game/autodata/data_8048EEE8.c:
-	.data       start:0x8048EEE8 end:0x8048F038
+	.data       start:0x8048EEE8 end:0x8048EF78
 
 game/RankPanel_80144430.cpp:
 	extab       start:0x8000DBE4 end:0x8000DE5C
@@ -6154,10 +6166,15 @@ game/RankPanelBase_801461B0.cpp:
 	extab       start:0x8000DE6C end:0x8000DF14
 	extabindex  start:0x80025298 end:0x800252B0
 	.text       start:0x801461B0 end:0x8014640C
-	.rodata     start:0x80361ED0 end:0x803625E4
+	.rodata     start:0x80361ED0 end:0x8036261C
+	.data       start:0x8048EF78 end:0x8048EFB8
+	.sdata      start:0x806CF788 end:0x806CF7A0
 
-game/autodata/rodata_803625E4.c:
-	.rodata     start:0x803625E4 end:0x8036261C
+game/autodata/sdata_806CF7A0.c:
+	.sdata      start:0x806CF7A0 end:0x806CF7C8
+
+game/autodata/data_8048EFB8.c:
+	.data       start:0x8048EFB8 end:0x8048F038
 
 game/autodata/rodata_80362620.c:
 	.rodata     start:0x80362620 end:0x80362650
@@ -8382,42 +8399,27 @@ game/fn_801B70EC.cpp:
 	.data       start:0x8049A208 end:0x8049A228
 	.sdata      start:0x806CFD40 end:0x806CFD50
 
-game/autodata/sdata_806CFD50.c:
-	.sdata      start:0x806CFD50 end:0x806CFDF0
-
-game/autodata/data_8049A228.c:
-	.data       start:0x8049A228 end:0x8049A748
-
-game/autodata/rodata_80399810.c:
-	.rodata     start:0x80399810 end:0x8039982C
-
-game/autodata/rodata_80399830.c:
-	.rodata     start:0x80399830 end:0x8039AA3C
-
 game/fn_801B76C8.cpp:
 	extab       start:0x80012BFC end:0x80012C04
 	extabindex  start:0x80027854 end:0x80027860
 	.text       start:0x801B76C8 end:0x801B785C
 
 game/fn_801B785C.cpp:
-	extab       start:0x80012C04 end:0x80012C0C
-	extabindex  start:0x80027860 end:0x8002786C
-	.text       start:0x801B785C end:0x801B7894
+	extab       start:0x80012C04 end:0x80012C38
+	extabindex  start:0x80027860 end:0x80027890
+	.text       start:0x801B785C end:0x801B7B04
+	.rodata     start:0x80399810 end:0x8039982C
+	.data       start:0x8049A228 end:0x8049A248
+	.sdata      start:0x806CFD50 end:0x806CFD60
 
-game/fn_801B7894.cpp:
-	extab       start:0x80012C0C end:0x80012C14
-	extabindex  start:0x8002786C end:0x80027878
-	.text       start:0x801B7894 end:0x801B78E0
+game/autodata/sdata_806CFD60.c:
+	.sdata      start:0x806CFD60 end:0x806CFD80
 
-game/fn_801B78E0.cpp:
-	extab       start:0x80012C14 end:0x80012C1C
-	extabindex  start:0x80027878 end:0x80027884
-	.text       start:0x801B78E0 end:0x801B7A08
+game/autodata/data_8049A248.c:
+	.data       start:0x8049A248 end:0x8049A748
 
-game/clFlowEntry_Init.cpp:
-	extab       start:0x80012C1C end:0x80012C38
-	extabindex  start:0x80027884 end:0x80027890
-	.text       start:0x801B7A08 end:0x801B7B04
+game/autodata/rodata_80399830.c:
+	.rodata     start:0x80399830 end:0x80399850
 
 game/fn_801B7B04.c:
 	.text       start:0x801B7B04 end:0x801B7B64
@@ -8466,10 +8468,7 @@ game/fn_801B7EF8.c:
 	.bss        start:0x80679280 end:0x806792B0
 
 game/autodata/data_8049A844.c:
-	.data       start:0x8049A844 end:0x8049A948
-
-game/autodata/data_8049A9DC.c:
-	.data       start:0x8049A9DC end:0x8049AA20
+	.data       start:0x8049A844 end:0x8049A86C
 
 game/GetCourseSelectEntry.c:
 	.text       start:0x801BA034 end:0x801BA110
@@ -8492,25 +8491,25 @@ game/fn_801BA1A4.cpp:
 	extabindex  start:0x800279C8 end:0x800279D4
 	.text       start:0x801BA1A4 end:0x801BA318
 
-game/fn_801BA318.c:
-	extab       start:0x80013124 end:0x8001312C
-	extabindex  start:0x800279D4 end:0x800279E0
-	.text       start:0x801BA318 end:0x801BA380
+game/fn_801BA318.cpp:
+	extab       start:0x80013124 end:0x800131A4
+	extabindex  start:0x800279D4 end:0x80027A04
+	.text       start:0x801BA318 end:0x801BA9A0
+	.rodata     start:0x80399850 end:0x80399870
+	.data       start:0x8049A86C end:0x8049A890
+	.sdata      start:0x806CFD80 end:0x806CFD90
 
-game/clFlowEntry_Update.cpp:
-	extab       start:0x8001312C end:0x80013144
-	extabindex  start:0x800279E0 end:0x800279EC
-	.text       start:0x801BA380 end:0x801BA6A4
+game/autodata/sdata_806CFD90.c:
+	.sdata      start:0x806CFD90 end:0x806CFDB0
 
-game/fn_801BA6A4.c:
-	extab       start:0x80013144 end:0x8001314C
-	extabindex  start:0x800279EC end:0x800279F8
-	.text       start:0x801BA6A4 end:0x801BA7B8
+game/autodata/data_8049A890.c:
+	.data       start:0x8049A890 end:0x8049A948
 
-game/clFlowTitle_Init.cpp:
-	extab       start:0x8001314C end:0x800131A4
-	extabindex  start:0x800279F8 end:0x80027A04
-	.text       start:0x801BA7B8 end:0x801BA9A0
+game/autodata/data_8049A9DC.c:
+	.data       start:0x8049A9DC end:0x8049AA00
+
+game/autodata/rodata_80399870.c:
+	.rodata     start:0x80399870 end:0x8039A5A0
 
 game/fn_801BA9A0.cpp:
 	extab       start:0x800131A4 end:0x800131AC
@@ -8528,26 +8527,16 @@ game/fn_801C1F88.cpp:
 	extabindex  start:0x80027D10 end:0x80027D1C
 	.text       start:0x801C1F88 end:0x801C2238
 
-game/fn_801C2238.c:
-	extab       start:0x80013DA4 end:0x80013DAC
-	extabindex  start:0x80027D1C end:0x80027D28
-	.text       start:0x801C2238 end:0x801C23A8
+game/fn_801C2238.cpp:
+	extab       start:0x80013DA4 end:0x80013E64
+	extabindex  start:0x80027D1C end:0x80027D4C
+	.text       start:0x801C2238 end:0x801C3470
+	.rodata     start:0x8039A5A0 end:0x8039AA3A
+	.data       start:0x8049AA00 end:0x8049AA54
+	.sdata      start:0x806CFDB0 end:0x806CFDC0
 
-game/clFlowClass_Update.cpp:
-	extab       start:0x80013DAC end:0x80013E04
-	extabindex  start:0x80027D28 end:0x80027D34
-	.text       start:0x801C23A8 end:0x801C3108
-	.data       start:0x8049AA20 end:0x8049AA54
-
-game/fn_801C3108.c:
-	extab       start:0x80013E04 end:0x80013E0C
-	extabindex  start:0x80027D34 end:0x80027D40
-	.text       start:0x801C3108 end:0x801C3244
-
-game/clFlowClass_Init.cpp:
-	extab       start:0x80013E0C end:0x80013E64
-	extabindex  start:0x80027D40 end:0x80027D4C
-	.text       start:0x801C3244 end:0x801C3470
+game/autodata/sdata_806CFDC0.c:
+	.sdata      start:0x806CFDC0 end:0x806CFDF0
 
 game/clFlowChara.cpp:
 	extab       start:0x80013E64 end:0x80013FE0
@@ -8605,10 +8594,10 @@ game/clFlowRound.c:
 	.sdata      start:0x806CFDF0 end:0x806CFE08
 
 game/autodata/sdata_806CFE08.c:
-	.sdata      start:0x806CFE08 end:0x806CFE68
+	.sdata      start:0x806CFE08 end:0x806CFE58
 
 game/autodata/data_8049AFD0.c:
-	.data       start:0x8049AFD0 end:0x8049B1E0
+	.data       start:0x8049AFD0 end:0x8049B1C0
 
 game/autodata/rodata_8039B3C8.c:
 	.rodata     start:0x8039B3C8 end:0x8039B46C
@@ -8679,28 +8668,12 @@ game/PanelCda40.cpp:
 	.text       start:0x801CDA40 end:0x801CDDC4
 
 game/fn_801CDDC4.cpp:
-	extab       start:0x80014B08 end:0x80014B20
-	extabindex  start:0x80027F44 end:0x80027F50
-	.text       start:0x801CDDC4 end:0x801CDF10
-
-game/fn_801CDF10.cpp:
-	extab       start:0x80014B20 end:0x80014B28
-	extabindex  start:0x80027F50 end:0x80027F5C
-	.text       start:0x801CDF10 end:0x801CE1EC
-
-game/fn_801CE1EC.cpp:
-	extab       start:0x80014B28 end:0x80014B70
-	extabindex  start:0x80027F5C end:0x80027F68
-	.text       start:0x801CE1EC end:0x801CE324
-
-game/clFlowTaPlease_Init.cpp:
-	extab       start:0x80014B70 end:0x80014C44
-	extabindex  start:0x80027F68 end:0x80027F74
-	.text       start:0x801CE324 end:0x801CE800
-	.rodata     start:0x8039B470 end:0x8039B96C
-
-game/autodata/rodata_8039B96C.c:
-	.rodata     start:0x8039B96C end:0x8039B98C
+	extab       start:0x80014B08 end:0x80014C44
+	extabindex  start:0x80027F44 end:0x80027F74
+	.text       start:0x801CDDC4 end:0x801CE800
+	.rodata     start:0x8039B470 end:0x8039B98A
+	.data       start:0x8049B1C0 end:0x8049B1E0
+	.sdata      start:0x806CFE58 end:0x806CFE68
 
 game/clFlowCourse.cpp:
 	extab       start:0x80014C44 end:0x80014EB4
@@ -8764,10 +8737,10 @@ game/fn_801D3480.cpp:
 	.sdata      start:0x806CFE98 end:0x806CFEA8
 
 game/autodata/sdata_806CFEA8.c:
-	.sdata      start:0x806CFEA8 end:0x806D0110
+	.sdata      start:0x806CFEA8 end:0x806CFEC0
 
 game/autodata/data_8049B5E8.c:
-	.data       start:0x8049B5E8 end:0x8049D030
+	.data       start:0x8049B5E8 end:0x8049BB30
 
 game/autodata/rodata_8039C6C0.c:
 	.rodata     start:0x8039C6C0 end:0x8039C718
@@ -8888,6 +8861,11 @@ game/clFlowKart_Init.c:
 	extabindex  start:0x80028130 end:0x80028178
 	.text       start:0x801D7920 end:0x801D878C
 	.rodata     start:0x8039E508 end:0x8039E9F8
+	.data       start:0x8049BB30 end:0x8049BBE8
+	.sdata      start:0x806CFEC0 end:0x806CFED0
+
+game/autodata/sdata_806CFED0.c:
+	.sdata      start:0x806CFED0 end:0x806CFED8
 
 game/autodata/rodata_8039E9F8.c:
 	.rodata     start:0x8039E9F8 end:0x8039EA10
@@ -8950,7 +8928,7 @@ game/clFlowKart_SetupTextLayout.cpp:
 	.rodata     start:0x8039F1C8 end:0x8039FC60
 
 game/autodata/rodata_8039FC60.c:
-	.rodata     start:0x8039FC60 end:0x8039FD18
+	.rodata     start:0x8039FC60 end:0x8039FCB0
 
 game/fn_801D9A2C.cpp:
 	extab       start:0x80015528 end:0x80015540
@@ -8977,25 +8955,22 @@ game/AttractJoinInput.cpp:
 	extabindex  start:0x80028208 end:0x80028214
 	.text       start:0x801DA1C4 end:0x801DA46C
 
-game/fn_801DA46C.c:
-	extab       start:0x80015590 end:0x80015598
-	extabindex  start:0x80028214 end:0x80028220
-	.text       start:0x801DA46C end:0x801DA574
+game/fn_801DA46C.cpp:
+	extab       start:0x80015590 end:0x8001566C
+	extabindex  start:0x80028214 end:0x80028244
+	.text       start:0x801DA46C end:0x801DAA84
+	.rodata     start:0x8039FCB0 end:0x8039FCD0
+	.data       start:0x8049BBE8 end:0x8049BC1C
+	.sdata      start:0x806CFED8 end:0x806CFEE8
 
-game/fn_801DA574.c:
-	extab       start:0x80015598 end:0x800155A0
-	extabindex  start:0x80028220 end:0x8002822C
-	.text       start:0x801DA574 end:0x801DA700
+game/autodata/sdata_806CFEE8.c:
+	.sdata      start:0x806CFEE8 end:0x806D0108
 
-game/fn_801DA700.c:
-	extab       start:0x800155A0 end:0x800155A8
-	extabindex  start:0x8002822C end:0x80028238
-	.text       start:0x801DA700 end:0x801DA838
+game/autodata/data_8049BC1C.c:
+	.data       start:0x8049BC1C end:0x8049D030
 
-game/clFlowAttract_Init.cpp:
-	extab       start:0x800155A8 end:0x8001566C
-	extabindex  start:0x80028238 end:0x80028244
-	.text       start:0x801DA838 end:0x801DAA84
+game/autodata/rodata_8039FCD0.c:
+	.rodata     start:0x8039FCD0 end:0x8039FD18
 
 game/fn_801DAA84.c:
 	extab       start:0x8001566C end:0x80015674
@@ -10051,7 +10026,7 @@ game/fn_801F8D58.c:
 	.data       start:0x804E83C0 end:0x804EB6B0
 
 game/autodata/data_804EB6B0.c:
-	.data       start:0x804EB6B0 end:0x804EBE2C
+	.data       start:0x804EB6B0 end:0x804EBE18
 
 game/CardCharLookup.c:
 	.text       start:0x801F8E08 end:0x801F8E54
@@ -10144,7 +10119,7 @@ game/fn_801F9CA8.cpp:
 	.rodata     start:0x803BFB30 end:0x803BFB90
 
 game/autodata/rodata_803BFB90.c:
-	.rodata     start:0x803BFB90 end:0x803BFC30
+	.rodata     start:0x803BFB90 end:0x803BFC24
 
 game/fn_801F9DA4.cpp:
 	extab       start:0x80017740 end:0x80017790
@@ -10152,46 +10127,12 @@ game/fn_801F9DA4.cpp:
 	.text       start:0x801F9DA4 end:0x801F9F04
 
 game/fn_801F9F04.cpp:
-	extab       start:0x80017790 end:0x80017884
-	extabindex  start:0x8002912C end:0x80029168
-	.text       start:0x801F9F04 end:0x801FA2E0
-	.rodata     start:0x803BFC30 end:0x803BFC50
-	.data       start:0x804EBE2C end:0x804EBE50
-	.sdata      start:0x806D0110 end:0x806D0120
-
-game/fn_801FA2E0.cpp:
-	extab       start:0x80017884 end:0x8001788C
-	extabindex  start:0x80029168 end:0x80029174
-	.text       start:0x801FA2E0 end:0x801FA310
-
-game/fn_801FA310.cpp:
-	extab       start:0x8001788C end:0x80017894
-	extabindex  start:0x80029174 end:0x80029180
-	.text       start:0x801FA310 end:0x801FA6A4
-	.data       start:0x804EBE50 end:0x804EBE78
-
-game/autodata/data_804EBE78.c:
-	.data       start:0x804EBE78 end:0x804EBE90
-
-game/fn_801FA6A4.cpp:
-	extab       start:0x80017894 end:0x800178AC
-	extabindex  start:0x80029180 end:0x8002918C
-	.text       start:0x801FA6A4 end:0x801FA864
-
-game/fn_801FA864.cpp:
-	extab       start:0x800178AC end:0x800178C4
-	extabindex  start:0x8002918C end:0x80029198
-	.text       start:0x801FA864 end:0x801FAA18
-
-game/fn_801FAA18.cpp:
-	extab       start:0x800178C4 end:0x8001790C
-	extabindex  start:0x80029198 end:0x800291A4
-	.text       start:0x801FAA18 end:0x801FAB20
-
-game/fn_801FAB20.cpp:
-	extab       start:0x8001790C end:0x80017914
-	extabindex  start:0x800291A4 end:0x800291B0
-	.text       start:0x801FAB20 end:0x801FAB58
+	extab       start:0x80017790 end:0x80017914
+	extabindex  start:0x8002912C end:0x800291B0
+	.text       start:0x801F9F04 end:0x801FAB58
+	.rodata     start:0x803BFC24 end:0x803BFC50
+	.data       start:0x804EBE18 end:0x804EBE90
+	.sdata      start:0x806D0108 end:0x806D0120
 
 game/fn_801FAB58.cpp:
 	extab       start:0x80017914 end:0x8001795C
@@ -10201,59 +10142,21 @@ game/fn_801FAB58.cpp:
 	.data       start:0x804EBE90 end:0x804EBF58
 	.sdata      start:0x806D0120 end:0x806D0140
 
-game/autodata/sdata_806D0140.c:
-	.sdata      start:0x806D0140 end:0x806D0180
-
-game/autodata/data_804EBF58.c:
-	.data       start:0x804EBF58 end:0x804EBFC4
-
-game/autodata/rodata_803BFCD8.c:
-	.rodata     start:0x803BFCD8 end:0x803BFE08
-
-game/fn_801FB720.c:
-	extab       start:0x8001795C end:0x80017964
-	extabindex  start:0x80029204 end:0x80029210
-	.text       start:0x801FB720 end:0x801FB778
-
-game/fn_801FB778.cpp:
-	extab       start:0x80017964 end:0x80017990
-	extabindex  start:0x80029210 end:0x8002921C
-	.text       start:0x801FB778 end:0x801FBD14
-	.data       start:0x804EBFC4 end:0x804EBFEC
-
-game/autodata/data_804EBFF0.c:
-	.data       start:0x804EBFF0 end:0x804EC044
-
-game/fn_801FBD14.c:
-	extab       start:0x80017990 end:0x80017998
-	extabindex  start:0x8002921C end:0x80029228
-	.text       start:0x801FBD14 end:0x801FBD94
-
-game/fn_801FBD94.c:
-	extab       start:0x80017998 end:0x800179A0
-	extabindex  start:0x80029228 end:0x80029234
-	.text       start:0x801FBD94 end:0x801FBE14
-
-game/fn_801FBE14.cpp:
-	extab       start:0x800179A0 end:0x800179D0
-	extabindex  start:0x80029234 end:0x80029240
-	.text       start:0x801FBE14 end:0x801FC1A8
-
-game/fn_801FC1A8.cpp:
-	extab       start:0x800179D0 end:0x800179D8
-	extabindex  start:0x80029240 end:0x8002924C
-	.text       start:0x801FC1A8 end:0x801FC1E0
-
-game/anon_801FC1E0.cpp:
-	extab       start:0x800179D8 end:0x80017AEC
-	extabindex  start:0x8002924C end:0x80029270
-	.text       start:0x801FC1E0 end:0x801FC614
+game/fn_801FB720.cpp:
+	extab       start:0x8001795C end:0x80017AEC
+	extabindex  start:0x80029204 end:0x80029270
+	.text       start:0x801FB720 end:0x801FC614
+	.rodata     start:0x803BFCD8 end:0x803BFDC0
+	.data       start:0x804EBF58 end:0x804EBFEC
+	.sdata      start:0x806D0140 end:0x806D0160
 
 game/anon_801FC1E0_nm1.cpp:
 	extab       start:0x80017AEC end:0x80017B40
 	extabindex  start:0x80029270 end:0x800292D0
 	.text       start:0x801FC614 end:0x801FD320
-	.data       start:0x804EC044 end:0x804EC074
+	.rodata     start:0x803BFDC0 end:0x803BFE08
+	.data       start:0x804EBFF0 end:0x804EC074
+	.sdata      start:0x806D0160 end:0x806D0180
 
 game/anon_801FD320.cpp:
 	extab       start:0x80017B40 end:0x80017BE8
@@ -10273,7 +10176,7 @@ game/anon_801FD320_nm1.cpp:
 	.sdata      start:0x806D0198 end:0x806D01B0
 
 game/autodata/sdata_806D01B0.c:
-	.sdata      start:0x806D01B0 end:0x806D0238
+	.sdata      start:0x806D01B0 end:0x806D01E0
 
 game/autodata/rodata_803BFEF8.c:
 	.rodata     start:0x803BFEF8 end:0x803C0300
@@ -10302,7 +10205,7 @@ game/anon_801FD924_tail.cpp:
 	.data       start:0x804EC158 end:0x804EC190
 
 game/autodata/data_804EC190.c:
-	.data       start:0x804EC190 end:0x804EC338
+	.data       start:0x804EC190 end:0x804EC200
 
 ui/UI_PlaySeToggle.c:
 	extab       start:0x80017CD4 end:0x80017CDC
@@ -10345,14 +10248,17 @@ game/dtor_801FEA70.c:
 	.text       start:0x801FEA70 end:0x801FEBD8
 
 game/anon_801FEBD8.cpp:
-	extab       start:0x80017E48 end:0x80018008
-	extabindex  start:0x800294D4 end:0x80029534
-	.text       start:0x801FEBD8 end:0x801FF670
+	extab       start:0x80017E48 end:0x800180E8
+	extabindex  start:0x800294D4 end:0x80029594
+	.text       start:0x801FEBD8 end:0x8020007C
+	.data       start:0x804EC200 end:0x804EC290
+	.sdata      start:0x806D01E0 end:0x806D0208
 
-game/anon_801FF670.cpp:
-	extab       start:0x80018008 end:0x800180E8
-	extabindex  start:0x80029534 end:0x80029594
-	.text       start:0x801FF670 end:0x8020007C
+game/autodata/sdata_806D0208.c:
+	.sdata      start:0x806D0208 end:0x806D0238
+
+game/autodata/data_804EC290.c:
+	.data       start:0x804EC290 end:0x804EC338
 
 game/anon_8020007C.cpp:
 	extab       start:0x800180E8 end:0x80018188
@@ -10458,99 +10364,24 @@ game/anon_80203EA0_m2.cpp:
 	.data       start:0x804EC418 end:0x804EC440
 	.sdata      start:0x806D0288 end:0x806D0298
 
-game/autodata/sdata_806D0298.c:
-	.sdata      start:0x806D0298 end:0x806D0320
-
-game/autodata/data_804EC440.c:
-	.data       start:0x804EC440 end:0x804EC568
-
-game/autodata/rodata_803C25A8.c:
-	.rodata     start:0x803C25A8 end:0x803C2820
-
 game/anon_80204474.cpp:
-	extab       start:0x80018C0C end:0x80018C14
-	extabindex  start:0x80029858 end:0x80029864
-	.text       start:0x80204474 end:0x802044A4
+	extab       start:0x80018C0C end:0x800192CC
+	extabindex  start:0x80029858 end:0x80029984
+	.text       start:0x80204474 end:0x80207760
+	.rodata     start:0x803C25A8 end:0x803C2808
+	.data       start:0x804EC440 end:0x804EC568
+	.sdata      start:0x806D0298 end:0x806D02D8
 
-game/anon_80204474_nm1.cpp:
-	extab       start:0x80018C14 end:0x80018C1C
-	extabindex  start:0x80029864 end:0x80029870
-	.text       start:0x802044A4 end:0x80204740
+game/autodata/sdata_806D02D8.c:
+	.sdata      start:0x806D02D8 end:0x806D0320
 
-game/anon_80204474_part2.cpp:
-	extab       start:0x80018C1C end:0x80018C3C
-	extabindex  start:0x80029870 end:0x80029888
-	.text       start:0x80204740 end:0x802047D4
-
-game/anon_80204474_nm2.cpp:
-	extab       start:0x80018C3C end:0x80018DE4
-	extabindex  start:0x80029888 end:0x800298A0
-	.text       start:0x802047D4 end:0x80204F38
-
-game/anon_80204474_part3.cpp:
-	extab       start:0x80018DE4 end:0x80018DEC
-	extabindex  start:0x800298A0 end:0x800298AC
-	.text       start:0x80204F38 end:0x80204F68
-
-game/anon_80204474_nm3.cpp:
-	extab       start:0x80018DEC end:0x80018E54
-	extabindex  start:0x800298AC end:0x800298B8
-	.text       start:0x80204F68 end:0x802051B0
-
-game/anon_80204474_part4.cpp:
-	extab       start:0x80018E54 end:0x80018E5C
-	extabindex  start:0x800298B8 end:0x800298C4
-	.text       start:0x802051B0 end:0x802051E8
-
-game/anon_80204474_nm4.cpp:
-	extab       start:0x80018E5C end:0x80018EA4
-	extabindex  start:0x800298C4 end:0x800298D0
-	.text       start:0x802051E8 end:0x802052E0
-
-game/anon_802052E0.cpp:
-	extab       start:0x80018EA4 end:0x80018F14
-	extabindex  start:0x800298D0 end:0x800298F4
-	.text       start:0x802052E0 end:0x802055F4
-
-game/anon_802052E0_nm1.cpp:
-	extab       start:0x80018F14 end:0x80018F44
-	extabindex  start:0x800298F4 end:0x8002990C
-	.text       start:0x802055F4 end:0x80205B34
-
-game/anon_802052E0_tail.cpp:
-	extab       start:0x80018F44 end:0x8001900C
-	extabindex  start:0x8002990C end:0x80029924
-	.text       start:0x80205B34 end:0x80205DCC
-
-game/anon_80205DCC.cpp:
-	extab       start:0x8001900C end:0x80019024
-	extabindex  start:0x80029924 end:0x80029930
-	.text       start:0x80205DCC end:0x8020615C
-
-game/anon_80205DCC_nm2.cpp:
-	extab       start:0x80019024 end:0x8001902C
-	extabindex  start:0x80029930 end:0x8002993C
-	.text       start:0x8020615C end:0x802064D8
-
-game/anon_80205DCC_m2.cpp:
-	extab       start:0x8001902C end:0x80019044
-	extabindex  start:0x8002993C end:0x80029948
-	.text       start:0x802064D8 end:0x8020688C
-
-game/anon_80205DCC_m1.cpp:
-	extab       start:0x80019044 end:0x80019148
-	extabindex  start:0x80029948 end:0x80029960
-	.text       start:0x8020688C end:0x80206BC8
-
-game/anon_80205DCC_nm1.cpp:
-	extab       start:0x80019148 end:0x80019210
-	extabindex  start:0x80029960 end:0x80029978
-	.text       start:0x80206BC8 end:0x80207324
+game/autodata/rodata_803C2808.c:
+	.rodata     start:0x803C2808 end:0x803C2820
 
 game/anon_80207324.cpp:
-	extab       start:0x80019210 end:0x8001933C
-	extabindex  start:0x80029978 end:0x80029A14
-	.text       start:0x80207324 end:0x80207E3C
+	extab       start:0x800192CC end:0x8001933C
+	extabindex  start:0x80029984 end:0x80029A14
+	.text       start:0x80207760 end:0x80207E3C
 
 game/anon_80207E3C.cpp:
 	extab       start:0x8001933C end:0x8001934C
@@ -10991,18 +10822,6 @@ game/anon_80216568_misc.cpp:
 	.data       start:0x804EDB90 end:0x804EDC20
 	.sdata      start:0x806D0450 end:0x806D0478
 
-game/autodata/sdata_806D0478.c:
-	.sdata      start:0x806D0478 end:0x806D0488
-
-game/autodata/data_804EDC20.c:
-	.data       start:0x804EDC20 end:0x804EDC44
-
-game/autodata/rodata_803C4BF8.c:
-	.rodata     start:0x803C4BF8 end:0x803C4E4C
-
-game/autodata/rodata_803C4E50.c:
-	.rodata     start:0x803C4E50 end:0x803C4E60
-
 game/anon_80216568_fader.cpp:
 	.text       start:0x80218B28 end:0x80218B5C
 
@@ -11030,39 +10849,15 @@ game/fn_80218F1C.c:
 	.text       start:0x80218F1C end:0x80218F40
 
 game/anon_80218F40.cpp:
-	.text       start:0x80218F40 end:0x80218F5C
+	extab       start:0x8001A940 end:0x8001AA90
+	extabindex  start:0x8002A1DC end:0x8002A224
+	.text       start:0x80218F40 end:0x80219FF4
+	.rodata     start:0x803C4BF8 end:0x803C4E4C
+	.data       start:0x804EDC20 end:0x804EDC84
+	.sdata      start:0x806D0478 end:0x806D0488
 
-game/anon_80218F40_nm1.cpp:
-	extab       start:0x8001A940 end:0x8001A948
-	extabindex  start:0x8002A1DC end:0x8002A1E8
-	.text       start:0x80218F5C end:0x80219538
-	.data       start:0x804EDC44 end:0x804EDC60
-
-game/anon_80218F40_nm1_tail.cpp:
-	extab       start:0x8001A948 end:0x8001A950
-	extabindex  start:0x8002A1E8 end:0x8002A1F4
-	.text       start:0x80219538 end:0x8021984C
-
-game/anon_80218F40_setpath.cpp:
-	extab       start:0x8001A950 end:0x8001A958
-	extabindex  start:0x8002A1F4 end:0x8002A200
-	.text       start:0x8021984C end:0x80219900
-
-game/anon_80218F40_exact2.cpp:
-	extab       start:0x8001A958 end:0x8001A970
-	extabindex  start:0x8002A200 end:0x8002A20C
-	.text       start:0x80219900 end:0x8021995C
-
-game/anon_80218F40_nm2.cpp:
-	extab       start:0x8001A970 end:0x8001A9CC
-	extabindex  start:0x8002A20C end:0x8002A218
-	.text       start:0x8021995C end:0x80219B24
-
-game/anon_80218F40_exact3.cpp:
-	extab       start:0x8001A9CC end:0x8001AA90
-	extabindex  start:0x8002A218 end:0x8002A224
-	.text       start:0x80219B24 end:0x80219FF4
-	.data       start:0x804EDC60 end:0x804EDC84
+game/autodata/rodata_803C4E50.c:
+	.rodata     start:0x803C4E50 end:0x803C4E60
 
 game/anon_80219FF4.cpp:
 	extab       start:0x8001AA90 end:0x8001AAA8
@@ -11624,7 +11419,7 @@ game/FlowCardCheck_nm2.cpp:
 	.sdata      start:0x806D0650 end:0x806D0728
 
 game/autodata/sdata_806D0728.c:
-	.sdata      start:0x806D0728 end:0x806D07B0
+	.sdata      start:0x806D0728 end:0x806D0798
 
 game/autodata/data_804EE520.c:
 	.data       start:0x804EE520 end:0x804EE540
@@ -11644,12 +11439,6 @@ game/ItemSelectState.cpp:
 	.rodata     start:0x803DC0C0 end:0x803DC318
 	.data       start:0x804EE540 end:0x804EE55C
 
-game/autodata/data_804EE560.c:
-	.data       start:0x804EE560 end:0x804EE584
-
-game/autodata/rodata_803DC318.c:
-	.rodata     start:0x803DC318 end:0x803DC358
-
 game/ItemSelectChoiceInit.cpp:
 	extab       start:0x8001C920 end:0x8001C938
 	extabindex  start:0x8002ACBC end:0x8002ACC8
@@ -11661,36 +11450,21 @@ game/KartChoiceSelect.cpp:
 	.text       start:0x8023B318 end:0x8023B7E4
 
 game/KartChoiceRequest.cpp:
-	.text       start:0x8023B7E4 end:0x8023B7FC
+	extab       start:0x8001C940 end:0x8001CA14
+	extabindex  start:0x8002ACD4 end:0x8002AD10
+	.text       start:0x8023B7E4 end:0x8023BEF0
+	.rodata     start:0x803DC318 end:0x803DC348
+	.data       start:0x804EE560 end:0x804EE5A0
+	.sdata      start:0x806D0798 end:0x806D07A8
 
-game/KartChoiceOtherUpdate.cpp:
-	extab       start:0x8001C940 end:0x8001C948
-	extabindex  start:0x8002ACD4 end:0x8002ACE0
-	.text       start:0x8023B7FC end:0x8023B838
-
-game/KartChoiceUpdate.cpp:
-	extab       start:0x8001C948 end:0x8001C950
-	extabindex  start:0x8002ACE0 end:0x8002ACEC
-	.text       start:0x8023B838 end:0x8023BB6C
-	.data       start:0x804EE584 end:0x804EE5A0
+game/autodata/sdata_806D07A8.c:
+	.sdata      start:0x806D07A8 end:0x806D07B0
 
 game/autodata/data_804EE5A0.c:
 	.data       start:0x804EE5A0 end:0x804EE5B0
 
-game/KartChoiceFactory.cpp:
-	extab       start:0x8001C950 end:0x8001C968
-	extabindex  start:0x8002ACEC end:0x8002ACF8
-	.text       start:0x8023BB6C end:0x8023BBB8
-
-game/KartChoiceDtor.cpp:
-	extab       start:0x8001C968 end:0x8001C9A4
-	extabindex  start:0x8002ACF8 end:0x8002AD04
-	.text       start:0x8023BBB8 end:0x8023BD00
-
-game/KartChoiceCtor.cpp:
-	extab       start:0x8001C9A4 end:0x8001CA14
-	extabindex  start:0x8002AD04 end:0x8002AD10
-	.text       start:0x8023BD00 end:0x8023BEF0
+game/autodata/rodata_803DC348.c:
+	.rodata     start:0x803DC348 end:0x803DC358
 
 game/KartChoiceChildDraw.cpp:
 	extab       start:0x8001CA14 end:0x8001CA1C
@@ -11714,9 +11488,6 @@ game/KartChoiceFinish.cpp:
 	.rodata     start:0x803DC358 end:0x803DC378
 	.data       start:0x804EE5B0 end:0x804EE5D8
 	.sdata      start:0x806D07B0 end:0x806D07C0
-
-game/autodata/sdata_806D07C0.c:
-	.sdata      start:0x806D07C0 end:0x806D0878
 
 game/ItemSelectAllowed.c:
 	extab       start:0x8001CAAC end:0x8001CAB4
@@ -11823,9 +11594,6 @@ game/ItemSelectChildSpriteDraw.cpp:
 	.text       start:0x8023DCEC end:0x8023E154
 	.rodata     start:0x803E5878 end:0x803E5CE8
 
-game/autodata/rodata_803E5CE8.c:
-	.rodata     start:0x803E5CE8 end:0x803E5D38
-
 game/ItemSelectChildSpriteMethods.cpp:
 	extab       start:0x8001CBDC end:0x8001CBFC
 	extabindex  start:0x8002AEC0 end:0x8002AEF0
@@ -11836,9 +11604,6 @@ game/ItemSelectChildSpriteUpdate.cpp:
 	extabindex  start:0x8002AEF0 end:0x8002AEFC
 	.text       start:0x8023E324 end:0x8023E808
 	.data       start:0x804EE618 end:0x804EE638
-
-game/autodata/data_804EE638.c:
-	.data       start:0x804EE638 end:0x804EE65C
 
 game/ItemSelectChildSpriteDtor.cpp:
 	extab       start:0x8001CC04 end:0x8001CC9C
@@ -11890,32 +11655,19 @@ game/CardSlotFlag.cpp:
 	extabindex  start:0x8002AF80 end:0x8002AF8C
 	.text       start:0x8023F714 end:0x8023F76C
 
-game/LapDispControls.c:
-	.text       start:0x8023F76C end:0x8023F790
+game/LapDispControls.cpp:
+	extab       start:0x8001CE24 end:0x8001CEE4
+	extabindex  start:0x8002AF8C end:0x8002AFD4
+	.text       start:0x8023F76C end:0x8023FE74
+	.rodata     start:0x803E5CE8 end:0x803E5D35
+	.data       start:0x804EE638 end:0x804EE67C
+	.sdata      start:0x806D07C0 end:0x806D07D0
 
-game/LapDispUpdate.cpp:
-	extab       start:0x8001CE24 end:0x8001CE2C
-	extabindex  start:0x8002AF8C end:0x8002AF98
-	.text       start:0x8023F790 end:0x8023FAA0
-	.data       start:0x804EE65C end:0x804EE67C
+game/autodata/sdata_806D07D0.c:
+	.sdata      start:0x806D07D0 end:0x806D0878
 
 game/autodata/data_804EE680.c:
 	.data       start:0x804EE680 end:0x804EE72C
-
-game/LapDisp_SetTotalLaps.c:
-	extab       start:0x8001CE2C end:0x8001CE34
-	extabindex  start:0x8002AF98 end:0x8002AFA4
-	.text       start:0x8023FAA0 end:0x8023FAEC
-
-game/LapDisp_SetCurrentLap.c:
-	extab       start:0x8001CE34 end:0x8001CE3C
-	extabindex  start:0x8002AFA4 end:0x8002AFB0
-	.text       start:0x8023FAEC end:0x8023FB4C
-
-game/CountdownOwner.cpp:
-	extab       start:0x8001CE3C end:0x8001CEE4
-	extabindex  start:0x8002AFB0 end:0x8002AFD4
-	.text       start:0x8023FB4C end:0x8023FE74
 
 game/TaskBucketsCast.cpp:
 	extab       start:0x8001CEE4 end:0x8001CEEC
@@ -12197,13 +11949,13 @@ game/HudResultFlow.cpp:
 	.sdata      start:0x806D08A0 end:0x806D08B8
 
 game/autodata/sdata_806D08B8.c:
-	.sdata      start:0x806D08B8 end:0x806D0948
+	.sdata      start:0x806D08B8 end:0x806D08E0
 
 game/autodata/data_804EEC10.c:
 	.data       start:0x804EEC10 end:0x804EEC5C
 
 game/autodata/rodata_803EF8D0.c:
-	.rodata     start:0x803EF8D0 end:0x803EFE48
+	.rodata     start:0x803EF8D0 end:0x803EF930
 
 game/HudAlternate.cpp:
 	extab       start:0x8001DB94 end:0x8001DBE0
@@ -12212,7 +11964,7 @@ game/HudAlternate.cpp:
 	.data       start:0x804EEC5C end:0x804EEC94
 
 game/autodata/data_804EEC98.c:
-	.data       start:0x804EEC98 end:0x804EECF4
+	.data       start:0x804EEC98 end:0x804EECD0
 
 game/RaceHudAdjust.cpp:
 	.text       start:0x8024904C end:0x80249054
@@ -12240,27 +11992,22 @@ game/RaceHudSceneCtor.cpp:
 game/RankDispControls.cpp:
 	.text       start:0x802494B4 end:0x802494BC
 
-game/RankDispControls_tail.c:
-	.text       start:0x802494BC end:0x802494E0
+game/RankDispControls_tail.cpp:
+	extab       start:0x8001DC50 end:0x8001DD64
+	extabindex  start:0x8002B430 end:0x8002B46C
+	.text       start:0x802494BC end:0x80249E0C
+	.rodata     start:0x803EF930 end:0x803EF950
+	.data       start:0x804EECD0 end:0x804EED1C
+	.sdata      start:0x806D08E0 end:0x806D08F0
 
-game/RankDispUpdate.cpp:
-	extab       start:0x8001DC50 end:0x8001DC58
-	extabindex  start:0x8002B430 end:0x8002B43C
-	.text       start:0x802494E0 end:0x80249984
-	.data       start:0x804EECF4 end:0x804EED1C
+game/autodata/sdata_806D08F0.c:
+	.sdata      start:0x806D08F0 end:0x806D0948
 
 game/autodata/data_804EED20.c:
 	.data       start:0x804EED20 end:0x804EEDE4
 
-game/RnkDisp_SetPosition.c:
-	extab       start:0x8001DC58 end:0x8001DC60
-	extabindex  start:0x8002B43C end:0x8002B448
-	.text       start:0x80249984 end:0x802499F4
-
-game/TripletFaderOwner.cpp:
-	extab       start:0x8001DC60 end:0x8001DD64
-	extabindex  start:0x8002B448 end:0x8002B46C
-	.text       start:0x802499F4 end:0x80249E0C
+game/autodata/rodata_803EF950.c:
+	.rodata     start:0x803EF950 end:0x803EFE48
 
 game/CardSetupFlowDraw.cpp:
 	extab       start:0x8001DD64 end:0x8001DD6C
@@ -12483,52 +12230,36 @@ game/RacePopups.cpp:
 	.data       start:0x804EF140 end:0x804EF1A8
 	.sdata      start:0x806D09F0 end:0x806D0A10
 
-game/autodata/sdata_806D0A10.c:
-	.sdata      start:0x806D0A10 end:0x806D0A98
-
-game/autodata/data_804EF1A8.c:
-	.data       start:0x804EF1A8 end:0x804EF1CC
-
 game/autodata/rodata_803F10B0.c:
-	.rodata     start:0x803F10B0 end:0x803F141C
+	.rodata     start:0x803F10B0 end:0x803F1150
 
 game/SpeedHud.cpp:
 	extab       start:0x8001EE38 end:0x8001EF8C
 	extabindex  start:0x8002B910 end:0x8002B940
 	.text       start:0x80251CD0 end:0x802529C8
-	.data       start:0x804EF1CC end:0x804EF1EC
+	.rodata     start:0x803F1150 end:0x803F1170
+	.data       start:0x804EF1A8 end:0x804EF1EC
+	.sdata      start:0x806D0A10 end:0x806D0A20
 
 game/autodata/data_804EF1F0.c:
-	.data       start:0x804EF1F0 end:0x804F2044
+	.data       start:0x804EF1F0 end:0x804F2020
 
 game/TitleNameHudUpdate.cpp:
-	extab       start:0x8001EF8C end:0x8001EF94
-	extabindex  start:0x8002B940 end:0x8002B94C
-	.text       start:0x802529C8 end:0x80252D48
-	.data       start:0x804F2044 end:0x804F2060
+	extab       start:0x8001EF8C end:0x8001F078
+	extabindex  start:0x8002B940 end:0x8002B988
+	.text       start:0x802529C8 end:0x80253294
+	.rodata     start:0x803F1170 end:0x803F11A0
+	.data       start:0x804F2020 end:0x804F2060
+	.sdata      start:0x806D0A20 end:0x806D0A30
+
+game/autodata/sdata_806D0A30.c:
+	.sdata      start:0x806D0A30 end:0x806D0A98
 
 game/autodata/data_804F2060.c:
 	.data       start:0x804F2060 end:0x804F20B4
 
-game/fn_80252D48.c:
-	extab       start:0x8001EF94 end:0x8001EF9C
-	extabindex  start:0x8002B94C end:0x8002B958
-	.text       start:0x80252D48 end:0x80252D6C
-
-game/fn_80252D6C.c:
-	extab       start:0x8001EF9C end:0x8001EFA4
-	extabindex  start:0x8002B958 end:0x8002B964
-	.text       start:0x80252D6C end:0x80252D90
-
-game/TitleNameHud.cpp:
-	extab       start:0x8001EFA4 end:0x8001EFF8
-	extabindex  start:0x8002B964 end:0x8002B97C
-	.text       start:0x80252D90 end:0x80252EE4
-
-game/TitleNameHud_nm1.cpp:
-	extab       start:0x8001EFF8 end:0x8001F078
-	extabindex  start:0x8002B97C end:0x8002B988
-	.text       start:0x80252EE4 end:0x80253294
+game/autodata/rodata_803F11A0.c:
+	.rodata     start:0x803F11A0 end:0x803F141C
 
 game/HudManager.cpp:
 	extab       start:0x8001F078 end:0x8001F090
