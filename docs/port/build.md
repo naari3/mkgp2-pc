@@ -178,6 +178,71 @@ In this mode `link_census.py` compiles the glue of `port/gfx` itself and
 uses jumps instead of the linker's `--wrap` (the game's objects have plain
 names, Aurora's the COFF underscore; see `link_gfx_windows`).
 
+## Building the Windows executable on a Windows PC (WSL and docker)
+
+The Windows executable is cross-built on Linux, so on a Windows PC the
+build runs in a container inside WSL. Nothing is installed on Windows and
+nothing in the WSL distribution changes apart from one clone and one docker
+image. Needs: WSL 2 with a distribution in which `docker` works for the
+default user (any Ubuntu; the build itself runs in Ubuntu 24.04 inside the
+container).
+
+```powershell
+.\port\docker\wsl-build.ps1                      # builds origin/main
+.\port\docker\wsl-build.ps1 -Ref win/my-branch   # a branch of this clone, committed work only
+.\port\docker\wsl-build.ps1 -Distro Ubuntu-20.04 # a distribution other than the default
+```
+
+The result is `build\pc-gfx-win\dist` of the Windows clone: `mkgp2-gfx.exe`,
+the six DLLs, `run-gfx.cmd` and `KEYS.txt` (the same set as the zip
+described below). Start it with `run-gfx.cmd "path to the ISO"`, or set
+`MKGP2_ISO` and run the executable.
+
+What the pieces do:
+
+- `port/docker/wsl-build.ps1` (Windows) calls `port/docker/wsl-build.sh` in
+  WSL with the ref, the destination and the path of the Windows clone.
+- `wsl-build.sh` keeps a clone in `~/src/github.com/naari3/mkgp2-pc` on the
+  Linux file system (a build under `/mnt/c` is slow), fetches `origin` and
+  the Windows clone (remote `win`), checks the ref out detached, builds the
+  image `mkgp2-pc-win32` from `port/docker/Dockerfile` and runs
+  `port/docker/build-win32.sh` in it as the WSL user. The log is
+  `build/build-win32.log` in the WSL clone.
+- `build-win32.sh` is the sequence of "32-bit Windows, with rendering" and
+  "Windows cross build: the exact environment": Aurora, MusyX,
+  `link_census.py --gfx --os windows --link`, `port/gfx`, `pe_check.py`,
+  then the files are collected. It also runs on a plain Linux machine with
+  the packages of the Dockerfile.
+
+Measured 2026-11-11 (Ryzen 9 5900X, WSL 2, Ubuntu 20.04 host distribution,
+docker 23.0.2): image 1.45 GB, WSL clone with all build trees 1.3 GB; first build from an empty
+tree about 8 minutes including downloads; a rebuild with nothing changed
+about 2 minutes. The image has clang 18.1.3, cmake 3.28.3,
+`i686-w64-mingw32-gcc` 13-win32 and mingw-w64 11.0.1, the versions of the
+cloud build machine.
+
+Differences from the cloud build:
+
+- The container lets Aurora's FetchContent download everything. So
+  freetype is 2.14.3 (Aurora's pinned archive) instead of Ubuntu's 2.13.2,
+  and abseil and sqlite come from Aurora's URLs instead of the Ubuntu
+  source packages (abseil is the same release, 20240722.0).
+- `clang-tools` is installed: CMake 3.28 scans SDL's C++ sources for
+  modules and stops without `clang-scan-deps`.
+- `link_census.py` finds SDL's headers in
+  `build/aurora-win32/_deps/sdl-src/include` when
+  `FETCHCONTENT_SOURCE_DIR_SDL` was not given.
+
+Checked 2026-11-11 on Windows 11 (RTX 3060 Ti, D3D12): the executable built
+this way starts with the Japanese image, opens its window and runs until
+the frame limit (`MKGP2PC_FRAMES=200` and `900`). Observed: the process
+then ends with exit code 0xC0000005 instead of 0, in both runs, after
+Aurora's warning "Buffer mapping Aborted: Buffer was destroyed before
+mapping was resolved". Assumption, not verified: the fault is in the
+shutdown path after the frame limit and not specific to this build; the
+cloud-built executable has not been run with `MKGP2PC_FRAMES` on Windows
+for comparison.
+
 ## 32-bit Dawn packages
 
 Aurora takes Dawn as a prebuilt package and upstream publishes 64-bit ones

@@ -107,7 +107,12 @@ def link_gfx_windows(stubs, thunks, cxxrt, replaced, aurora_fns, aurora_data, po
         m = re.match(r"(SDL_SOURCE_DIR|sdl_SOURCE_DIR|FETCHCONTENT_SOURCE_DIR_SDL)\w*:\w+=(.+)", line)
         if m and os.path.isdir(os.path.join(m.group(2), "include")):
             sdl_inc = [os.path.join(m.group(2), "include")]
-    aurora = os.path.join(ROOT, "port", "extern", "aurora")
+    if not sdl_inc:
+        # FetchContent downloaded SDL itself (no FETCHCONTENT_SOURCE_DIR_SDL given)
+        fetched = os.path.join(ROOT, "build", "aurora-win32", "_deps", "sdl-src", "include")
+        if os.path.isdir(fetched):
+            sdl_inc = [fetched]
+    aurora =os.path.join(ROOT, "port", "extern", "aurora")
     for src in sorted(glob.glob(os.path.join(ROOT, "port", "gfx", "*.c*"))):
         if os.path.basename(src).startswith("dawn_"):
             continue   # needs Dawn's headers: CMake compiles it
