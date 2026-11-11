@@ -6,9 +6,11 @@ the PC port carries it. Port code: `port/platform/triforce/netlink.c`
 (sockets), `port/platform/triforce/mediaboard.c` (the board's mailboxes).
 
 State 2026-11-11: two copies of the no-graphics build on one Linux machine
-find each other, connect both ways and exchange their state every frame.
-Not checked: pictures (the rendering build), Windows, two different PCs, a
-race played to the end over the link.
+find each other, connect both ways, form one group when both take a coin,
+pass the course selection and run a versus race together (scene 0x2C, race
+clock running on both). Not checked: pictures (the rendering build),
+Windows (the executable links, nothing more), two different PCs, a race
+played by people.
 
 ## Using it
 
@@ -139,8 +141,107 @@ address faked some other way and every message converted.
 Dolphin (GPL, facts only, no code used) supports the same link for the
 original program by redirecting the fixed addresses to configured ones.
 
+## How a race is kept in step
+
+Read from `src/game/VSMode_FrameUpdate.c` (`VSMode_FrameUpdate`) and
+`PCBCheckRecv.c` (`PCBCheck_RecvLinkData`, `PCBComm_SendToAllPeers`).
+
+- One cabinet of a group is the host (`g_isCommHost`; `PCBComm_ConfirmHost*`
+  picks the one whose number is the group's role number minus one, in
+  practice the lowest PCB ID that joined). There is no rollback and no
+  prediction: the host runs the race, the others replay it.
+- Every cabinet sends its state message (type 1) each frame; the last 0x28
+  bytes are its input sample: three floats (pedals and wheel, quantised),
+  buttons, and `queued`, the number of host frames it holds
+  (`PCBComm_BuildBroadcastSlot`).
+- The host keeps a ring of 64 samples per cabinet, uses the next one each
+  frame and jumps to the newest when more than 3 wait. Its own samples go
+  through the same ring, two entries ahead. It builds one frame of 0xDC
+  bytes: per kart the input and, after its own simulation step, the kart's
+  position, a speed value and the roulette result; for the CPU karts
+  position and state (0x18 bytes each); rank, laps and the race clock. That
+  frame (type 2) goes to every client each frame.
+- A client queues host frames (ring of 64) and takes one per frame of its
+  own. For each kart it first puts the kart at the host's position, then
+  runs the same step with the host's inputs; CPU karts and the race clock
+  are copied. With no new frame it runs the last one again. It only stops
+  and waits when its ring is empty, and then until two frames have come.
+- Flow control: when a client reports `queued` of 2 or more, the host waits
+  one retrace before its next step, up to 4 retraces per step. While it
+  waits it keeps sending.
+- Time limits: 180 polls without data close a connection; a connected
+  outgoing link with no incoming one for 180 ticks is reset; the socket
+  limits are 80 s.
+
+So a client sees its own kart move only after its input has gone to the host
+and come back in a frame, and the host's player has no such wait.
+
+### Measured with delay added (2026-11-11)
+
+Two copies of the no-graphics build on one Linux machine, both at 60
+retraces a second (`MKGP2PC_HZ=60`), the same scripted input on both (coin,
+button presses, pedal changed every 1.5 s), versus race on the first course,
+about 40 to 110 s of race per row. Delay, jitter and loss were added inside
+the port to every send of both copies (`MKGP2PC_LINK_DELAY` and so on, see
+below); the transport stays TCP on the loopback. `MKGP2PC_LINK_PROBE=1`
+printed, once a second, how much the race clock advanced and how long a
+change of the local input took to appear in the frame the race runs from.
+
+| one way delay | race speed (1.00 = real time) | input delay, host | input delay, client (mean / worst) |
+|---|---|---|---|
+| 0 ms, copies started together | 0.72 | 20 ms | 82 / 101 ms |
+| 0 ms, second copy 8 ms later | 0.98 | 17 ms | 83 / 117 ms |
+| 1 ms | 1.00 | 17 ms | 74 / 99 ms |
+| 5 ms | 1.00 | 18 ms | 91 / 134 ms |
+| 10 ms | 1.00 | 17 ms | 100 / 131 ms |
+| 20 ms | 1.00 | 17 ms | 117 / 133 ms |
+| 30 ms | 0.98 | 17 ms | 148 / 200 ms |
+| 50 ms | 0.70 | 22 ms | 184 / 234 ms |
+| 100 ms | 0.75 | 20 ms | 287 / 317 ms |
+| 20 ms + 0..10 ms jitter | 0.78 | 20 ms | 135 / 184 ms |
+| 20 ms, 2 % of sends 200 ms late (a lost segment) | 0.72, worst second 0.43 | 21 ms | 199 / 467 ms |
+
+What it shows:
+
+- The host's player always has about one frame of input delay; a client
+  has about 80 ms with no network delay at all, plus twice the one way
+  delay.
+- Up to about 30 ms one way with a steady delay the race runs at full
+  speed. From 50 ms, or with 10 ms of jitter, or with losses, the whole
+  race slows to 0.7 to 0.8 of real time for everybody: the client's
+  `queued` report reaches the host late, the host waits on reports of a
+  backlog that is already gone, and the two keep swinging.
+- The same swing shows without any delay when the two copies' frames fall
+  on the same instant (first row): it depends on the phase between the two
+  machines' frames.
+- Nothing is rolled back; what a client sees is its kart being put where
+  the host says, every frame.
+
+Limits of this measurement: emulated delay in the port (1 ms resolution),
+one machine, no graphics, one course, scripted input, the race clock as the
+measure of speed. How the arcade board itself behaves at these delays is
+not known from it.
+
+Options of the port for such measurements:
+
+| variable | meaning |
+|---|---|
+| `MKGP2PC_LINK_DELAY=<ms>` | every send leaves that much later |
+| `MKGP2PC_LINK_JITTER=<ms>` | plus a random 0..ms, order kept |
+| `MKGP2PC_LINK_LOSS=<percent>` | that share of the sends waits 200 ms (or twice the delay), and everything behind it |
+| `MKGP2PC_LINK_PROBE=1` | the once-a-second line described above |
+| `MKGP2PC_HZ=60` | no-graphics build only: real time instead of fast-forward; the delayed sends are released every millisecond there, once a frame in the rendering build |
+
 ## Found on the way
 
+- Course selection crashed both linked copies: the course voted for is read
+  through a 16-bit view of two bytes (`clFlowCourse.cpp`), which gave 32
+  instead of 0..17 here. Upstream request 47 (`PCB_CHOICE_TRACK`,
+  mkgp2-decomp 00de9ef).
+- The start of a versus race never came: the string pool of
+  `VSMode_FrameUpdate.c` was written as words, so `VSMode_Init` asked for the
+  file "guyj_umeratsad.t" (`jyugemu_start.dat`) for ever. Upstream request
+  48 (`TEXT_WORD`, mkgp2-decomp 81e7e44).
 - `acConnect` was a stub in the PC build: `src/triforce/acsocket_nm4.c`
   switches to C++ with a pragma, the PC build compiles such a unit as C++
   from its first line, and `include/dolphin/card.h` had a parameter called

@@ -585,6 +585,18 @@ kept for reference. Item 10 is open.
     no connect ever reached the network board (docs/port/cabinet_link.md).
     Parameters renamed to `newName`; declarations only.
 
+47. **Course vote read through a 16-bit view** (done, upstream 00de9ef).
+    `clFlowCourse.cpp` read the track of the cabinet link's vote result as
+    `(*(unsigned short *)p >> 4) & 0x7F`; request 37 had only given the
+    setter a macro. `PCB_CHOICE_TRACK(h)` in `pcb_link.h`, bytes on the host
+    (`port/compat/mwcc_compat.h`). Two linked copies crashed in course
+    selection.
+
+48. **Versus mode's string pool as words** (done, upstream 81e7e44).
+    `sdata_806CEFE0_rodata_80320D9C[247]` in `VSMode_FrameUpdate.c`, all
+    text, now `TEXT_WORD`; `tools/port_abi/text_words.py` had skipped
+    definitions that begin with `__declspec(section ...)`.
+
 ## Port-side source patches (2026-11-11)
 
 Corrections that exist only because of the PC do not go upstream any more
