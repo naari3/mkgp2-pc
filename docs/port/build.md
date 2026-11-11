@@ -235,3 +235,29 @@ is used, `MKGP2PC_SCRIPT` may drive the inputs. Not tested with a real
 keyboard yet (the cloud build machine has no input device); the same input
 calls driven by the script steer and accelerate the kart.
 
+
+## Sound (rendering executable)
+
+The game's MusyX calls go to the PC target of the MusyX decompilation,
+`port/extern/musyx` (github.com/AxioDL/musyx, CC0, pinned `717404d`; MusyX
+2.0.2 like the game). It is built on its own, without its SDL adapter, and
+`link_census.py --gfx` adds the library to the link:
+
+    cmake -S port/extern/musyx -B build/musyx32 -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+      -DCMAKE_C_COMPILER=clang -DCMAKE_C_FLAGS="-m32 -malign-double -D_Bool='unsigned long'" \
+      -DMUSYX_ENABLE_SDL=OFF -DMUSYX_VERSION_PATCH=2
+    cmake --build build/musyx32
+    # Windows: -B build/musyx-win32 -DCMAKE_TOOLCHAIN_FILE=$PWD/port/gfx/cmake/mingw-i686.cmake
+    #          -DCMAKE_C_FLAGS="-D_Bool='unsigned long'" (same options otherwise)
+
+`-D_Bool='unsigned long'`: MusyX's `bool` is 4 bytes in the game (MWCC, C89)
+and `_Bool` in a C11 build; the game tests the whole register of a result.
+
+`port/gfx/audio_musyx.c` is the device layer: the link wraps `sndInit`, and
+an SDL audio stream (32 kHz stereo) pulls from `sndPCRender`. MusyX's
+critical section is tied to the game's interrupt lock. To check without a
+sound device: `SDL_AUDIODRIVER=disk SDL_AUDIO_DISK_OUTPUT_FILE=out.raw`
+(16-bit stereo, 32 kHz).
+
+State: sound effects are produced (the logo jingle was verified in the
+written file). Background music is silent so far.

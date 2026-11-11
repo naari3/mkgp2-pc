@@ -55,7 +55,8 @@ GFX_REPLACED = ("video_min.c", "gx_min.c")
 # GX functions whose objects the game sizes differently from Aurora; the
 # link sends the game's calls to port/gfx/gx_shim.cpp (ld --wrap).
 GFX_WRAPPED = ("GXInitTexObj", "GXInitTexObjCI", "GXInitTexObjLOD", "GXLoadTexObj",
-               "GXInitTlutObj", "GXLoadTlut", "GXSetArray", "GXInvalidateTexAll")
+               "GXInitTlutObj", "GXLoadTlut", "GXSetArray", "GXInvalidateTexAll",
+               "sndInit")  # port/gfx/audio_musyx.c
 
 
 def asm_name(name):
@@ -157,7 +158,7 @@ def link_gfx_windows(stubs, thunks, cxxrt, replaced, aurora_fns, aurora_data, po
     with open(link, "w") as f:
         f.write("\n".join(["-static", "-fcommon", "-Wl,--large-address-aware", "-Wl,-T," + script, "-Wl,-T," + bss_ld]
                           + gen + port_objs + objs + defsyms + [f"-Wl,--defsym,{n}=_{n}" for n in data]
-                          + ["-lwinpthread", "-Wl,--allow-multiple-definition"]) + "\n")
+                          + [os.path.join(ROOT, "build", "musyx-win32", "libmusyxRD.a"), "-lwinpthread", "-Wl,--allow-multiple-definition"]) + "\n")
     print(f"link inputs for CMake: {os.path.relpath(link, ROOT)}")
     return 0
 
@@ -918,6 +919,12 @@ def main():
             if not libs:
                 print(f"build/{adir} has no Aurora libraries; build them first (docs/port/build.md)")
                 return 1
+            # the MusyX PC library (port/extern/musyx) answers the game's snd* calls
+            musyx_lib = os.path.join(ROOT, "build", "musyx-win32" if WIN else "musyx32", "libmusyxRD.a")
+            if not os.path.exists(musyx_lib):
+                print(f"{os.path.relpath(musyx_lib, ROOT)} is missing; build it first (docs/port/build.md)")
+                return 1
+            libs.append(musyx_lib)
             r = subprocess.run(["llvm-nm", "-g", "--defined-only", "--format=posix"] + libs, capture_output=True, text=True)
             anames = {l.split()[0]: l.split()[1] for l in r.stdout.splitlines() if len(l.split()) >= 2 and l.split()[1] in "TDBR"}
             if WIN:   # Aurora's objects keep the COFF underscore
@@ -1066,7 +1073,7 @@ def main():
             with open(link, "w") as f:
                 f.write("\n".join(["-no-pie", "-fcommon", "-Wl,--version-script=" + private, "-Wl,-T," + script, "-Wl,-T," + bss_ld]
                                   + gen + port_objs + objs + defsyms + ["-Wl,--wrap=" + n for n in GFX_WRAPPED + ("main",)]
-                                  + ["-lz", "-lm", "-lpthread", "-Wl,--allow-multiple-definition", "-Wl,--no-warn-rwx-segments"]) + "\n")
+                                  + [musyx_lib, "-lz", "-lm", "-lpthread", "-Wl,--allow-multiple-definition", "-Wl,--no-warn-rwx-segments"]) + "\n")
             print(f"link inputs for CMake: {os.path.relpath(link, ROOT)}")
             return 0
         if WIN:
