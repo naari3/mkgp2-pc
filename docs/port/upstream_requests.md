@@ -571,6 +571,12 @@ kept for reference. Item 10 is open.
     (`state.txt`: board scale about 20, constant alpha 255). Upstream check:
     `tools/port_abi/param_address.py`.
 
+45. **Name entry key tables read as 16-bit numbers** (done, upstream
+    1a792a2). `src/game/fn_801BAA88.cpp`: the keyboard tables behind
+    `lbl_8049A8F8` are Shift-JIS text; the three reads (BuildKeys, and the
+    compare and store of the kana mark lookup) now use `SJIS_WORD`. Before
+    that the grid of keys was empty on the PC (user report 2026-11-11).
+
 ## Port-side source patches (2026-11-11)
 
 Corrections that exist only because of the PC do not go upstream any more
@@ -587,7 +593,6 @@ context no longer matches stops the build.
 |---|---|---|
 | `src/game/MukadeItem.c.patch` | `MukadeItem_Tick_HeldAndHoming_3839` copies 11 heights to the stack and indexes them with `KartCharacterParam_GetIdentityIndex` (0..12); characters 11 and 12 read two stack words the function never writes | the neighbouring word held NaN bits, the centipede's position became NaN; the patch gives the two extra entries the value 0 |
 | `GabyouItemHeld.cpp`, `GabyouItemReturn.cpp`, `KartFxBoost.cpp` | the same 11-entry stack copies indexed 0..12 (audit in upstream docs/notes/port_abi.md) | two zero entries follow the copy |
-| `fn_801BAA88.cpp` | name entry: the key tables (`lbl_8049A8F8`, Shift-JIS text in rodata) are read as 16-bit numbers, so on a little-endian host no key found its picture and the grid was empty (user report 2026-11-11) | the three reads take the high byte first (`KeyCode`). A host-neutral spelling upstream (`SJIS_WORD`) would replace this patch |
 | `objview/fn_80198ABC.c` | `lbl_8037DD48[12]` indexed 0..12; entry 12 is the float after the table, 1.0f | index 12 gives 1.0f |
 | `ItemObject_GetGroundTypeAt.c`, `ItemObjectManager_RenderImpl.c` | request 43: a three-float normal written through the address of an int (removed upstream in 4b81ff2) | a `float[3]` receives it |
 | `ItemHandler_Star.c`, `Item_OrbitAnchorKart.c`, `NokoNoko_CheckHitAndKill.c`, `sprite/fn_801A1798.c` | `return;` in functions with a result (removed upstream in 4b81ff2) | the value the console leaves in r3 is returned |
