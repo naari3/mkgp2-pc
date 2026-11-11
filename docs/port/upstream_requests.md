@@ -577,6 +577,14 @@ kept for reference. Item 10 is open.
     compare and store of the kana mark lookup) now use `SJIS_WORD`. Before
     that the grid of keys was empty on the PC (user report 2026-11-11).
 
+46. **`new` as a parameter name in `include/dolphin/card.h`** (done,
+    upstream 225c9b5). `src/triforce/acsocket_nm4.c` (`acConnect`) turns C++
+    on with a pragma; the PC build compiles such a unit as C++ from the
+    first line and stopped in `card.h` (`CARDRename(..., const char* new)`).
+    The unit was "NOT BUILT", `acConnect` a generated stub returning 0, and
+    no connect ever reached the network board (docs/port/cabinet_link.md).
+    Parameters renamed to `newName`; declarations only.
+
 ## Port-side source patches (2026-11-11)
 
 Corrections that exist only because of the PC do not go upstream any more
@@ -596,4 +604,5 @@ context no longer matches stops the build.
 | `objview/fn_80198ABC.c` | `lbl_8037DD48[12]` indexed 0..12; entry 12 is the float after the table, 1.0f | index 12 gives 1.0f |
 | `ItemObject_GetGroundTypeAt.c`, `ItemObjectManager_RenderImpl.c` | request 43: a three-float normal written through the address of an int (removed upstream in 4b81ff2) | a `float[3]` receives it |
 | `ItemHandler_Star.c`, `Item_OrbitAnchorKart.c`, `NokoNoko_CheckHitAndKill.c`, `sprite/fn_801A1798.c` | `return;` in functions with a result (removed upstream in 4b81ff2) | the value the console leaves in r3 is returned |
+| `GameBoot_Init.cpp` | reads the cabinet number (test menu, PCB ID) from the backup record | `mkgp2pc_boot_cabinet()` may replace it first: `MKGP2PC_PCB_ID`, because the backup memory is not kept between runs (docs/port/cabinet_link.md) |
 | 11 units with `PORT_DATA_LOADED` | the port's hook after a file is read, for byte order (removed upstream in 573f65a) | the calls and `port/compat/include/game/types/port_hooks.h` |
