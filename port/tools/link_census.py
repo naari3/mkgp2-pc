@@ -998,7 +998,29 @@ def main():
         print(f"non-virtual thunks generated: {len(this_thunks)}")
         stubs = os.path.join(OUT, "stubs.c")
         nfun, nobj = write_stubs(missing, groups, stubs)
+        # Start-up functions the sources register by hand in `.ctors`
+        # (`__declspec(section ".ctors") static void (*const x)() = fn;`, 29
+        # of them: tables computed at start-up such as the HUD digit
+        # positions). The host compiler drops the unused pointer, so they are
+        # called from one generated constructor, in address order.
+        ctor_fns = set()
+        for base, _, names in os.walk(os.path.join(ROOT, "src")):
+            for fn in names:
+                if fn.endswith((".c", ".cpp")):
+                    text = open(os.path.join(base, fn), encoding="utf-8", errors="replace").read()
+                    if '".ctors"' in text:
+                        ctor_fns |= set(re.findall(r'section\s*\(?"\.ctors"\)?\)[^=;]*=\s*(?:\([^)]*\)\s*)?&?(\w+)\s*;', text))
+        ctor_sym = {n: (n if n in defined else f"_Z{len(n)}{n}v") for n in ctor_fns}   # C or C++ linkage
+        ctor_fns = sorted((n for n in ctor_fns if ctor_sym[n] in defined and n != "__init_cpp_exceptions"),
+                          key=lambda n: ({v: k for k, v in at.items()}.get(n, 0), n))
+        print(f"start-up functions registered in .ctors by hand: {len(ctor_fns)}")
         with open(stubs, "a") as f:
+            for n in ctor_fns:
+                f.write(f'void mkgp2pc_ctor_{n}(void) __asm__("{asm_name(ctor_sym[n])}");\n')
+            f.write("__attribute__((constructor)) static void mkgp2pc_hand_ctors(void) {\n")
+            for n in ctor_fns:
+                f.write(f"  mkgp2pc_ctor_{n}();\n")
+            f.write("}\n")
             for n, off, t in this_thunks:
                 f.write(f'__asm__(".text\\n.globl {n}\\n{n}:\\n subl ${off}, 4(%esp)\\n jmp {t}\\n");\n')
         print(f"stubs generated: {nfun} functions, {nobj} objects")

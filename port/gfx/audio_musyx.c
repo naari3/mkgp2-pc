@@ -12,8 +12,10 @@
  */
 #include <SDL3/SDL.h>
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 /* include/musyx/pc.h of the library; `bool` is the game's 4-byte one there
@@ -67,6 +69,32 @@ static void SDLCALL audio_callback(void* userdata, SDL_AudioStream* stream, int 
   }
 }
 
+/*
+ * MKGP2PC_AUDIO_DUMP=<file>: no device; every video frame renders exactly
+ * one frame's worth of sound (32000 / 59.94 samples) into a raw file
+ * (16-bit stereo, 32 kHz). The result has the game's own timing whatever
+ * the speed of the machine, which a recording from a device does not when
+ * the game runs slower than real time (software rendering).
+ */
+static FILE* s_dump;
+static bool s_ready;
+void mkgp2pc_audio_frame(void) {
+  static double owed;
+  int16_t buffer[1024 * CHANNELS];
+  if (s_dump == NULL || !s_ready) {
+    return;
+  }
+  owed += MIX_RATE * 1001.0 / 60000.0;
+  while (owed >= 1.0) {
+    int frames = owed > 1024.0 ? 1024 : (int)owed;
+    if (!sndPCRender(buffer, (size_t)frames)) {
+      memset(buffer, 0, (size_t)frames * CHANNELS * sizeof(int16_t));
+    }
+    fwrite(buffer, CHANNELS * sizeof(int16_t), (size_t)frames, s_dump);
+    owed -= frames;
+  }
+}
+
 int32_t __real_sndInit(uint8_t voices, uint8_t music, uint8_t sfx, uint8_t studios, uint32_t flags, uint32_t aramSize);
 int32_t __wrap_sndInit(uint8_t voices, uint8_t music, uint8_t sfx, uint8_t studios, uint32_t flags, uint32_t aramSize) {
   static SDL_AudioStream* stream;
@@ -74,7 +102,14 @@ int32_t __wrap_sndInit(uint8_t voices, uint8_t music, uint8_t sfx, uint8_t studi
   sndPCConfigure(&config);
   sndPCSetSynchronization(sync_enter, sync_leave);
   int32_t result = __real_sndInit(voices, music, sfx, studios, flags, aramSize);
-  if (result != 0 || stream != NULL) {
+  if (result != 0 || stream != NULL || s_ready) {
+    return result;
+  }
+  const char* dump = getenv("MKGP2PC_AUDIO_DUMP");
+  if (dump != NULL && dump[0] != 0) {
+    s_dump = fopen(dump, "wb");
+    s_ready = s_dump != NULL;
+    fprintf(stderr, "audio: frame-locked dump to %s%s\n", dump, s_ready ? "" : " failed");
     return result;
   }
   if (!SDL_InitSubSystem(SDL_INIT_AUDIO)) {

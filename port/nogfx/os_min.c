@@ -61,7 +61,9 @@ static void unprotect_image(void) {
 }
 #endif
 
-__attribute__((constructor)) static void map_mem1(void) {
+/* (priority 101: before every other start-up function, the game's static
+ * initialisers included) */
+__attribute__((constructor(101))) static void map_mem1(void) {
   if (map_fixed(MEM1_BASE, MEM1_SIZE) != (void*)MEM1_BASE) {
     fprintf(stderr, "nogfx: cannot map MEM1 at 0x%08X\n", MEM1_BASE);
     exit(2);

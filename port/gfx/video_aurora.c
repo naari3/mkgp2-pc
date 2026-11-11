@@ -6,6 +6,7 @@
  */
 #include <aurora/aurora.h>
 #include <aurora/event.h>
+#include <SDL3/SDL.h>
 #include <dolphin/gx.h>
 
 #include <stdbool.h>
@@ -114,6 +115,32 @@ int __wrap_main(int argc, char** argv) {
   return __real_main(argc, argv);
 }
 
+void mkgp2pc_audio_frame(void); /* audio_musyx.c */
+
+/* The game counts on 59.94 retraces a second: its logic advances once per
+ * frame. The display's own rate may be anything (or the presentation may not
+ * wait at all), so the pace is kept here. MKGP2PC_NOLIMIT=1 turns it off
+ * (scripted runs). */
+static void frame_limit(void) {
+  static Uint64 next;
+  static int off = -1;
+  const Uint64 period = 1001000000ull / 60;
+  if (off < 0) {
+    off = getenv("MKGP2PC_NOLIMIT") != NULL;
+  }
+  if (off) {
+    return;
+  }
+  Uint64 now = SDL_GetTicksNS();
+  if (next == 0 || now > next + 4 * period) {
+    next = now; /* first frame, or too far behind to catch up */
+  }
+  if (now < next) {
+    SDL_DelayNS(next - now);
+  }
+  next += period;
+}
+
 RetraceCallback VISetPreRetraceCallback(RetraceCallback cb) {
   RetraceCallback old = s_pre;
   s_pre = cb;
@@ -143,6 +170,8 @@ void VIWaitForRetrace(void) {
     }
     ++event;
   }
+  mkgp2pc_audio_frame();
+  frame_limit();
   int level = OSDisableInterrupts();
   s_retrace++;
   mkgp2pc_script_tick(s_retrace);
