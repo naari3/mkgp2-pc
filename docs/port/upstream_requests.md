@@ -498,3 +498,22 @@ kept for reference. Item 10 is open.
     (as request 15 did for byte arrays holding numbers, the other way
     round), found by comparing each data definition with the types other
     units declare for the same symbol or cast it to.
+39. Data defined with one element width and read with another (asked
+    2026-11-11). Seen: `lbl_806D7F70`, defined `const int [2] = { 255,
+    -65536 }` in `autodata/sdata2_806D7998.c` ("element type read off the
+    values"), read as `unsigned char [8]` by `Scene_8014E0C4.cpp:4596` as
+    two background colours (0,0,0) and (255,255,255) for `fn_8002CFB8`.
+    On the host the first colour reads (255,0,0): the pure red background
+    behind the attract-mode captions. `port/tools/data_width_census.py`
+    lists every symbol whose definition and some `extern` declaration
+    disagree on the scalar element width (707 symbols, list in
+    `docs/port/data_width_census.txt`). 552 of them are the banned-word
+    entries of `NameCheck_CardName.c` (`short [4]` against `char []`).
+    Others that look like real byte tables: `KartDriver_InitFull_data_803F5928`
+    (`unsigned int [30]` of packed bytes), `CardCreditFlow_rodata_803EEF00`,
+    the `NokoNokoChallenge_GetCoinDivisor_rodata_*` group. A float pool
+    declared `char []` by a reader is harmless while the reader casts back
+    to `float` / `Vec`, and wrong when the pool also holds strings or byte
+    tables. Wanted: the definition typed the way the readers read it
+    (bytes as bytes, strings as strings), at least for every entry whose
+    readers take bytes.

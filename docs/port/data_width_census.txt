@@ -1,0 +1,1441 @@
+AI_CalcLapSpeedBonus_rodata_803A01C8  defined float[8] in include/game/AI_CalcLapSpeedBonus_pool.h
+    declared char[] in src/game/fn_801DE7B0.c
+CardCreate_Page_rodata_8030E60C  defined float[267] in src/game/autodata/rodata_8030E588.c
+    declared char[] in src/game/autodata/sdata_806CEDA0.c
+    declared char[] in src/game/autodata/sdata_806CEF68.c
+    declared char[] in src/game/autodata/sdata_806CEF88.c
+    declared char[] in src/game/autodata/sdata_806CEFB8.c
+CardCreditFlow_rodata_803EEF00  defined int[70] in src/game/autodata/rodata_803EEE58.c
+    declared char[] in include/game/CardCreditFlowPrivate.h
+DNBress_nm3_rodata_803C6ED0  defined float[258] in src/game/autodata/rodata_803C6ED0.c
+    declared char[] in src/game/DNBress_nm3.cpp
+FinalLapBanner_Init_rodata_803123B0  defined float[258] in src/game/autodata/rodata_803123B0.c
+    declared unsigned char[] in src/game/FinalLapBanner_Init.cpp
+GabyouItem_BuildOrUpdateAttachTransform_rodata_8032D9C8  defined float[255] in src/game/autodata/rodata_8032A890.c
+    declared unsigned char[] in src/game/GabyouItem_BuildOrUpdateAttachTransform.c
+ItemObject_Tick_rodata_8032E060  defined float[309] in src/game/autodata/rodata_8032A890.c
+    declared char[] in src/game/ItemObject_Tick_Dispatch16To1d.c
+    declared char[] in src/game/ItemObject_Tick_Dispatch24To29.c
+    declared char[] in src/game/ItemObject_Tick_Kind28_BananaTrioChild.c
+KartAlertPanel_rodata_803F0AD8  defined float[258] in src/game/autodata/rodata_803F0AD8.c
+    declared char[] in src/game/KartAlertPanel.cpp
+KartDriver_InitFull_data_803F5928  defined unsigned int[30] in src/game/autodata/data_803F57E0.c
+    declared unsigned char[] in src/game/KartDriver_InitFull.c
+KartFxExhaustRay_rodata_80329E20  defined float[255] in src/game/KartFxExhaustRay.c
+    declared unsigned char[] in src/game/DrawEffect_Cb_BurstSpawner_30Frame.c
+NokoNokoChallenge_GetCoinDivisor_rodata_803553D8  defined int[1] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/NokoNokoChallenge_GetCoinDivisor.c
+NokoNokoChallenge_GetCoinDivisor_rodata_803553DC  defined int[1] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/NokoNokoChallenge_GetCoinDivisor.c
+NokoNokoChallenge_GetCoinDivisor_rodata_803553E0  defined int[1] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/NokoNokoChallenge_GetCoinDivisor.c
+NokoNokoChallenge_GetCoinDivisor_rodata_803553E4  defined int[1] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/NokoNokoChallenge_GetCoinDivisor.c
+NokoNokoChallenge_GetCoinDivisor_rodata_803553E8  defined int[1] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/NokoNokoChallenge_GetCoinDivisor.c
+NokoNokoChallenge_GetCoinDivisor_rodata_803553EC  defined int[1] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/NokoNokoChallenge_GetCoinDivisor.c
+NokoNokoChallenge_GetCoinDivisor_rodata_803553F0  defined int[4] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/NokoNokoChallenge_GetCoinDivisor.c
+NokoNokoChallenge_GetCoinDivisor_rodata_80355400  defined int[4] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/NokoNokoChallenge_GetCoinDivisor.c
+NokoNokoChallenge_GetCoinDivisor_rodata_80355410  defined int[4] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/NokoNokoChallenge_GetCoinDivisor.c
+NokoNokoChallenge_GetCoinDivisor_rodata_80355420  defined int[4] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/NokoNokoChallenge_GetCoinDivisor.c
+NokoNokoChallenge_GetCoinDivisor_rodata_80355430  defined int[4] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/NokoNokoChallenge_GetCoinDivisor.c
+NokoNokoChallenge_GetCoinDivisor_rodata_80355440  defined int[4] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/NokoNokoChallenge_GetCoinDivisor.c
+NokoNokoChallenge_GetCoinDivisor_rodata_80355450  defined int[1] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/NokoNokoChallenge_GetCoinDivisor.c
+NokoNokoChallenge_GetCoinDivisor_rodata_80355454  defined int[1] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/NokoNokoChallenge_GetCoinDivisor.c
+NokoNokoChallenge_GetCoinDivisor_rodata_80355458  defined int[1] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/NokoNokoChallenge_GetCoinDivisor.c
+NokoNokoChallenge_GetCoinDivisor_rodata_8035545C  defined int[1] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/NokoNokoChallenge_GetCoinDivisor.c
+NokoNokoChallenge_GetCoinDivisor_rodata_80355460  defined int[1] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/NokoNokoChallenge_GetCoinDivisor.c
+NokoNokoChallenge_GetCoinDivisor_rodata_80355464  defined int[1] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/NokoNokoChallenge_GetCoinDivisor.c
+NokoNokoChallenge_GetCoinDivisor_rodata_80355468  defined int[1] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/NokoNokoChallenge_GetCoinDivisor.c
+NokoNokoChallenge_GetCoinDivisor_rodata_8035546C  defined int[1] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/NokoNokoChallenge_GetCoinDivisor.c
+NokoNokoChallenge_GetCoinDivisor_rodata_80355470  defined int[1] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/NokoNokoChallenge_GetCoinDivisor.c
+NokoNokoChallenge_GetCoinDivisor_rodata_80355474  defined int[1] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/NokoNokoChallenge_GetCoinDivisor.c
+NokoNokoChallenge_GetCoinDivisor_rodata_80355478  defined int[1] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/NokoNokoChallenge_GetCoinDivisor.c
+NokoNokoChallenge_GetCoinDivisor_rodata_8035547C  defined int[1] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/NokoNokoChallenge_GetCoinDivisor.c
+NokoNokoChallenge_GetCoinDivisor_rodata_803555A0  defined float[6] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/NokoNokoChallenge_GetCoinDivisor.c
+NokoNokoChallenge_GetCoinDivisor_rodata_803555B8  defined float[6] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/NokoNokoChallenge_GetCoinDivisor.c
+NokoNokoChallenge_GetCoinDivisor_rodata_803555D0  defined float[6] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/NokoNokoChallenge_GetCoinDivisor.c
+NokoNokoChallenge_GetCoinDivisor_rodata_803555E8  defined float[6] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/NokoNokoChallenge_GetCoinDivisor.c
+NokoNokoChallenge_GetCoinDivisor_rodata_80355600  defined float[6] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/NokoNokoChallenge_GetCoinDivisor.c
+NokoNokoChallenge_GetCoinDivisor_rodata_80355618  defined float[6] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/NokoNokoChallenge_GetCoinDivisor.c
+NokoNokoChallenge_GetCoinDivisor_rodata_80355810  defined float[1] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/NokoNokoChallenge_GetCoinDivisor.c
+NokoNokoChallenge_GetCoinDivisor_rodata_80355814  defined float[1] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/NokoNokoChallenge_GetCoinDivisor.c
+NokoNokoChallenge_GetCoinDivisor_rodata_80355818  defined float[1] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/NokoNokoChallenge_GetCoinDivisor.c
+NokoNokoChallenge_GetCoinDivisor_rodata_8035581C  defined float[1] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/NokoNokoChallenge_GetCoinDivisor.c
+NokoNokoChallenge_GetCoinDivisor_rodata_80355820  defined float[1] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/NokoNokoChallenge_GetCoinDivisor.c
+NokoNokoChallenge_GetCoinDivisor_rodata_80355824  defined float[1] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/NokoNokoChallenge_GetCoinDivisor.c
+NokoNokoChallenge_GetCoinDivisor_rodata_80355828  defined float[1] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/NokoNokoChallenge_GetCoinDivisor.c
+NokoNokoChallenge_GetCoinDivisor_rodata_8035582C  defined float[1] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/NokoNokoChallenge_GetCoinDivisor.c
+NokoNokoChallenge_GetCoinDivisor_rodata_80355830  defined float[1] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/NokoNokoChallenge_GetCoinDivisor.c
+NokoNokoChallenge_GetCoinDivisor_rodata_80355834  defined float[1] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/NokoNokoChallenge_GetCoinDivisor.c
+NokoNokoChallenge_GetCoinDivisor_rodata_80355838  defined float[1] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/NokoNokoChallenge_GetCoinDivisor.c
+NokoNokoChallenge_GetCoinDivisor_rodata_8035583C  defined float[1] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/NokoNokoChallenge_GetCoinDivisor.c
+RaceHud_80147470_rodata_803628A8  defined float[263] in src/game/autodata/rodata_803628A8.c
+    declared char[] in include/game/types/RaceHud_support.h
+    declared char[] in src/game/CSSceneGetTitle_8014ADB4.cpp
+    declared char[] in src/game/RaceHud_80147470.cpp
+RaceScene_rodata_803211D8  defined float[255] in src/game/autodata/rodata_80321178.c
+    declared char[] in include/game/TaModeInitPrivate.h
+    declared char[] in src/game/RaceScene_Dtor.cpp
+    declared char[] in src/game/RaceScene_Init.cpp
+RankLog_rodata_80324B98  defined float[255] in src/game/autodata/rodata_80324B10.c
+    declared unsigned char[] in src/game/RankLog.c
+ResultFxScene_data_806CF6A8  defined int[1] in src/game/autodata/sdata_806CF270.c
+    declared unsigned char[4] in src/game/ResultFxScene.c
+ResultFxScene_data_806CF6AC  defined int[1] in src/game/autodata/sdata_806CF270.c
+    declared unsigned char[4] in src/game/ResultFxScene.c
+ResultFxScene_data_806CF6B0  defined int[1] in src/game/autodata/sdata_806CF270.c
+    declared unsigned char[4] in src/game/ResultFxScene.c
+ResultFxScene_data_806CF6B4  defined int[1] in src/game/autodata/sdata_806CF270.c
+    declared unsigned char[4] in src/game/ResultFxScene.c
+ResultFxScene_data_806CF6B8  defined int[1] in src/game/autodata/sdata_806CF270.c
+    declared char[4] in src/game/ResultFxScene.c
+ResultFx_data_806CF688  defined int[1] in src/game/autodata/sdata_806CF270.c
+    declared char[4] in src/game/ResultFx.c
+    declared char[4] in src/game/ResultFxScene.c
+ResultFx_data_806CF68C  defined int[1] in src/game/autodata/sdata_806CF270.c
+    declared char[4] in src/game/ResultFx.c
+    declared char[4] in src/game/ResultFxScene.c
+ResultFx_data_806CF690  defined int[1] in src/game/autodata/sdata_806CF270.c
+    declared char[4] in src/game/ResultFx.c
+    declared char[4] in src/game/ResultFxScene.c
+Scene_8016303C_rodata_80369288  defined float[255] in src/game/autodata/rodata_80369288.c
+    declared char[] in include/game/Scene_8016303CPrivate.h
+TaMode_GetDemoCameraBookend_data_8040DE94  defined float[204] in src/game/autodata/data_8040DE94.c
+    declared unsigned char[] in src/game/RaceSys_8009B98C.c
+    declared unsigned char[] in src/game/SetCourseParams.c
+clFlowItemSelect_Update_data_806CFE18  defined int[1] in src/game/autodata/sdata_806CFE08.c
+    declared char[4] in include/game/clFlowItemSelect_Update_private.h
+clFlowItem_Init_data_806D077C  defined int[1] in src/game/autodata/sdata_806D0728.c
+    declared char[4] in src/game/clFlowItem.c
+clFlowItem_Init_data_806D0780  defined int[1] in src/game/autodata/sdata_806D0728.c
+    declared char[4] in src/game/clFlowItem.c
+clFlowItem_Update_data_806D0758  defined int[1] in src/game/autodata/sdata_806D0728.c
+    declared char[4] in src/game/clFlowItem.c
+clFlowKart_UpdateDisplay_data_8049BB30  defined short[60] in src/game/autodata/data_8049B530.c
+    declared signed char[][13][3] in src/game/clFlowKart_Init.c
+data_803FDF28_data_806CEF74  defined float in src/game/autodata/sdata_806CEF68.c
+    declared char[] in src/game/autodata/data_803FDF50.c
+    declared char[] in src/game/autodata/data_803FE078.c
+data_8040E780_data_806CF168  defined float in src/game/autodata/sdata_806CEFE0.c
+    declared char[] in src/game/autodata/data_8040E780.c
+data_8041A4F8_data_806CF324  defined float[2] in src/game/autodata/sdata_806CF270.c
+    declared char[] in src/game/autodata/data_8041A4F8.c
+data_8048E548_data_806CF648  defined float[2] in src/game/autodata/sdata_806CF270.c
+    declared char[] in src/game/autodata/data_8048E548.c
+data_8049B530_rodata_8039D8C0  defined unsigned int[3] in src/game/PlayerData_Construct.c
+    declared char[] in src/game/autodata/data_8049B530.c
+data_8049B530_rodata_8039D8CC  defined unsigned int[3] in src/game/PlayerData_Construct.c
+    declared char[] in src/game/autodata/data_8049B530.c
+data_8049B530_rodata_8039D8D8  defined unsigned int[3] in src/game/PlayerData_Construct.c
+    declared char[] in src/game/autodata/data_8049B530.c
+data_8049B530_rodata_8039D8E4  defined unsigned int[3] in src/game/PlayerData_Construct.c
+    declared char[] in src/game/autodata/data_8049B530.c
+data_8049B530_rodata_8039D8F0  defined unsigned int[3] in src/game/PlayerData_Construct.c
+    declared char[] in src/game/autodata/data_8049B530.c
+data_8049B530_rodata_8039D8FC  defined unsigned int[3] in src/game/PlayerData_Construct.c
+    declared char[] in src/game/autodata/data_8049B530.c
+data_8049B530_rodata_8039D908  defined unsigned int[3] in src/game/PlayerData_Construct.c
+    declared char[] in src/game/autodata/data_8049B530.c
+data_8049B530_rodata_8039D914  defined unsigned int[3] in src/game/PlayerData_Construct.c
+    declared char[] in src/game/autodata/data_8049B530.c
+data_8049B530_rodata_8039D920  defined unsigned int[3] in src/game/PlayerData_Construct.c
+    declared char[] in src/game/autodata/data_8049B530.c
+data_8049B530_rodata_8039D92C  defined unsigned int[3] in src/game/PlayerData_Construct.c
+    declared char[] in src/game/autodata/data_8049B530.c
+data_8049B530_rodata_8039D938  defined unsigned int[3] in src/game/PlayerData_Construct.c
+    declared char[] in src/game/autodata/data_8049B530.c
+data_8049B530_rodata_8039D944  defined unsigned int[3] in src/game/PlayerData_Construct.c
+    declared char[] in src/game/autodata/data_8049B530.c
+data_8049B530_rodata_8039D950  defined unsigned int[3] in src/game/PlayerData_Construct.c
+    declared char[] in src/game/autodata/data_8049B530.c
+data_8049B530_rodata_8039D95C  defined unsigned int[3] in src/game/PlayerData_Construct.c
+    declared char[] in src/game/autodata/data_8049B530.c
+data_8049B530_rodata_8039D968  defined unsigned int[3] in src/game/PlayerData_Construct.c
+    declared char[] in src/game/autodata/data_8049B530.c
+data_8049B530_rodata_8039D974  defined unsigned int[3] in src/game/PlayerData_Construct.c
+    declared char[] in src/game/autodata/data_8049B530.c
+data_8049B530_rodata_8039D980  defined unsigned int[3] in src/game/PlayerData_Construct.c
+    declared char[] in src/game/autodata/data_8049B530.c
+data_8049B530_rodata_8039D98C  defined unsigned int[6] in src/game/PlayerData_Construct.c
+    declared char[] in src/game/autodata/data_8049B530.c
+data_804EC754_data_804EC71C  defined int[14] in src/game/anon_80209330_nm2_tail.cpp
+    declared char[] in src/game/autodata/data_804EC754.c
+g_rendererGateFlag  defined unsigned char in src/game/autodata/sdata_806CEFE0.c
+    declared unsigned int in src/game/VSMode_FrameUpdate.c
+kDummyOnePointPath  defined int[8] in src/game/autodata/data_8049B530.c
+    declared char[] in src/game/PathData_GetByContext.c
+lbl_802E89A0  defined float[255] in src/game/autodata/rodata_802E89A0.c
+    declared char[] in include/game/FlowDispatcher_private.h
+lbl_80311DD8  defined char[] in src/game/autodata/rodata_80311DB0.c
+    declared unsigned int[] in src/game/Jyugemu_Flag_Ctor.c
+lbl_803311D0  defined float[258] in src/game/autodata/rodata_80330794.c
+    declared unsigned char[] in src/game/fn_80105800.c
+lbl_803324F0  defined char[] in src/game/autodata/rodata_80332038.c
+    declared unsigned int[] in src/game/fn_801193F4.c
+lbl_80355138  defined float[6] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/autodata/data_8048DAA8.c
+lbl_80355150  defined float[6] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/autodata/data_8048DAA8.c
+lbl_80355168  defined float[6] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/autodata/data_8048DAA8.c
+lbl_80355180  defined float[6] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/autodata/data_8048DAA8.c
+lbl_80355198  defined float[6] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/autodata/data_8048DAA8.c
+lbl_803551B0  defined float[6] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/autodata/data_8048DAA8.c
+lbl_803553A8  defined float[1] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/autodata/data_8048DAA8.c
+lbl_803553AC  defined float[1] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/autodata/data_8048DAA8.c
+lbl_803553B0  defined float[1] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/autodata/data_8048DAA8.c
+lbl_803553B4  defined float[1] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/autodata/data_8048DAA8.c
+lbl_803553B8  defined float[1] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/autodata/data_8048DAA8.c
+lbl_803553BC  defined float[1] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/autodata/data_8048DAA8.c
+lbl_803553C0  defined float[1] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/autodata/data_8048DAA8.c
+lbl_803553C4  defined float[1] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/autodata/data_8048DAA8.c
+lbl_803553C8  defined float[1] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/autodata/data_8048DAA8.c
+lbl_803553CC  defined float[1] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/autodata/data_8048DAA8.c
+lbl_803553D0  defined float[1] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/autodata/data_8048DAA8.c
+lbl_803553D4  defined float[1] in src/game/autodata/rodata_80355078.c
+    declared char[] in src/game/autodata/data_8048DAA8.c
+lbl_8039A2E8  defined int[6] in src/game/autodata/rodata_80399830.c
+    declared char[] in src/game/fn_801BA9A0.cpp
+lbl_8039C718  defined float[255] in src/game/fn_801D5F74.c
+    declared char[] in src/game/card_pack.cpp
+    declared char[] in src/game/card_unpack.cpp
+    declared char[] in src/game/fn_801D4DC0.cpp
+    declared char[] in src/game/fn_801D4FF4.cpp
+lbl_803BD920  defined float[258] in src/game/fn_801ECA14.c
+    declared char[] in include/game/PhysicsCollisionPrivate.h
+lbl_80495988  defined short[6] in src/game/autodata/data_80491988.c
+    declared char[] in include/game/EffectFA_private.h
+    declared unsigned char[] in src/game/mobjclass/fn_80182684.cpp
+lbl_806CF0D4  defined unsigned char in src/game/autodata/sdata_806CEFE0.c
+    declared unsigned int in src/game/card_save_trigger.c
+lbl_806CF270  defined unsigned char in src/game/autodata/sdata_806CF270.c
+    declared unsigned int in src/game/VSMode_FrameUpdate.c
+lbl_806D0051  defined unsigned char in src/game/autodata/sdata_806CFE78.c
+    declared unsigned int in src/game/VSMode_FrameUpdate.c
+    declared unsigned int in src/game/auto_ONKARTHIT_block.c
+lbl_806D24D8  defined float[1] in src/game/autodata/sdata2_806D2490.c
+    declared unsigned char[4] in src/game/MemoryManager_TimedFree.cpp
+lbl_806D3624  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D362C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3634  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D363C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3644  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D364C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3654  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D365C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3664  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D366C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3674  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D367C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3684  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D368C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3694  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D369C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D36A4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D36AC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D36B4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D36BC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D36C4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D36CC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D36D4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D36DC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D36E4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D36EC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D36F4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D36FC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3704  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D370C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3714  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D371C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3724  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D372C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3734  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D373C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3744  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D374C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3754  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D375C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3764  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D376C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3774  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D377C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3784  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D378C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3794  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D379C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D37A4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D37AC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D37B4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D37BC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D37C4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D37CC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D37D4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D37DC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D37E4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D37EC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D37F4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D37FC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3804  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D380C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3814  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D381C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3824  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D382C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3834  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D383C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3844  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D384C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3854  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D385C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3864  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D386C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3874  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D387C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3884  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D388C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3894  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D389C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D38A4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D38AC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D38B4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D38BC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D38C4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D38CC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D38D4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D38DC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D38E4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D38EC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D38F4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D38FC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3904  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D390C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3914  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D391C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3924  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D392C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3934  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D393C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3944  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D394C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3954  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D395C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3964  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D396C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3974  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D397C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3984  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D398C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3994  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D399C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D39A4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D39AC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D39B4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D39BC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D39C4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D39CC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D39D4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D39DC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D39E4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D39EC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D39F4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D39FC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3A04  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3A0C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3A14  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3A1C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3A24  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3A2C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3A34  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3A3C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3A44  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3A4C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3A54  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3A5C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3A64  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3A6C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3A74  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3A7C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3A84  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3A8C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3A94  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3A9C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3AA4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3AAC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3AB4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3ABC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3AC4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3ACC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3AD4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3ADC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3AE4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3AEC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3AF4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3AFC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3B04  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3B0C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3B14  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3B1C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3B24  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3B2C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3B34  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3B3C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3B44  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3B4C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3B54  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3B5C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3B64  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3B6C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3B74  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3B7C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3B84  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3B8C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3B94  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3B9C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3BA4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3BAC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3BB4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3BBC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3BC4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3BCC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3BD4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3BDC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3BE4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3BEC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3BF4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3BFC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3C04  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3C0C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3C14  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3C1C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3C24  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3C2C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3C34  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3C3C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3C44  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3C4C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3C54  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3C5C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3C64  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3C6C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3C74  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3C7C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3C84  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3C8C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3C94  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3C9C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3CA4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3CAC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3CB4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3CBC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3CC4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3CCC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3CD4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3CDC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3CE4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3CEC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3CF4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3CFC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3D04  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3D0C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3D14  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3D1C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3D24  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3D2C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3D34  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3D3C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3D44  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3D4C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3D54  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3D5C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3D64  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3D6C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3D74  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3D7C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3D84  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3D8C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3D94  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3D9C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3DA4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3DAC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3DB4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3DBC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3DC4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3DCC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3DD4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3DDC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3DE4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3DEC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3DF4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3DFC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3E04  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3E0C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3E14  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3E1C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3E24  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3E2C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3E34  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3E3C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3E44  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3E4C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3E54  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3E5C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3E64  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3E6C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3E74  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3E7C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3E84  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3E8C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3E94  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3E9C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3EA4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3EAC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3EB4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3EBC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3EC4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3ECC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3ED4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3EDC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3EE4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3EEC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3EF4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3EFC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3F04  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3F0C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3F14  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3F1C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3F24  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3F2C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3F34  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3F3C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3F44  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3F4C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3F54  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3F5C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3F64  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3F6C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3F74  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3F7C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3F84  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3F8C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3F94  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3F9C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3FA4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3FAC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3FB4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3FBC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3FC4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3FCC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3FD4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3FDC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3FE4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3FEC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3FF4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D3FFC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4004  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D400C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4014  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D401C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4024  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D402C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4034  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D403C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4044  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D404C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4054  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D405C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4064  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D406C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4074  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D407C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4084  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D408C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4094  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D409C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D40A4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D40AC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D40B4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D40BC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D40C4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D40CC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D40D4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D40DC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D40E4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D40EC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D40F4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D40FC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4104  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D410C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4114  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D411C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4124  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D412C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4134  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D413C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4144  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D414C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4154  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D415C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4164  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D416C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4174  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D417C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4184  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D418C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4194  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D419C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D41A4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D41AC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D41B4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D41BC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D41C4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D41CC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D41D4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D41DC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D41E4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D41EC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D41F4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D41FC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4204  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D420C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4214  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D421C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4224  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D422C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4234  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D423C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4244  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D424C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4254  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D425C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4264  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D426C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4274  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D427C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4284  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D428C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4294  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D429C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D42A4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D42AC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D42B4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D42BC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D42C4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D42CC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D42D4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D42DC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D42E4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D42EC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D42F4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D42FC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4304  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D430C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4314  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D431C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4324  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D432C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4334  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D433C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4344  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D434C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4354  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D435C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4364  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D436C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4374  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D437C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4384  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D438C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4394  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D439C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D43A4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D43AC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D43B4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D43BC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D43C4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D43CC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D43D4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D43DC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D43E4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D43EC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D43F4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D43FC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4404  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D440C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4414  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D441C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4424  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D442C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4434  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D443C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4444  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D444C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4454  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D445C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4464  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D446C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4474  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D447C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4484  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D448C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4494  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D449C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D44A4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D44AC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D44B4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D44BC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D44C4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D44CC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D44D4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D44DC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D44E4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D44EC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D44F4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D44FC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4504  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D450C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4514  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D451C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4524  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D452C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4534  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D453C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4544  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D454C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4554  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D455C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4564  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D456C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4574  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D457C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4584  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D458C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4594  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D459C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D45A4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D45AC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D45B4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D45BC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D45C4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D45CC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D45D4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D45DC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D45E4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D45EC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D45F4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D45FC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4604  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D460C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4614  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D461C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4624  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D462C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4634  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D463C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4644  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D464C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4654  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D465C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4664  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D466C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4674  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D467C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4684  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D468C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D4694  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D469C  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D46A4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D46AC  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D46B4  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/NameCheck_CardName.c
+lbl_806D46E4  defined unsigned short[2] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/autodata/data_8040E450.c
+lbl_806D46E8  defined unsigned short[2] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/autodata/data_8040E450.c
+lbl_806D46EC  defined unsigned short[2] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/autodata/data_8040E450.c
+lbl_806D46F0  defined unsigned short[2] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/autodata/data_8040E450.c
+lbl_806D46F4  defined unsigned short[2] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/autodata/data_8040E450.c
+lbl_806D46F8  defined unsigned short[2] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/autodata/data_8040E450.c
+lbl_806D46FC  defined unsigned short[2] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/autodata/data_8040E450.c
+lbl_806D4700  defined unsigned short[2] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/autodata/data_8040E450.c
+lbl_806D4704  defined unsigned short[2] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/autodata/data_8040E450.c
+lbl_806D4708  defined unsigned short[2] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/autodata/data_8040E450.c
+lbl_806D470C  defined unsigned short[2] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/autodata/data_8040E450.c
+lbl_806D4710  defined unsigned short[2] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/autodata/data_8040E450.c
+lbl_806D4714  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/autodata/data_8040E450.c
+lbl_806D471C  defined unsigned short[2] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/autodata/data_8040E450.c
+lbl_806D4720  defined unsigned short[4] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/autodata/data_8040E450.c
+lbl_806D4728  defined unsigned short[2] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/autodata/data_8040E450.c
+lbl_806D472C  defined unsigned short[2] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/autodata/data_8040E450.c
+lbl_806D4730  defined unsigned short[2] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/autodata/data_8040E450.c
+lbl_806D4734  defined unsigned short[2] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/autodata/data_8040E450.c
+lbl_806D4738  defined unsigned short[2] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/autodata/data_8040E450.c
+lbl_806D473C  defined unsigned short[2] in src/game/autodata/sdata2_806D3060.c
+    declared char[] in src/game/autodata/data_8040E450.c
+lbl_806D74C0  defined int in src/game/autodata/sdata2_806D5658.c
+    declared char[] in src/game/autodata/data_8048E548.c
+    declared char[] in src/game/autodata/rodata_8035C6B8.c
+    declared char[] in src/game/autodata/sdata_806CF1C0.c
+    declared char[] in src/game/autodata/sdata_806CF270.c
+lbl_806D75CC  defined float[2] in src/game/autodata/sdata2_806D5658.c
+    declared char[] in src/game/autodata/data_8048E548.c
+lbl_806D7F70  defined int[2] in src/game/autodata/sdata2_806D7998.c
+    declared unsigned char[8] in src/game/Scene_8014E0C4.cpp
+lbl_806DBAF0  defined int in src/game/autodata/sdata2_806DB6E0.c
+    declared char[] in src/game/autodata/rodata_803DC530.c
+rodata_80324B10_data_806CF1E0  defined int[2] in src/game/autodata/sdata_806CF1C0.c
+    declared char[] in src/game/autodata/rodata_80324B10.c
+rodata_80355078_data_8048DB68  defined int[12] in src/game/autodata/data_8048DAA8.c
+    declared char[] in src/game/autodata/rodata_80355078.c
+rodata_80355078_data_8048DB98  defined int[12] in src/game/autodata/data_8048DAA8.c
+    declared char[] in src/game/autodata/rodata_80355078.c
+rodata_80355078_data_8048DBC8  defined int[12] in src/game/autodata/data_8048DAA8.c
+    declared char[] in src/game/autodata/rodata_80355078.c
+rodata_80355078_data_8048DBF8  defined int[12] in src/game/autodata/data_8048DAA8.c
+    declared char[] in src/game/autodata/rodata_80355078.c
+rodata_80355078_data_8048DC28  defined int[12] in src/game/autodata/data_8048DAA8.c
+    declared char[] in src/game/autodata/rodata_80355078.c
+rodata_80355078_data_8048DC58  defined int[12] in src/game/autodata/data_8048DAA8.c
+    declared char[] in src/game/autodata/rodata_80355078.c
+rodata_80355078_data_8048DC88  defined int[10] in src/game/autodata/data_8048DAA8.c
+    declared char[] in src/game/autodata/rodata_80355078.c
+rodata_80355078_data_8048DCB0  defined int[10] in src/game/autodata/data_8048DAA8.c
+    declared char[] in src/game/autodata/rodata_80355078.c
+rodata_80355078_data_8048DCD8  defined int[10] in src/game/autodata/data_8048DAA8.c
+    declared char[] in src/game/autodata/rodata_80355078.c
+rodata_80355078_data_8048DD00  defined int[10] in src/game/autodata/data_8048DAA8.c
+    declared char[] in src/game/autodata/rodata_80355078.c
+rodata_80355078_data_8048DD28  defined int[10] in src/game/autodata/data_8048DAA8.c
+    declared char[] in src/game/autodata/rodata_80355078.c
+rodata_80355078_data_8048DD50  defined int[10] in src/game/autodata/data_8048DAA8.c
+    declared char[] in src/game/autodata/rodata_80355078.c
+rodata_80355078_data_8048DD78  defined int[10] in src/game/autodata/data_8048DAA8.c
+    declared char[] in src/game/autodata/rodata_80355078.c
+rodata_80355078_data_8048DDA0  defined int[10] in src/game/autodata/data_8048DAA8.c
+    declared char[] in src/game/autodata/rodata_80355078.c
+rodata_80355078_data_8048DDC8  defined int[10] in src/game/autodata/data_8048DAA8.c
+    declared char[] in src/game/autodata/rodata_80355078.c
+rodata_80355078_data_8048DDF0  defined int[10] in src/game/autodata/data_8048DAA8.c
+    declared char[] in src/game/autodata/rodata_80355078.c
+rodata_80355078_data_8048DE18  defined int[10] in src/game/autodata/data_8048DAA8.c
+    declared char[] in src/game/autodata/rodata_80355078.c
+rodata_80355078_data_8048DE40  defined int[10] in src/game/autodata/data_8048DAA8.c
+    declared char[] in src/game/autodata/rodata_80355078.c
+rodata_80355078_data_8048DE68  defined int[14] in src/game/autodata/data_8048DAA8.c
+    declared char[] in src/game/autodata/rodata_80355078.c
+rodata_80355078_data_8048DEA0  defined int[14] in src/game/autodata/data_8048DAA8.c
+    declared char[] in src/game/autodata/rodata_80355078.c
+rodata_80355078_data_8048DED8  defined int[14] in src/game/autodata/data_8048DAA8.c
+    declared char[] in src/game/autodata/rodata_80355078.c
+rodata_80355078_data_8048DF10  defined int[14] in src/game/autodata/data_8048DAA8.c
+    declared char[] in src/game/autodata/rodata_80355078.c
+rodata_80355078_data_8048DF48  defined int[14] in src/game/autodata/data_8048DAA8.c
+    declared char[] in src/game/autodata/rodata_80355078.c
+rodata_80355078_data_8048DF80  defined int[14] in src/game/autodata/data_8048DAA8.c
+    declared char[] in src/game/autodata/rodata_80355078.c
+sdata_806CF750_data_8048FD8C  defined unsigned int[3] in src/game/Scene_8014E0C4.cpp
+    declared char[] in src/game/autodata/sdata_806CF750.c
+    declared char[] in src/game/autodata/sdata_806CF7E0.c
+    declared char[] in src/game/autodata/sdata_806CFA00.c
+    declared char[] in src/game/autodata/sdata_806CFA28.c
+    declared char[] in src/game/autodata/sdata_806CFA50.c
+    declared char[] in src/game/autodata/sdata_806CFAC8.c
