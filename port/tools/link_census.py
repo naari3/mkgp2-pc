@@ -426,9 +426,6 @@ PORT_ALIASES = {
     # (src/game/SetCourseParams.c); the unit's second view of the class
     # calls it as a constructor
     "_ZN11RaceContextC1Ev": "RaceContext_InitDefaults",
-    # include/game/FlowScene.h declares FlowFader's destructor; the function
-    # is dtor_801F2724, defined under another class name
-    "_ZN9FlowFaderD2Ev": "mkgp2pc_dt2__dtor_801F2724",
 }
 
 GAME_NEW_DELETE = {
