@@ -1057,3 +1057,17 @@ one Linux machine connect both ways and follow each other's state. Protocol,
 settings and the limits of what was checked: [cabinet_link.md](cabinet_link.md).
 Before this, every socket command was answered "error" and, separately,
 `acConnect` was a stub (its unit did not compile, upstream request 46).
+
+### Special kart tyres (upstream request 49, 2026-11-11)
+
+Tyres were missing on special karts (kart select and race). The source of
+`KartTireFX`'s constructor wrote scale 1000.0f for special karts; the program
+has 1.0f. The decomp build renames float literals to the original pool by code
+position and never compared values, so the wrong number was invisible there and
+only the port used it. All 11084 such literal uses were compared with the
+original (upstream `tools/literal_value_audit.py`, `docs/notes/literal_values.md`);
+the other wrong values fixed upstream at the same time: item box visibility
+radii, two menu sprites' x position, a scale in Scene_801706C8, an icon depth,
+the flame particle speed floor, the star effect's yaw step, and about 100
+last-digit differences. Verified on Linux only. When something is the wrong
+size, position or speed, suspect a source constant before the renderer.
