@@ -409,7 +409,9 @@ static void log_callback(AuroraLogLevel level, const char* module, const char* m
  * be up before the game's start-up calls GXInit and VIInit, and after the
  * C++ static objects of Aurora itself exist (so not from a constructor). */
 int __real_main(int argc, char** argv);
+void mkgp2pc_crash_log_install(void); /* shot_win32.c */
 int __wrap_main(int argc, char** argv) {
+  mkgp2pc_crash_log_install();
   AuroraConfig config;
   memset(&config, 0, sizeof(config));
   config.appName = "mkgp2-pc";
