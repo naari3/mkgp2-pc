@@ -13,18 +13,24 @@
 
 /*
  * Main memory at the console's own addresses. A 32-bit process on a 64-bit
- * kernel owns the whole 4 GB, so 0x80000000..0x81800000 can be mapped where
+ * kernel owns the whole 4 GB, so 0x80000000..0x83000000 can be mapped where
  * the game expects it; address comparisons and the low-memory globals in the
  * decompiled SDK code then keep working unchanged.
  */
 #define MEM1_BASE 0x80000000u
-#define MEM1_SIZE 0x01800000u
+/* 48 MB: the Triforce board has twice the GameCube's main memory (the SDK
+ * code in src/dolphin/os/OSMemory.c has the 48 MB configuration). With
+ * 24 MB the heap was 14.6 MB and the attract mode ran out of it when it
+ * loaded its third scene (HSD_InitMemAlloc, initialize.c:458). Where the
+ * board's boot program puts the top of the arena is not known; 1 MB below
+ * the end is this port's choice. */
+#define MEM1_SIZE 0x03000000u
 /* The arena starts where it does on the console: the end of the image's
  * last section (.sbss2 ends at 0x806DCF90) plus the 64 KB stack, rounded up
  * to 32 bytes. The race scenes need the heap to be as large as it was; with
  * the arena 1.1 MB shorter the first real race ran out of memory. */
 #define ARENA_LO 0x806ECFA0u
-#define ARENA_HI 0x81700000u
+#define ARENA_HI 0x82F00000u
 
 static void* s_arenaLo = (void*)ARENA_LO;
 static void* s_arenaHi = (void*)ARENA_HI;

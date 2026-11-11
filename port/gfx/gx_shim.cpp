@@ -147,7 +147,7 @@ void __wrap_GXLoadTlut(const GameTlutObj* o, u32 idx) {
 }
 
 void __wrap_GXSetArray(u32 attr, const void* base, u8 stride) {
-  const uintptr_t end = 0x81800000u;
+  const uintptr_t end = 0x83000000u;
   uint32_t size = mkgp2pc_array_extent(base);
   if (size == 0) {
     size = 0x10000;
