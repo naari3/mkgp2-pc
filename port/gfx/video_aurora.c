@@ -213,6 +213,7 @@ static uint8_t* s_shotPixels;
 static uint32_t s_shotW, s_shotH;
 static char s_shotPath[600];
 static int s_dumpCount;
+static bool s_fast, s_fastHeld; /* F10 and Tab: no frame limit */
 
 void mkgp2pc_shadow_record_frame(void);  /* gx_shim.cpp */
 void mkgp2pc_shadow_record_write(FILE* f);
@@ -350,6 +351,15 @@ static void key_event(const SDL_Event* e) {
       s_step = true;
     }
     return;
+  case SDL_SCANCODE_F10: /* as fast as the machine goes, until pressed again */
+    if (down && !e->key.repeat) {
+      s_fast = !s_fast;
+      fprintf(stderr, "frame limit %s at retrace %u\n", s_fast ? "off" : "on", (unsigned)s_retrace);
+    }
+    return;
+  case SDL_SCANCODE_TAB: /* the same while held */
+    s_fastHeld = down;
+    return;
   case SDL_SCANCODE_F9:
     if (down && !e->key.repeat) {
       s_dumpWanted = true;
@@ -438,7 +448,8 @@ static void frame_limit(void) {
   if (off < 0) {
     off = getenv("MKGP2PC_NOLIMIT") != NULL;
   }
-  if (off) {
+  if (off || s_fast || s_fastHeld) {
+    next = 0; /* the pace starts afresh when the limit comes back */
     return;
   }
   Uint64 now = SDL_GetTicksNS();

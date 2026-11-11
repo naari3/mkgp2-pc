@@ -335,6 +335,8 @@ For stopping on a frame that looks wrong and handing it over:
 | `P` | pause / resume (the game's frame counter stops; the picture stays) |
 | `O` | while paused: advance one frame |
 | `F9` | write a dump; works running or paused |
+| `F10` | frame limit off / on: without it the game runs as fast as the machine can (sound runs ahead with it) |
+| `Tab` | the same as `F10` while held |
 
 A dump is a folder `dumps/<n>_f<frame>/` under the directory the executable
 was started from (`MKGP2PC_DUMP_DIR` names another place; the folder is in
