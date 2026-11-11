@@ -251,7 +251,11 @@ static void dump_capture(void) {
   }
   free(s_shotPixels);
   s_shotPixels = NULL;
-  if (AuroraReadbackCaptureColor(s_shotStream, 1, &s_shotW, &s_shotH) && s_shotW != 0 && s_shotH != 0) {
+  /* A key of its own for every dump: a stream keeps the result of its last
+   * finished capture, and with one fixed key the second dump was handed the
+   * first dump's picture at once. */
+  if (AuroraReadbackCaptureColor(s_shotStream, (uint64_t)s_dumpCount, &s_shotW, &s_shotH) && s_shotW != 0 &&
+      s_shotH != 0) {
     s_shotPixels = (uint8_t*)malloc((size_t)s_shotW * s_shotH * 4);
   }
   snprintf(s_shotPath, sizeof(s_shotPath), "%s/frame.png", dir);
@@ -269,7 +273,7 @@ static void dump_poll(void) {
   }
   bool ok = false;
   if (s_shotPixels != NULL) {
-    AuroraReadbackDest dest = {1, s_shotPixels, s_shotW * s_shotH * 4, GX_FALSE};
+    AuroraReadbackDest dest = {(uint64_t)s_dumpCount, s_shotPixels, s_shotW * s_shotH * 4, GX_FALSE};
     if (AuroraReadbackGet(s_shotStream, &dest, 1) && dest.found) {
       ok = png_write(s_shotPath, s_shotPixels, s_shotW, s_shotH);
       s_shotWait = 1;

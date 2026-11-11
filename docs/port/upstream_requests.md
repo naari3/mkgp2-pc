@@ -546,3 +546,16 @@ kept for reference. Item 10 is open.
     clang IR of the port build (`declare double @atan2(float, float)`).
     Wanted: the real prototypes (`double atan2(double, double)` and so
     on), if the MWCC output stays the same.
+42. ZoneObject lists defined as words (asked 2026-11-11).
+    `src/game/autodata/data_803F60B4.c` holds the lists that
+    `CourseScene_Load` reaches through `CourseZone::objects`
+    (`void *lbl_803F6258[36] = { (void *)0xFFFFFF, name, joint, ...}`).
+    The reader is `struct ZoneObject { signed char kind, variant; short
+    slot; const char *filename, *jointName; }`. On the host the first byte
+    of 0x00FFFFFF is 0xFF, the list terminator, so every list is empty, no
+    zone slot is created and the parts of a course that zones switch
+    (Yoshi Park: fences, tunnel, warp dash boards) are never drawn.
+    Wanted: the lists typed as `ZoneObject` or their first words written
+    with `TEXT_WORD`, as request 38 did for
+    `CourseScene_Load_data_803F5CE8`; and the search of request 38 re-run
+    following pointer fields of typed tables into the autodata tables.
