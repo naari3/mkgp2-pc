@@ -559,3 +559,14 @@ kept for reference. Item 10 is open.
     with `TEXT_WORD`, as request 38 did for
     `CourseScene_Load_data_803F5CE8`; and the search of request 38 re-run
     following pointer fields of typed tables into the autodata tables.
+
+43. **Out-normal written into an int** (done, upstream 7c9fac4).
+    `Terrain_GetGroundHeightWithPenetration` writes three floats through its
+    third argument; `ItemObject_GetGroundTypeAt` and its inline copy in
+    `ItemObjectManager_RenderImpl.c` passed the address of an `int`. On the
+    console the extra eight bytes fall on unused stack; here they fall on
+    the neighbouring locals (in the render function the item's saved height,
+    which is what the shadow's size and darkness are worked out from). Seen
+    as item shadows ten times too large and fully black in Windows dumps
+    (`state.txt`: board scale about 20, constant alpha 255). Upstream check:
+    `tools/port_abi/param_address.py`.
