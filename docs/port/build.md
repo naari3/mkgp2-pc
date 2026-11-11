@@ -339,6 +339,15 @@ times count; two runs on the same machine with the same settings matched
 One picture is in flight at a time: a dump asked for while the previous
 one's picture has not arrived yet is made on the first frame after it.
 
+`state.txt` also lists the item shadow boards of the dumped frame (the small
+textured quad the game draws under every item, `ItemObjectManager_RenderImpl`):
+where each lies on a 640x480 picture according to the matrices the game
+loaded, its scale and the constant alpha the game asked for (K1 is the one
+that shadow uses). Comparing these lines with `frame.png` tells whether a
+wrong-looking shadow is wrong in place and size or in blending. The record is
+kept in `port/gfx/gx_shim.cpp` (wrappers of `GXSetProjection`,
+`GXLoadPosMtxImm`, `GXSetTevKColor`, `GXCallDisplayList`).
+
 ## Sound (rendering executable)
 
 The game's MusyX calls go to the PC target of the MusyX decompilation,

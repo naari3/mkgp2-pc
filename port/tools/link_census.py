@@ -59,6 +59,7 @@ GFX_REPLACED = ("video_min.c", "gx_min.c")
 GFX_WRAPPED = ("GXInitTexObj", "GXInitTexObjCI", "GXInitTexObjLOD", "GXLoadTexObj",
                "GXInitTlutObj", "GXLoadTlut", "GXSetArray", "GXInvalidateTexAll",
                "GXSetChanAmbColor", "GXSetChanMatColor",
+               "GXSetProjection", "GXLoadPosMtxImm", "GXCallDisplayList", "GXSetTevKColor",
                "sndInit")  # port/gfx/audio_musyx.c
 # Functions of the game itself that the glue wraps the same way (the
 # original stays reachable as __real_<name>).

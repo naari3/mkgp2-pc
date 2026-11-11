@@ -36,7 +36,9 @@
  */
 #include <dolphin/gx.h>
 
+#include <cmath>
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
 #include <map>
 #include <tuple>
@@ -112,7 +114,11 @@ void __wrap_GXInitTexObjLOD(GameTexObj* o, u32 minFilt, u32 magFilt, float minLo
   o->lodBias = lodBias;
 }
 
+bool mkgp2pc_board_texture;
 void __wrap_GXLoadTexObj(GameTexObj* o, u32 id) {
+  if (id == 0) {
+    mkgp2pc_board_texture = o->width == 64 && o->height == 64 && o->format == 5;
+  }
   const Key key{o->data, o->width, o->height, o->format, static_cast<uint8_t>(o->flags & (kMipmap | kIndexed)), o->tlut};
   static unsigned generation;
   if (generation != mkgp2pc_data_generation) {
@@ -209,6 +215,108 @@ void __wrap_GXInvalidateTexAll(void) {
   sTextures.clear();
   __real_GXInvalidateTexAll();
 }
+}
+
+/*
+ * Item shadow record for dumps. The game draws one small textured board
+ * (model eff_tip_aura_w: 64x64 RGB5A3 picture, a 32-byte display list of
+ * one quad of +-2.5 units) under every item. Each such draw of the frame is
+ * kept with the matrices in force, the board's place on the screen worked
+ * out from them, and the constant alpha the game asked for, so that a dump
+ * (state.txt) can be compared with its picture.
+ */
+extern "C" {
+void __real_GXSetProjection(const void* mtx, u32 type);
+void __real_GXLoadPosMtxImm(const void* mtx, u32 id);
+void __real_GXCallDisplayList(const void* list, u32 nbytes);
+void __real_GXSetTevKColor(u32 id, GXColor color);
+}
+namespace {
+struct ShadowDraw {
+  float mv[3][4];
+  float box[4]; /* left, top, right, bottom in a 640x480 picture */
+  float w;      /* clip-space w of the board's centre */
+  uint8_t kAlpha[4];
+};
+float sProj[4][4];
+u32 sProjType;
+float sPosMtx[3][4];
+GXColor sKColor[4];
+ShadowDraw sShadowNow[16], sShadowLast[16];
+int sShadowNowCount, sShadowLastCount;
+} // namespace
+
+extern "C" void __wrap_GXSetProjection(const void* mtx, u32 type) {
+  std::memcpy(sProj, mtx, sizeof(sProj));
+  sProjType = type;
+  __real_GXSetProjection(mtx, type);
+}
+extern "C" void __wrap_GXLoadPosMtxImm(const void* mtx, u32 id) {
+  if (id == 0) {
+    std::memcpy(sPosMtx, mtx, sizeof(sPosMtx));
+  }
+  __real_GXLoadPosMtxImm(mtx, id);
+}
+extern "C" void __wrap_GXSetTevKColor(u32 id, GXColor color) {
+  if (id < 4) {
+    sKColor[id] = color;
+  }
+  __real_GXSetTevKColor(id, color);
+}
+extern "C" void __wrap_GXCallDisplayList(const void* list, u32 nbytes) {
+  if (mkgp2pc_board_texture && nbytes == 32 && sShadowNowCount < 16) {
+    ShadowDraw& d = sShadowNow[sShadowNowCount++];
+    std::memcpy(d.mv, sPosMtx, sizeof(d.mv));
+    d.box[0] = d.box[1] = 1e9f;
+    d.box[2] = d.box[3] = -1e9f;
+    for (int i = 0; i < 5; i++) {
+      const float x = i == 4 ? 0.f : ((i & 1) ? 2.5f : -2.5f), y = i == 4 ? 0.f : ((i & 2) ? 2.5f : -2.5f);
+      float v[4] = {0, 0, 0, 1}, c[4];
+      for (int r = 0; r < 3; r++) {
+        v[r] = sPosMtx[r][0] * x + sPosMtx[r][1] * y + sPosMtx[r][3];
+      }
+      for (int r = 0; r < 4; r++) {
+        c[r] = sProj[r][0] * v[0] + sProj[r][1] * v[1] + sProj[r][2] * v[2] + sProj[r][3] * v[3];
+      }
+      if (i == 4) {
+        d.w = c[3];
+        break;
+      }
+      if (c[3] > 0.f) {
+        const float sx = (c[0] / c[3] * 0.5f + 0.5f) * 640.f, sy = (0.5f - c[1] / c[3] * 0.5f) * 480.f;
+        d.box[0] = sx < d.box[0] ? sx : d.box[0];
+        d.box[1] = sy < d.box[1] ? sy : d.box[1];
+        d.box[2] = sx > d.box[2] ? sx : d.box[2];
+        d.box[3] = sy > d.box[3] ? sy : d.box[3];
+      }
+    }
+    for (int i = 0; i < 4; i++) {
+      d.kAlpha[i] = sKColor[i].a;
+    }
+  }
+  __real_GXCallDisplayList(list, nbytes);
+}
+/* video_aurora.c: at the end of each frame, and when a dump is written. */
+extern "C" void mkgp2pc_shadow_record_frame(void) {
+  if (sShadowNowCount > 0) {
+    std::memcpy(sShadowLast, sShadowNow, sizeof(sShadowLast));
+    sShadowLastCount = sShadowNowCount;
+  }
+  sShadowNowCount = 0;
+}
+extern "C" void mkgp2pc_shadow_record_write(FILE* f) {
+  /* the frame being finished if it drew any (a dump made while running),
+   * else the last one that was drawn (a dump made while paused) */
+  const ShadowDraw* list = sShadowNowCount > 0 ? sShadowNow : sShadowLast;
+  const int count = sShadowNowCount > 0 ? sShadowNowCount : sShadowLastCount;
+  std::fprintf(f, "item shadow boards drawn: %d\n", count);
+  for (int i = 0; i < count; i++) {
+    const ShadowDraw& d = list[i];
+    std::fprintf(f, " board %d: screen x %.0f..%.0f y %.0f..%.0f, w %.1f, scale %.2f, constant alpha K0..K3 %u %u %u %u\n", i,
+                 d.box[0], d.box[2], d.box[1], d.box[3], d.w,
+                 std::sqrt(d.mv[0][0] * d.mv[0][0] + d.mv[1][0] * d.mv[1][0] + d.mv[2][0] * d.mv[2][0]), d.kAlpha[0],
+                 d.kAlpha[1], d.kAlpha[2], d.kAlpha[3]);
+  }
 }
 
 extern "C" void __real_HSD_ShadowSetSize(void* shadow, u16 width, u16 height);

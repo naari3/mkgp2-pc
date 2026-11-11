@@ -211,6 +211,9 @@ static uint32_t s_shotW, s_shotH;
 static char s_shotPath[600];
 static int s_dumpCount;
 
+void mkgp2pc_shadow_record_frame(void);  /* gx_shim.cpp */
+void mkgp2pc_shadow_record_write(FILE* f);
+
 static void dump_text(const char* dir) {
   char path[600];
   snprintf(path, sizeof(path), "%s/input.txt", dir);
@@ -231,6 +234,7 @@ static void dump_text(const char* dir) {
       const char* v = getenv(names[i]);
       fprintf(f, "%s=%s\n", names[i], v ? v : "");
     }
+    mkgp2pc_shadow_record_write(f);
     fclose(f);
   }
 }
@@ -472,6 +476,7 @@ void VIWaitForRetrace(void) {
       s_dumpWanted = false;
       dump_capture();
     }
+    mkgp2pc_shadow_record_frame();
     aurora_end_frame();
     s_inFrame = false;
   }
