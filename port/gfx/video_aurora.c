@@ -442,6 +442,27 @@ void mkgp2pc_audio_frame(void); /* audio_musyx.c */
  * frame. The display's own rate may be anything (or the presentation may not
  * wait at all), so the pace is kept here. MKGP2PC_NOLIMIT=1 turns it off
  * (scripted runs). */
+/* Leaving: the process ends at once, without the rendering library's
+ * shutdown. On Windows every close of the window ended in an access
+ * violation inside webgpu_dawn.dll during that shutdown (same place five
+ * times on 2026-11-11, after "Buffer mapping Aborted" when a dump had been
+ * made): Windows then showed the window as not responding and wrote a crash
+ * record. Nothing of the game's needs the orderly path: the card file is
+ * written when the game writes the card, the logs are unbuffered. */
+#ifdef _WIN32
+__declspec(dllimport) void* __stdcall GetCurrentProcess(void);
+__declspec(dllimport) int __stdcall TerminateProcess(void* process, unsigned int code);
+#else
+#include <unistd.h>
+#endif
+static void quit_now(void) {
+  fflush(NULL);
+#ifdef _WIN32
+  TerminateProcess(GetCurrentProcess(), 0);
+#endif
+  _exit(0);
+}
+
 static void frame_limit(void) {
   static Uint64 next;
   static int off = -1;
@@ -498,8 +519,7 @@ static void pump_events(void) {
   const AuroraEvent* event = aurora_update();
   while (event != NULL && event->type != AURORA_NONE) {
     if (event->type == AURORA_EXIT) {
-      aurora_shutdown();
-      exit(0);
+      quit_now();
     }
     if (event->type == AURORA_SDL_EVENT &&
         (event->sdl.type == SDL_EVENT_KEY_DOWN || event->sdl.type == SDL_EVENT_KEY_UP)) {
@@ -543,8 +563,7 @@ void VIWaitForRetrace(void) {
   }
   OSRestoreInterrupts(level);
   if (s_frameLimit >= 0 && (long)s_retrace >= s_frameLimit) {
-    aurora_shutdown();
-    exit(0);
+    quit_now();
   }
   if (!s_inFrame) {
     s_inFrame = aurora_begin_frame();
