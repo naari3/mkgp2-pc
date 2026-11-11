@@ -17,6 +17,7 @@
 
 int OSDisableInterrupts(void);
 int OSRestoreInterrupts(int);
+void mkgp2pc_mediaboard_tick(void); /* port/platform/triforce/mediaboard.c */
 void mkgp2pc_script_tick(uint32_t retrace); /* port/nogfx/input_script.c */
 
 void mkgp2pc_jvs_set_switches(const uint8_t* bytes, int count);
@@ -582,6 +583,7 @@ void VIWaitForRetrace(void) {
   int level = OSDisableInterrupts();
   s_retrace++;
   mkgp2pc_script_tick(s_retrace);
+  mkgp2pc_mediaboard_tick();
   keyboard_tick();
   if (s_pre) {
     s_pre(s_retrace);

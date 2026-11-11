@@ -1048,3 +1048,12 @@ credit display after a race the player finished, log line
   The user reports this as wrong against the arcade. How the arcade gets
   the Japanese ids is not found. A run of the original in an emulator at
   this screen would settle what the list is at draw time.
+
+## 32. Cabinet link (2026-11-11)
+
+The network board's socket commands run on host sockets
+(`port/platform/triforce/netlink.c`); two copies of the no-graphics build on
+one Linux machine connect both ways and follow each other's state. Protocol,
+settings and the limits of what was checked: [cabinet_link.md](cabinet_link.md).
+Before this, every socket command was answered "error" and, separately,
+`acConnect` was a stub (its unit did not compile, upstream request 46).

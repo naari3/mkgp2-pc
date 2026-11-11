@@ -29,9 +29,9 @@
  *    raw 0x0080 alone means "error".
  *
  * Implemented: what amsys needs to finish booting (address query, version,
- * serial number, for both boards). Every other command, the socket calls
- * included, is answered with "error", which the game treats as a network
- * failure. Values marked "guess" are not known from the sources.
+ * serial number, for both boards) and, in netlink.c, the socket commands.
+ * Every other command is answered with "error". Values marked "guess" are
+ * not known from the sources.
  */
 #include <stdint.h>
 #include <stdlib.h>
@@ -74,7 +74,7 @@ static uint8_t* page(uint32_t address, int create) {
   return s_pages[i];
 }
 
-static void store(uint32_t address, const uint8_t* data, uint32_t length) {
+void mkgp2pc_mediaboard_store(uint32_t address, const uint8_t* data, uint32_t length) {
   while (length) {
     uint32_t off = address % PAGE;
     uint32_t n = PAGE - off < length ? PAGE - off : length;
@@ -83,7 +83,7 @@ static void store(uint32_t address, const uint8_t* data, uint32_t length) {
   }
 }
 
-static void load(uint32_t address, uint8_t* data, uint32_t length) {
+void mkgp2pc_mediaboard_load(uint32_t address, uint8_t* data, uint32_t length) {
   while (length) {
     uint32_t off = address % PAGE;
     uint32_t n = PAGE - off < length ? PAGE - off : length;
@@ -97,14 +97,62 @@ static void load(uint32_t address, uint8_t* data, uint32_t length) {
   }
 }
 
+#define store mkgp2pc_mediaboard_store
+#define load mkgp2pc_mediaboard_load
+
 static uint32_t swap32(uint32_t v) { return (v << 24) | ((v << 8) & 0xFF0000) | ((v >> 8) & 0xFF00) | (v >> 24); }
 
 int mkgp2pc_mediaboard_owns(uint32_t address) { return address >= 0x80000000u; }
 int mkgp2pc_mediaboard_irq(void) { return (s_boards[0].pending ? 4 : 0) | (s_boards[1].pending ? 0x10 : 0); }
 
+/* Answers go out one at a time: the game clears the answer mailbox when it
+ * has taken one. Requests whose answer is not known yet (accept, connect)
+ * wait in s_later and are asked about again on every retrace. */
+#define MAX_WAITING 64
+typedef struct {
+  Board* board;
+  Packet packet;
+} Waiting;
+static Waiting s_answers[MAX_WAITING], s_later[MAX_WAITING];
+static int s_answerCount, s_laterCount;
+
+static void deliver(void) {
+  for (int i = 0; i < s_answerCount; i++) {
+    Board* b = s_answers[i].board;
+    if (!b->pending) {
+      Packet out = s_answers[i].packet;
+      memmove(&s_answers[i], &s_answers[i + 1], (size_t)(s_answerCount - i - 1) * sizeof(Waiting));
+      s_answerCount--;
+      store(b->answer, (const uint8_t*)&out, sizeof(out));
+      b->pending = 1;
+      mkgp2pc_baseboard_raise_exi(2);
+      i--;
+    }
+  }
+}
+
+static void answer(Board* b, const Packet* in, int ok, uint32_t result) {
+  if (s_answerCount < MAX_WAITING) {
+    Waiting* w = &s_answers[s_answerCount++];
+    w->board = b;
+    w->packet = *in;
+    w->packet.command = ok ? (uint16_t)(in->command | 0x80) : 0x0080;
+    if (ok) {
+      w->packet.result = result;
+    }
+  }
+  deliver();
+}
+
+static void host_args(const Packet* in, uint32_t* arg) {
+  for (int i = 0; i < 6; i++) {
+    arg[i] = swap32(in->arg[i]); /* amsock.c stores them byte-swapped */
+  }
+}
+
 static void request(Board* b, const Packet* in) {
   Packet out = *in;
-  out.command = (uint16_t)(in->command | 0x80);
+  uint32_t arg[6];
   switch (in->command) {
   case 0x0100: /* amsys stores this as the board's address */
     out.result = swap32(b->address);
@@ -117,12 +165,40 @@ static void request(Board* b, const Packet* in) {
     memcpy(&out.result, b->serial, 16);
     break;
   default:
-    out.command = 0x0080;
+    host_args(in, arg);
+    switch (mkgp2pc_netlink_command(in->command, arg, &out.result)) {
+    case MKGP2PC_NETLINK_DONE:
+      break;
+    case MKGP2PC_NETLINK_LATER:
+      if (s_laterCount < MAX_WAITING) {
+        s_later[s_laterCount].board = b;
+        s_later[s_laterCount++].packet = *in;
+        return;
+      }
+      /* fall through */
+    default:
+      answer(b, in, 0, 0);
+      return;
+    }
     break;
   }
-  store(b->answer, (const uint8_t*)&out, sizeof(out));
-  b->pending = 1;
-  mkgp2pc_baseboard_raise_exi(2);
+  answer(b, &out, 1, out.result);
+}
+
+void mkgp2pc_mediaboard_tick(void) {
+  mkgp2pc_netlink_tick();
+  for (int i = 0; i < s_laterCount; i++) {
+    Waiting w = s_later[i];
+    uint32_t arg[6], result = 0;
+    host_args(&w.packet, arg);
+    if (mkgp2pc_netlink_poll(w.packet.command, arg, &result) != MKGP2PC_NETLINK_LATER) {
+      memmove(&s_later[i], &s_later[i + 1], (size_t)(s_laterCount - i - 1) * sizeof(Waiting));
+      s_laterCount--;
+      i--;
+      answer(w.board, &w.packet, 1, result);
+    }
+  }
+  deliver();
 }
 
 void mkgp2pc_mediaboard_read(uint32_t address, void* buffer, uint32_t length) {
@@ -136,7 +212,7 @@ void mkgp2pc_mediaboard_read(uint32_t address, void* buffer, uint32_t length) {
   load(address, (uint8_t*)buffer, length);
 }
 
-void mkgp2pc_mediaboard_write(uint32_t address, const void* buffer, uint32_t length) {
+static void board_write(uint32_t address, const void* buffer, uint32_t length) {
   if (address < 0x84000000u) {
     return;
   }
@@ -152,9 +228,24 @@ void mkgp2pc_mediaboard_write(uint32_t address, const void* buffer, uint32_t len
     }
     if (address == b->answer) {
       b->pending = 0; /* the game cleared the answer */
+      store(address, (const uint8_t*)buffer, length);
+      deliver();
+      return;
     }
   }
   store(address, (const uint8_t*)buffer, length);
+}
+
+/* The game writes from its main thread and from its network thread; the
+ * retrace tick comes in between. One at a time, under the port's
+ * "interrupt" lock. */
+int OSDisableInterrupts(void);
+int OSRestoreInterrupts(int level);
+
+void mkgp2pc_mediaboard_write(uint32_t address, const void* buffer, uint32_t length) {
+  int level = OSDisableInterrupts();
+  board_write(address, buffer, length);
+  OSRestoreInterrupts(level);
 }
 
 /* ---- replaces src/triforce/dvdcmd.c ------------------------------------- */

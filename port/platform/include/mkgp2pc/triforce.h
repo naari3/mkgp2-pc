@@ -14,6 +14,20 @@ int mkgp2pc_mediaboard_owns(uint32_t address);
 void mkgp2pc_mediaboard_read(uint32_t address, void* buffer, uint32_t length);
 void mkgp2pc_mediaboard_write(uint32_t address, const void* buffer, uint32_t length);
 int mkgp2pc_mediaboard_irq(void); /* baseboard status bits: 4 main board, 0x10 network board */
+/* Once per retrace: answers that had to wait (accept, connect) are delivered. */
+void mkgp2pc_mediaboard_tick(void);
+/* Board memory, for the command handlers. */
+void mkgp2pc_mediaboard_load(uint32_t address, uint8_t* data, uint32_t length);
+void mkgp2pc_mediaboard_store(uint32_t address, const uint8_t* data, uint32_t length);
+
+/* Cabinet link (netlink.c): the network board's socket commands on host
+ * sockets. `command` is the value amsock.c stores, `arg` the six arguments
+ * in host order, `result` the packet's result field as the game reads it. */
+enum { MKGP2PC_NETLINK_UNKNOWN, MKGP2PC_NETLINK_DONE, MKGP2PC_NETLINK_LATER };
+int mkgp2pc_netlink_command(uint16_t command, const uint32_t* arg, uint32_t* result);
+int mkgp2pc_netlink_poll(uint16_t command, const uint32_t* arg, uint32_t* result);
+void mkgp2pc_netlink_tick(void);
+void mkgp2pc_netlink_pump(void); /* delayed sends of the measurement options; any time, lock held */
 
 /* Baseboard (baseboard.c): runs the callback the game registered for an EXI
  * channel, as the interrupt would. */

@@ -1152,3 +1152,21 @@ status: note
 
 Touched src/game/fn_801BAA88.cpp only: three reads of the name-entry key tables now use SJIS_WORD. No object changes.
 
+## n3-20261111-2103 | 2026-11-11 21:03Z | from: n3 | port request 46 landed (byte-identical)
+re: -
+status: note
+
+Touched include/dolphin/card.h only: parameter name new -> newName in two prototypes. Clean rebuild, main.dol OK.
+
+## n3-20261111-2112 | 2026-11-11 21:12Z | from: n3 | port request 47 landed (byte-identical)
+re: -
+status: note
+
+Touched include/game/types/pcb_link.h (new PCB_CHOICE_TRACK) and src/game/clFlowCourse.cpp (one read). No object changes.
+
+## n3-20261111-2117 | 2026-11-11 21:17Z | from: n3 | port request 48 landed (byte-identical)
+re: -
+status: note
+
+Touched src/game/VSMode_FrameUpdate.c (one rodata pool respelled with TEXT_WORD) and tools/port_abi/text_words.py. No object changes.
+
