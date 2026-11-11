@@ -215,7 +215,7 @@ What the pieces do:
   the packages of the Dockerfile.
 
 Measured 2026-11-11 (Ryzen 9 5900X, WSL 2, Ubuntu 20.04 host distribution,
-docker 23.0.2): image 1.4 GB plus `clang-tools`; first build from an empty
+docker 23.0.2): image 1.45 GB, WSL clone with all build trees 1.3 GB; first build from an empty
 tree about 8 minutes including downloads; a rebuild with nothing changed
 about 2 minutes. The image has clang 18.1.3, cmake 3.28.3,
 `i686-w64-mingw32-gcc` 13-win32 and mingw-w64 11.0.1, the versions of the
