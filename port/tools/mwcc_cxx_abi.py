@@ -28,10 +28,15 @@ for `clang -c`.
 For 32-bit Windows targets the `this`-in-register convention is taken off
 member functions (see the comment in rewrite()).
 
-Not handled: where the vtable pointer sits inside an object, multiple
-inheritance beyond the address of the second base's group in a vtable that
-is defined elsewhere as data, pointers to virtual member functions of
-classes with a virtual destructor.
+3. Two polymorphic bases. MWCC writes one table: the first base's part,
+   the second base's part (with its own two header words), then the virtual
+   functions added by the class and below it. Itanium keeps the added
+   functions in the first group. A table emitted here is reordered, and
+   calls of the added functions skip the second base's part (step 1b).
+
+Not handled: where the vtable pointer sits inside an object, more than two
+polymorphic bases, pointers to virtual member functions of classes with a
+virtual destructor.
 """
 import re
 import sys
@@ -112,8 +117,57 @@ def _class_dtor_slots(text):
             return None
         return "_ZTS" + (parts[0] if len(parts) == 1 else "N" + "".join(parts) + "E")
 
+    # A class with two polymorphic bases. MWCC writes one table: the first
+    # base's part, then the second base's part with its own two header
+    # words, then the virtual functions the class and its descendants add
+    # (Itanium keeps those in the first group and puts the second base's
+    # group last). For each class below such a class: (Itanium slots of the
+    # first base's part, words of the second base's part in MWCC's table).
+    def chain(c):
+        res = []
+        for _ in range(32):
+            while c in alias:
+                c = alias[c]
+            res.append(c)
+            b = bases.get(c, [])[:1]
+            if not b:
+                break
+            c = b[0]
+        return res
+
+    def itanium_slots(c):
+        """(number of Itanium slots, has a virtual destructor) of c's primary chain"""
+        seen, has_dtor = set(), False
+        for x in chain(c):
+            has_dtor = has_dtor or x in dtor
+            seen |= used.get(x, set())
+        if has_dtor:
+            k = 0
+            while k in seen:
+                k += 1
+            seen |= {k, k + 1}
+        return (max(seen) + 1 if seen else 0), has_dtor
+
+    def split(c):
+        for x in chain(c):
+            poly = []
+            for b in bases.get(x, []):
+                while b in alias:
+                    b = alias[b]
+                if itanium_slots(b)[0]:
+                    poly.append(b)
+            if len(poly) > 2 or (len(poly) == 2 and poly[0] != chain(x)[1:2][0]):
+                return "unsupported"
+            if len(poly) == 2:
+                if any(len([b for b in bases.get(y, []) if itanium_slots(b)[0]]) > 1 for y in chain(poly[0]) + chain(poly[1])):
+                    return "unsupported"
+                n2, d2 = itanium_slots(poly[1])
+                return itanium_slots(poly[0])[0], 2 + n2 - (1 if d2 else 0)
+        return None
+
     out = {}
     clash = set()
+    splits = {}
     for c in comp:
         key = mangled(c)
         if key is None:
@@ -122,12 +176,15 @@ def _class_dtor_slots(text):
         if key in out and out[key] != s:
             clash.add(key)
         out[key] = s
-    return out, clash
+        sp = split(c)
+        if sp is not None:
+            splits[key] = sp
+    return out, clash, splits
 
 
 def rewrite(text, warn=None):
     warn = warn or (lambda s: None)
-    slots, clash = _class_dtor_slots(text)
+    slots, clash, splits = _class_dtor_slots(text)
 
     # 32-bit Windows (GNU ABI) passes `this` in a register for member
     # functions. The vtables written as data hold C functions and C code calls
@@ -178,6 +235,42 @@ def rewrite(text, warn=None):
 
     text = re.sub(r"^(@_ZTV\S+ = .*?)\{ \[(\d+) x ptr\] \} \{ \[\d+ x ptr\] \[(.*?)\] \}(.*)$", fix_vtable, text, flags=re.M)
 
+    # 1b. a vtable defined here for a class with two polymorphic bases
+    # (clResultType00): one destructor slot per group, and MWCC's order of
+    # the parts (see `split` above). The second group's destructors are the
+    # this-adjusting thunks. Classes whose table is written out as data and
+    # that get a table here only through a key function are rewritten the
+    # same way; nothing uses those.
+    local_groups = {}   # @_ZTV name -> byte offset of each group's start
+
+    def fix_vtable_groups(m):
+        head, body, tail = m.groups()
+        table = re.match(r"@_ZTV[\w.$]+", head).group(0)
+        groups = []
+        for g in re.finditer(r"\[\d+ x ptr\] \[(.*?)\]", body):
+            one = fix_vtable(re.match(r"()()(.*)()$", g.group(1)))
+            groups.append(re.fullmatch(r"\{ \[\d+ x ptr\] \} \{ \[\d+ x ptr\] \[(.*)\] \}", one).group(1).split(", "))
+        sp = splits.get("_ZTS" + table[5:])
+        if len(groups) != 2 or sp is None or sp == "unsupported":
+            warn("vtable %s: groups kept in the host's order" % table)
+            first, rest = groups[0], []
+        else:
+            k = slots.get("_ZTS" + table[5:])
+            cut = 2 + sp[0] - (1 if k is not None and k < sp[0] else 0)
+            first, rest = groups[0][:cut], groups[0][cut:]
+            if len(groups[1]) != sp[1]:
+                warn("vtable %s: second group has %d words, expected %d" % (table, len(groups[1]), sp[1]))
+        offs, flat = [0], list(first)
+        for g in groups[1:]:
+            offs.append(4 * len(flat))
+            flat += g
+        flat += rest
+        local_groups[table] = offs
+        return "%s{ [%d x ptr] } { [%d x ptr] [%s] }%s" % (head, len(flat), len(flat), ", ".join(flat), tail)
+
+    text = re.sub(r"^(@_ZTV\S+ = .*?)\{ \[\d+ x ptr\](?:, \[\d+ x ptr\])+ \} \{ (.*) \}(, align .*)$",
+                  fix_vtable_groups, text, flags=re.M)
+
     # 2. address point = start of the table
     text, n_addr = re.subn(r"getelementptr inbounds \(\{ \[\d+ x ptr\] \}, ptr (@_ZTV[\w.$]+), i32 0, inrange i32 0, i32 2\)", r"\1", text)
     # 2b. a class with two bases whose vtable is data written out elsewhere
@@ -189,6 +282,9 @@ def rewrite(text, warn=None):
 
     def group_address(m):
         sizes, table, group = [int(n) for n in re.findall(r"\[(\d+) x ptr\]", m.group(1))], m.group(2), int(m.group(3))
+        if table in local_groups:   # step 1b
+            off = local_groups[table][group]
+            return table if off == 0 else "getelementptr inbounds (i8, ptr %s, i32 %d)" % (table, off)
         if table not in external or group > 1:
             return m.group(0)
         if group == 0:
@@ -268,6 +364,12 @@ def rewrite(text, warn=None):
                         n = k
                     elif n > k + 1:
                         n -= 1
+                # past the second base's part (step 1b)
+                sp = splits.get(cls)
+                if sp == "unsupported":
+                    warn("class %s: more than two polymorphic bases, slot %d not moved" % (cls, n))
+                elif sp is not None and int(m.group(4)) >= sp[0]:
+                    n += sp[1]
             vfn_info[vfn] = flag
             out.append("%s%s = getelementptr inbounds ptr, ptr %s, i64 %d%s" % (ind, vfn, vt, n + 2, rest))
             n_calls += 1
