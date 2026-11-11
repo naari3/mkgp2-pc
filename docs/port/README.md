@@ -20,6 +20,7 @@ clean-up.
 | [`census.md`](census.md) | Measured: how much of the source a host compiler accepts, and what a link would need |
 | [`layout.md`](layout.md) | Directory map, which SDK library comes from where, stub and back end conventions, open questions |
 | [`readiness.md`](readiness.md) | Assessment of how far the decomp is from a port: measured gaps, comparable projects, staged plan (estimates) |
+| [`widescreen.md`](widescreen.md) | Survey: what a 16:9 display needs (projection, culling, 2D layer, whole-screen effects), options |
 
 ## What goes where
 
