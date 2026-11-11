@@ -797,3 +797,8 @@ unstubbed, wrap `sndInit` in `port/gfx` and feed an SDL audio stream from
 - Text: Shift-JIS char strings were read two bytes at a time in host
   byte order (the player name read "マリI"); upstream request 33,
   `SJIS_WORD` defined in `mwcc_compat.h`.
+- Data kind 7 (`PORT_DATA_COURSE_BGM`) needs no conversion: nothing reads
+  the file beyond the count of leading zero records (`data_loaded.c`).
+- Also since section 23: `vswprintf` for 16-bit units (`wchar16.c`),
+  `OSTicksToCalendarTime` (host local time, `os_min.c`), all 28
+  hand-registered start-up functions called.

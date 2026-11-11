@@ -217,6 +217,13 @@ void mkgp2pc_data_loaded(int kind, void* data, uint32_t size) {
     }
     break;
   }
+  case 7:
+    /* PORT_DATA_COURSE_BGM: the file is loaded and freed, and
+     * CourseBgm_Load counts its leading records whose first word is zero
+     * (the same in either byte order); no unit reads anything else in it
+     * (only CourseBgm_Load.c and CourseBgm_Free.c name g_courseBgm). The
+     * load site gives no size. Left as it is. */
+    break;
   case MKGP2PC_DATA_TPL:
     tpl((uint8_t*)data, size);
     break;
