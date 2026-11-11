@@ -426,3 +426,21 @@ kept for reference. Item 10 is open.
     declarations of library functions (SDK, MSL, HSD) whose float/integer
     order differs from the real prototype, which the port's census does not
     cover.
+36. `src/game/dlistutil/*.c` and `include/game/DListBoundsPrivate.h` read
+    and write GX stream data on the CPU through host-order casts (asked
+    2026-11-11). Display lists and vertex buffers are the one part of a
+    model file the port leaves big-endian, because the GX layer consumes
+    them in that form. Three kinds of access, 13 units:
+    the vertex count of a primitive (`*(unsigned short *)(p + 1)`, also
+    inside `CmdSize` for command 0x10), a 16-bit vertex index read or
+    written inside a display list (`*(unsigned short *)(p + entry->offset)`,
+    `SetIndex` / `GetIndex`), and position floats read from a vertex buffer
+    (`v = d->array; ... v[0], v[1], v[2]`). On a little-endian host a count
+    of 3 is read as 768, the walk leaves the list and ends in
+    `OSPanic("miyazakishare.cpp", 259, "Unknown DLCommand")` (seen twice
+    while course 8 loads, from `Caster::Caster`); the bounds it computed
+    before that are garbage too. Wanted: access macros in the style of
+    `SJIS_WORD` (for example `GXDATA_U16(p)`, `GXDATA_SET_U16(p, v)`,
+    `GXDATA_F32(p)`), plain dereferences under MWCC, defined for the host
+    in `port/compat/mwcc_compat.h`; and a search for other CPU-side readers
+    of display lists or vertex buffers outside `dlistutil`.
