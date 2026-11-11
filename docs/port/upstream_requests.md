@@ -445,3 +445,32 @@ kept for reference. Item 10 is open.
     `GXDATA_F32(p)`), plain dereferences under MWCC, defined for the host
     in `port/compat/mwcc_compat.h`; and a search for other CPU-side readers
     of display lists or vertex buffers outside `dlistutil`.
+37. The cabinet-link packet header is read and written through two views
+    that only agree on a big-endian machine (asked 2026-11-11).
+    `PCBCommBroadcast.c` writes it through
+    `union BroadcastHeader { struct { HeaderByte first; unsigned char
+    second; StateByte state; StatusByte status; } bytes; struct {
+    BITFIELDS3(unsigned int upper:9, unsigned int scene:8, unsigned int
+    lower:15) } word; }`; the readers use `(hdr.word >> 15) & 0xFF`
+    (`PCBCheckRecv.c`, about 12 places, one spelled
+    `*(unsigned int *)(PCBCheckRecv_bss_805A6154 + index * 0xA3C) >> 15`;
+    `fn_801D1890.cpp` `slot->flags >> 15`) next to byte fields of the same
+    header (`hdr.bits.team`, `readyBit1`, `StateByte`). On the console the
+    scene number is the low 7 bits of byte 1 and the top bit of byte 2. On
+    a little-endian host the 32-bit view puts it in bit 7 of byte 1 and
+    bits 0-6 of byte 2, on top of the `StateByte` flags, so the scene a
+    cabinet reads back for itself is garbage:
+    `PcbSync_AllKartsInValidSelectState()` never becomes true and the
+    attract loop stays on its last screen ("ただいまカメラは使えません")
+    for ever. Wanted: the scene number through accessors defined on bytes
+    for the host (for example `PCB_HDR_SCENE(p)` / `PCB_HDR_SET_SCENE(p,
+    v)`, the present expressions under MWCC), and the same for the other
+    multi-byte bit-field units that share a union with byte views in the
+    link code: `ClassHeader.half` (`upper:7, wins:4, low:5`) in
+    `PCBCommBroadcast.c`, the `half` views in `PCBCheckRecv.c` (`upper:5,
+    track:7, lower:4`; `upper:6, id:3, lower:7`; `local:1, reserved:5,
+    id:3, blocks:7`) and `PCBCheckProcess.c` (`upper:6, id:3, lower:7`).
+    Only 17 `BITFIELDSn` units in the game are wider than a byte, so the
+    rest (`clsound/fn_801913B0.c`, `misc3d/fn_80167*.cpp`, `clFlowRound.c`,
+    `FaceEffect.cpp`, `Scene_8014E0C4.cpp`) is worth one look for the same
+    mix of views.
