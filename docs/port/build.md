@@ -301,6 +301,39 @@ keyboard yet (the cloud build machine has no input device); the same input
 calls driven by the script steer and accelerate the kart.
 
 
+## Pause, frame step and dumps (rendering executable)
+
+For stopping on a frame that looks wrong and handing it over:
+
+| Key | Does |
+| --- | --- |
+| `P` | pause / resume (the game's frame counter stops; the picture stays) |
+| `O` | while paused: advance one frame |
+| `F9` | write a dump; works running or paused |
+
+A dump is a folder `dumps/<n>_f<frame>/` under the directory the executable
+was started from (`MKGP2PC_DUMP_DIR` names another place; the folder is in
+`.gitignore`):
+
+- `frame.png`: the picture. Read back from Aurora's frame buffer where the
+  graphics backend can (the log says "Asynchronous readback is unavailable"
+  at start-up where it cannot); otherwise, on Windows, the window's own
+  picture about 0.4 s later (`port/gfx/shot_win32.c`), which is the same
+  frame when paused. When paused, `F9` steps the game one frame so that a
+  frame is drawn for the picture. Not written on Linux without readback.
+- `input.txt`: every keyboard input since the start, as
+  `<frame> <command>` lines in the `MKGP2PC_SCRIPT` syntax.
+- `state.txt`: frame number, paused or not, the `MKGP2PC_*` settings.
+
+Playing a dump back: `MKGP2PC_SCRIPT_FILE=<path to input.txt>` feeds the
+recorded inputs at the recorded frames; add a line `<frame> pause` (or
+`dump`) to stop where the dump was made. Checked on Linux: the same file
+played with and without the frame limiter gives the identical picture at
+frame 9000 (menus after a coin; a race has not been compared yet). What
+could break it: anything the game takes from the clock rather than the
+frame count, and inputs from a script before the keyboard took over (those
+are in `state.txt`, not in `input.txt`).
+
 ## Sound (rendering executable)
 
 The game's MusyX calls go to the PC target of the MusyX decompilation,

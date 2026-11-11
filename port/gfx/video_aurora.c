@@ -34,12 +34,268 @@ typedef void (*RetraceCallback)(uint32_t retraceCount);
  *   space, enter   item button (also "decide" in the menus)
  *   5 or C         coin
  *   F1 / F2        test / service button of the cabinet
+ *   P              pause / resume
+ *   O              while paused: advance one frame
+ *   F9             dump (see "Dumps" below); works paused or running
  * Once a key has been used the keyboard owns the inputs; until then a
  * script (MKGP2PC_SCRIPT) may drive them.
  */
 static bool s_keyLeft, s_keyRight, s_keyAccel, s_keyBrake, s_keyItem, s_keyTest, s_keyService;
 static bool s_keyboardUsed;
 static int s_wheel; /* -0x7FFF .. 0x7FFF */
+
+/*
+ * Dumps. F9 writes a folder dumps/<n>_f<retrace>/ under the current
+ * directory (MKGP2PC_DUMP_DIR names another place):
+ *   frame.png   the frame buffer of the next frame drawn (one frame after
+ *               the key when paused: the game is stepped once for it)
+ *   input.txt   every input since the start, in the MKGP2PC_SCRIPT syntax.
+ *               MKGP2PC_SCRIPT_FILE=<that file> plays it back, which brings
+ *               another machine to the same retrace with the same inputs
+ *   state.txt   retrace number, whether paused, the environment settings
+ * The retrace count does not advance while paused, so a recording made with
+ * pauses plays back without them.
+ */
+static bool s_paused, s_step, s_dumpWanted;
+static char* s_rec;
+static size_t s_recLen, s_recCap;
+static uint32_t s_retrace;
+
+/* at: the retrace whose script tick has to apply the entry on playback */
+static void rec(uint32_t at, const char* fmt, unsigned a, unsigned b) {
+  char line[64];
+  int n = snprintf(line, sizeof(line), "%u ", (unsigned)at);
+  n += snprintf(line + n, sizeof(line) - (size_t)n, fmt, a, b);
+  line[n++] = '\n';
+  if (s_recLen + (size_t)n > s_recCap) {
+    s_recCap = s_recCap ? s_recCap * 2 : 1 << 16;
+    s_rec = (char*)realloc(s_rec, s_recCap);
+  }
+  if (s_rec != NULL) {
+    memcpy(s_rec + s_recLen, line, (size_t)n);
+    s_recLen += (size_t)n;
+  }
+}
+
+static void rec_analog(int channel, uint16_t value) {
+  static int last[3] = {-1, -1, -1};
+  if (last[channel] != value) {
+    last[channel] = value;
+    rec(s_retrace, "an%u=%x", (unsigned)channel, value);
+  }
+  mkgp2pc_jvs_set_analog(channel, value);
+}
+static void rec_switch(uint8_t p1) {
+  static int last = -1;
+  uint8_t sw[5] = {0, 0, p1, 0, 0};
+  if (last != p1) {
+    last = p1;
+    rec(s_retrace, "sw=00,00,%02x%.0u", p1, 0);
+  }
+  mkgp2pc_jvs_set_switches(sw, 5);
+}
+static void rec_operator(uint8_t pressed) {
+  static int last = -1;
+  if (last != pressed) {
+    last = pressed;
+    rec(s_retrace, "op=%x%.0u", pressed, 0);
+  }
+  mkgp2pc_baseboard_set_operator_switches(pressed);
+}
+
+/* PNG with stored (uncompressed) blocks: no library needed. */
+static uint32_t crc_table[256];
+static uint32_t crc_update(uint32_t c, const uint8_t* p, size_t n) {
+  if (crc_table[1] == 0) {
+    for (uint32_t i = 0; i < 256; i++) {
+      uint32_t v = i;
+      for (int k = 0; k < 8; k++) {
+        v = v & 1 ? 0xEDB88320u ^ (v >> 1) : v >> 1;
+      }
+      crc_table[i] = v;
+    }
+  }
+  while (n--) {
+    c = crc_table[(c ^ *p++) & 0xFF] ^ (c >> 8);
+  }
+  return c;
+}
+static void png_chunk(FILE* f, const char* type, const uint8_t* data, uint32_t len) {
+  uint8_t head[8] = {(uint8_t)(len >> 24), (uint8_t)(len >> 16), (uint8_t)(len >> 8), (uint8_t)len,
+                     (uint8_t)type[0],     (uint8_t)type[1],     (uint8_t)type[2],    (uint8_t)type[3]};
+  uint32_t c = crc_update(0xFFFFFFFFu, head + 4, 4);
+  c = crc_update(c, data, len) ^ 0xFFFFFFFFu;
+  uint8_t tail[4] = {(uint8_t)(c >> 24), (uint8_t)(c >> 16), (uint8_t)(c >> 8), (uint8_t)c};
+  fwrite(head, 1, 8, f);
+  fwrite(data, 1, len, f);
+  fwrite(tail, 1, 4, f);
+}
+static bool png_write(const char* path, const uint8_t* rgba, uint32_t w, uint32_t h) {
+  FILE* f = fopen(path, "wb");
+  if (f == NULL) {
+    return false;
+  }
+  const uint32_t row = 1 + w * 3;
+  const uint32_t raw = row * h;
+  const uint32_t blocks = (raw + 65534) / 65535;
+  const uint32_t zlen = 2 + raw + blocks * 5 + 4;
+  uint8_t* z = (uint8_t*)malloc(zlen);
+  uint8_t* scan = (uint8_t*)malloc(raw);
+  if (z == NULL || scan == NULL) {
+    fclose(f);
+    free(z);
+    free(scan);
+    return false;
+  }
+  uint32_t a = 1, b = 0;
+  for (uint32_t y = 0; y < h; y++) {
+    uint8_t* d = scan + y * row;
+    *d++ = 0;
+    for (uint32_t x = 0; x < w; x++) {
+      const uint8_t* s = rgba + ((size_t)y * w + x) * 4;
+      *d++ = s[0];
+      *d++ = s[1];
+      *d++ = s[2];
+    }
+  }
+  for (uint32_t i = 0; i < raw; i++) {
+    a = (a + scan[i]) % 65521;
+    b = (b + a) % 65521;
+  }
+  uint8_t* o = z;
+  *o++ = 0x78;
+  *o++ = 0x01;
+  for (uint32_t off = 0; off < raw; off += 65535) {
+    uint32_t n = raw - off < 65535 ? raw - off : 65535;
+    *o++ = off + n == raw;
+    *o++ = (uint8_t)n;
+    *o++ = (uint8_t)(n >> 8);
+    *o++ = (uint8_t)~n;
+    *o++ = (uint8_t)(~n >> 8);
+    memcpy(o, scan + off, n);
+    o += n;
+  }
+  *o++ = (uint8_t)(b >> 8);
+  *o++ = (uint8_t)b;
+  *o++ = (uint8_t)(a >> 8);
+  *o++ = (uint8_t)a;
+  static const uint8_t sig[8] = {0x89, 'P', 'N', 'G', 13, 10, 26, 10};
+  uint8_t ihdr[13] = {(uint8_t)(w >> 24), (uint8_t)(w >> 16), (uint8_t)(w >> 8), (uint8_t)w,
+                      (uint8_t)(h >> 24), (uint8_t)(h >> 16), (uint8_t)(h >> 8), (uint8_t)h,
+                      8,                  2,                  0,                 0,
+                      0};
+  fwrite(sig, 1, 8, f);
+  png_chunk(f, "IHDR", ihdr, 13);
+  png_chunk(f, "IDAT", z, (uint32_t)(o - z));
+  png_chunk(f, "IEND", ihdr, 0);
+  fclose(f);
+  free(z);
+  free(scan);
+  return true;
+}
+
+bool mkgp2pc_window_shot(SDL_Window* window, uint8_t** rgba, uint32_t* width, uint32_t* height); /* shot_win32.c */
+static SDL_Window* s_window;
+static int s_shotWait; /* polls left before the window's own picture is taken instead */
+static AuroraReadbackStream s_shotStream;
+static uint8_t* s_shotPixels;
+static uint32_t s_shotW, s_shotH;
+static char s_shotPath[600];
+static int s_dumpCount;
+
+static void dump_text(const char* dir) {
+  char path[600];
+  snprintf(path, sizeof(path), "%s/input.txt", dir);
+  FILE* f = fopen(path, "wb");
+  if (f != NULL) {
+    if (s_rec != NULL) {
+      fwrite(s_rec, 1, s_recLen, f);
+    }
+    fclose(f);
+  }
+  snprintf(path, sizeof(path), "%s/state.txt", dir);
+  f = fopen(path, "w");
+  if (f != NULL) {
+    static const char* const names[] = {"MKGP2PC_SCRIPT", "MKGP2PC_SCRIPT_FILE", "MKGP2PC_NOLIMIT", "MKGP2PC_FRAMES"};
+    fprintf(f, "retrace %u\npaused %d\nframe.png shows retrace %u\n", (unsigned)s_retrace, (int)s_paused,
+            (unsigned)s_retrace + 1);
+    for (int i = 0; i < 4; i++) {
+      const char* v = getenv(names[i]);
+      fprintf(f, "%s=%s\n", names[i], v ? v : "");
+    }
+    fclose(f);
+  }
+}
+
+/* Called with the frame drawn and not yet handed over. */
+static void dump_capture(void) {
+  const char* base = getenv("MKGP2PC_DUMP_DIR");
+  char dir[512];
+  if (base == NULL || *base == 0) {
+    base = "dumps";
+  }
+  SDL_CreateDirectory(base);
+  snprintf(dir, sizeof(dir), "%s/%03d_f%u", base, ++s_dumpCount, (unsigned)s_retrace);
+  SDL_CreateDirectory(dir);
+  dump_text(dir);
+  if (s_shotStream == 0) {
+    s_shotStream = AuroraReadbackCreateStream();
+  }
+  free(s_shotPixels);
+  s_shotPixels = NULL;
+  if (AuroraReadbackCaptureColor(s_shotStream, 1, &s_shotW, &s_shotH) && s_shotW != 0 && s_shotH != 0) {
+    s_shotPixels = (uint8_t*)malloc((size_t)s_shotW * s_shotH * 4);
+  }
+  snprintf(s_shotPath, sizeof(s_shotPath), "%s/frame.png", dir);
+  s_shotWait = 40;
+  fprintf(stderr, "dump: %s (inputs and state written)\n", dir);
+}
+
+/* The picture arrives when the GPU has finished with that frame. Where
+ * Aurora cannot read back (it says so in the log at start-up) the window's
+ * own picture is taken after a short wait: the frame on screen then, which
+ * is the dumped one when paused and a slightly later one when running. */
+static void dump_poll(void) {
+  if (s_shotWait == 0) {
+    return;
+  }
+  bool ok = false;
+  if (s_shotPixels != NULL) {
+    AuroraReadbackDest dest = {1, s_shotPixels, s_shotW * s_shotH * 4, GX_FALSE};
+    if (AuroraReadbackGet(s_shotStream, &dest, 1) && dest.found) {
+      ok = png_write(s_shotPath, s_shotPixels, s_shotW, s_shotH);
+      s_shotWait = 1;
+    }
+  }
+  if (--s_shotWait != 0) {
+    return;
+  }
+  if (!ok) {
+    uint8_t* pixels = NULL;
+    uint32_t w = 0, h = 0;
+    if (mkgp2pc_window_shot(s_window, &pixels, &w, &h)) {
+      ok = png_write(s_shotPath, pixels, w, h);
+      free(pixels);
+    }
+  }
+  fprintf(stderr, "dump: %s %s\n", s_shotPath, ok ? "written" : "not written (no way to read the picture here)");
+  free(s_shotPixels);
+  s_shotPixels = NULL;
+}
+
+extern int (*mkgp2pc_script_extra)(const char* cmd);
+static int script_extra(const char* cmd) {
+  if (strcmp(cmd, "pause") == 0) {
+    s_paused = !s_paused;
+  } else if (strcmp(cmd, "step") == 0) {
+    s_step = true;
+  } else if (strcmp(cmd, "dump") == 0) {
+    s_dumpWanted = true;
+  } else {
+    return 0;
+  }
+  return 1;
+}
 
 static void key_event(const SDL_Event* e) {
   bool down = e->type == SDL_EVENT_KEY_DOWN;
@@ -53,9 +309,29 @@ static void key_event(const SDL_Event* e) {
   case SDL_SCANCODE_F2: s_keyService = down; break;
   case SDL_SCANCODE_5: case SDL_SCANCODE_C:
     if (down && !e->key.repeat) {
+      rec(s_retrace + 1, "coin%.0u%.0u", 0, 0);
       mkgp2pc_jvs_add_coin(0);
     }
     break;
+  case SDL_SCANCODE_P:
+    if (down && !e->key.repeat) {
+      s_paused = !s_paused;
+      fprintf(stderr, "%s at retrace %u\n", s_paused ? "paused" : "resumed", (unsigned)s_retrace);
+    }
+    return;
+  case SDL_SCANCODE_O:
+    if (down && s_paused) {
+      s_step = true;
+    }
+    return;
+  case SDL_SCANCODE_F9:
+    if (down && !e->key.repeat) {
+      s_dumpWanted = true;
+      if (s_paused) {
+        s_step = true; /* a frame has to be drawn for the picture */
+      }
+    }
+    return;
   default: return;
   }
   s_keyboardUsed = true;
@@ -72,17 +348,15 @@ static void keyboard_tick(void) {
   } else if (s_wheel > target) {
     s_wheel = s_wheel - step < target ? target : s_wheel - step;
   }
-  mkgp2pc_jvs_set_analog(0, (uint16_t)(0x8000 + s_wheel));
-  mkgp2pc_jvs_set_analog(1, s_keyAccel ? 0xFFFF : 0);
-  mkgp2pc_jvs_set_analog(2, s_keyBrake ? 0xFFFF : 0);
-  uint8_t sw[5] = {0, 0, (uint8_t)(s_keyItem ? 0x20 : 0), 0, 0};
-  mkgp2pc_jvs_set_switches(sw, 5);
+  rec_analog(0, (uint16_t)(0x8000 + s_wheel));
+  rec_analog(1, s_keyAccel ? 0xFFFF : 0);
+  rec_analog(2, s_keyBrake ? 0xFFFF : 0);
+  rec_switch((uint8_t)(s_keyItem ? 0x20 : 0));
   /* 0x01: the DIP switch that skips the card reader, printer and camera */
-  mkgp2pc_baseboard_set_operator_switches((uint8_t)(0x01 | (s_keyTest ? 0x40 : 0) | (s_keyService ? 0x80 : 0)));
+  rec_operator((uint8_t)(0x01 | (s_keyTest ? 0x40 : 0) | (s_keyService ? 0x80 : 0)));
 }
 
 static RetraceCallback s_pre, s_post;
-static uint32_t s_retrace;
 static bool s_inFrame;
 static long s_frameLimit = -1;
 
@@ -118,7 +392,8 @@ int __wrap_main(int argc, char** argv) {
   if (limit != NULL) {
     s_frameLimit = strtol(limit, NULL, 10);
   }
-  aurora_initialize(argc, argv, &config);
+  mkgp2pc_script_extra = &script_extra;
+  s_window = aurora_initialize(argc, argv, &config).window;
   s_inFrame = aurora_begin_frame();
   return __real_main(argc, argv);
 }
@@ -161,11 +436,7 @@ RetraceCallback VISetPostRetraceCallback(RetraceCallback cb) {
 }
 uint32_t VIGetRetraceCount(void) { return s_retrace; }
 
-void VIWaitForRetrace(void) {
-  if (s_inFrame) {
-    aurora_end_frame();
-    s_inFrame = false;
-  }
+static void pump_events(void) {
   const AuroraEvent* event = aurora_update();
   while (event != NULL && event->type != AURORA_NONE) {
     if (event->type == AURORA_EXIT) {
@@ -177,6 +448,25 @@ void VIWaitForRetrace(void) {
       key_event(&event->sdl);
     }
     ++event;
+  }
+}
+
+void VIWaitForRetrace(void) {
+  if (s_inFrame) {
+    if (s_dumpWanted) {
+      s_dumpWanted = false;
+      dump_capture();
+    }
+    aurora_end_frame();
+    s_inFrame = false;
+  }
+  pump_events();
+  dump_poll();
+  s_step = false;
+  while (s_paused && !s_step) {
+    SDL_Delay(10);
+    pump_events();
+    dump_poll();
   }
   mkgp2pc_audio_frame();
   frame_limit();

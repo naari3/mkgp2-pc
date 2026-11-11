@@ -60,3 +60,4 @@ tmp_probe/
 # Scratch copies left by an interrupted tools/pragmasweep.py / shapesweep.py run
 .psweep_w*
 .shapesweep_dbg*
+dumps/
