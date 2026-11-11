@@ -28,6 +28,10 @@ static int s_enabled;
 void mkgp2pc_jvs_outputs(uint8_t bits) { s_enabled = (bits & 0x80) != 0; }
 
 void mkgp2pc_serial_write(int port, const uint8_t* data, int n) {
+  if (port == 1) {
+    mkgp2pc_card_serial_write(data, n);
+    return;
+  }
   if (port != 0) {
     return;
   }
@@ -42,6 +46,9 @@ void mkgp2pc_serial_write(int port, const uint8_t* data, int n) {
 }
 
 int mkgp2pc_serial_read(int port, uint8_t* out, int max) {
+  if (port == 1) {
+    return mkgp2pc_card_serial_read(out, max);
+  }
   if (port != 0) {
     return 0;
   }
