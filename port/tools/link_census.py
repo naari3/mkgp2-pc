@@ -26,6 +26,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import compile_census as cc  # noqa: E402
+import source_patches  # noqa: E402
 import mwcc_cxx_abi
 import mwcc_byvalue
 import mwcc_data_layout  # noqa: E402
@@ -272,13 +273,21 @@ def compile_one(path, target):
     # shared one `.refptr.__ZTV9DemoScene` and one of them was constructed
     # with the other's vtable (census section 26).
     cmd = ["clang", "-target", target, "-c", "-O0", "-g", "-fno-exceptions", "-fno-rtti", "-fcommon", "-fshort-wchar"] + (["-mno-ms-bitfields", "-fpcc-struct-return", "-fno-auto-import"] if WIN else ["-malign-double"]) + (["-DMKGP2PC_GFX"] if GFX else []) + cc.base_flags(path)[1:]
-    src_in = path
+    # port-side corrections (port/tools/source_patches.py): the unit is
+    # compiled from a patched copy; its own folder stays on the include path
+    src_abs = os.path.join(ROOT, path)
+    c_in = path
+    patched = obj[:-2] + ".patched" + os.path.splitext(path)[1]
+    if source_patches.patched_source(path, patched):
+        src_abs = c_in = patched
+        cmd += ["-I", os.path.dirname(os.path.join(ROOT, path))]
+    src_in = c_in
     if path.endswith(".cpp"):
         keep = sorted(set(re.findall(r'^extern "C" inline [\w \*]+?\b(\w+)\(', open(os.path.join(ROOT, path), encoding="utf-8", errors="replace").read(), re.M)))
         if keep:
             wrap = obj[:-2] + ".keep.cpp"
             with open(wrap, "w") as f:
-                f.write(f'#include "{os.path.join(ROOT, path)}"\n')
+                f.write(f'#include "{src_abs}"\n')
                 for i, n in enumerate(keep):
                     f.write(f"static void *const mkgp2pc_keep_{i} __attribute__((used)) = (void *)&{n};\n")
             src_in = wrap
@@ -332,7 +341,7 @@ def compile_one(path, target):
     # C: through LLVM IR as well, for MWCC's data alignment
     # (port/tools/mwcc_data_layout.py)
     ll = obj[:-2] + ".ll"
-    r = subprocess.run([c for c in cmd if c != "-c"] + ["-S", "-emit-llvm", path, "-o", ll], cwd=ROOT, capture_output=True, text=True, errors="replace")
+    r = subprocess.run([c for c in cmd if c != "-c"] + ["-S", "-emit-llvm", c_in, "-o", ll], cwd=ROOT, capture_output=True, text=True, errors="replace")
     if r.returncode != 0:
         return path, None
     text, n = mwcc_data_layout.rewrite(open(ll, encoding="utf-8", errors="surrogateescape").read(), DATA_OBJECTS)

@@ -570,3 +570,23 @@ kept for reference. Item 10 is open.
     as item shadows ten times too large and fully black in Windows dumps
     (`state.txt`: board scale about 20, constant alpha 255). Upstream check:
     `tools/port_abi/param_address.py`.
+
+## Port-side source patches (2026-11-11)
+
+Corrections that exist only because of the PC do not go upstream any more
+(owner's decision, 18:11Z and 18:17Z: host-neutral rewrites such as
+`TEXT_WORD` or `BITFIELDS` are welcome in the decompilation, PC-only
+behaviour is not). Where the arcade program reads or writes outside an
+object and only works through the console's stack layout, the correction is
+a patch in `port/patches/<source path>.patch`, applied to a copy of the
+source in the build folder just before it is compiled
+(`port/tools/source_patches.py`, called from `link_census.py`). A patch whose
+context no longer matches stops the build.
+
+| patch | what the arcade program does | on the PC |
+|---|---|---|
+| `src/game/MukadeItem.c.patch` | `MukadeItem_Tick_HeldAndHoming_3839` copies 11 heights to the stack and indexes them with `KartCharacterParam_GetIdentityIndex` (0..12); characters 11 and 12 read two stack words the function never writes | the neighbouring word held NaN bits, the centipede's position became NaN; the patch gives the two extra entries the value 0 |
+
+Request 43 (the ground normal written into an int) is still an upstream
+`#ifndef __MWERKS__` branch at the time of writing; if it is reverted there
+it becomes two patches here.

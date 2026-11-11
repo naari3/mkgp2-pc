@@ -1,0 +1,23 @@
+--- a/src/game/MukadeItem.c
++++ b/src/game/MukadeItem.c
+@@ -93,7 +93,10 @@
+ #pragma use_lmw_stmw on
+ void MukadeItem_Tick_HeldAndHoming_3839(Item *item, State *state)
+ {
+-    struct Heights { float values[11]; } heights;
++    /* PC port: the table has 11 heights and the index runs to 12; for the
++     * last two characters the arcade program reads the two stack words after
++     * its copy, which this function never writes. Here they are zero. */
++    struct Heights { float values[11]; float past_end[2]; } heights = { { 0 } };
+     Vec3 root, joint;
+     Mtx44_GetTranslation_RowMajor(&root, KartDriver_GetKartRootMtx(state->target));
+     if (FinalLapCoinJump_CheckActiveForObject(state->target)) item->visible = 0;
+@@ -130,7 +133,7 @@
+             state->lift += state->gravity;
+             if (state->lift <= zero) state->lift = zero;
+         }
+-        heights = *(const struct Heights *)MukadeItem_Tick_HeldAndHoming_3839_rodata_8032F4C8;
++        __builtin_memcpy(heights.values, MukadeItem_Tick_HeldAndHoming_3839_rodata_8032F4C8, sizeof heights.values);
+         Mtx44_GetTranslation_RowMajor(&joint, KartDriver_GetJointByIdx(state->target, 15));
+         joint.y += state->lift + heights.values[KartCharacterParam_GetIdentityIndex(state->target)];
+         state->height += 0.20000000298023224f;
