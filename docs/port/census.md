@@ -777,3 +777,23 @@ library (`MUSYX_ENABLE_SDL=OFF`, `MUSYX_VERSION_PATCH=2`), leave `snd*`
 unstubbed, wrap `sndInit` in `port/gfx` and feed an SDL audio stream from
 `sndPCRender`. Adding it as a submodule waits for the owner's go-ahead.
 
+
+## 24. Sound, start-up functions, pace (2026-11-11)
+
+- **Sound**: the MusyX PC target (`port/extern/musyx`) answers `snd*`;
+  build and device layer in docs/port/build.md. Effects and music are
+  produced from the menus through the race.
+- **Hand-registered start-up functions.** 29 functions are registered with
+  `__declspec(section ".ctors") static void (*const x)() = fn;`. The compat
+  header empties `__declspec`, the host compiler drops the unused pointer,
+  and the functions never ran: the HUD's digit position table stayed zero and
+  all digits of a time were drawn on one spot. `link_census.py` now writes
+  one constructor that calls them in address order (27 found by name).
+- **Pace.** The game advances once per retrace. `VIWaitForRetrace` now keeps
+  59.94 frames a second itself (`MKGP2PC_NOLIMIT=1` turns that off). A
+  recording made from the sound device while the game ran at 0.6 of real
+  time (software rendering) sounded slowed down, with the effects spaced
+  out; `MKGP2PC_AUDIO_DUMP=<file>` renders one frame's worth of sound per
+  video frame instead (raw 16-bit stereo, 32 kHz).
+- Open: text drawn from name codes shows wrong glyphs (the player name
+  reads "マリ" plus a wrong glyph; `NAMECODE_*` host helpers).

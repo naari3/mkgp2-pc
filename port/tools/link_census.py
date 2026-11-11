@@ -133,6 +133,15 @@ def link_gfx_windows(stubs, thunks, cxxrt, replaced, aurora_fns, aurora_data, po
                     f.write(f"{q[0]} {n}\n")
         subprocess.run(["llvm-objcopy", "--redefine-syms=" + o + ".plain", o], check=True)
         glue_objs.append(o)
+    # references between the glue files themselves (one file's function
+    # called from another) follow the definitions to the plain names
+    for o in glue_objs:
+        out = subprocess.run(["llvm-nm", "-g", "-u", "--format=posix", o], capture_output=True, text=True).stdout
+        cross = [l.split()[0] for l in out.splitlines() if l.split() and l.split()[0].startswith("_") and l.split()[0][1:] in glue_def]
+        if cross:
+            with open(o + ".plain2", "w") as f:
+                f.writelines(f"{n} {n[1:]}\n" for n in cross)
+            subprocess.run(["llvm-objcopy", "--redefine-syms=" + o + ".plain2", o], check=True)
     with open(stubs, "a") as f:
         def jump(name, to):
             f.write(f'__asm__(".text\\n.globl {name}\\n{name}: jmp {to}\\n");\n')
