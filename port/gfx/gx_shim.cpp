@@ -17,6 +17,13 @@
  * much per draw. For model data the archive conversion knows where each
  * vertex buffer ends (mkgp2pc_array_extent); buffers it has not seen get
  * 64 KB.
+ *
+ * GXSetChanAmbColor / GXSetChanMatColor: in the SDK, GX_COLORn replaces only
+ * the red, green and blue of the channel's register and GX_ALPHAn only its
+ * alpha (src/dolphin/gx/GXLight.c). Aurora writes all four components for
+ * either id, so the game's "set the alpha" call (HSD_SetupChannel does one
+ * per lit material) turned the material colour black. The wrappers keep the
+ * register's value and always hand Aurora the whole colour.
  */
 #include <dolphin/gx.h>
 
@@ -34,6 +41,8 @@ void __real_GXInitTlutObj(GXTlutObj*, const void*, GXTlutFmt, u16);
 void __real_GXLoadTlut(const GXTlutObj*, u32);
 void __real_GXSetArray(GXAttr, const void*, u32, u8, bool);
 void __real_GXInvalidateTexAll(void);
+void __real_GXSetChanAmbColor(GXChannelID, GXColor);
+void __real_GXSetChanMatColor(GXChannelID, GXColor);
 uint32_t mkgp2pc_array_extent(const void* base);
 extern unsigned mkgp2pc_data_generation;
 }
@@ -149,6 +158,41 @@ void __wrap_GXSetArray(u32 attr, const void* base, u8 stride) {
   }
   __real_GXSetArray(static_cast<GXAttr>(attr), base, size, stride, false);
 }
+
+namespace {
+/* What the SDK's GXInit leaves in the registers: black ambient, white material. */
+GXColor sAmb[2] = {{0, 0, 0, 0}, {0, 0, 0, 0}};
+GXColor sMat[2] = {{255, 255, 255, 255}, {255, 255, 255, 255}};
+
+void set_chan_color(GXColor* reg, u32 id, GXColor color, void (*real)(GXChannelID, GXColor)) {
+  u32 chan;
+  switch (id) {
+  case GX_COLOR0:
+  case GX_COLOR1:
+    chan = id - GX_COLOR0;
+    reg[chan].r = color.r;
+    reg[chan].g = color.g;
+    reg[chan].b = color.b;
+    break;
+  case GX_ALPHA0:
+  case GX_ALPHA1:
+    chan = id - GX_ALPHA0;
+    reg[chan].a = color.a;
+    break;
+  case GX_COLOR0A0:
+  case GX_COLOR1A1:
+    chan = id - GX_COLOR0A0;
+    reg[chan] = color;
+    break;
+  default:
+    return;
+  }
+  real(chan == 0 ? GX_COLOR0A0 : GX_COLOR1A1, reg[chan]);
+}
+} // namespace
+
+void __wrap_GXSetChanAmbColor(u32 id, GXColor color) { set_chan_color(sAmb, id, color, __real_GXSetChanAmbColor); }
+void __wrap_GXSetChanMatColor(u32 id, GXColor color) { set_chan_color(sMat, id, color, __real_GXSetChanMatColor); }
 
 /* The game changes texture memory in place and says so with this call. */
 void mkgp2pc_gx_forget_textures(void) { sTextures.clear(); }

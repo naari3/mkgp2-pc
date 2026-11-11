@@ -58,6 +58,7 @@ GFX_REPLACED = ("video_min.c", "gx_min.c")
 # link sends the game's calls to port/gfx/gx_shim.cpp (ld --wrap).
 GFX_WRAPPED = ("GXInitTexObj", "GXInitTexObjCI", "GXInitTexObjLOD", "GXLoadTexObj",
                "GXInitTlutObj", "GXLoadTlut", "GXSetArray", "GXInvalidateTexAll",
+               "GXSetChanAmbColor", "GXSetChanMatColor",
                "sndInit")  # port/gfx/audio_musyx.c
 
 
