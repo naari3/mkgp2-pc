@@ -271,3 +271,51 @@ an image without complaint when a linker script aligns an output section
 to less than a page. The data layout scripts (`mwcc_data_layout.py`) align
 their sections to 0x1000 for that reason (they used 32 until 2026-11-11, and
 no executable built before that could start on Windows).
+
+### Windows cross build: the exact environment (2026-11-11)
+
+Machine: Ubuntu 24.04, clang / lld 18.1.3, cmake 3.28.3, ninja 1.11.1,
+`i686-w64-mingw32-gcc` 13-win32 (mingw-w64 11.0.1, binutils 2.41.90).
+Packages: `clang lld llvm cmake ninja-build python3 git zip pkg-config
+gcc-mingw-w64-i686-win32 g++-mingw-w64-i686-win32 mingw-w64-i686-dev
+binutils-mingw-w64-i686` (plus `gcc-multilib lib32z1-dev` for the Linux
+builds; `link_census.py` reads `/usr/lib32/libc.so.6`, `libm.so.6`,
+`libz.so.1` for the list of host C names on Windows too).
+
+Sources given to Aurora's FetchContent (git clones at these tags):
+fmt 12.1.0, imgui v1.91.9b-docking, SDL release-3.4.20, tracy v0.14.1,
+xxHash v0.8.3, zlib-ng 2.3.3 (as `ZLIB`), libpng v1.6.58; and from the
+Ubuntu 24.04 source packages: abseil 20240722.0, freetype 2.13.2, sqlite
+3.45.1 (`./configure && make sqlite3.c`; the directory given holds
+`sqlite3.c sqlite3.h sqlite3ext.h`).
+
+`build/mingw-libshim`: `libDXGI.a` is a link to
+`/usr/i686-w64-mingw32/lib/libdxgi.a`; `libcomsuppw.a` is
+`i686-w64-mingw32-ar rcs` of one object compiled from an empty function.
+
+Configure (both `build/aurora-win32` from `port/extern/aurora`... no: one
+tree, `port/gfx` into `build/pc-gfx-win/cmake`, after
+`link_census.py ... --gfx --os windows --link` wrote the link inputs; a
+second tree `build/aurora-win32` configured the same way from `port/gfx`
+exists only because `link_census.py` reads SDL's include path and
+`_deps/zlib-build/libzlib.dll.a` from it):
+
+    PKG_CONFIG_LIBDIR=<empty dir> cmake -S port/gfx -B build/pc-gfx-win/cmake -G Ninja \
+      -DCMAKE_TOOLCHAIN_FILE=$PWD/port/gfx/cmake/mingw-i686.cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+      -DCMAKE_C_FLAGS=-msse2 \
+      -DCMAKE_CXX_FLAGS="-msse2 -Wno-c++11-narrowing -femulated-tls -I$PWD/port/gfx/cmake/mingw-case" \
+      -DCMAKE_EXE_LINKER_FLAGS=-L$PWD/build/mingw-libshim -DCMAKE_SHARED_LINKER_FLAGS=-L$PWD/build/mingw-libshim \
+      -DFT_DISABLE_ZLIB=ON -DAURORA_ENABLE_DVD=OFF -DAURORA_ENABLE_CARD=OFF -DAURORA_ENABLE_THP=OFF \
+      -DAURORA_CACHE_USE_ZSTD=OFF -DAURORA_DAWN_PROVIDER=package -DAURORA_SDL3_PROVIDER=vendor \
+      -DAURORA_DAWN_PACKAGE_URL=https://github.com/naari3/mkgp2-pc/releases/download/dawn32-1155e0ed531126f33a1279afa029349651ca1c93/dawn-windows-x86.tar.gz \
+      -DFETCHCONTENT_SOURCE_DIR_FMT=... _IMGUI _SDL _TRACY _XXHASH _ZLIB _PNG _ABSEIL-CPP _FREETYPE _SQLITE3
+
+MusyX for Windows: the cmake line in "Sound" with
+`-DCMAKE_TOOLCHAIN_FILE=$PWD/port/gfx/cmake/mingw-i686.cmake` into
+`build/musyx-win32`.
+
+Package (no script): a folder `mkgp2-gfx-win32` with `mkgp2-gfx.exe`
+(from `build/pc-gfx-win/cmake`), `SDL3.dll`, `libpng16.dll`, `libzlib1.dll`
+(from `_deps/*-build` there), `webgpu_dawn.dll`, `dxcompiler.dll`,
+`dxil.dll` (from the Dawn package), `run-gfx.cmd`, `KEYS.txt`; zipped.
+Run `port/tools/pe_check.py` on the exe first.
