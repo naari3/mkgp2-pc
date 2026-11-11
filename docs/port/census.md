@@ -930,3 +930,31 @@ variables only.
   register level (640x528 frame buffer, copies cleared over the copy
   rectangle only), so neither the byte-order class nor the GX-API class of
   difference exists there. Facts only; no code taken.
+
+## 29. The play stopped on a black screen after the race (2026-11-11)
+
+Reported from play on Windows (main `7941a3e`): after time-up the screen
+stayed black with only the credit display, the main loop still running.
+Reproduced without graphics on Linux with a blind script (coins, the item
+button every 90 frames, accelerator held).
+
+- Cause: upstream `7a73526` made `clResultType00` / `clResultType01` (the
+  result flow after a race) real classes with compiler-emitted vtables.
+  They have two polymorphic bases, and `mwcc_cxx_abi.py` rewrote only
+  single-group vtables: the table kept Itanium's address point and two
+  destructor slots while every caller used MWCC's slots, so the scene's
+  `Draw` slot ran `Enter` and its `Update` slot ran `Draw`; the flow never
+  advanced. Nothing to do with the card unit.
+- MWCC's table for such a class (from the data the class replaced,
+  `HudFlow_data_804EEB20`): first base's part, second base's part with its
+  two header words, then the functions the class adds (`Enter`, `Leave`).
+  The callers written against that data (`HudMethodScene`: slots at 0x24
+  and 0x28) rely on it. The pass now emits that order and moves calls of
+  the added functions accordingly (step 1b).
+- Checked without graphics: the same script now goes through the result
+  screens, writes and ejects the card (a new card bought by the script)
+  and plays the next races, 330 s without a stop.
+- The four other two-group tables the build emits (`AIController`,
+  `RankDisp`, `RaceHudRoot`, `RaceSetupMI`) exist only because of a key
+  function; nothing refers to them (their objects use the tables written
+  as data).
