@@ -12,6 +12,7 @@
  *   an<ch>=<hex>  analog channel (0 steering, 1 accelerator, 2 brake), 16 bits
  *   sw=<hex>,...  JVS switch bytes: system, player 1 (two bytes), player 2
  *   op=<hex>      baseboard operator switches (0x80 service, 0x40 test, 0x01 DIP)
+ *   card          the card file is put into the card unit's slot
  *   pause, step, dump   the P, O and F9 keys of the rendering executable
  */
 #include <stdint.h>
@@ -23,6 +24,7 @@ void mkgp2pc_jvs_set_switches(const uint8_t* bytes, int count);
 void mkgp2pc_jvs_set_analog(int channel, uint16_t value);
 void mkgp2pc_jvs_add_coin(int slot);
 void mkgp2pc_baseboard_set_operator_switches(uint8_t pressed);
+void mkgp2pc_card_insert(void);
 
 /* Set by the rendering executable: commands that are not inputs. */
 int (*mkgp2pc_script_extra)(const char* cmd);
@@ -101,6 +103,8 @@ static void run(const char* cmd) {
   unsigned a, b;
   if (strcmp(cmd, "coin") == 0) {
     mkgp2pc_jvs_add_coin(0);
+  } else if (strcmp(cmd, "card") == 0) {
+    mkgp2pc_card_insert();
   } else if (sscanf(cmd, "an%u=%x", &a, &b) == 2) {
     mkgp2pc_jvs_set_analog((int)a, (uint16_t)b);
   } else if (sscanf(cmd, "op=%x", &a) == 1) {

@@ -23,6 +23,8 @@ void mkgp2pc_jvs_set_switches(const uint8_t* bytes, int count);
 void mkgp2pc_jvs_set_analog(int channel, uint16_t value);
 void mkgp2pc_jvs_add_coin(int slot);
 void mkgp2pc_baseboard_set_operator_switches(uint8_t pressed);
+void mkgp2pc_card_insert(void);
+int mkgp2pc_card_enabled(void);
 
 typedef void (*RetraceCallback)(uint32_t retraceCount);
 
@@ -33,6 +35,7 @@ typedef void (*RetraceCallback)(uint32_t retraceCount);
  *   down or X      brake pedal
  *   space, enter   item button (also "decide" in the menus)
  *   5 or C         coin
+ *   I              put the card (card.bin) into the card unit
  *   F1 / F2        test / service button of the cabinet
  *   P              pause / resume
  *   O              while paused: advance one frame
@@ -227,10 +230,11 @@ static void dump_text(const char* dir) {
   snprintf(path, sizeof(path), "%s/state.txt", dir);
   f = fopen(path, "w");
   if (f != NULL) {
-    static const char* const names[] = {"MKGP2PC_SCRIPT", "MKGP2PC_SCRIPT_FILE", "MKGP2PC_NOLIMIT", "MKGP2PC_FRAMES"};
+    static const char* const names[] = {"MKGP2PC_SCRIPT", "MKGP2PC_SCRIPT_FILE", "MKGP2PC_NOLIMIT", "MKGP2PC_FRAMES",
+                                       "MKGP2PC_CARD", "MKGP2PC_CARD_FILE"};
     fprintf(f, "retrace %u\npaused %d\nframe.png shows retrace %u\n", (unsigned)s_retrace, (int)s_paused,
             (unsigned)s_retrace + 1);
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 6; i++) {
       const char* v = getenv(names[i]);
       fprintf(f, "%s=%s\n", names[i], v ? v : "");
     }
@@ -329,6 +333,12 @@ static void key_event(const SDL_Event* e) {
       mkgp2pc_jvs_add_coin(0);
     }
     break;
+  case SDL_SCANCODE_I:
+    if (down && !e->key.repeat) {
+      rec(s_retrace + 1, "card%.0u%.0u", 0, 0);
+      mkgp2pc_card_insert();
+    }
+    break;
   case SDL_SCANCODE_P:
     if (down && !e->key.repeat) {
       s_paused = !s_paused;
@@ -369,7 +379,7 @@ static void keyboard_tick(void) {
   rec_analog(2, s_keyBrake ? 0xFFFF : 0);
   rec_switch((uint8_t)(s_keyItem ? 0x20 : 0));
   /* 0x01: the DIP switch that skips the card reader, printer and camera */
-  rec_operator((uint8_t)(0x01 | (s_keyTest ? 0x40 : 0) | (s_keyService ? 0x80 : 0)));
+  rec_operator((uint8_t)((mkgp2pc_card_enabled() ? 0 : 0x01) | (s_keyTest ? 0x40 : 0) | (s_keyService ? 0x80 : 0)));
 }
 
 static RetraceCallback s_pre, s_post;

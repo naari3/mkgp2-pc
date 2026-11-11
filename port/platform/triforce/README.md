@@ -11,7 +11,7 @@ in `../include/mkgp2pc/platform.h`:
 | JVS I/O board (wheel, pedals, item button, coin, test/service) | `amjvs*`, `jvsio*`, `jvsboot` | SDL3 gamepad / wheel / keyboard |
 | Coin and credit bookkeeping | `amcoin*` | in-memory, free play by default |
 | Backup RAM (settings, bookkeeping) | `ambackup*` | a file in the user directory |
-| Magnetic card reader (69-byte track) | `amuart*` and the card code in `src/game` | one file per card; format in `notes/card` |
+| Magnetic card unit (69-byte track) | `amuart*` and the card code in `src/game` | done: `card_reader.c`, the unit's serial protocol; one file per card (docs/port/build.md "Magnetic card") |
 | Media board (network, boot, DIMM) | `amnet*`, `amsock`, `acsocket*`, `amboot`, `dvdlow*`, `dvdcmd` | host sockets for cabinet link; disc reads go to Aurora DVD |
 | Board system services | `amsys`, `amsrv*`, `amexi`, `dikey`, `random*` | small host implementations |
 

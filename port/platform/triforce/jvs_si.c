@@ -35,8 +35,15 @@ static uint16_t s_coins[2];
 /* Baseboard switches, 1 = on: 0x80 service button, 0x40 test button, 0x01 a
  * DIP switch the game reads at boot (BootDispatcher.cpp: when it is on, the
  * card reader, printer and camera checks are skipped and the card service is
- * disabled). On by default until those devices exist here. */
-static uint8_t s_operator = 0x01;
+ * disabled). It is on only when the card unit is switched off
+ * (MKGP2PC_CARD=0, card_reader.c); -1: not decided yet. */
+static int s_operator = -1;
+static uint8_t operator_switches(void) {
+  if (s_operator < 0) {
+    s_operator = mkgp2pc_card_enabled() ? 0 : 0x01;
+  }
+  return (uint8_t)s_operator;
+}
 static uint8_t s_address; /* JVS node address assigned by F1, 0 = none yet */
 
 void mkgp2pc_jvs_set_switches(const uint8_t* bytes, int count) {
@@ -290,7 +297,7 @@ static void baseboard_frame(const uint8_t* tx, uint8_t* rx) {
                 * bit 0x01 is the JVS sense line (a node without an address is
                 * on the bus), which amjvs init waits for and then clears by
                 * assigning addresses. */
-      rx[o++] = c, rx[o++] = 2, rx[o++] = (uint8_t)~s_operator, rx[o++] = (uint8_t)(0x10 | (s_address == 0));
+      rx[o++] = c, rx[o++] = 2, rx[o++] = (uint8_t)~operator_switches(), rx[o++] = (uint8_t)(0x10 | (s_address == 0));
       break;
     case 0x11: /* 16-byte serial / id */
       rx[o++] = c, rx[o++] = 16;

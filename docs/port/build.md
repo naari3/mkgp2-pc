@@ -300,6 +300,31 @@ is used, `MKGP2PC_SCRIPT` may drive the inputs. Not tested with a real
 keyboard yet (the cloud build machine has no input device); the same input
 calls driven by the script steer and accelerate the kart.
 
+## Magnetic card
+
+`port/platform/triforce/card_reader.c` stands in for the cabinet's card unit
+(reader/writer, printer and dispenser on the baseboard's second serial
+port). The card is one file of 69 bytes, `card.bin` in the directory the
+program is started from (`MKGP2PC_CARD_FILE` names another file).
+
+- The game is started with its card service on. A new card is made by the
+  game itself: choose to buy a card when it offers one; the file appears
+  when the game writes the card.
+- To play with the card, press **I** (script command `card`) when the game
+  asks for it. The card is taken in the next time the game asks the unit to
+  read, and the game hands it back (and the file is up to date) at the end
+  of the play.
+- A new card bought while `card.bin` exists keeps the old file as
+  `card.bin.bak<n>`.
+- What is printed on the card's face is not kept. There is no camera: the
+  stand-in turns the game's camera option off during the power-on checks.
+- `MKGP2PC_CARD=0` starts the game with the baseboard DIP switch that turns
+  the card service off, as all builds before this did. Input recordings
+  (dumps) made by those builds need it to play back in step.
+- `MKGP2PC_TRACE_CARD=1` logs every command the game sends to the unit.
+- Format of the 69 bytes and a tool to decode or edit them: upstream
+  `docs/wip/notes/card/` (`card_feasibility.md`, `mkgp2card.py`).
+
 
 ## Pause, frame step and dumps (rendering executable)
 
