@@ -532,3 +532,17 @@ kept for reference. Item 10 is open.
     `clFlowCCInterface`, `SceneRoot163`. Wanted: the padding at the end
     of each of those bases named as a member (`unsigned char pad86[2];`),
     which keeps the MWCC layout and makes the host's the same.
+41. Maths functions declared with `float` parameters (asked 2026-11-11).
+    16 units declare `extern double atan2(float y, float x);` (14),
+    `extern double atan(float x);` and `extern double tan(float x);`
+    (`OrthoCam.c`). On the console a float and a double argument travel in
+    the same register; on the host the caller pushes 4 bytes per argument
+    and the library reads 8, so the result is garbage: every yaw and pitch
+    taken from a matrix or between two points (`Mtx44_GetYawOfPosZ*`,
+    `Mtx44_GetPitchOf*`, `Vec3_PitchTo`, `Vec3_HorizontalYawTo`,
+    `CourseMarker.cpp`, `LapBannerScene.c`, two effect tick functions,
+    `DrawEffect_KartItemTrail_ExplodeAndPropagate.c`) and the frustum of
+    the camera that shows the prize item (`OrthoCam.c`). Found in the
+    clang IR of the port build (`declare double @atan2(float, float)`).
+    Wanted: the real prototypes (`double atan2(double, double)` and so
+    on), if the MWCC output stays the same.
