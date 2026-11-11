@@ -106,6 +106,14 @@ int __wrap_main(int argc, char** argv) {
   config.logCallback = &log_callback;
   config.windowWidth = 640;
   config.windowHeight = 480;
+  /* (0, 0) would put the client area in the screen corner and the title
+   * bar above the screen: nothing to drag the window by. Negative leaves
+   * the place to the system. */
+  config.windowPosX = -1;
+  config.windowPosY = -1;
+  /* a log that survives a crash (gfx.log was empty after one on Windows) */
+  setvbuf(stdout, NULL, _IONBF, 0);
+  setvbuf(stderr, NULL, _IONBF, 0);
   const char* limit = getenv("MKGP2PC_FRAMES");
   if (limit != NULL) {
     s_frameLimit = strtol(limit, NULL, 10);

@@ -113,7 +113,7 @@ def link_gfx_windows(stubs, thunks, cxxrt, replaced, aurora_fns, aurora_data, po
             continue   # needs Dawn's headers: CMake compiles it
         o = os.path.join(OUT, "gfx__" + os.path.basename(src) + ".o")
         cxx = src.endswith(".cpp")
-        r = subprocess.run(["clang++" if cxx else "clang", "-target", WIN_TARGET, "-O2", "-g", "-msse2", "-c", src, "-o", o,
+        r = subprocess.run(["clang++" if cxx else "clang", "-target", WIN_TARGET, "-femulated-tls", "-O2", "-g", "-msse2", "-c", src, "-o", o,
                             "-DAURORA", "-DAURORA_ENABLE_GX", "-DTARGET_PC=1", "-I" + os.path.join(aurora, "include")]
                            + ["-I" + d for d in sdl_inc]
                            + (["-std=gnu++20", "-femulated-tls"] if cxx else []), capture_output=True, text=True)
@@ -159,7 +159,7 @@ def link_gfx_windows(stubs, thunks, cxxrt, replaced, aurora_fns, aurora_data, po
     gen = list(glue_objs)
     for src in (stubs, thunks):
         o = src[:-2] + ".o"
-        r = subprocess.run(["clang", "-target", WIN_TARGET, "-O0", "-g", "-fcommon", "-c", src, "-o", o], capture_output=True, text=True)
+        r = subprocess.run(["clang", "-target", WIN_TARGET, "-femulated-tls", "-O0", "-g", "-fcommon", "-c", src, "-o", o], capture_output=True, text=True)
         if r.returncode != 0:
             print(r.stderr[:2000])
             return 1
@@ -167,7 +167,7 @@ def link_gfx_windows(stubs, thunks, cxxrt, replaced, aurora_fns, aurora_data, po
         gen.append(o)
     link = os.path.join(OUT, "gfx_link.rsp")
     with open(link, "w") as f:
-        f.write("\n".join(["-static", "-fcommon", "-Wl,--large-address-aware", "-Wl,-T," + script, "-Wl,-T," + bss_ld]
+        f.write("\n".join(["-static", "-fcommon", "-Wl,--large-address-aware", "-Wl,--disable-dynamicbase", "-Wl,-T," + script, "-Wl,-T," + bss_ld]
                           + gen + port_objs + objs + defsyms + [f"-Wl,--defsym,{n}=_{n}" for n in data]
                           + [os.path.join(ROOT, "build", "musyx-win32", "libmusyxRD.a")] + ([WIN_ZLIB] if os.path.exists(WIN_ZLIB) else []) + ["-lwinpthread", "-Wl,--allow-multiple-definition"]) + "\n")
     print(f"link inputs for CMake: {os.path.relpath(link, ROOT)}")
@@ -883,7 +883,7 @@ def main():
         # -malign-double: `double` and 64-bit integers aligned to 8 bytes inside
         # structures, as on the console and on 32-bit Windows (the i386 Linux
         # default is 4)
-        HOSTCC = ["-target", WIN_TARGET] if WIN else ["-m32", "-malign-double"]
+        HOSTCC = ["-target", WIN_TARGET, "-femulated-tls"] if WIN else ["-m32", "-malign-double"]
         if GFX:
             HOSTCC.append("-DMKGP2PC_GFX")
         port_objs = []
@@ -1152,7 +1152,7 @@ def main():
             gen = []
             for src in (stubs, thunks):
                 o = src[:-2] + ".o"
-                r = subprocess.run(["clang", "-target", WIN_TARGET, "-O0", "-g", "-fcommon", "-c", src, "-o", o], capture_output=True, text=True)
+                r = subprocess.run(["clang", "-target", WIN_TARGET, "-femulated-tls", "-O0", "-g", "-fcommon", "-c", src, "-o", o], capture_output=True, text=True)
                 if r.returncode != 0:
                     print(r.stderr[:2000])
                     return 1
@@ -1161,7 +1161,7 @@ def main():
             # --large-address-aware: main memory is mapped at 0x80000000
             # (port/nogfx/os_min.c). Static, so that the executable needs no
             # MinGW runtime DLLs next to it.
-            cmd = ["clang", "-target", WIN_TARGET, "-g", "-static", "-Wl,--large-address-aware", "-Wl,-T," + script, "-Wl,-T," + bss_ld,
+            cmd = ["clang", "-target", WIN_TARGET, "-g", "-static", "-Wl,--large-address-aware", "-Wl,--disable-dynamicbase", "-Wl,-T," + script, "-Wl,-T," + bss_ld,
                    "-o", exe] + gen + port_objs + ["@" + rsp] + defsyms + ([WIN_ZLIB] if os.path.exists(WIN_ZLIB) else []) + ["-lstdc++", "-lwinpthread", "-Wl,--allow-multiple-definition"]
         else:
           cmd = ["clang", "-m32", "-O0", "-g", "-fcommon", "-no-pie", "-Wl,--version-script=" + private, "-Wl,-T," + script, "-Wl,-T," + bss_ld, "-o", exe, stubs, thunks] + port_objs + [
