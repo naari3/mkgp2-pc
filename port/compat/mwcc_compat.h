@@ -48,6 +48,20 @@ static inline unsigned int mkgp2pc_rlwimi(unsigned int dst, unsigned int src, in
     ((unsigned short)((((const unsigned char *)(p))[0] << 8) | ((const unsigned char *)(p))[1]))
 #define SJIS_WORD_LOAD(dst, p) ((void)((dst) = SJIS_WORD(p)))
 
+/* Display lists and vertex buffers read on the CPU
+ * (include/game/types/gx_data.h): they stay big-endian for the GX layer. */
+static inline float mkgp2pc_gxdata_f32(const void *p) {
+    const unsigned char *b = (const unsigned char *)p;
+    union { unsigned int u; float f; } v;
+    v.u = ((unsigned int)b[0] << 24) | ((unsigned int)b[1] << 16) | ((unsigned int)b[2] << 8) | b[3];
+    return v.f;
+}
+#define GXDATA_U16(p) \
+    ((unsigned short)((((const unsigned char *)(p))[0] << 8) | ((const unsigned char *)(p))[1]))
+#define GXDATA_SET_U16(p, v) \
+    ((void)(((unsigned char *)(p))[0] = (unsigned char)((v) >> 8), ((unsigned char *)(p))[1] = (unsigned char)(v)))
+#define GXDATA_F32(p) mkgp2pc_gxdata_f32(p)
+
 /* Card-name check: byte-string functions on 16-bit code strings, on the
  * console's byte view (port/compat/namecode_be.c). */
 #ifdef __cplusplus

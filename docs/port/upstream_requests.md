@@ -428,7 +428,8 @@ kept for reference. Item 10 is open.
     cover.
 36. `src/game/dlistutil/*.c` and `include/game/DListBoundsPrivate.h` read
     and write GX stream data on the CPU through host-order casts (asked
-    2026-11-11). Display lists and vertex buffers are the one part of a
+    2026-11-11; done upstream in `7d2320a`,
+    `include/game/types/gx_data.h`). Display lists and vertex buffers are the one part of a
     model file the port leaves big-endian, because the GX layer consumes
     them in that form. Three kinds of access, 13 units:
     the vertex count of a primitive (`*(unsigned short *)(p + 1)`, also

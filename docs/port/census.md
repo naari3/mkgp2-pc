@@ -835,3 +835,30 @@ unstubbed, wrap `sndInit` in `port/gfx` and feed an SDL audio stream from
   a choice of this port: the real boot program's value is not known.
 - Next stop in the attract mode: `GXProject` called with another argument
   order in `CObjProject.c` (upstream request 35).
+
+## 26. Windows: the wrong class's vtable; display lists read on the CPU (2026-11-11)
+
+**Crash at about 150 s on Windows only** (`fn_8014E618` jumps into
+`lbl_806CF2D8`, which is data). The attract sequence had just built its
+`DemoScene` (`Scene_8014E0C4.cpp`), and its constructor stored the vtable
+`lbl_80419EF8` instead of `DemoScene_vtable_8048FF3C`. The game has two
+unrelated classes called `DemoScene` (the other one is in
+`include/game/DemoKartScene.h`, used by nine units), and each unit's
+`_ZTV9DemoScene` is renamed to the right hand-written table per object
+(`*.cxxsyms`). For MinGW, clang reaches data of another unit through a
+pointer `.refptr.<name>` (support for automatic DLL import), a COMDAT the
+linker keeps once per name, and that name is the one from before the rename:
+both classes shared one `.refptr.__ZTV9DemoScene`. The ELF build has no such
+indirection, so Linux was right. Fix: `-fno-auto-import` for the Windows
+target (`port/tools/link_census.py`); no game object has a `.refptr` symbol
+any more. Found on the PC with a write watchpoint on the object's first word.
+
+**`OSPanic("miyazakishare.cpp", 259, "Unknown DLCommand")`** twice while a
+course loads, on both systems, execution went on. The shadow code
+(`src/game/dlistutil`) walks display lists and reads vertex positions on the
+CPU; that data stays big-endian for the GX layer, so a vertex count of 3 was
+read as 768 and the walk left the list. Upstream request 36: access macros
+`GXDATA_U16`, `GXDATA_SET_U16`, `GXDATA_F32` (`include/game/types/gx_data.h`),
+defined for the host in `port/compat/mwcc_compat.h`. Not converted: the
+shape-animation path of the HSD library (`src/sysdolphin/baselib/pobj.c`),
+to be asked for if a model turns out to use it.

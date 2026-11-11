@@ -248,7 +248,13 @@ def compile_one(path, target):
     # inline function its own unit does not use (clang has no
     # -fkeep-inline-functions), so the unit is compiled through a wrapper
     # that takes their addresses.
-    cmd = ["clang", "-target", target, "-c", "-O0", "-g", "-fno-exceptions", "-fno-rtti", "-fcommon", "-fshort-wchar"] + (["-mno-ms-bitfields", "-fpcc-struct-return"] if WIN else ["-malign-double"]) + (["-DMKGP2PC_GFX"] if GFX else []) + cc.base_flags(path)[1:]
+    # -fno-auto-import (Windows): without it every reference to data defined
+    # in another unit goes through a `.refptr.<name>` pointer, a COMDAT the
+    # linker keeps once per name. The name is the one the compiler saw, so
+    # after the per-unit renames two different classes called DemoScene
+    # shared one `.refptr.__ZTV9DemoScene` and one of them was constructed
+    # with the other's vtable (census section 26).
+    cmd = ["clang", "-target", target, "-c", "-O0", "-g", "-fno-exceptions", "-fno-rtti", "-fcommon", "-fshort-wchar"] + (["-mno-ms-bitfields", "-fpcc-struct-return", "-fno-auto-import"] if WIN else ["-malign-double"]) + (["-DMKGP2PC_GFX"] if GFX else []) + cc.base_flags(path)[1:]
     src_in = path
     if path.endswith(".cpp"):
         keep = sorted(set(re.findall(r'^extern "C" inline [\w \*]+?\b(\w+)\(', open(os.path.join(ROOT, path), encoding="utf-8", errors="replace").read(), re.M)))
