@@ -77,6 +77,14 @@ static void rec(uint32_t at, const char* fmt, unsigned a, unsigned b) {
   }
 }
 
+/* Inputs that came from a script are part of the session too. */
+extern void (*mkgp2pc_script_record)(uint32_t at, const char* cmd);
+static void rec_script(uint32_t at, const char* cmd) {
+  char fmt[48];
+  snprintf(fmt, sizeof(fmt), "%.40s%%.0u%%.0u", cmd);
+  rec(at, fmt, 0, 0);
+}
+
 static void rec_analog(int channel, uint16_t value) {
   static int last[3] = {-1, -1, -1};
   if (last[channel] != value) {
@@ -393,6 +401,7 @@ int __wrap_main(int argc, char** argv) {
     s_frameLimit = strtol(limit, NULL, 10);
   }
   mkgp2pc_script_extra = &script_extra;
+  mkgp2pc_script_record = &rec_script;
   s_window = aurora_initialize(argc, argv, &config).window;
   s_inFrame = aurora_begin_frame();
   return __real_main(argc, argv);
@@ -453,7 +462,9 @@ static void pump_events(void) {
 
 void VIWaitForRetrace(void) {
   if (s_inFrame) {
-    if (s_dumpWanted) {
+    /* One picture at a time: a dump asked for while the last one's picture
+     * is still on its way is made on the first frame after it. */
+    if (s_dumpWanted && s_shotWait == 0) {
       s_dumpWanted = false;
       dump_capture();
     }

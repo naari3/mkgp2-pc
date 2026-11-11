@@ -517,3 +517,18 @@ kept for reference. Item 10 is open.
     tables. Wanted: the definition typed the way the readers read it
     (bytes as bytes, strings as strings), at least for every entry whose
     readers take bytes.
+40. Derived classes whose first member the host compiler puts into the
+    tail padding of the base (asked 2026-11-11). MWCC starts a derived
+    class after `sizeof(base)`; the Itanium C++ ABI reuses the padding at
+    the end of a base that has virtual functions. Seen: `PanelIcon :
+    PanelItem` in `RankPanel_80144430.cpp` (`PanelItem` ends with two
+    `unsigned char` at 0x84, size 0x88): `resId` is at 0x88 in the game
+    and at 0x86 on the host, while `fn_801BAA88.cpp` builds the object
+    with a flat view. The "round 1" banner of the course introduction
+    then draws picture 0 (a 640x480 colour chart) across the screen.
+    `port/tools/tail_padding_census.py` lists them from the DWARF of the
+    linked executable (`docs/port/tail_padding_census.txt`, 8 classes):
+    `PanelItem`, `FadeObj` (two units), `clGetCoinLine` (three units),
+    `clFlowCCInterface`, `SceneRoot163`. Wanted: the padding at the end
+    of each of those bases named as a member (`unsigned char pad86[2];`),
+    which keeps the MWCC layout and makes the host's the same.

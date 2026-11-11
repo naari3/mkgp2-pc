@@ -321,8 +321,8 @@ was started from (`MKGP2PC_DUMP_DIR` names another place; the folder is in
   picture about 0.4 s later (`port/gfx/shot_win32.c`), which is the same
   frame when paused. When paused, `F9` steps the game one frame so that a
   frame is drawn for the picture. Not written on Linux without readback.
-- `input.txt`: every keyboard input since the start, as
-  `<frame> <command>` lines in the `MKGP2PC_SCRIPT` syntax.
+- `input.txt`: every input since the start, from the keyboard and from a
+  script alike, as `<frame> <command>` lines in the `MKGP2PC_SCRIPT` syntax.
 - `state.txt`: frame number, paused or not, the `MKGP2PC_*` settings.
 
 Playing a dump back: `MKGP2PC_SCRIPT_FILE=<path to input.txt>` feeds the
@@ -331,8 +331,13 @@ recorded inputs at the recorded frames; add a line `<frame> pause` (or
 played with and without the frame limiter gives the identical picture at
 frame 9000 (menus after a coin; a race has not been compared yet). What
 could break it: anything the game takes from the clock rather than the
-frame count, and inputs from a script before the keyboard took over (those
-are in `state.txt`, not in `input.txt`).
+frame count. Seen so far: the same script reaches the race at different
+frames on Linux without the limiter and on Windows with it, so loading
+times count; two runs on the same machine with the same settings matched
+(frame 9600, course introduction).
+
+One picture is in flight at a time: a dump asked for while the previous
+one's picture has not arrived yet is made on the first frame after it.
 
 ## Sound (rendering executable)
 

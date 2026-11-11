@@ -26,6 +26,9 @@ void mkgp2pc_baseboard_set_operator_switches(uint8_t pressed);
 
 /* Set by the rendering executable: commands that are not inputs. */
 int (*mkgp2pc_script_extra)(const char* cmd);
+/* Set by the rendering executable: told every input the script applies. */
+void (*mkgp2pc_script_record)(uint32_t at, const char* cmd);
+static uint32_t s_now;
 
 typedef struct {
   uint32_t at;
@@ -111,8 +114,13 @@ static void run(const char* cmd) {
     }
     mkgp2pc_jvs_set_switches(bytes, 5);
   } else if (mkgp2pc_script_extra != NULL && mkgp2pc_script_extra(cmd)) {
+    return;
   } else {
     fprintf(stderr, "nogfx: unknown script command '%s'\n", cmd);
+    return;
+  }
+  if (mkgp2pc_script_record != NULL) {
+    mkgp2pc_script_record(s_now, cmd);
   }
 }
 
@@ -123,6 +131,7 @@ void mkgp2pc_script_tick(uint32_t retrace) {
   if (s_count == 0) {
     return;
   }
+  s_now = retrace;
   if (s_fromFile) {
     while (s_next < s_count && s_entries[s_next].at <= retrace) {
       run(s_entries[s_next++].cmd);

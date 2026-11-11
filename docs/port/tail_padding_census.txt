@@ -1,0 +1,12 @@
+# classes whose member sits in a base's tail padding on the host: 10 in 9 files
+# file: class : base (sizeof base) <- first member inside, at offset
+port/gfx/gx_shim.cpp: _Tuple_impl<2U, unsigned short, unsigned char, unsigned char, unsigned int> : _Tuple_impl<3U, unsigned char, unsigned char, unsigned int> (0x8) <- (second base) at 0x6
+port/gfx/gx_shim.cpp: _Tuple_impl<3U, unsigned char, unsigned char, unsigned int> : _Tuple_impl<4U, unsigned char, unsigned int> (0x8) <- (second base) at 0x5
+src/game/FlowCardCheck_nm2.cpp: clFlowCCDate : clFlowCCInterface (0x1C) <- field1C at 0x19
+src/game/RankPanel_80144430.cpp: PanelIcon : PanelItem (0x88) <- resId at 0x86
+src/game/Scene_801654E0.cpp: Obj801654E0 : SceneRoot163 (0x8) <- active at 0x5
+src/game/anon_8021F088_m_80220678.cpp: clGetSumLine : clGetCoinLine (0x4E8) <- perfect at 0x4E5
+src/game/anon_8021F088_m_80223798.cpp: FilterNode : FadeObj (0x88) <- r at 0x86
+src/game/anon_8021F088_m_8022459C.cpp: clGetSumLine : clGetCoinLine (0x4E8) <- perfect at 0x4E5
+src/game/anon_8021F088_nm_80224484.cpp: clGetSumLine : clGetCoinLine (0x4E8) <- perfect at 0x4E5
+src/game/fn_801BAA88.cpp: ResNode : FadeObj (0x88) <- res at 0x86
