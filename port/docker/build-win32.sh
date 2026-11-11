@@ -22,10 +22,14 @@ MINGW_LIB=/usr/i686-w64-mingw32/lib
 step() { printf '\n== %s\n' "$*"; }
 
 # Library names Aurora links that MinGW-w64 spells differently or lacks.
-EXTRA=$ROOT/build/win32-extra-lib
+EXTRA=$ROOT/build/mingw-libshim
 mkdir -p "$EXTRA"
 ln -sf "$MINGW_LIB/libdxgi.a" "$EXTRA/libDXGI.a"
-[ -e "$EXTRA/libcomsuppw.a" ] || i686-w64-mingw32-ar rcs "$EXTRA/libcomsuppw.a"
+if [ ! -e "$EXTRA/libcomsuppw.a" ]; then
+  echo 'void mkgp2pc_comsuppw_empty(void) {}' > "$EXTRA/comsuppw.c"
+  clang -target i686-w64-windows-gnu -c "$EXTRA/comsuppw.c" -o "$EXTRA/comsuppw.o"
+  i686-w64-mingw32-ar rcs "$EXTRA/libcomsuppw.a" "$EXTRA/comsuppw.o"
+fi
 
 # Keep the host's Linux packages out of the cross build.
 mkdir -p "$ROOT/build/win32-empty-pkgconfig"
@@ -37,7 +41,7 @@ AURORA_ARGS=(
   -DCMAKE_BUILD_TYPE=RelWithDebInfo
   -DCMAKE_C_FLAGS=-msse2
   "-DCMAKE_CXX_FLAGS=-msse2 -Wno-c++11-narrowing -femulated-tls -I$ROOT/port/gfx/cmake/mingw-case"
-  "-DCMAKE_EXE_LINKER_FLAGS=-L$EXTRA"
+  "-DCMAKE_EXE_LINKER_FLAGS=-L$EXTRA" "-DCMAKE_SHARED_LINKER_FLAGS=-L$EXTRA"
   -DAURORA_ENABLE_DVD=OFF -DAURORA_ENABLE_CARD=OFF -DAURORA_ENABLE_THP=OFF
   -DAURORA_CACHE_USE_ZSTD=OFF -DFT_DISABLE_ZLIB=ON
   -DAURORA_SDL3_PROVIDER=vendor
@@ -76,4 +80,5 @@ for dll in webgpu_dawn.dll dxcompiler.dll dxil.dll SDL3.dll libpng16.dll libzlib
   fi
   cp "$found" "$DIST/"
 done
+cp port/gfx/package/run-gfx.cmd port/gfx/package/KEYS.txt "$DIST/"
 ls -l "$DIST"
