@@ -958,3 +958,40 @@ button every 90 frames, accelerator held).
   `RankDisp`, `RaceHudRoot`, `RaceSetupMI`) exist only because of a key
   function; nothing refers to them (their objects use the tables written
   as data).
+
+## 30. Black screen after a finished race: units that did not compile (2026-11-11)
+
+Second report from play (Windows, `593009c`): black screen with only the
+credit display after a race the player finished, log line
+`stub: fn_8014CEAC (generated:0)`.
+
+- Cause: five units stopped compiling when upstream turned their classes
+  into real classes with RTTI and spelled casts as `dynamic_cast<T *>`
+  (`CSSceneGetTitle_8014ADB4.cpp`, `anon_801FEBD8.cpp`,
+  `anon_80202148.cpp`, `anon_80204474.cpp`, `fn_801F9F04.cpp`; the port
+  compiles with `-fno-rtti`). `link_census.py` left a failing unit out
+  without a word and every function of it became a stub returning 0.
+  `fn_8014CEAC` creates the scene shown first after a finished race
+  (`clCSSceneAccolade`), so the result flow had no scene. The other four
+  hold menu tasks and card screens. The first report (section 29) was a
+  race lost on time, which takes another branch.
+- `link_census.py` compiles such a unit with RTTI on, and prints
+  `NOT BUILT: <path>` for every unit left out.
+- The cast cannot go to the host runtime (it reads a type_info below the
+  address point, which the pass moves; data-written tables carry MWCC's
+  type_info instead). `mwcc_cxx_abi.py` sends it to
+  `mkgp2pc_dynamic_cast` (`port/platform/runtime/mwcc_runtime.c`) with
+  the plain name of the target class, and puts a description in MWCC's
+  `{ name, bases }` form into the second header word of every table it
+  emits (step 1c). The first word stays the offset to the complete
+  object, so `fn_80271340` treats host-laid-out classes as before (cast
+  succeeds); only the new function checks them. Classes in a namespace or
+  with template names get no description and their casts succeed.
+- Checked without graphics, with `g_raceEnded` forced to 1 from gdb when
+  the result flow is constructed (the blind script cannot finish a race):
+  result flow states 0 (accolade), 2, 4, 6 are entered and left, the card
+  is written and ejected, the next play starts. The 32-bit Windows
+  no-graphics executable links. Not checked: the rendering builds.
+- Still a stub that play reaches: `dtor_801C1B78` (a folded destructor of
+  `KeyVecBase<KeyGroup>` and others; called from `CardPrintOwner.cpp` and
+  `anon_8021BC44_nm1.cpp`). It returns without freeing; not looked into.
