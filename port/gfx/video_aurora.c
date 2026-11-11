@@ -410,6 +410,23 @@ static void log_callback(AuroraLogLevel level, const char* module, const char* m
  * be up before the game's start-up calls GXInit and VIInit, and after the
  * C++ static objects of Aurora itself exist (so not from a constructor). */
 int __real_main(int argc, char** argv);
+
+/* Aurora compiles a draw's pipeline on a worker thread the first time the
+ * draw's state is seen and, by default, drops the draw until that is done:
+ * after a scene change the models, each with new state, appeared one after
+ * another over the first frames. Blocking draws wait for the pipeline, so
+ * the first frame of a scene is complete (it may take longer once; compiled
+ * pipelines are kept in the cache file). MKGP2PC_ASYNC_PIPELINES=1 gives the
+ * dropping behaviour back. The setting is GX state, sent with each frame. */
+static void begin_frame_state(void) {
+  static int blocking = -1;
+  if (blocking < 0) {
+    blocking = getenv("MKGP2PC_ASYNC_PIPELINES") == NULL;
+  }
+  if (s_inFrame) {
+    AuroraSetDrawsBlocking(blocking != 0);
+  }
+}
 void mkgp2pc_crash_log_install(void); /* shot_win32.c */
 int __wrap_main(int argc, char** argv) {
   mkgp2pc_crash_log_install();
@@ -462,6 +479,7 @@ int __wrap_main(int argc, char** argv) {
   }
 #endif
   s_inFrame = aurora_begin_frame();
+  begin_frame_state();
   return __real_main(argc, argv);
 }
 
@@ -597,6 +615,7 @@ void VIWaitForRetrace(void) {
   }
   if (!s_inFrame) {
     s_inFrame = aurora_begin_frame();
+    begin_frame_state();
   }
   mkgp2pc_skip_draw = s_inFrame && !show_next_frame();
 }

@@ -327,6 +327,14 @@ program is started from (`MKGP2PC_CARD_FILE` names another file).
   at exit (before 01791c5) and during play were at the same offset.
 - `MKGP2PC_BACKEND=d3d12|d3d11|vulkan|opengl` asks Aurora for that backend
   instead of its own order. Not tried on Windows yet.
+- `MKGP2PC_ASYNC_PIPELINES=1`: Aurora compiles the pipeline for a draw's
+  state on a worker thread and drops the draw until it is ready (backends
+  with a pipeline thread, D3D12 among them), so after a scene change models
+  appeared one after another. The port asks for blocking draws
+  (`AuroraSetDrawsBlocking`) every frame: the first frame of a scene is
+  complete and may take longer once; compiled pipelines stay in the cache
+  file. This variable gives the dropping behaviour back. Seen in Aurora's
+  source (lib/gfx/pipeline_cache.cpp), not yet confirmed on Windows.
 - `MKGP2PC_CARD=0` starts the game with the baseboard DIP switch that turns
   the card service off, as all builds before this did. Input recordings
   (dumps) made by those builds need it to play back in step.
