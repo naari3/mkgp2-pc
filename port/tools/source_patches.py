@@ -60,6 +60,14 @@ def apply(text, patch, name="patch"):
                 at = s
                 break
         if at is None:
+            # already in the source (a correction on its way out of upstream)
+            for d in sorted(range(-200, 201), key=abs):
+                s = start + d
+                if s >= pos and src[s:s + len(new)] == new:
+                    at = s
+                    old = new
+                    break
+        if at is None:
             raise SystemExit(f"{name}: hunk at line {start + 1} does not match the source; "
                              "the source changed, review the patch")
         out += src[pos:at] + new
