@@ -586,7 +586,8 @@ context no longer matches stops the build.
 | patch | what the arcade program does | on the PC |
 |---|---|---|
 | `src/game/MukadeItem.c.patch` | `MukadeItem_Tick_HeldAndHoming_3839` copies 11 heights to the stack and indexes them with `KartCharacterParam_GetIdentityIndex` (0..12); characters 11 and 12 read two stack words the function never writes | the neighbouring word held NaN bits, the centipede's position became NaN; the patch gives the two extra entries the value 0 |
-
-Request 43 (the ground normal written into an int) is still an upstream
-`#ifndef __MWERKS__` branch at the time of writing; if it is reverted there
-it becomes two patches here.
+| `GabyouItemHeld.cpp`, `GabyouItemReturn.cpp`, `KartFxBoost.cpp` | the same 11-entry stack copies indexed 0..12 (audit in upstream docs/notes/port_abi.md) | two zero entries follow the copy |
+| `objview/fn_80198ABC.c` | `lbl_8037DD48[12]` indexed 0..12; entry 12 is the float after the table, 1.0f | index 12 gives 1.0f |
+| `ItemObject_GetGroundTypeAt.c`, `ItemObjectManager_RenderImpl.c` | request 43: a three-float normal written through the address of an int (removed upstream in 4b81ff2) | a `float[3]` receives it |
+| `ItemHandler_Star.c`, `Item_OrbitAnchorKart.c`, `NokoNoko_CheckHitAndKill.c`, `sprite/fn_801A1798.c` | `return;` in functions with a result (removed upstream in 4b81ff2) | the value the console leaves in r3 is returned |
+| 11 units with `PORT_DATA_LOADED` | the port's hook after a file is read, for byte order (removed upstream in 573f65a) | the calls and `port/compat/include/game/types/port_hooks.h` |

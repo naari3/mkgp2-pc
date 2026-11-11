@@ -1,0 +1,13 @@
+--- a/src/game/GabyouItemReturn.cpp
++++ b/src/game/GabyouItemReturn.cpp
+@@ -55,7 +55,9 @@
+ {
+     GabyouReturnMatrix world;
+     GabyouReturnMatrix inverse;
+-    GabyouReturnTable radius;
++    /* PC port: 11 entries, index 0..12 (KartCharacterParam_GetIdentityIndex); the arcade program reads stale stack words for the last two characters. Here they are zero. */
++    struct { GabyouReturnTable table; float past_end[2]; } radius_ = {};
++    GabyouReturnTable &radius = radius_.table;
+     GabyouReturnVec hand;
+     float yaw;
+     Mtx_TransposeToMtx44(&world, KartDriver_GetJointByIdx(context->kart, 15));

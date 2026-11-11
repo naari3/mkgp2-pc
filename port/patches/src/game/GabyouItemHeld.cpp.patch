@@ -1,0 +1,13 @@
+--- a/src/game/GabyouItemHeld.cpp
++++ b/src/game/GabyouItemHeld.cpp
+@@ -271,7 +271,9 @@
+     case 3: {
+         /* The target performs a 132-byte aggregate copy before subphase dispatch.
+          * Its table remains externally owned; no surrounding rodata is claimed. */
+-        HeldRadii radii = GabyouItem_Tick_HeldAndHoming_2Eto31_rodata_8032EEAC;
++        /* PC port: 11 entries, index 0..12 (KartCharacterParam_GetIdentityIndex); the arcade program reads stale stack words for the last two characters. Here they are zero. */
++        struct { HeldRadii table; Vec3 past_end[2]; } radii_ = { GabyouItem_Tick_HeldAndHoming_2Eto31_rodata_8032EEAC };
++        HeldRadii &radii = radii_.table;
+         switch (item->subphase) {
+         case 0: {
+             GetSpawnPosition(&item->velocity, 0.0f, 0.0f, 0.0f);

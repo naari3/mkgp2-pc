@@ -1,0 +1,13 @@
+--- a/src/game/objview/fn_80198ABC.c
++++ b/src/game/objview/fn_80198ABC.c
+@@ -75,7 +75,9 @@
+             if (state->lift <= zero) state->lift = zero;
+         }
+         Mtx44_GetTranslation_RowMajor(&joint, KartDriver_GetJointByIdx(state->target, 15));
+-        joint.y += self->param + (state->lift + lbl_8037DD48[KartCharacterParam_GetIdentityIndex(state->target)]);
++        joint.y += self->param + (state->lift +
++            /* PC port: 12 entries, index 0..12; on the console entry 12 is the float after the table, DebugOverlay_KartPhysics_rodata_8037DD78[0] = 1.0f */
++            (KartCharacterParam_GetIdentityIndex(state->target) == 12 ? 1.0f : lbl_8037DD48[KartCharacterParam_GetIdentityIndex(state->target)]));
+         Vec3_Lerp(&self->pos, joint, self->pos, state->height);
+         if (state->lift <= 0.0f) {
+             result = KartItem_QueryEffectStateFromIse(state->target);
