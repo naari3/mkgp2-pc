@@ -62,6 +62,30 @@ static inline float mkgp2pc_gxdata_f32(const void *p) {
     ((void)(((unsigned char *)(p))[0] = (unsigned char)((v) >> 8), ((unsigned char *)(p))[1] = (unsigned char)(v)))
 #define GXDATA_F32(p) mkgp2pc_gxdata_f32(p)
 
+/* Cabinet-link slot fields that cross a byte boundary
+ * (include/game/types/pcb_link.h): taken from the bytes, as the console's
+ * 16- and 32-bit views see them. get2/set2 handle a field of `bits` bits
+ * that ends `low` bits above the bottom of the big-endian pair b[0] b[1]. */
+static inline unsigned int mkgp2pc_pcb_get2(const void *p, int low, int bits) {
+    const unsigned char *b = (const unsigned char *)p;
+    return ((((unsigned int)b[0] << 8) | b[1]) >> low) & ((1u << bits) - 1);
+}
+static inline void mkgp2pc_pcb_set2(void *p, int low, int bits, unsigned int v) {
+    unsigned char *b = (unsigned char *)p;
+    unsigned int mask = ((1u << bits) - 1) << low;
+    unsigned int w = ((((unsigned int)b[0] << 8) | b[1]) & ~mask) | ((v << low) & mask);
+    b[0] = (unsigned char)(w >> 8);
+    b[1] = (unsigned char)w;
+}
+#define PCB_HDR_SCENE(w) mkgp2pc_pcb_get2((const unsigned char *)&(w) + 1, 7, 8)
+#define PCB_HDR_SET_SCENE(h, v) mkgp2pc_pcb_set2((unsigned char *)&(h) + 1, 7, 8, (unsigned int)(v))
+#define PCB_SLOT_WINS(s, field) mkgp2pc_pcb_get2((const unsigned char *)(s) + 6, 5, 4)
+#define PCB_CLASS_SET_WINS(c, v) mkgp2pc_pcb_set2(&(c), 5, 4, (unsigned int)(v))
+#define PCB_CHOICE_SET_TRACK(c, v) mkgp2pc_pcb_set2(&(c), 4, 7, (unsigned int)(v))
+#define PCB_FLAGS_ID(f, view) mkgp2pc_pcb_get2(&(f), 7, 3)
+#define PCB_FLAGS_SET_ID(f, view, v) mkgp2pc_pcb_set2(&(f), 7, 3, (unsigned int)(v))
+#define PCB_FLAGS16_ID(h) mkgp2pc_pcb_get2(&(h), 7, 3)
+
 /* Card-name check: byte-string functions on 16-bit code strings, on the
  * console's byte view (port/compat/namecode_be.c). */
 #ifdef __cplusplus

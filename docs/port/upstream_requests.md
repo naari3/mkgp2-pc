@@ -474,3 +474,25 @@ kept for reference. Item 10 is open.
     rest (`clsound/fn_801913B0.c`, `misc3d/fn_80167*.cpp`, `clFlowRound.c`,
     `FaceEffect.cpp`, `Scene_8014E0C4.cpp`) is worth one look for the same
     mix of views.
+38. Tables written as word arrays (`void *x[]`, `unsigned int x[]`) whose
+    readers take single bytes or 16-bit halves of a word (asked
+    2026-11-11). `(void *)0x8000000` is the byte 0x08 followed by three
+    padding bytes on the console and the word 0x08000000 on the host,
+    whose first byte is 0. Seen: the item-in-hand animation table
+    `lbl_80422064` in `fn_80116DD0.c`, read as `AnimEntry { char type;
+    unsigned char pad[3]; void *data; }` by `AnimState_InitEntries`: the
+    end marker 13 is never found and the second round of the attract mode
+    crashes there. Same shape: `lbl_80421E34` / `lbl_80421EE8`
+    (`fn_801152B0.c`), the two tables `TwinSpriteOverlay.c` passes to
+    `AnimStatePool_Alloc` (`autodata/data_80419FB8.c`), and
+    `g_itemClassTable` (`autodata/data_8041C9D4.c`, `void *[1390]` with
+    words like `0x1010001`, `0xFF000000`, read through `ItemClassEntry`
+    with `flag0` / `flag1` bytes). 4397 initialisers of the form
+    `(void *)0xNN000000` exist, most of them in
+    `RaceScene_GetPerspFovyForCup.c` (2816) and
+    `autodata/rodata_80383CF8.c` (1189), then `data_8041C9D4.c`,
+    `data_8041A4F8.c`, `KartItem_FlushRender.c`, `CourseEnvironment.cpp`.
+    Wanted: these tables defined with the struct type their readers use
+    (as request 15 did for byte arrays holding numbers, the other way
+    round), found by comparing each data definition with the types other
+    units declare for the same symbol or cast it to.
