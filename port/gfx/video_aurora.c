@@ -424,6 +424,7 @@ int __wrap_main(int argc, char** argv) {
   /* a log that survives a crash (gfx.log was empty after one on Windows) */
   setvbuf(stdout, NULL, _IONBF, 0);
   setvbuf(stderr, NULL, _IONBF, 0);
+  s_fast = getenv("MKGP2PC_FAST") != NULL; /* start at full speed, as after F10 */
   const char* limit = getenv("MKGP2PC_FRAMES");
   if (limit != NULL) {
     s_frameLimit = strtol(limit, NULL, 10);
@@ -462,6 +463,25 @@ static void frame_limit(void) {
   next += period;
 }
 
+/* Full speed (F10/Tab): the game's frames come as fast as the machine makes
+ * them, the window gets one of them about 60 times a second. A frame that is
+ * not shown stays inside the rendering library's current frame and its
+ * drawing is dropped (mkgp2pc_skip_draw, gx_shim.cpp). */
+extern bool mkgp2pc_skip_draw;
+static bool show_next_frame(void) {
+  static Uint64 shown;
+  if (!(s_fast || s_fastHeld) || s_paused || s_dumpWanted) {
+    shown = 0;
+    return true;
+  }
+  Uint64 now = SDL_GetTicksNS();
+  if (shown != 0 && now - shown < 1001000000ull / 60) {
+    return false;
+  }
+  shown = now;
+  return true;
+}
+
 RetraceCallback VISetPreRetraceCallback(RetraceCallback cb) {
   RetraceCallback old = s_pre;
   s_pre = cb;
@@ -490,7 +510,7 @@ static void pump_events(void) {
 }
 
 void VIWaitForRetrace(void) {
-  if (s_inFrame) {
+  if (s_inFrame && !mkgp2pc_skip_draw) {
     /* One picture at a time: a dump asked for while the last one's picture
      * is still on its way is made on the first frame after it. */
     if (s_dumpWanted && s_shotWait == 0) {
@@ -526,5 +546,8 @@ void VIWaitForRetrace(void) {
     aurora_shutdown();
     exit(0);
   }
-  s_inFrame = aurora_begin_frame();
+  if (!s_inFrame) {
+    s_inFrame = aurora_begin_frame();
+  }
+  mkgp2pc_skip_draw = s_inFrame && !show_next_frame();
 }

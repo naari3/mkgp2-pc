@@ -263,7 +263,11 @@ extern "C" void __wrap_GXSetTevKColor(u32 id, GXColor color) {
   }
   __real_GXSetTevKColor(id, color);
 }
+extern "C" bool mkgp2pc_skip_draw;
 extern "C" void __wrap_GXCallDisplayList(const void* list, u32 nbytes) {
+  if (mkgp2pc_skip_draw) {
+    return;
+  }
   if (mkgp2pc_board_texture && nbytes == 32 && sShadowNowCount < 16) {
     ShadowDraw& d = sShadowNow[sShadowNowCount++];
     std::memcpy(d.mv, sPosMtx, sizeof(d.mv));
@@ -323,4 +327,331 @@ extern "C" void __real_HSD_ShadowSetSize(void* shadow, u16 width, u16 height);
 extern "C" void __wrap_HSD_ShadowSetSize(void* shadow, u16 width, u16 height) {
   const u16 limit = 480;
   __real_HSD_ShadowSetSize(shadow, width > limit ? limit : width, height > limit ? limit : height);
+}
+
+// ---- Full speed (F10/Tab): frames that are not shown ----
+// The game runs as fast as the machine can while the window is still given
+// about 60 pictures a second. On the frames in between everything that
+// draws is dropped here, before it reaches the rendering library: vertex
+// data, display lists and copies of the frame buffer. State (matrices,
+// textures, TEV) still goes through, so the next shown frame starts from
+// what the game last set. Presenting every frame at full speed ended inside
+// webgpu_dawn.dll on Windows within seconds (2026-11-11).
+bool mkgp2pc_skip_draw = false;
+extern "C" {
+void __real_GXPosition3f32(f32 x, f32 y, f32 z);
+void __wrap_GXPosition3f32(f32 x, f32 y, f32 z) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXPosition3f32(x, y, z);
+  }
+}
+void __real_GXPosition3u16(u16 x, u16 y, u16 z);
+void __wrap_GXPosition3u16(u16 x, u16 y, u16 z) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXPosition3u16(x, y, z);
+  }
+}
+void __real_GXPosition3s16(s16 x, s16 y, s16 z);
+void __wrap_GXPosition3s16(s16 x, s16 y, s16 z) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXPosition3s16(x, y, z);
+  }
+}
+void __real_GXPosition3u8(u8 x, u8 y, u8 z);
+void __wrap_GXPosition3u8(u8 x, u8 y, u8 z) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXPosition3u8(x, y, z);
+  }
+}
+void __real_GXPosition3s8(s8 x, s8 y, s8 z);
+void __wrap_GXPosition3s8(s8 x, s8 y, s8 z) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXPosition3s8(x, y, z);
+  }
+}
+void __real_GXPosition2f32(f32 x, f32 y);
+void __wrap_GXPosition2f32(f32 x, f32 y) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXPosition2f32(x, y);
+  }
+}
+void __real_GXPosition2u16(u16 x, u16 y);
+void __wrap_GXPosition2u16(u16 x, u16 y) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXPosition2u16(x, y);
+  }
+}
+void __real_GXPosition2s16(s16 x, s16 y);
+void __wrap_GXPosition2s16(s16 x, s16 y) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXPosition2s16(x, y);
+  }
+}
+void __real_GXPosition2u8(u8 x, u8 y);
+void __wrap_GXPosition2u8(u8 x, u8 y) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXPosition2u8(x, y);
+  }
+}
+void __real_GXPosition2s8(s8 x, s8 y);
+void __wrap_GXPosition2s8(s8 x, s8 y) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXPosition2s8(x, y);
+  }
+}
+void __real_GXPosition1x16(u16 index);
+void __wrap_GXPosition1x16(u16 index) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXPosition1x16(index);
+  }
+}
+void __real_GXPosition1x8(u8 index);
+void __wrap_GXPosition1x8(u8 index) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXPosition1x8(index);
+  }
+}
+void __real_GXNormal3f32(f32 x, f32 y, f32 z);
+void __wrap_GXNormal3f32(f32 x, f32 y, f32 z) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXNormal3f32(x, y, z);
+  }
+}
+void __real_GXNormal3s16(s16 x, s16 y, s16 z);
+void __wrap_GXNormal3s16(s16 x, s16 y, s16 z) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXNormal3s16(x, y, z);
+  }
+}
+void __real_GXNormal3s8(s8 x, s8 y, s8 z);
+void __wrap_GXNormal3s8(s8 x, s8 y, s8 z) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXNormal3s8(x, y, z);
+  }
+}
+void __real_GXNormal1x16(u16 index);
+void __wrap_GXNormal1x16(u16 index) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXNormal1x16(index);
+  }
+}
+void __real_GXNormal1x8(u8 index);
+void __wrap_GXNormal1x8(u8 index) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXNormal1x8(index);
+  }
+}
+void __real_GXColor4u8(u8 r, u8 g, u8 b, u8 a);
+void __wrap_GXColor4u8(u8 r, u8 g, u8 b, u8 a) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXColor4u8(r, g, b, a);
+  }
+}
+void __real_GXColor3u8(u8 r, u8 g, u8 b);
+void __wrap_GXColor3u8(u8 r, u8 g, u8 b) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXColor3u8(r, g, b);
+  }
+}
+void __real_GXColor1u32(u32 clr);
+void __wrap_GXColor1u32(u32 clr) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXColor1u32(clr);
+  }
+}
+void __real_GXColor1u16(u16 clr);
+void __wrap_GXColor1u16(u16 clr) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXColor1u16(clr);
+  }
+}
+void __real_GXColor1x16(u16 index);
+void __wrap_GXColor1x16(u16 index) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXColor1x16(index);
+  }
+}
+void __real_GXColor1x8(u8 index);
+void __wrap_GXColor1x8(u8 index) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXColor1x8(index);
+  }
+}
+void __real_GXTexCoord2f32(f32 s, f32 t);
+void __wrap_GXTexCoord2f32(f32 s, f32 t) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXTexCoord2f32(s, t);
+  }
+}
+void __real_GXTexCoord2u16(u16 s, u16 t);
+void __wrap_GXTexCoord2u16(u16 s, u16 t) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXTexCoord2u16(s, t);
+  }
+}
+void __real_GXTexCoord2s16(s16 s, s16 t);
+void __wrap_GXTexCoord2s16(s16 s, s16 t) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXTexCoord2s16(s, t);
+  }
+}
+void __real_GXTexCoord2u8(u8 s, u8 t);
+void __wrap_GXTexCoord2u8(u8 s, u8 t) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXTexCoord2u8(s, t);
+  }
+}
+void __real_GXTexCoord2s8(s8 s, s8 t);
+void __wrap_GXTexCoord2s8(s8 s, s8 t) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXTexCoord2s8(s, t);
+  }
+}
+void __real_GXTexCoord1f32(f32 s);
+void __wrap_GXTexCoord1f32(f32 s) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXTexCoord1f32(s);
+  }
+}
+void __real_GXTexCoord1u16(u16 s);
+void __wrap_GXTexCoord1u16(u16 s) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXTexCoord1u16(s);
+  }
+}
+void __real_GXTexCoord1s16(s16 s);
+void __wrap_GXTexCoord1s16(s16 s) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXTexCoord1s16(s);
+  }
+}
+void __real_GXTexCoord1u8(u8 s);
+void __wrap_GXTexCoord1u8(u8 s) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXTexCoord1u8(s);
+  }
+}
+void __real_GXTexCoord1s8(s8 s);
+void __wrap_GXTexCoord1s8(s8 s) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXTexCoord1s8(s);
+  }
+}
+void __real_GXTexCoord1x16(u16 index);
+void __wrap_GXTexCoord1x16(u16 index) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXTexCoord1x16(index);
+  }
+}
+void __real_GXTexCoord1x8(u8 index);
+void __wrap_GXTexCoord1x8(u8 index) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXTexCoord1x8(index);
+  }
+}
+void __real_GXEnd(void);
+void __wrap_GXEnd(void) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXEnd();
+  }
+}
+void __real_GXBegin(GXPrimitive type, GXVtxFmt vtxfmt, u16 nverts);
+void __wrap_GXBegin(GXPrimitive type, GXVtxFmt vtxfmt, u16 nverts) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXBegin(type, vtxfmt, nverts);
+  }
+}
+void __real_GXCopyTex(void* dest, GXBool clear);
+void __wrap_GXCopyTex(void* dest, GXBool clear) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXCopyTex(dest, clear);
+  }
+}
+void __real_GXCopyDisp(void* dest, GXBool clear);
+void __wrap_GXCopyDisp(void* dest, GXBool clear) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXCopyDisp(dest, clear);
+  }
+}
+}
+
+extern "C" {
+void __real_GXCmd1u8(const u8 x);
+void __wrap_GXCmd1u8(const u8 x) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXCmd1u8(x);
+  }
+}
+void __real_GXCmd1u16(const u16 x);
+void __wrap_GXCmd1u16(const u16 x) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXCmd1u16(x);
+  }
+}
+void __real_GXCmd1u32(const u32 x);
+void __wrap_GXCmd1u32(const u32 x) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXCmd1u32(x);
+  }
+}
+void __real_GXCmd1u64(const u64 x);
+void __wrap_GXCmd1u64(const u64 x) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXCmd1u64(x);
+  }
+}
+void __real_GXParam1u8(const u8 x);
+void __wrap_GXParam1u8(const u8 x) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXParam1u8(x);
+  }
+}
+void __real_GXParam1u16(const u16 x);
+void __wrap_GXParam1u16(const u16 x) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXParam1u16(x);
+  }
+}
+void __real_GXParam1u32(const u32 x);
+void __wrap_GXParam1u32(const u32 x) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXParam1u32(x);
+  }
+}
+void __real_GXParam1s8(const s8 x);
+void __wrap_GXParam1s8(const s8 x) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXParam1s8(x);
+  }
+}
+void __real_GXParam1s16(const s16 x);
+void __wrap_GXParam1s16(const s16 x) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXParam1s16(x);
+  }
+}
+void __real_GXParam1s32(const s32 x);
+void __wrap_GXParam1s32(const s32 x) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXParam1s32(x);
+  }
+}
+void __real_GXParam1f32(const f32 x);
+void __wrap_GXParam1f32(const f32 x) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXParam1f32(x);
+  }
+}
+void __real_GXParam3f32(const f32 x, const f32 y, const f32 z);
+void __wrap_GXParam3f32(const f32 x, const f32 y, const f32 z) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXParam3f32(x, y, z);
+  }
+}
+void __real_GXParam4f32(const f32 x, const f32 y, const f32 z, const f32 w);
+void __wrap_GXParam4f32(const f32 x, const f32 y, const f32 z, const f32 w) {
+  if (!mkgp2pc_skip_draw) {
+    __real_GXParam4f32(x, y, z, w);
+  }
+}
 }

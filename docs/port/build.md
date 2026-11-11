@@ -335,7 +335,7 @@ For stopping on a frame that looks wrong and handing it over:
 | `P` | pause / resume (the game's frame counter stops; the picture stays) |
 | `O` | while paused: advance one frame |
 | `F9` | write a dump; works running or paused |
-| `F10` | frame limit off / on: without it the game runs as fast as the machine can (sound runs ahead with it) |
+| `F10` | full speed on / off: the game's frames run as fast as the machine can, the window is given about 60 of them a second and the drawing of the others is dropped before it reaches the rendering library (`mkgp2pc_skip_draw`, `port/gfx/gx_shim.cpp`); sound runs ahead. `MKGP2PC_FAST=1` starts that way. Presenting every frame without a limit ended inside `webgpu_dawn.dll` on Windows within seconds (2026-11-11, cause not established) |
 | `Tab` | the same as `F10` while held |
 
 A dump is a folder `dumps/<n>_f<frame>/` under the directory the executable

@@ -61,6 +61,12 @@ GFX_WRAPPED = ("GXInitTexObj", "GXInitTexObjCI", "GXInitTexObjLOD", "GXLoadTexOb
                "GXInitTlutObj", "GXLoadTlut", "GXSetArray", "GXInvalidateTexAll",
                "GXSetChanAmbColor", "GXSetChanMatColor",
                "GXSetProjection", "GXLoadPosMtxImm", "GXCallDisplayList", "GXSetTevKColor",
+               # dropped on frames that are not shown (full speed, gx_shim.cpp)
+               "GXBegin", "GXCopyTex", "GXCopyDisp",
+               "GXPosition3f32", "GXPosition3u16", "GXPosition3s16", "GXPosition3u8", "GXPosition3s8", "GXPosition2f32", "GXPosition2u16", "GXPosition2s16", "GXPosition2u8", "GXPosition2s8", "GXPosition1x16", "GXPosition1x8",
+               "GXNormal3f32", "GXNormal3s16", "GXNormal3s8", "GXNormal1x16", "GXNormal1x8", "GXColor4u8", "GXColor3u8", "GXColor1u32", "GXColor1u16", "GXColor1x16", "GXColor1x8",
+               "GXTexCoord2f32", "GXTexCoord2u16", "GXTexCoord2s16", "GXTexCoord2u8", "GXTexCoord2s8", "GXTexCoord1f32", "GXTexCoord1u16", "GXTexCoord1s16", "GXTexCoord1u8", "GXTexCoord1s8", "GXTexCoord1x16", "GXTexCoord1x8", "GXEnd",
+               "GXCmd1u8", "GXCmd1u16", "GXCmd1u32", "GXCmd1u64", "GXParam1u8", "GXParam1u16", "GXParam1u32", "GXParam1s8", "GXParam1s16", "GXParam1s32", "GXParam1f32", "GXParam3f32", "GXParam4f32",
                "sndInit")  # port/gfx/audio_musyx.c
 # Functions of the game itself that the glue wraps the same way (the
 # original stays reachable as __real_<name>).
