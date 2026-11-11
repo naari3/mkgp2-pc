@@ -7,7 +7,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
       ca-certificates git curl zip unzip python3 pkg-config \
       cmake ninja-build make \
-      clang lld llvm \
+      clang clang-tools lld llvm \
       gcc-multilib g++-multilib lib32z1-dev \
       gcc-mingw-w64-i686-win32 g++-mingw-w64-i686-win32 \
       binutils-mingw-w64-i686 mingw-w64-i686-dev \
