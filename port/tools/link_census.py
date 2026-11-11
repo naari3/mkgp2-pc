@@ -318,8 +318,18 @@ def compile_one(path, target):
             # compiled with exceptions on; the host C++ runtime unwinds
             cmd = ["-fexceptions" if c == "-fno-exceptions" else c for c in cmd]
             r = subprocess.run([c for c in cmd if c != "-c"] + irflags + [src_in, "-o", ll], cwd=ROOT, capture_output=True, text=True, errors="replace")
+        if r.returncode != 0 and "requires -frtti" in r.stderr:
+            # a unit that spells a cast `dynamic_cast<T *>`: compiled with
+            # RTTI on; the cast itself goes to the port's runtime
+            # (mwcc_cxx_abi.py, mkgp2pc_dynamic_cast)
+            cmd = ["-frtti" if c == "-fno-rtti" else c for c in cmd]
+            r = subprocess.run([c for c in cmd if c != "-c"] + irflags + [src_in, "-o", ll], cwd=ROOT, capture_output=True, text=True, errors="replace")
         if r.returncode != 0:
+            with open(obj[:-2] + ".abi-error", "w") as f:
+                f.write(r.stderr)
             return path, None
+        if os.path.exists(obj[:-2] + ".abi-error"):
+            os.remove(obj[:-2] + ".abi-error")
         notes = []
         if os.path.exists(obj[:-2] + ".abi-notes"):
             os.remove(obj[:-2] + ".abi-notes")

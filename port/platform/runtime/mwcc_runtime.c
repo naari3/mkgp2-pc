@@ -203,3 +203,39 @@ void* fn_80271340(void* object, int32_t vptr_offset, const MwTypeInfo* to, const
   }
   return NULL;
 }
+
+/*
+ * `dynamic_cast<T *>` written as such in a unit (compiled with RTTI on; the
+ * IR pass sends the host's __dynamic_cast here with T's plain name, see
+ * mwcc_cxx_abi.py). Two kinds of table:
+ *  - written out as data (MWCC): word 0 is MWCC's type_info, word 1 the
+ *    offset to the complete object, as fn_80271340 reads them;
+ *  - emitted by the host compiler: word 0 is the offset to the complete
+ *    object (null for the first base), word 1 a description in the same
+ *    { name, bases } form that the IR pass generates (step 1c), or null
+ *    for a class it could not describe.
+ * Without a description, or without a name, the cast is taken to succeed,
+ * as fn_80271340 does.
+ */
+void* mkgp2pc_dynamic_cast(void* object, const void* unused, const char* name, int32_t hint) {
+  (void)unused, (void)hint;
+  if (object == NULL) return NULL;
+  void** table = *(void***)object;
+  uintptr_t word = (uintptr_t)table[0];
+  const MwTypeInfo* type;
+  char* complete;
+  if (word >= 0x10000u && word <= 0xFFF00000u) {
+    type = (const MwTypeInfo*)table[0];
+    complete = (char*)object + (int32_t)(intptr_t)table[1];
+  } else {
+    type = (const MwTypeInfo*)table[1];
+    complete = (char*)object + (int32_t)word;
+  }
+  if (type == NULL || name == NULL) return object;
+  const MwTypeInfo want = {name, NULL};
+  if (mw_same_type(type, &want)) return complete;
+  for (const MwBase* b = type->bases; b != NULL && b->type != NULL; b++) {
+    if (mw_same_type(b->type, &want)) return complete + b->offset;
+  }
+  return NULL;
+}

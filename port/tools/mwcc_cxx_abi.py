@@ -34,6 +34,9 @@ member functions (see the comment in rewrite()).
    functions in the first group. A table emitted here is reordered, and
    calls of the added functions skip the second base's part (step 1b).
 
+4. `dynamic_cast` and type descriptions (step 1c and the cast rewrite at
+   the top of rewrite()).
+
 Not handled: where the vtable pointer sits inside an object, more than two
 polymorphic bases, pointers to virtual member functions of classes with a
 virtual destructor.
@@ -51,6 +54,7 @@ def _class_dtor_slots(text):
     used = {}    # class id -> slots of its other virtual functions
     bases = {}   # class id -> [base id]
     alias = {}   # typedef id -> base type id
+    base_off = {}  # (class id, base id) -> byte offset of the base
     for m in re.finditer(r"^(!\d+) = (?:distinct )?!(DICompositeType|DISubprogram|DIDerivedType|DINamespace)\((.*)\)$", text, re.M):
         ident, kind, body = m.groups()
         name = re.search(r'\bname: "([^"]*)"', body)
@@ -75,6 +79,8 @@ def _class_dtor_slots(text):
             bt = re.search(r"\bbaseType: (!\d+)", body)
             if "DW_TAG_inheritance" in body and sc and bt:
                 bases.setdefault(sc.group(1), []).append(bt.group(1))
+                off = re.search(r"\boffset: (\d+)", body)
+                base_off[(sc.group(1), bt.group(1))] = int(off.group(1)) // 8 if off else 0
             elif "DW_TAG_typedef" in body and bt:
                 alias[ident] = bt.group(1)
 
@@ -165,9 +171,27 @@ def _class_dtor_slots(text):
                 return itanium_slots(poly[0])[0], 2 + n2 - (1 if d2 else 0)
         return None
 
+    # Every base class of c with its offset, for the type descriptions of
+    # step 1c: [(name, offset)], or None when a name is not a plain one.
+    def all_bases(c, at=0, depth=0):
+        res = []
+        for b in bases.get(c, []):
+            o = at + base_off.get((c, b), 0)
+            while b in alias:
+                b = alias[b]
+            n = comp.get(b)
+            if n is None or not re.fullmatch(r"\w+", n) or scope.get(b) in comp or scope.get(b) in ns or depth > 16:
+                return None
+            sub = all_bases(b, o, depth + 1)
+            if sub is None:
+                return None
+            res += [(n, o)] + sub
+        return res
+
     out = {}
     clash = set()
     splits = {}
+    types = {}
     for c in comp:
         key = mangled(c)
         if key is None:
@@ -179,12 +203,16 @@ def _class_dtor_slots(text):
         sp = split(c)
         if sp is not None:
             splits[key] = sp
-    return out, clash, splits
+        if re.fullmatch(r"_ZTS\d+\w+", key):
+            ab = all_bases(c)
+            if ab is not None and (key not in types or len(ab) > len(types[key][1])):
+                types[key] = (comp[c], ab)
+    return out, clash, splits, types
 
 
 def rewrite(text, warn=None):
     warn = warn or (lambda s: None)
-    slots, clash, splits = _class_dtor_slots(text)
+    slots, clash, splits, types = _class_dtor_slots(text)
 
     # 32-bit Windows (GNU ABI) passes `this` in a register for member
     # functions. The vtables written as data hold C functions and C code calls
@@ -205,15 +233,62 @@ def rewrite(text, warn=None):
     if n_trap and not re.search(r"^declare [^@\n]*@_ZdlPv\(", text, re.M):
         text += "\ndeclare void @_ZdlPv(ptr noundef)\n"
 
+    # `dynamic_cast<T *>` (units compiled with RTTI on). The host runtime
+    # would look for its type_info below the address point, which step 2
+    # moves, and half of the game's objects have MWCC's type_info instead.
+    # The call goes to port/platform/runtime/mwcc_runtime.c with T's name;
+    # that answers from MWCC's type_info (tables written as data) or from
+    # the description step 1c puts into the tables emitted here.
+    cast_names = {}
+
+    def cast(m):
+        obj, dst, hint = m.groups()
+        plain = re.fullmatch(r"\d+(\w+)", dst)
+        if not plain:
+            warn("dynamic_cast to %s: not checked" % dst)
+            return "@mkgp2pc_dynamic_cast(%s, ptr null, ptr null, %s)" % (obj, hint)
+        g = cast_names.setdefault(plain.group(1), "@__mwcast.%d" % len(cast_names))
+        return "@mkgp2pc_dynamic_cast(%s, ptr null, ptr %s, %s)" % (obj, g, hint)
+
+    text = re.sub(r"@__dynamic_cast\((ptr [^,]+), ptr @_ZTI[\w.$]+, ptr @_ZTI([\w.$]+), (i32 -?\d+)\)", cast, text)
+    text = re.sub(r"@__dynamic_cast\b", "@mkgp2pc_dynamic_cast", text)
+
     # drop the module summary (stale after the edits)
     text = re.sub(r"^\^\d+ = .*\n", "", text, flags=re.M)
 
     # 1. vtables defined here: one destructor slot
     wrappers = {}
 
+    # 1c. Type description. The second header word of a table emitted here
+    # (the host's type_info pointer, null without RTTI) points at a
+    # description in MWCC's form, { name, { base, offset }... }; the first
+    # word stays the offset to the complete object, so MWCC's own
+    # __dynamic_cast (fn_80271340) goes on treating these classes as before
+    # and only mkgp2pc_dynamic_cast reads it.
+    type_defs = {}
+
+    def type_info(table):
+        t = types.get("_ZTS" + table[5:])
+        if t is None:
+            return "ptr null"
+        if table not in type_defs:
+            names = [t[0]] + [n for n, _ in t[1]]
+            d = []
+            for n in dict.fromkeys(names):
+                d.append('@"__mwtn.%s.%s" = private constant [%d x i8] c"%s\\00"' % (table[5:], n, len(n) + 1, n))
+                d.append('@"__mwtq.%s.%s" = private constant { ptr, ptr } { ptr @"__mwtn.%s.%s", ptr null }' % (table[5:], n, table[5:], n))
+            ents = ['{ ptr, i32 } { ptr @"__mwtq.%s.%s", i32 %d }' % (table[5:], n, o) for n, o in t[1]] + ["{ ptr, i32 } zeroinitializer"]
+            d.append('@"__mwtb.%s" = private constant [%d x { ptr, i32 }] [%s]' % (table[5:], len(ents), ", ".join(ents)))
+            d.append('@"__mwti.%s" = private constant { ptr, ptr } { ptr @"__mwtn.%s.%s", ptr @"__mwtb.%s" }' % (table[5:], table[5:], t[0], table[5:]))
+            type_defs[table] = "\n".join(d)
+        return 'ptr @"__mwti.%s"' % table[5:]
+
     def fix_vtable(m):
         head, count, body, tail = m.groups()
         items = [s.strip() for s in body.split(",")]
+        mt = re.match(r"@_ZTV[\w.$]+", head)
+        if len(items) > 1 and re.fullmatch(r"ptr (null|@_ZTI[\w.$]+)", items[1]):
+            items[1] = type_info(mt.group(0)) if mt else "ptr null"
         new = []
         i = 0
         while i < len(items):
@@ -248,7 +323,8 @@ def rewrite(text, warn=None):
         table = re.match(r"@_ZTV[\w.$]+", head).group(0)
         groups = []
         for g in re.finditer(r"\[\d+ x ptr\] \[(.*?)\]", body):
-            one = fix_vtable(re.match(r"()()(.*)()$", g.group(1)))
+            one = fix_vtable(re.match(r"(.*)\n()(.*)()$", table + "\n" + g.group(1), re.S))
+            one = one[len(table):]
             groups.append(re.fullmatch(r"\{ \[\d+ x ptr\] \} \{ \[\d+ x ptr\] \[(.*)\] \}", one).group(1).split(", "))
         sp = splits.get("_ZTS" + table[5:])
         if len(groups) != 2 or sp is None or sp == "unsupported":
@@ -390,6 +466,11 @@ def rewrite(text, warn=None):
         out.append(line)
     text = "\n".join(out)
 
+    if type_defs or cast_names:
+        defs = list(type_defs.values()) + ['%s = private constant [%d x i8] c"%s\\00"' % (g, len(n) + 1, n) for n, g in cast_names.items()]
+        cut = re.search(r"^(define |declare )", text, re.M)
+        pos = cut.start() if cut else len(text)
+        text = text[:pos] + "\n".join(defs) + "\n\n" + text[pos:]
     if wrappers:
         extra = []
         for w, (d1, d0) in sorted(wrappers.items()):
