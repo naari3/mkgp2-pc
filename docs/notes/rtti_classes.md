@@ -302,3 +302,53 @@ clTitleDisp2 converted in game/TitleNameHudUpdate.cpp: five code units merged, c
 Source: Codex worker r6_c29_20261111 (gpt-6.1-sol/medium) + coordinator acceptance (independent main build, DOL SHA-1 OK, actual main.elf ranges). Native gain: 0 fn / 0 B.
 
 r6_c29 yes/no family observation: shared interleaved RTTI lists require family-level data ownership, but keeping the public service tail as a separate TU avoids deferred/auto factory inlining without new function pragmas. Compiler RTTI may need global: bridges when a retained external-view tail references legacy aliases. The original force_active autodata pool included eleven otherwise unreferenced real format/helper-name strings; an approved uncalled pool-order member emits them, and existing active: data renames preserve their retention. All six owned sections, 40 linked functions and DOL SHA-1 verified exact. These are object/full-link observations, not a compiler-source trace.
+
+## r7_c4_20261111
+Source: Codex worker r7_c4_20261111 (gpt-6.1-sol/medium) + coordinator acceptance (independent main build, DOL SHA-1 OK, actual main.elf ranges). Native gain: 0 fn / 0 B.
+
+clCallback/clShadow: preserve the standalone base destructor TU separately from the derived shadow TU, because the binary has two distinct clCallback RTTI/name copies. clShadow data starts with a base list, so its methods use deferred generation/reverse definitions while clCallback remains nondeferred. Vtable size 0x14 included four alignment bytes; actual clShadow table is 0x10. Both real-class TUs and all 7 functions match, clang OK, full DOL SHA1 unchanged. Observations follow existing rules, not a new compiler-source trace.
+
+## r7_c9_20261111
+Source: Codex worker r7_c9_20261111 (gpt-6.1-sol/medium) + coordinator acceptance (independent main build, DOL SHA-1 OK, actual main.elf ranges). Native gain: 0 fn / 0 B.
+
+nsEffectSpeed::clActionMueScale/clAction/clActionSpeedScale converted together in game/EffectSpeedAction_SpeedScale_Dtor.cpp (four code TUs merged). Deferred reverse definitions retain all 14 functions / 1968 B. Declaring MueScale::Reset first and SpeedScale::Process first chooses vtable keys whose generation reproduces MueScale/base/SpeedScale data order; RTTI names and sdata then match too. Last vtable symbol size corrected 0x18 -> 0x14, excluding 4-byte inter-unit alignment. All six owned sections, clang, 25 linked symbol addresses and full DOL SHA-1 verified. This is an object/full-link observation, not a compiler-source trace.
+
+## r7_c11_20261111
+Source: Codex worker r7_c11_20261111 (gpt-6.1-sol/medium) + coordinator acceptance (independent main build, DOL SHA-1 OK, actual main.elf ranges). Native gain: 0 fn / 0 B.
+
+clGameSingle converted in game/RaceScene_RenderPass.cpp, merging FrameUpdate/Dtor/Init. Deferred reverse definitions plus compiler RTTI/vtable and pooled literal strings preserve all four native methods and seven owned sections at 100%; clang OK and full DOL SHA-1 unchanged. Split the old compound string-pool symbol into actual literal boundaries to eliminate R_PPC_NONE pseudo-relocation mismatches (existing matching_rules section 5 rule). No new compiler rule discovered.
+
+## r7_c13_20261111
+Source: Codex worker r7_c13_20261111 (gpt-6.1-sol/medium) + coordinator acceptance (independent main build, DOL SHA-1 OK, actual main.elf ranges). Native gain: 0 fn / 0 B.
+
+clSeqEnding/clStageSelect/clTitle share one nondeferred TU: ordinary address-order definitions preserve all 12 functions, and the compiler emits class data SeqEnding/StageSelect/Title in reverse at the end. Base-list-first alone cannot distinguish deferred mode when the external canonical base emits no weak vtable in the TU. Deferred reverse definitions matched text but reversed all class data; all-inline deferred recovered data but moved methods after factories. Keep debug-label strings external here so compiler RTTI names alone occupy 80328D90..80328DB8. Existing #align4 .sdata2 directive handles short clTitle name at 806D4F34. Object/full-link observations, not a traced general compiler rule. Full DOL exact.
+
+## r7_c18_20261111
+Source: Codex worker r7_c18_20261111 (gpt-6.1-sol/medium) + coordinator acceptance (independent main build, DOL SHA-1 OK, actual main.elf ranges). Native gain: 0 fn / 0 B.
+
+clCGameDemoRB converted in game/ChallengeDemoUra.cpp with canonical clCGameDemo/clJobRunner, deferred,noauto reverse definitions and -rostr. Existing bridges remained valid. Four functions/2348 B and all six owned sections exact, clang OK, full DOL SHA-1 unchanged. No new compiler rule.
+
+## r7_c20_20261111
+Source: Codex worker r7_c20_20261111 (gpt-6.1-sol/medium) + coordinator acceptance (independent main build, DOL SHA-1 OK, actual main.elf ranges). Native gain: 0 fn / 0 B.
+
+clCSKartModel converted in game/KartPreview.c without merging PreviewModel.c: inline base dtor plus external base Draw preserves the existing base table, while global: on the compiler-emitted base RTTI lets the untouched table reference it. Deferred reverse definitions and pooled ctor literals retain text/string order. All 12 methods and six sections 100%; DATA_ALIGN4_WEAK_TUS for 8048EACC start, clang OK, full DOL SHA-1 unchanged. Uses existing rules; no new compiler-source rule.
+
+## r7_c24_20261111
+Source: Codex worker r7_c24_20261111 (gpt-6.1-sol/medium) + coordinator acceptance (independent main build, DOL SHA-1 OK, actual main.elf ranges). Native gain: 0 fn / 0 B.
+
+Added the requested working-note paragraph tracing the raw/processed symbol-index and .comment misassociation caused by unnecessary global: bridges. Does not claim every previous parked gap has the same cause. This docs edit follows the explicit real-class-lane new-rule instruction.
+
+## r7_c22_20261111
+Source: Codex worker r7_c22_20261111 (gpt-6.1-sol/medium) + coordinator acceptance (independent main build, DOL SHA-1 OK, actual main.elf ranges). Native gain: 0 fn / 0 B.
+
+Added object/link observation on shared TA/Ghost RTTI-name pooling via approved uncalled diagnostic member; not a compiler-source trace.
+
+## r7_c44_20261111
+Source: Codex worker r7_c44_20261111 (gpt-6.1-sol/medium) + coordinator acceptance (independent main build, DOL SHA-1 OK, actual main.elf ranges). Native gain: 0 fn / 0 B.
+
+clEnemyFace/clEFace3D converted in EnemyFace_exact2.cpp + EnemyFace_nm4.cpp: four assigned EnemyFace units merged into exact2, deferred/noauto reverse definitions, canonical clCDispInterface unchanged. Existing extern: RTTI-name bridges retain names in the unassigned renderer pool; no need to absorb EnemyFace.cpp/exact5. Both vtables and owned RTTI/base-list compiler emitted; all ten functions/2960 B and five owned sections per TU 100%, clang OK, DOL SHA-1 exact. DATA_ALIGN4_TUS on nm4 preserves 804EE134. Existing-mechanism observation, no new compiler-source rule.
+
+## r7_c47_20261111
+Source: Codex worker r7_c47_20261111 (gpt-6.1-sol/medium) + coordinator acceptance (independent main build, DOL SHA-1 OK, actual main.elf ranges). Native gain: 0 fn / 0 B.
+
+clMnCardRenew: if carving all ancestor names would leave an 8-aligned autodata tail at 803EF454, the existing extern: string rename mechanism can leave the ancestor names in autodata and carve only the derived name (803EF408..418). Tail 803EF418 is 8 aligned; compiler still emits all RTTI records/base lists and the derived vtable. DATA_ALIGN4_TUS only pins .data and does not fix a .rodata tail. All sections, ten functions and full DOL SHA-1 exact.

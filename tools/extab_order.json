@@ -251,22 +251,6 @@
     "clFlowCup_Dtor",
     "clFlowCup_Init"
   ],
-  "src/game/dtor_801FE870.cpp": {
-    "extab": [
-      "dtor_801FE870",
-      "fn_801FE4D0",
-      "fn_801FE554",
-      "fn_801FE588",
-      "fn_801FE5C8"
-    ],
-    "extabindex": [
-      "fn_801FE4D0",
-      "fn_801FE554",
-      "fn_801FE588",
-      "fn_801FE5C8",
-      "dtor_801FE870"
-    ]
-  },
   "src/game/CourseMarker.cpp": {
     "extab": [
       "dtor_8016A270",
@@ -1306,7 +1290,8 @@
     "fn_80133008",
     "fn_80134164",
     "SuikaBall_Init",
-    "PrintTypeNames__9clCGameMRFv"
+    "PrintTypeNames__9clCGameMRFv",
+    "dtor_8012A5AC"
   ],
   "src/game/fn_8013A534.cpp": [
     "fn_8013A534",
@@ -1360,10 +1345,6 @@
     "TweenInterp_Dtor",
     "dtor_801F4A80",
     "dtor_8021617C"
-  ],
-  "src/game/KartChoiceChildCtor.cpp": [
-    "fn_8023C160",
-    "dtor_80082960"
   ],
   "src/game/KartChoiceFinish.cpp": {
     "extab": [
@@ -1568,30 +1549,112 @@
     "dtor_801F4A80",
     "dtor_801F4B10"
   ],
-  "src/game/anon_801FEBD8.cpp": [
-    "fn_801FEBD8",
-    "fn_801FEC08",
-    "fn_801FEF34",
-    "fn_801FEFD4",
-    "fn_801FF00C",
-    "fn_801FF068",
-    "fn_801FF158",
-    "fn_801FF3E8",
-    "fn_801F26C8",
-    "dtor_801F2724",
-    "dtor_801F4A80",
-    "TweenInterp_Dtor",
-    "dtor_80082960",
-    "dtor_801F4B10",
-    "fn_801FF670",
-    "fn_801FF6A8",
-    "fn_801FF794",
-    "fn_801FF99C",
-    "fn_801FF9D4",
-    "fn_801FFAC0",
-    "fn_801FFFF4",
-    "fn_80200044"
-  ],
+  "src/game/anon_801FEBD8.cpp": {
+    "extab": [
+      "fn_801FEBD8",
+      "fn_801FEC08",
+      "fn_801FEF34",
+      "fn_801FEFD4",
+      "fn_801FF00C",
+      "fn_801FF068",
+      "fn_801FF158",
+      "fn_801FF3E8",
+      "fn_801F26C8",
+      "dtor_801F2724",
+      "dtor_801F4A80",
+      "TweenInterp_Dtor",
+      "dtor_80082960",
+      "dtor_801F4B10",
+      "fn_801FF670",
+      "fn_801FF6A8",
+      "fn_801FF794",
+      "fn_801FF99C",
+      "fn_801FF9D4",
+      "fn_801FFAC0",
+      "fn_801FFFF4",
+      "fn_80200044",
+      "fn_8020007C",
+      "fn_802000E8",
+      "fn_80200240",
+      "dtor_80201E8C",
+      "dtor_80201F1C",
+      "fn_80200654",
+      "fn_8020096C",
+      "fn_80200A48",
+      "fn_80200EAC",
+      "fn_80200F88",
+      "fn_80200FB8",
+      "fn_80201148",
+      "fn_80201198",
+      "fn_802011D0",
+      "fn_8020122C",
+      "fn_8020134C",
+      "dtor_80201FAC",
+      "fn_8020157C",
+      "fn_802017C8",
+      "dtor_8020203C",
+      "dtor_802020B8",
+      "fn_802018A4",
+      "fn_8020192C",
+      "fn_80201A10",
+      "fn_80201A48",
+      "fn_80201A94",
+      "fn_80201BE8",
+      "dtor_80080444"
+    ],
+    "extabindex": [
+      "fn_801FEBD8",
+      "fn_801FEC08",
+      "fn_801FEF34",
+      "fn_801FEFD4",
+      "fn_801FF00C",
+      "fn_801FF068",
+      "fn_801FF158",
+      "fn_801FF3E8",
+      "fn_801F26C8",
+      "dtor_801F2724",
+      "dtor_801F4A80",
+      "TweenInterp_Dtor",
+      "dtor_80082960",
+      "dtor_801F4B10",
+      "fn_801FF670",
+      "fn_801FF6A8",
+      "fn_801FF794",
+      "fn_801FF99C",
+      "fn_801FF9D4",
+      "fn_801FFAC0",
+      "fn_801FFFF4",
+      "fn_80200044",
+      "fn_8020007C",
+      "fn_802000E8",
+      "fn_80200240",
+      "fn_80200654",
+      "fn_8020096C",
+      "fn_80200A48",
+      "fn_80200EAC",
+      "fn_80200F88",
+      "fn_80200FB8",
+      "fn_80201148",
+      "fn_80201198",
+      "fn_802011D0",
+      "fn_8020122C",
+      "fn_8020134C",
+      "fn_8020157C",
+      "fn_802017C8",
+      "fn_802018A4",
+      "fn_8020192C",
+      "fn_80201A10",
+      "fn_80201A48",
+      "fn_80201A94",
+      "fn_80201BE8",
+      "dtor_80201E8C",
+      "dtor_80201F1C",
+      "dtor_80201FAC",
+      "dtor_8020203C",
+      "dtor_802020B8",
+      "dtor_80080444"
+    ]
+  },
   "src/game/anon_80207324.cpp": {
     "extab": [
       "fn_80207760",
@@ -1690,7 +1753,11 @@
     "fn_8020B994",
     "fn_8020B9D0",
     "dtor_80082960",
-    "__dt__10FlowFaderIFv"
+    "__dt__10FlowFaderIFv",
+    "fn_8020BACC",
+    "dtor_801F2724",
+    "dtor_801F4B10",
+    "dtor_8007D0D4"
   ],
   "src/game/anon_8020BD68.cpp": [
     "fn_8020BD68",
@@ -1926,12 +1993,15 @@
     "fn_8022B1C8"
   ],
   "src/game/EnemyFace_exact2.cpp": [
-    "fn_8022B414"
-  ],
-  "src/game/EnemyFace_exact3.cpp": [
+    "fn_8022B414",
+    "fn_8022B53C",
+    "fn_8022B728",
     "fn_8022B9B0",
     "fn_8022B9FC",
     "fn_8022BA58",
+    "fn_8022BBC8",
+    "dtor_80036E40",
+    "dtor_8020EB04",
     "dtor_8021617C"
   ],
   "src/game/anon_80218F40_exact2.cpp": [
@@ -1951,6 +2021,7 @@
   ],
   "src/game/GameMode_TitleSelect.cpp": {
     "extab": [
+      "GameMode_Title_Ctor",
       "GameMode_StageSelect_Ctor",
       "GameMode_CharacterSelect_Ctor",
       "GameMode_CharacterSelect_Dtor",
@@ -1962,6 +2033,7 @@
       "GameMode_Title_DrawDebugLabel"
     ],
     "extabindex": [
+      "GameMode_Title_Ctor",
       "GameMode_Title_Dtor",
       "GameMode_Title_DrawDebugLabel",
       "GameMode_StageSelect_Ctor",
@@ -1978,18 +2050,6 @@
     "dtor_802070EC",
     "fn_801F26C8",
     "TweenInterp_Dtor"
-  ],
-  "src/game/EnemyFace_nm2.cpp": [
-    "fn_8022B53C",
-    "fn_8022B728",
-    "dtor_80036E40"
-  ],
-  "src/game/anon_8020B4F8_nm1.cpp": [
-    "fn_8020BACC",
-    "dtor_801F2724",
-    "__dt__10FlowFaderIFv",
-    "dtor_801F4B10",
-    "dtor_8007D0D4"
   ],
   "src/game/HeartCompoundItem.c": [
     "HeartCompoundItem_TickReleasePhase",
@@ -2619,76 +2679,6 @@
     "fn_802064D8",
     "dtor_80082960"
   ],
-  "src/game/anon_8020007C_nm1.cpp": {
-    "extab": [
-      "fn_80200240",
-      "dtor_80201E8C",
-      "dtor_80201F1C",
-      "fn_80200654",
-      "fn_8020096C",
-      "fn_80200A48",
-      "fn_80200EAC",
-      "fn_80200F88",
-      "fn_80200FB8",
-      "fn_80201148",
-      "fn_80201198",
-      "fn_802011D0",
-      "fn_8020122C",
-      "fn_8020134C",
-      "dtor_80201FAC",
-      "fn_8020157C",
-      "fn_802017C8",
-      "dtor_8020203C",
-      "dtor_802020B8",
-      "fn_802018A4",
-      "fn_8020192C",
-      "fn_80201A10",
-      "fn_80201A48",
-      "fn_80201A94",
-      "fn_80201BE8",
-      "dtor_801F2724",
-      "fn_801F26C8",
-      "dtor_801F4A80",
-      "TweenInterp_Dtor",
-      "dtor_80082960",
-      "dtor_801F4B10",
-      "dtor_80080444"
-    ],
-    "extabindex": [
-      "fn_80200240",
-      "fn_80200654",
-      "fn_8020096C",
-      "fn_80200A48",
-      "fn_80200EAC",
-      "fn_80200F88",
-      "fn_80200FB8",
-      "fn_80201148",
-      "fn_80201198",
-      "fn_802011D0",
-      "fn_8020122C",
-      "fn_8020134C",
-      "fn_8020157C",
-      "fn_802017C8",
-      "fn_802018A4",
-      "fn_8020192C",
-      "fn_80201A10",
-      "fn_80201A48",
-      "fn_80201A94",
-      "fn_80201BE8",
-      "dtor_80201E8C",
-      "dtor_80201F1C",
-      "dtor_80201FAC",
-      "dtor_8020203C",
-      "dtor_802020B8",
-      "dtor_801F2724",
-      "fn_801F26C8",
-      "dtor_801F4A80",
-      "TweenInterp_Dtor",
-      "dtor_80082960",
-      "dtor_801F4B10",
-      "dtor_80080444"
-    ]
-  },
   "src/game/VolumeCalibration.cpp": [
     "VolumeCalibration_DrawOverlay",
     "VolumeCalibration_Tick",
@@ -2930,24 +2920,11 @@
       "WarpZone_OperatorAssign_LinkerStub"
     ]
   },
-  "src/game/SceneRender.c": [
-    "dtor_8003A71C",
-    "SceneRender_DrawObjectWithLights",
-    "SceneRender_CmdA_8a9e8",
-    "SceneRender_CmdB_8aa20",
-    "SceneRender_Dtor"
-  ],
   "src/game/Tachometer.c": [
     "Tachometer_UpdateDisplaySpeed",
     "Tachometer_RenderDigits",
     "Tachometer_Destroy",
     "Tachometer_Init"
-  ],
-  "src/game/ReverseChallenge.c": [
-    "ReverseChallenge_Dtor",
-    "ReverseChallenge_Render",
-    "ReverseChallenge_Update",
-    "ReverseChallenge_Init"
   ],
   "src/game/CSSceneGetTitle_8014ADB4.cpp": [
     "fn_8014ADB4",
@@ -3000,70 +2977,6 @@
     "VSMode_Init",
     "BtMode_Init"
   ],
-  "src/game/fn_801F27B4.cpp": {
-    "extab": [
-      "fn_801F2690",
-      "fn_801F0CC0",
-      "fn_801F0D04",
-      "fn_801F0E3C",
-      "fn_801F0ECC",
-      "fn_801F115C",
-      "fn_801F1244",
-      "fn_801F140C",
-      "fn_801F15D4",
-      "fn_801F1664",
-      "fn_801F190C",
-      "fn_801F19C8",
-      "fn_801F1AC8",
-      "fn_801F1BC8",
-      "fn_801F1C58",
-      "fn_801F1EE0",
-      "fn_801F1FE4",
-      "fn_801F20A0",
-      "fn_801F21C8",
-      "fn_801F230C",
-      "fn_801F2370",
-      "fn_801F2400",
-      "fn_801F24E8",
-      "fn_801F2560",
-      "fn_801F25BC",
-      "fn_801F26C8",
-      "dtor_801F2724",
-      "fn_801F27B4",
-      "__dt__10FlowFaderIFv"
-    ],
-    "extabindex": [
-      "fn_801F0CC0",
-      "fn_801F0D04",
-      "fn_801F0E3C",
-      "fn_801F0ECC",
-      "fn_801F115C",
-      "fn_801F1244",
-      "fn_801F140C",
-      "fn_801F15D4",
-      "fn_801F1664",
-      "fn_801F190C",
-      "fn_801F19C8",
-      "fn_801F1AC8",
-      "fn_801F1BC8",
-      "fn_801F1C58",
-      "fn_801F1EE0",
-      "fn_801F1FE4",
-      "fn_801F20A0",
-      "fn_801F21C8",
-      "fn_801F230C",
-      "fn_801F2370",
-      "fn_801F2400",
-      "fn_801F24E8",
-      "fn_801F2560",
-      "fn_801F25BC",
-      "fn_801F2690",
-      "fn_801F26C8",
-      "dtor_801F2724",
-      "fn_801F27B4",
-      "__dt__10FlowFaderIFv"
-    ]
-  },
   "src/game/resultscene/resultscene.cpp": {
     "extab": [
       "dtor_8015E8AC",
@@ -3552,7 +3465,10 @@
     "fn_8014A890",
     "fn_8014A8FC",
     "fn_8014AA38",
-    "fn_8014AC48"
+    "fn_8014AC48",
+    "dtor_801419C8",
+    "fn_80141A24",
+    "PrintClassNames__20clCSPartsAppearGhostFv"
   ],
   "src/game/SceneRoleTransitions.cpp": [
     "fn_8024BE64",
@@ -3720,5 +3636,177 @@
       "dtor_801F4B10",
       "dtor_80082960"
     ]
-  }
+  },
+  "src/game/SceneRender.cpp": [
+    "dtor_8003A71C"
+  ],
+  "src/game/Camera_Create.cpp": [
+    "SceneRender_DrawObjectWithLights",
+    "SceneRender_CmdA_8a9e8",
+    "SceneRender_CmdB_8aa20",
+    "SceneRender_Dtor",
+    "Camera_Create",
+    "__dt__11ScopedTimerFv"
+  ],
+  "src/game/EffectSpeedAction_SpeedScale_Dtor.cpp": {
+    "extab": [
+      "EffectSpeedAction_SpeedScale_Dtor",
+      "EffectSpeedAction_MueScale_Dtor",
+      "EffectSpeed_Init",
+      "dtor_800656B8",
+      "EffectSpeedAction_MueScale_Reset",
+      "dtor_80065748",
+      "EffectSpeedAction_SpeedScale_Reset",
+      "dtor_8006528C",
+      "MediaBoard_SendAndCheck",
+      "EffectSpeed_TickTimer",
+      "InterpolationStep",
+      "EffectSpeed_ApplySpeedScale",
+      "ActionMueScale_Process",
+      "ActionSpeedScale_Process"
+    ],
+    "extabindex": [
+      "EffectSpeedAction_SpeedScale_Dtor",
+      "EffectSpeedAction_MueScale_Dtor",
+      "EffectSpeed_Init",
+      "EffectSpeedAction_MueScale_Reset",
+      "EffectSpeedAction_SpeedScale_Reset",
+      "dtor_8006528C",
+      "MediaBoard_SendAndCheck",
+      "EffectSpeed_TickTimer",
+      "InterpolationStep",
+      "EffectSpeed_ApplySpeedScale",
+      "ActionMueScale_Process",
+      "ActionSpeedScale_Process",
+      "dtor_800656B8",
+      "dtor_80065748"
+    ]
+  },
+  "src/game/ReverseChallenge.cpp": [
+    "ReverseChallenge_Dtor",
+    "ReverseChallenge_Render",
+    "ReverseChallenge_Update",
+    "ReverseChallenge_Init"
+  ],
+  "src/game/fn_8014640C.c": [
+    "fn_80146410",
+    "fn_80146574",
+    "fn_8014660C",
+    "fn_80146960",
+    "fn_80147200",
+    "fn_801473DC",
+    "fn_80147470",
+    "fn_80147530",
+    "dtor_80147584",
+    "fn_80147638",
+    "dtor_8013EB50"
+  ],
+  "src/game/RaceHud_80147470_tail.cpp": [
+    "fn_801491DC",
+    "fn_801477BC",
+    "fn_801478B0",
+    "fn_80147900",
+    "fn_80147AF4",
+    "fn_80147CE8",
+    "fn_80147EE8",
+    "fn_8014816C",
+    "fn_80148648",
+    "fn_80148810",
+    "dtor_80149244",
+    "fn_80148A44",
+    "dtor_8014917C",
+    "fn_80149214",
+    "dtor_80149320",
+    "dtor_800869D0",
+    "dtor_80082960"
+  ],
+  "src/game/fn_801F0CBC.cpp": {
+    "extab": [
+      "fn_801F2690",
+      "fn_801F0CC0",
+      "fn_801F0D04",
+      "fn_801F0E3C",
+      "fn_801F0ECC",
+      "fn_801F115C",
+      "fn_801F1244",
+      "fn_801F140C",
+      "fn_801F15D4",
+      "fn_801F1664",
+      "fn_801F190C",
+      "fn_801F19C8",
+      "fn_801F1AC8",
+      "fn_801F1BC8",
+      "fn_801F1C58",
+      "fn_801F1EE0",
+      "fn_801F1FE4",
+      "fn_801F20A0",
+      "fn_801F21C8",
+      "fn_801F230C",
+      "fn_801F2370",
+      "fn_801F2400",
+      "fn_801F24E8",
+      "fn_801F2560",
+      "fn_801F25BC",
+      "fn_801F26C8",
+      "dtor_801F2724",
+      "fn_801F27B4",
+      "__dt__10FlowFaderIFv"
+    ],
+    "extabindex": [
+      "fn_801F0CC0",
+      "fn_801F0D04",
+      "fn_801F0E3C",
+      "fn_801F0ECC",
+      "fn_801F115C",
+      "fn_801F1244",
+      "fn_801F140C",
+      "fn_801F15D4",
+      "fn_801F1664",
+      "fn_801F190C",
+      "fn_801F19C8",
+      "fn_801F1AC8",
+      "fn_801F1BC8",
+      "fn_801F1C58",
+      "fn_801F1EE0",
+      "fn_801F1FE4",
+      "fn_801F20A0",
+      "fn_801F21C8",
+      "fn_801F230C",
+      "fn_801F2370",
+      "fn_801F2400",
+      "fn_801F24E8",
+      "fn_801F2560",
+      "fn_801F25BC",
+      "fn_801F2690",
+      "fn_801F26C8",
+      "dtor_801F2724",
+      "fn_801F27B4",
+      "__dt__10FlowFaderIFv"
+    ]
+  },
+  "src/game/anon_801FE3BC.cpp": {
+    "extab": [
+      "fn_801FE3BC",
+      "fn_801FE404",
+      "dtor_801FE870",
+      "fn_801FE4D0",
+      "fn_801FE554",
+      "fn_801FE588",
+      "fn_801FE5C8"
+    ],
+    "extabindex": [
+      "fn_801FE3BC",
+      "fn_801FE404",
+      "fn_801FE4D0",
+      "fn_801FE554",
+      "fn_801FE588",
+      "fn_801FE5C8",
+      "dtor_801FE870"
+    ]
+  },
+  "src/game/KartChoiceChildDtor.cpp": [
+    "fn_8023C0D8",
+    "fn_8023C160",
+    "dtor_80082960"
+  ]
 }

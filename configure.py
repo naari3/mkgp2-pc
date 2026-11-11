@@ -562,8 +562,7 @@ config.libs = [
             Object(Matching, "game/KartChoiceSelect.cpp", extab_padding=b""),
             Object(Matching, "game/KartChoiceRequest.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on", "-RTTI on", "-inline deferred,noauto", "-rostr"]),
             Object(Matching, "game/KartChoiceChildDraw.cpp", extab_padding=b""),
-            Object(Matching, "game/KartChoiceChildDtor.cpp", extab_padding=b""),
-            Object(Matching, "game/KartChoiceChildCtor.cpp", extab_padding=b""),
+            Object(Matching, "game/KartChoiceChildDtor.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on", "-RTTI on", "-rostr"]),
             Object(Matching, "game/KartChoiceFinish.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on", "-RTTI on", "-inline deferred", "-rostr"]),
             Object(Matching, "game/TripletFaderOwner.cpp", extab_padding=b"", extra_cflags=["-use_lmw_stmw on"]),
             Object(Matching, "game/CountdownOwner.cpp", extab_padding=b"", extra_cflags=["-use_lmw_stmw on"]),
@@ -804,7 +803,7 @@ config.libs = [
             Object(Matching, "game/fn_801DAA84.c", extra_cflags=["-Cpp_exceptions on"]),
             Object(Matching, "game/fn_80169DF0.c", extra_cflags=["-Cpp_exceptions on"]),
             Object(Matching, "game/fn_80241C04.c"),
-            Object(Matching, "game/CardCreditFlow.cpp", mw_version="GC/1.3.2", extab_padding=b"\xC7\x02" * 2, extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"]),
+            Object(Matching, "game/CardCreditFlow.cpp", mw_version="GC/1.3.2", extab_padding=b"\xC7\x02" * 2, extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on", "-RTTI on", "-rostr", "-inline deferred"]),
             Object(Matching, "game/SpritePairOwner.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on"]),
             Object(Matching, "game/SpritePairOwnerTick.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on"]),
             Object(Matching, "game/SpritePairOwnerLife.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on"]),
@@ -820,15 +819,8 @@ config.libs = [
             Object(NonMatching, "game/fn_80243074.cpp", mw_version="GC/1.3.2", extra_cflags=["-Cpp_exceptions on"]),
             Object(Matching, "game/fn_80243464.cpp", mw_version="GC/1.3.2", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"]),
             Object(Matching, "game/fn_80242E80.cpp", mw_version="GC/1.3.2", extra_cflags=["-Cpp_exceptions on"]),
-            Object(Matching, "game/fn_802437AC.cpp", mw_version="GC/1.3.2", extab_padding=b"", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"]),
-            Object(Matching, "game/ItemPanelDraw.cpp", mw_version="GC/1.3.2", extab_padding=b"", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"]),
-            Object(Matching, "game/fn_80243958.c", extra_cflags=["-Cpp_exceptions on", "-lang=c++"]),
-            Object(Matching, "game/ItemListHudCreate.cpp", mw_version="GC/1.3.2", extab_padding=b"", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw off"]),
-            Object(Matching, "game/ItemListHudDestroy.cpp", mw_version="GC/1.3.2", extab_padding=b"", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"]),
+            Object(Matching, "game/fn_802437AC.cpp", mw_version="GC/1.3.2", extab_padding=b"", extra_cflags=["-Cpp_exceptions on", "-RTTI on", "-rostr", "-use_lmw_stmw on", "-inline deferred,noauto"]),
             Object(Matching, "game/fn_80244524.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"], mw_version="GC/2.6"),
-            Object(Matching, "game/fn_80244128.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on"]),
-            Object(Matching, "game/fn_80244378.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on"]),
-            Object(Matching, "game/fn_80244480.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on"]),
 
             Object(Matching, "game/fn_80226640.c"),
             Object(Matching, "game/fn_8020F268.c"),
@@ -857,7 +849,6 @@ config.libs = [
             Object(Matching, "game/fn_801DAB18.c"),
             Object(Matching, "game/fn_80190658.c"),
             Object(Matching, "game/fn_801805AC.c"),
-            Object(Matching, "game/fn_80147468.c"),
             Object(Matching, "game/fn_80089F9C.c"),
             Object(Matching, "game/ItemUseEffectUpdate.cpp", mw_version="GC/2.6", extab_padding=b"", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"]),
             Object(Matching, "game/ItemUseEffectTrigger.cpp", mw_version="GC/2.6", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"]),
@@ -865,7 +856,6 @@ config.libs = [
             Object(Matching, "game/ItemUseEffectCtor.cpp", mw_version="GC/2.6", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"]),
             Object(Matching, "game/fn_80245700.c"),
             Object(Matching, "game/HudSelectionUpdate.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on"]),
-            Object(Matching, "game/HudSelectionInit.c", extra_cflags=["-Cpp_exceptions on"]),
             Object(Matching, "game/HudFlow20Factory.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on"]),
             Object(Matching, "game/HudFlow20Dtor.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on"]),
             Object(NonMatching, "game/HudFlow20Update.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on"]),
@@ -874,9 +864,8 @@ config.libs = [
             Object(Matching, "game/fn_8023D2B4.c"),
             Object(Matching, "game/fn_80230400.c"),
             Object(Matching, "game/fn_802300C8.c"),
-            Object(Matching, "game/fn_801F0CBC.c"),
             Object(Matching, "game/fn_801DC510.c"),
-            Object(Matching, "game/fn_8014640C.c"),
+            Object(Matching, "game/fn_8014640C.c", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on", "-RTTI on", "-rostr"], mw_version="GC/2.6"),
             Object(Matching, "game/fn_800D748C.c"),
             Object(Matching, "game/CarObjects_FindByEventType.c", extra_cflags=["-Cpp_exceptions on"]),
             Object(Matching, "game/ItemSpawner_TimedRemapAndSpawn.c", extra_cflags=["-Cpp_exceptions on"]),
@@ -926,7 +915,6 @@ config.libs = [
             Object(Matching, "game/KartItem_IsAtStartSlot.c"),
             Object(Matching, "game/InputObj_Ctor_Internal.c", extra_cflags=["-Cpp_exceptions on"]),
             Object(Matching, "game/PlayStats_LoadOrInitForBoot.c", extra_cflags=["-Cpp_exceptions on"]),
-            Object(Matching, "game/clACamera_Dtor_WC.c", extra_cflags=["-Cpp_exceptions on"]),
             Object(Matching, "game/model_jobj_ClassInit.c", extra_cflags=["-Cpp_exceptions on"]),
             Object(Matching, "game/RandSeedDebug_SetEnable.c", extra_cflags=["-Cpp_exceptions on"]),
             Object(Matching, "game/EffectState_ReleaseAndClear.cpp", extra_cflags=["-Cpp_exceptions on"]),
@@ -1100,14 +1088,12 @@ config.libs = [
             Object(Matching, "game/Unknown_DeleteIfFlag_800a5188.c", extra_cflags=["-Cpp_exceptions on"]),  #g2
             Object(Matching, "game/VSModeIntro.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-RTTI on", "-rostr", "-inline deferred"]),  #g2
             Object(Matching, "game/TitleTracker_Dtor.c", extra_cflags=["-Cpp_exceptions on"]),  #g2
-            Object(Matching, "game/WarpZone_VtableTrim.c"),  #g2
             Object(Matching, "game/ShadowAreaMgr_Dtor.c", extra_cflags=["-Cpp_exceptions on"]),  #g2
             Object(Matching, "game/dtor_800AA980.c", extra_cflags=["-Cpp_exceptions on"]),  #g2
             Object(Matching, "game/ShadowAreaEdge_Dtor.c", extra_cflags=["-Cpp_exceptions on"]),  #g2
             Object(Matching, "game/ShadowAreaMgr_Ctor.c", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on"]),  #g2
             Object(Matching, "game/HitMessageOverlay_Destroy.c", extra_cflags=["-Cpp_exceptions on"]),  #g2
             Object(Matching, "game/TweenInterp_VtableTrim.c", extra_cflags=["-Cpp_exceptions on"]),  #g2
-            Object(Matching, "game/GameMode_Title_Ctor.c", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on"]),  #g2
             Object(Matching, "game/AnimState_Reset.c", extra_cflags=["-Cpp_exceptions on"]),  #g2
             Object(Matching, "game/AnimState_New.c", extra_cflags=["-Cpp_exceptions on"]),  #g2
             Object(Matching, "game/DrawEffect_SetFlagsByte.c"),  #g2
@@ -1247,7 +1233,7 @@ config.libs = [
             Object(Matching, "game/EffectVfx84_85_BoostChargeRing_Tick.c", extra_cflags=["-Cpp_exceptions on"]),  #g2
             Object(Matching, "game/RaceSys_8009B98C.c"),  #g2
             Object(Matching, "game/RaceScene_GetPerspFovyForCup.c"),  #g2
-            Object(Matching, "game/GameMode_TitleSelect.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on"]),  #g2
+            Object(Matching, "game/GameMode_TitleSelect.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-RTTI on", "-rostr"]),  #g2
             Object(NonMatching, "game/RankLog.c", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"]),  #g2
             Object(Matching, "game/DbgMenu.cpp", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"], extab_padding=b""),  #g2
             Object(NonMatching, "game/ShadowAreaMgr.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on"]),  #g2
@@ -1321,12 +1307,9 @@ config.libs = [
             Object(Matching, "game/EffectVfx55_HornBlastTrio_Tick.c", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"]),  #g2
             Object(Matching, "game/HitMessageOverlay_FrameUpdate.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on"], mw_version="GC/2.6"),  #g2
             Object(Matching, "game/KartPair3ArmUpdate.c", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"]),  #g2
-            Object(Matching, "game/RaceScene_RenderPass.cpp", extra_cflags=["-Cpp_exceptions on"]),  #g2
+            Object(Matching, "game/RaceScene_RenderPass.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on", "-RTTI on", "-inline deferred", "-rostr", "-use_lmw_stmw on"]),  #g2
             Object(Matching, "game/RaceScene_RenderFrame.cpp", extra_cflags=["-Cpp_exceptions on"]),  #g2
-            Object(Matching, "game/RaceScene_Dtor.cpp", extra_cflags=["-Cpp_exceptions on"]),  #g2
             Object(NonMatching, "game/TaMode_FrameUpdate.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on", "-inline deferred,auto", "-RTTI on"]),
-            Object(Matching, "game/RaceScene_Init.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"]),  #g2
-            Object(Matching, "game/RaceScene_FrameUpdate.cpp", extra_cflags=["-Cpp_exceptions on"]),  #g2
             Object(NonMatching, "game/EffectItemChainIndicator_Tick.c", extab_padding=b"", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"]),  #g2
             Object(Matching, "game/ItemObject_WriteVectors.c", extra_cflags=["-Cpp_exceptions on"]),
             Object(Matching, "game/ItemTracker.c", extra_cflags=["-Cpp_exceptions on"]),
@@ -1377,11 +1360,7 @@ config.libs = [
             Object(Matching, "game/PlayStats_Session.c"),
             Object(Matching, "game/PlayStats_CopyStatsBlock.c", mw_version="GC/2.6"),
             Object(Matching, "game/clCGameDemoWC_Stubs.c"),
-            Object(Matching, "game/clCGameDemoWC/Dtor.c", extab_padding=b"\x00\x00"),
-            Object(Matching, "game/clCGameDemoWC/Render.c", extab_padding=b"\x00\x00"),
-            Object(Matching, "game/clCGameDemoWC/Tick.c", extab_padding=b"\x00\x00"),
-            Object(Matching, "game/clCGameDemoWC/Ctor.c", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on"]),
-            Object(Matching, "game/clCGameDemo_Dtor.c", extra_cflags=["-Cpp_exceptions on"]),
+            Object(Matching, "game/clCGameDemoWC/Dtor.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-RTTI on", "-inline deferred,auto", "-rostr"]),
             Object(Matching, "game/BtMode_BaseDtor.c", extra_cflags=["-Cpp_exceptions on"]),
             Object(Matching, "game/GameMode_Base.c"),
             Object(Matching, "game/Debug.c", extra_cflags=["-Cpp_exceptions on"]),
@@ -1403,8 +1382,8 @@ config.libs = [
             Object(Matching, "game/SceneFlow.c"),
             Object(Matching, "game/card_eject.c"),
             Object(Matching, "game/Sci2Card_Status.c"),
-            Object(Matching, "game/SceneRender.c", extab_padding=b""),
-            Object(Matching, "game/Camera_Create.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on"]),
+            Object(Matching, "game/SceneRender.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on", "-RTTI on", "-rostr"]),
+            Object(Matching, "game/Camera_Create.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on", "-RTTI on", "-rostr", "-inline deferred,noauto"]),
             Object(Matching, "game/ClRomTable_PurgeAll.c", extra_cflags=["-use_lmw_stmw on"]),
             Object(Matching, "game/clRomAccessors.c"),
             Object(Matching, "game/clRomDtor.c", extab_padding=b"", extra_cflags=["-Cpp_exceptions on"]),
@@ -1448,8 +1427,7 @@ config.libs = [
             Object(Matching, "game/JvsInput_TickPoll.c", extra_cflags=["-Cpp_exceptions on"]),
             Object(NonMatching, "game/JvsInputPoll.c", extra_cflags=["-use_lmw_stmw on", "-Cpp_exceptions on"]),
             Object(Matching, "game/JvsInputClear.c", extra_cflags=["-Cpp_exceptions on"]),
-            Object(Matching, "game/JvsInputStubs.c"),
-            Object(Matching, "game/JvsInputLifetime.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on"]),
+            Object(Matching, "game/JvsInputStubs.c", extab_padding=b"", extra_cflags=["-lang=c++", "-RTTI on", "-rostr", "-inline deferred", "-Cpp_exceptions on"]),
             Object(Matching, "game/JvsInputMetrics.cpp", extab_padding=b""),
             Object(Matching, "game/InputObj_Ctor.c", extra_cflags=["-Cpp_exceptions on"]),
             Object(Matching, "game/InputMgr_TeardownStub.c"),
@@ -1501,7 +1479,6 @@ config.libs = [
             Object(Matching, "game/KartItem_RankSlot.c"),
             Object(Matching, "game/dtor_801EECD8.c"),
             Object(Matching, "game/TexMgr_Init.c"),
-            Object(Matching, "game/dtor_801FE870.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"], mw_version="GC/2.6"),
             Object(Matching, "game/dtor_801FEA70.c", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on"]),
             Object(Matching, "game/GetCourseSectionType.c", extra_cflags=["-Cpp_exceptions on"]),
             Object(Matching, "game/ItemUnlockGridResolve.c", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"]),
@@ -1638,7 +1615,7 @@ config.libs = [
             Object(Matching, "game/AI_AdjustThunks.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on"]),
             Object(Matching, "game/PanelCda40.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on"]),
             Object(Matching, "game/WarpDashMgr_Init.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"]),
-            Object(Matching, "game/WarpZone_Dtor.c", extra_cflags=["-Cpp_exceptions on"]),
+            Object(Matching, "game/WarpZone_Dtor.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on", "-RTTI on", "-rostr", "-inline deferred,noauto"]),
             Object(Matching, "ui/CursorSound.c"),
             Object(NonMatching, "game/fn_801B7EF8.c", extab_padding=b"", extra_cflags=["-Cpp_exceptions on"]),
             Object(Matching, "game/dtor_801BA14C.c", extra_cflags=["-Cpp_exceptions on"]),
@@ -1708,7 +1685,7 @@ config.libs = [
             Object(Matching, "game/TaruItem_OnGroundDriftTick_25.c", extab_padding=b""),
             Object(Matching, "game/TaruItem_Tick_HeldAndHoming_25.c", extab_padding=b""),
             Object(Matching, "game/TaruItem_Dispatch_25.c", extab_padding=b""),
-            Object(Matching, "game/ReverseChallenge.c", extab_padding=b"\x00\x00", extra_cflags=["-i src/game"]),
+            Object(Matching, "game/ReverseChallenge.cpp", extab_padding=b"\x00\x00", extra_cflags=["-i src/game", "-Cpp_exceptions on", "-RTTI on", "-inline deferred,noauto", "-rostr"]),
             Object(Matching, "game/OnchiSpeaker_State2_Active.c", extab_padding=b"\x00\x00"),
             Object(Matching, "game/OnchiSpeaker_State2_Flight.c", extab_padding=b"\x00\x00"),
             Object(Matching, "game/OnchiSpeaker_State1_Held.c", extab_padding=b"\x00\x00"),
@@ -1784,11 +1761,9 @@ config.libs = [
             Object(Matching, "game/anon_801FD924_tail.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"], mw_version="GC/2.6"),
             Object(Matching, "game/anon_801FD320_nm1.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on", "-RTTI on", "-rostr", "-inline deferred"], mw_version="GC/2.6"),
             Object(Matching, "game/anon_801FD320_m2.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"], mw_version="GC/2.6"),
-            Object(Matching, "game/anon_801FE3BC.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"], mw_version="GC/2.6"),
+            Object(Matching, "game/anon_801FE3BC.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on", "-RTTI on", "-inline deferred", "-rostr"], mw_version="GC/2.6"),
             Object(Matching, "game/anon_801FE8B8.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"], mw_version="GC/2.6"),
             Object(Matching, "game/anon_801FEBD8.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-RTTI on", "-use_lmw_stmw on", "-inline deferred,auto", "-rostr"], mw_version="GC/2.6"),
-            Object(Matching, "game/anon_8020007C.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"], mw_version="GC/2.6"),
-            Object(Matching, "game/anon_8020007C_nm1.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on", "-inline auto,deferred"], mw_version="GC/2.6"),
             Object(Matching, "game/anon_80202148.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on", "-RTTI on", "-rostr"], mw_version="GC/2.6"),
             Object(Matching, "game/anon_80202BCC.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on", "-inline noauto"], mw_version="GC/2.6"),
             Object(Matching, "game/anon_80202BCC_nm1.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on", "-inline noauto"], mw_version="GC/2.6"),
@@ -1826,8 +1801,7 @@ config.libs = [
             Object(Matching, "game/anon_8020AAD4_m1.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"], mw_version="GC/2.6"),
             Object(Matching, "game/anon_8020AF08.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"], mw_version="GC/2.6"),
             Object(Matching, "game/anon_8020AF08_nm1.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"], mw_version="GC/2.6"),
-            Object(Matching, "game/anon_8020B4F8.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"], mw_version="GC/2.6"),
-            Object(Matching, "game/anon_8020B4F8_nm1.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"], mw_version="GC/2.6"),
+            Object(Matching, "game/anon_8020B4F8.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on", "-RTTI on", "-inline deferred,noauto", "-rostr"], mw_version="GC/2.6"),
             Object(Matching, "game/ContinueScene.cpp", extab_padding=b"\xC7\x02" * 2, extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on", "-RTTI on"], mw_version="GC/2.6"),
             Object(Matching, "game/BattleContinueScene.cpp", extab_padding=b"\xc7\x02" * 3, extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on", "-RTTI on", "-inline deferred,auto", "-rostr"], mw_version="GC/2.6"),
             Object(Matching, "game/ContinueScene_nm1.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on", "-RTTI on"], mw_version="GC/2.6"),
@@ -1945,11 +1919,8 @@ config.libs = [
             Object(Matching, "game/EnemyFace_queue.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"], mw_version="GC/2.6"),
             Object(Matching, "game/EnemyFace_exact1.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"], mw_version="GC/2.6"),
             Object(Matching, "game/EnemyFace_nm1.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"], mw_version="GC/2.6"),
-            Object(Matching, "game/EnemyFace_exact2.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"], mw_version="GC/2.6"),
-            Object(Matching, "game/EnemyFace_nm2.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"], mw_version="GC/2.6"),
-            Object(Matching, "game/EnemyFace_exact3.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"], mw_version="GC/2.6"),
-            Object(Matching, "game/EnemyFace_nm3.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"], mw_version="GC/2.6"),
-            Object(Matching, "game/EnemyFace_nm4.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"], mw_version="GC/2.6"),
+            Object(Matching, "game/EnemyFace_exact2.cpp", extab_padding=b"\x00\x00", extra_cflags=["-RTTI on", "-rostr", "-inline deferred,noauto", "-Cpp_exceptions on", "-use_lmw_stmw on"], mw_version="GC/2.6"),
+            Object(Matching, "game/EnemyFace_nm4.cpp", extab_padding=b"\x00\x00", extra_cflags=["-RTTI on", "-rostr", "-inline deferred,noauto", "-Cpp_exceptions on", "-use_lmw_stmw on"], mw_version="GC/2.6"),
             Object(Matching, "game/EnemyFace_exact5.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"], mw_version="GC/2.6"),
             Object(Matching, "game/EnmyFaceEffect.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on", "-RTTI on", "-rostr", "-inline deferred"], mw_version="GC/2.6"),
             Object(Matching, "game/EName3D.cpp", extab_padding=b"\x00\x00", extra_cflags=["-rostr", "-inline deferred", "-Cpp_exceptions on", "-RTTI on", "-use_lmw_stmw on"], mw_version="GC/2.6"),
@@ -2045,7 +2016,7 @@ config.libs = [
         "objects": [
             Object(Matching, "game/csAnim.c", extab_padding=b"\x00\x00", extra_cflags=["-use_lmw_stmw on"]),
             Object(Matching, "game/csAnim_Reset.c"),
-            Object(Matching, "game/KartPreview.c", extab_padding=b"\x00\x00"),
+            Object(Matching, "game/KartPreview.c", extab_padding=b"\x00\x00", extra_cflags=["-RTTI on", "-rostr", "-inline deferred,auto"]),
             Object(Matching, "game/PreviewModel.c", extab_padding=b"\x00\x00"),
             Object(Matching, "game/SpriteEffects.c", extab_padding=b"\x00\x00"),
             Object(Matching, "game/RenderTargetSingleton.c", extab_padding=b"\x00\x00"),
@@ -2146,7 +2117,7 @@ config.libs = [
             Object(Matching, "game/ChallengeDemoShell.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-RTTI on", "-inline deferred,auto", "-rostr"]),
             Object(Matching, "game/ChallengeDemoObj.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-RTTI on", "-inline deferred,auto", "-rostr"]),
             Object(Matching, "game/ChallengeDemoTornado.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-RTTI on", "-inline deferred", "-rostr"]),
-            Object(Matching, "game/ChallengeDemoUra.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on"]),
+            Object(Matching, "game/ChallengeDemoUra.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-RTTI on", "-inline deferred,noauto", "-rostr"]),
             Object(Matching, "game/ChallengeDemo_Create.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on"]),
             Object(Matching, "game/dtor_8012A5AC.c"),
             Object(Matching, "game/fn_8012A61C.c"),
@@ -2156,16 +2127,15 @@ config.libs = [
             Object(Matching, "game/fn_8012BDF4.c"),
             Object(Matching, "game/SpriteHandle.cpp", mw_version="GC/2.6", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on"]),
             Object(Matching, "game/Scene_8014E0C4.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on"], mw_version="GC/2.6"),
-            Object(Matching, "game/RaceHud_80147470.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on"], mw_version="GC/2.6"),
+            Object(Matching, "game/RaceHud_80147470_tail.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on"], mw_version="GC/2.6"),
             Object(Matching, "game/clCSResultGP.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-RTTI on", "-rostr"], mw_version="GC/2.6"),
-            Object(Matching, "game/RaceHudResultTA.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on"], mw_version="GC/2.6"),
+            Object(Matching, "game/RaceHudResultTA.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-RTTI on", "-rostr", "-inline deferred"], mw_version="GC/2.6"),
             Object(Matching, "game/CSSceneGetTitle_8014ADB4.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-RTTI on", "-inline deferred,noauto", "-rostr"]),
             Object(Matching, "game/SceneList_80157940.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"], mw_version="GC/2.6"),
             Object(Matching, "game/fn_80157DE0.cpp", extab_padding=b"\x02\x55", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"], mw_version="GC/2.6"),
             Object(Matching, "game/SceneList_80157EA8.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on", "-RTTI on", "-rostr", "-inline deferred,noauto"]),
             Object(Matching, "game/RankPanel_80144430.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"], mw_version="GC/2.6"),
             Object(Matching, "game/RankPanelBase_801461B0.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on", "-RTTI on", "-rostr", "-inline deferred"], mw_version="GC/2.6"),
-            Object(Matching, "game/LapSelect_80146410.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"], mw_version="GC/2.6"),
             Object(Matching, "game/CourseObjects_801375D8.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"], mw_version="GC/1.3"),
             Object(Matching, "game/CourseObjects_80138CE4.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"]),
             Object(Matching, "game/NokoNoko_801287F8.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"]),
@@ -2263,8 +2233,7 @@ config.libs = [
             Object(Matching, "game/fn_801D9180.c"),
             Object(Matching, "game/fn_801D9F88.c", extra_cflags=["-use_lmw_stmw on"]),
             Object(Matching, "game/fn_801DAAA4.cpp", extab_padding=b""),
-            Object(Matching, "game/fn_801DAB20.c"),
-            Object(Matching, "game/fn_801DAB7C.c"),
+            Object(Matching, "game/fn_801DAB20.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on", "-RTTI on", "-rostr"]),
             Object(Matching, "game/fn_801DABFC.c"),
             Object(Matching, "game/fn_801DAE54.c"),
             Object(Matching, "game/fn_801DAEC0.cpp", extab_padding=b""),
@@ -2427,7 +2396,7 @@ config.libs = [
             Object(Matching, "game/fn_80245420.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on"], mw_version="GC/2.6"),
             Object(Matching, "game/fn_802455EC.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on"], mw_version="GC/2.6"),
             Object(Matching, "game/fn_80245704.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on"], mw_version="GC/2.6"),
-            Object(Matching, "game/fn_80245780.c"),
+            Object(Matching, "game/fn_80245780.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on", "-RTTI on", "-rostr"]),
             Object(Matching, "game/fn_801F6574.c"),
             Object(Matching, "game/RaceDigitFactory.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on"], mw_version="GC/2.6"),
             Object(Matching, "game/AdvanceCardCtor.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on"], mw_version="GC/2.6"),
@@ -2439,27 +2408,22 @@ config.libs = [
             Object(Matching, "game/RaceDigitListErase.cpp", extra_cflags=["-Cpp_exceptions on"], mw_version="GC/2.6"),
             Object(Matching, "game/RaceDigits.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"], mw_version="GC/2.6"),
             Object(Matching, "game/HudResultFlow.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on", "-RTTI on", "-inline deferred,noauto", "-rostr"]),
-            Object(Matching, "game/HudAlternate.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on"]),
+            Object(Matching, "game/HudAlternate.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on", "-RTTI on", "-inline deferred,noauto", "-rostr"]),
             Object(Matching, "game/RaceFloatListInsert.cpp", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"], mw_version="GC/2.6"),
             Object(Matching, "game/RaceDigitPositions.cpp", extra_cflags=["-Cpp_exceptions on"]),
             Object(Matching, "game/RaceHudTransition.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on", "-RTTI on", "-inline deferred", "-rostr"]),
             Object(Matching, "game/HudFlow.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on", "-RTTI on", "-rostr", "-inline deferred"]),
-            Object(Matching, "game/RaceHudAdjust.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on"]),
-            Object(Matching, "game/RaceHudDraw.cpp", extab_padding=b"\xC6\x02", extra_cflags=["-Cpp_exceptions on"]),
-            Object(Matching, "game/RaceHudUpdate.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on"]),
-            Object(Matching, "game/RaceHudDestroy.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on"]),
-            Object(Matching, "game/RaceHudSceneCtor.cpp", extab_padding=b"\xC6\x02", extra_cflags=["-Cpp_exceptions on"]),
+            Object(Matching, "game/RaceHudDraw.cpp", extab_padding=b"\xC6\x02\xC6\x02", extra_cflags=["-Cpp_exceptions on", "-RTTI on", "-inline deferred,noauto", "-rostr"]),
             Object(Matching, "game/DisplayBuffersReset.c", extra_cflags=["-lang=c++"]),
             Object(Matching, "game/OverlayViewSetup.cpp"),
             Object(Matching, "game/PaletteBufferCtor.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"]),
-            Object(Matching, "game/fn_801F27B4.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"], mw_version="GC/2.6"),
+            Object(Matching, "game/fn_801F0CBC.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on", "-RTTI on", "-rostr"], mw_version="GC/2.6"),
             Object(NonMatching, "game/NamCamFlow.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"]),
             Object(Matching, "game/SceneListOperations.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on"]),
             Object(Matching, "game/DebugOverlay_RaceConfig.cpp", extra_cflags=["-Cpp_exceptions on"]),
             Object(Matching, "game/fn_801F52A8.cpp", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"]),
             Object(Matching, "game/CardSlotFlag.cpp"),
             Object(Matching, "game/LapDispControls.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on", "-RTTI on", "-rostr", "-inline deferred,noauto"]),
-            Object(Matching, "game/RankDispControls.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on"]),
             Object(Matching, "game/RankDispControls_tail.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on", "-RTTI on", "-rostr", "-inline deferred,noauto"]),
             Object(Matching, "game/fn_801DEAF4.c"),
             Object(Matching, "game/fn_801F8E90.c"),
@@ -2491,11 +2455,7 @@ config.libs = [
         "progress_category": "game",
         "objects": [
             Object(Matching, "game/Scene_80163554.cpp"),
-            Object(Matching, "game/Scene_8015B70C.cpp"),
-            Object(Matching, "game/Scene_8015B790.cpp"),
-            Object(Matching, "game/Scene_8015BCC4.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on"]),
-            Object(Matching, "game/Scene_8015BC08.cpp"),
-            Object(Matching, "game/Scene_8015BE0C.cpp"),
+            Object(Matching, "game/Scene_8015B70C.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on", "-RTTI on", "-inline deferred,noauto", "-rostr"]),
             Object(Matching, "game/Scene_8015BED4.cpp"),
             Object(Matching, "game/Scene_8015BF18.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on"]),
             Object(Matching, "game/Scene_801622C8.cpp"),
@@ -2513,7 +2473,6 @@ config.libs = [
             Object(Matching, "game/Scene_80163804.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on"]),
             Object(Matching, "game/Scene_801638B4.cpp", extra_cflags=["-Cpp_exceptions on", "-use_lmw_stmw on"]),
             Object(Matching, "game/Scene_8015B6D0.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on"]),
-            Object(Matching, "game/Scene_8015BE44.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on"]),
             Object(Matching, "game/Scene_80165454.cpp"),
             Object(Matching, "game/Scene_801654E0.cpp", extab_padding=b"", extra_cflags=["-Cpp_exceptions on"]),
             Object(Matching, "game/Scene_80165BCC.cpp", extab_padding=b"\x00\x00", extra_cflags=["-Cpp_exceptions on"]),
@@ -3529,6 +3488,7 @@ def _inject_kartfx_chargeicon_data_alignment() -> None:
 # .comment section is dropped and .data alignment pinned to 4. Text/data bytes
 # and relocations stay native.
 DATA_ALIGN4_TUS = [
+    "game/autodata/data_804EE79C",
     "game/SetCourseParams",
     "game/MenuScene_Dispatch",
     "game/RaceDigitUpdate",
@@ -3537,11 +3497,9 @@ DATA_ALIGN4_TUS = [
     "game/fn_801B1D5C",
     "game/fn_801BA318",
     "game/ItemBox_ProcessPickup",
-    "game/HudAlternate",
     "game/HudFlow",
     "game/PreloadEffectResources",
     "game/TaMode_Init",
-    "game/CardCreditFlow",
     "game/anon_80218F40_nm1",
     "game/anon_8021F088_nm_8022134C",
     "game/HudManager",
@@ -3574,6 +3532,7 @@ DATA_ALIGN4_TUS = [
     "game/fn_801F52A8",
     "game/autodata/data_8048E40C",
     "game/autodata/data_804EC9B4",
+    "game/EnemyFace_nm4",
 ]
 
 
@@ -3609,6 +3568,8 @@ def _inject_data_align4_tus() -> None:
 # (e.g. shared dtors). Dropping .comment would lose MWLD's weak flags, so
 # only the .data alignment inside .comment and the section header is pinned.
 DATA_ALIGN4_WEAK_TUS = [
+    "game/fn_802437AC",
+    "game/KartPreview",
     "game/CSSceneGetTitle_8014ADB4",
     "game/RaceDigits",
     "game/TransitionEffect",
@@ -3618,7 +3579,6 @@ DATA_ALIGN4_WEAK_TUS = [
     "game/anon_801FD924",
     "game/ResultFx",
     "game/anon_8020B4F8",
-    "game/anon_8020B4F8_nm1",
     "game/anon_8020BD68",
     "game/ENo3D",
     "game/anon_8020314C_nm1",
