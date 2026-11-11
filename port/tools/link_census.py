@@ -242,7 +242,7 @@ def compile_one(path, target):
     # inline function its own unit does not use (clang has no
     # -fkeep-inline-functions), so the unit is compiled through a wrapper
     # that takes their addresses.
-    cmd = ["clang", "-target", target, "-c", "-O0", "-g", "-fno-exceptions", "-fno-rtti", "-fcommon", "-fshort-wchar"] + (["-mno-ms-bitfields"] if WIN else ["-malign-double"]) + (["-DMKGP2PC_GFX"] if GFX else []) + cc.base_flags(path)[1:]
+    cmd = ["clang", "-target", target, "-c", "-O0", "-g", "-fno-exceptions", "-fno-rtti", "-fcommon", "-fshort-wchar"] + (["-mno-ms-bitfields", "-fpcc-struct-return"] if WIN else ["-malign-double"]) + (["-DMKGP2PC_GFX"] if GFX else []) + cc.base_flags(path)[1:]
     src_in = path
     if path.endswith(".cpp"):
         keep = sorted(set(re.findall(r'^extern "C" inline [\w \*]+?\b(\w+)\(', open(os.path.join(ROOT, path), encoding="utf-8", errors="replace").read(), re.M)))
