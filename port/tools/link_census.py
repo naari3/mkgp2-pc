@@ -47,6 +47,8 @@ DATA_OBJECTS = mwcc_data_layout.original_objects(ROOT)
 # --os windows: 32-bit Windows objects (COFF, MinGW runtime). Set in main().
 WIN = False
 WIN_TARGET = "i686-w64-windows-gnu"
+WIN_ZLIB = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+                        "build", "aurora-win32", "_deps", "zlib-build", "libzlib.dll.a")
 # --gfx: objects for the rendering executable, which CMake links with Aurora
 # (port/gfx/CMakeLists.txt). Set in main().
 GFX = False
@@ -167,7 +169,7 @@ def link_gfx_windows(stubs, thunks, cxxrt, replaced, aurora_fns, aurora_data, po
     with open(link, "w") as f:
         f.write("\n".join(["-static", "-fcommon", "-Wl,--large-address-aware", "-Wl,-T," + script, "-Wl,-T," + bss_ld]
                           + gen + port_objs + objs + defsyms + [f"-Wl,--defsym,{n}=_{n}" for n in data]
-                          + [os.path.join(ROOT, "build", "musyx-win32", "libmusyxRD.a"), "-lwinpthread", "-Wl,--allow-multiple-definition"]) + "\n")
+                          + [os.path.join(ROOT, "build", "musyx-win32", "libmusyxRD.a")] + ([WIN_ZLIB] if os.path.exists(WIN_ZLIB) else []) + ["-lwinpthread", "-Wl,--allow-multiple-definition"]) + "\n")
     print(f"link inputs for CMake: {os.path.relpath(link, ROOT)}")
     return 0
 
@@ -380,8 +382,13 @@ def write_stubs(missing, groups, path):
         # far as the MinGW runtime has them too; those carry the COFF
         # underscore, which the game's objects no longer do.
         libdir = "/usr/i686-w64-mingw32/lib/"
+        # (atexit is in the start-up object; zlib comes with the Aurora build
+        # as a DLL, libzlib1.dll, which then has to sit next to the executable)
+        if "atexit" in missing:
+            host.add("atexit")
         r = subprocess.run(["llvm-nm", "-g", "--defined-only", "--format=posix"] +
-                           [libdir + n for n in ("libmsvcrt.a", "libmingwex.a", "libmingw32.a")],
+                           [libdir + n for n in ("libmsvcrt.a", "libmingwex.a", "libmingw32.a", "crt2.o")] +
+                           ([WIN_ZLIB] if os.path.exists(WIN_ZLIB) else []),
                            capture_output=True, text=True)
         have = {l.split()[0][1:] for l in r.stdout.splitlines()
                 if len(l.split()) >= 2 and l.startswith("_") and l.split()[1] == "T"}
@@ -970,6 +977,12 @@ def main():
         cxxrt = sorted(n for n in missing if n.startswith(("__cxa_", "__gxx_personality", "_Unwind_")))
         missing = {n: u for n, u in missing.items()
                    if not n.startswith(("__cxa_", "__gxx_personality", "_Unwind_")) and n != "__dso_handle"}
+        # Names the Windows compiler runtime owns. `__main` runs the static
+        # constructors: a stub in its place and nothing is constructed
+        # (the first Windows run died in EnterCriticalSection on a mutex
+        # no constructor had initialised).
+        missing = {n: u for n, u in missing.items()
+                   if not n.startswith(("__imp_", "___chkstk", "__alloca", "___main", "__chkstk", "__main"))}
         print(f"implemented under port/: {len(replaced)} of the missing symbols")
         # A call that only fails to meet its definition because of C vs C++
         # linkage is wired to that definition instead of a stub (same calling
@@ -1149,7 +1162,7 @@ def main():
             # (port/nogfx/os_min.c). Static, so that the executable needs no
             # MinGW runtime DLLs next to it.
             cmd = ["clang", "-target", WIN_TARGET, "-g", "-static", "-Wl,--large-address-aware", "-Wl,-T," + script, "-Wl,-T," + bss_ld,
-                   "-o", exe] + gen + port_objs + ["@" + rsp] + defsyms + ["-lstdc++", "-lwinpthread", "-Wl,--allow-multiple-definition"]
+                   "-o", exe] + gen + port_objs + ["@" + rsp] + defsyms + ([WIN_ZLIB] if os.path.exists(WIN_ZLIB) else []) + ["-lstdc++", "-lwinpthread", "-Wl,--allow-multiple-definition"]
         else:
           cmd = ["clang", "-m32", "-O0", "-g", "-fcommon", "-no-pie", "-Wl,--version-script=" + private, "-Wl,-T," + script, "-Wl,-T," + bss_ld, "-o", exe, stubs, thunks] + port_objs + [
                  "@" + rsp] + defsyms + ["-lm", "-lpthread", "-lstdc++"] + (["-lz"] if os.path.exists("/usr/lib32/libz.so") else []) + [ "-Wl,--allow-multiple-definition", "-Wl,--no-warn-rwx-segments"]
