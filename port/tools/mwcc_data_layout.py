@@ -68,7 +68,7 @@ def bss_script(bss, host_sizes, notes, noload=True):
         end = max(a + z for a, n, z in objs)
         # (GNU ld gives every NOLOAD section of a PE image the same address;
         # there the blocks are ordinary zero-filled data)
-        out.append("  .mw_%s%s : ALIGN(32) { __mw_%s_start = .; . = . + 0x%X; }"
+        out.append("  .mw_%s%s : ALIGN(0x1000) { __mw_%s_start = .; . = . + 0x%X; }"
                    % (sec, " (NOLOAD)" if noload else "", sec, end - base + 32))
         for i, (a, n, z) in enumerate(objs):
             room = (objs[i + 1][0] if i + 1 < len(objs) else end) - a
@@ -110,7 +110,7 @@ def linker_script(objects, inputs, notes):
         if not names:
             continue
         base = names[0][0] & ~0x1F
-        out.append("  .mw_%s : ALIGN(32)" % sec)
+        out.append("  .mw_%s : ALIGN(0x1000)" % sec)
         out.append("  {")
         out.append("    __mw_%s_start = .;" % sec)
         cursor = 0

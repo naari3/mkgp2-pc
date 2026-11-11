@@ -261,3 +261,13 @@ sound device: `SDL_AUDIODRIVER=disk SDL_AUDIO_DISK_OUTPUT_FILE=out.raw`
 
 State: sound effects are produced (the logo jingle was verified in the
 written file). Background music is silent so far.
+
+### Check before handing out a Windows executable
+
+`python3 port/tools/pe_check.py file.exe`. The Windows loader refuses an
+image whose sections do not start at multiples of SectionAlignment ("This
+app can't run on your PC", `Access is denied` from cmd); GNU ld writes such
+an image without complaint when a linker script aligns an output section
+to less than a page. The data layout scripts (`mwcc_data_layout.py`) align
+their sections to 0x1000 for that reason (they used 32 until 2026-11-11, and
+no executable built before that could start on Windows).
