@@ -211,7 +211,7 @@ def link_gfx_windows(stubs, thunks, cxxrt, replaced, aurora_fns, aurora_data, po
     with open(link, "w") as f:
         f.write("\n".join(["-static", "-fcommon", "-Wl,--large-address-aware", "-Wl,--disable-dynamicbase", "-Wl,-T," + script, "-Wl,-T," + bss_ld]
                           + gen + port_objs + objs + defsyms + [f"-Wl,--defsym,{n}=_{n}" for n in data]
-                          + [os.path.join(ROOT, "build", "musyx-win32", "libmusyxRD.a")] + ([WIN_ZLIB] if os.path.exists(WIN_ZLIB) else []) + ["-lwinpthread", "-lws2_32", "-Wl,--allow-multiple-definition"]) + "\n")
+                          + [os.path.join(ROOT, "build", "musyx-win32", "libmusyxRD.a")] + ([WIN_ZLIB] if os.path.exists(WIN_ZLIB) else []) + ["-lwinpthread", "-lws2_32", "-lwinhttp", "-Wl,--allow-multiple-definition"]) + "\n")
     print(f"link inputs for CMake: {os.path.relpath(link, ROOT)}")
     return 0
 
@@ -1269,7 +1269,7 @@ def main():
             # (port/nogfx/os_min.c). Static, so that the executable needs no
             # MinGW runtime DLLs next to it.
             cmd = ["clang", "-target", WIN_TARGET, "-g", "-static", "-Wl,--large-address-aware", "-Wl,--disable-dynamicbase", "-Wl,-T," + script, "-Wl,-T," + bss_ld,
-                   "-o", exe] + gen + port_objs + ["@" + rsp] + defsyms + ([WIN_ZLIB] if os.path.exists(WIN_ZLIB) else []) + ["-lstdc++", "-lwinpthread", "-lws2_32", "-Wl,--allow-multiple-definition"]
+                   "-o", exe] + gen + port_objs + ["@" + rsp] + defsyms + ([WIN_ZLIB] if os.path.exists(WIN_ZLIB) else []) + ["-lstdc++", "-lwinpthread", "-lws2_32", "-lwinhttp", "-Wl,--allow-multiple-definition"]
         else:
           cmd = ["clang", "-m32", "-O0", "-g", "-fcommon", "-no-pie", "-Wl,--version-script=" + private, "-Wl,-T," + script, "-Wl,-T," + bss_ld, "-o", exe, stubs, thunks] + port_objs + [
                  "@" + rsp] + defsyms + ["-lm", "-lpthread", "-lstdc++"] + (["-lz"] if os.path.exists("/usr/lib32/libz.so") else []) + [ "-Wl,--allow-multiple-definition", "-Wl,--no-warn-rwx-segments"]
