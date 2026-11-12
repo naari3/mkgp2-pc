@@ -84,17 +84,6 @@ The rest of this file is the survey written before the implementation.
 
 ---
 
-# Survey (2026-11-11)
-
-Question: what does it take to show the PC port in 16:9 instead of the
-arcade's 4:3? This is a reading of the sources (mkgp2-pc `2502a6b`, Aurora
-`f77492f`). **Nothing here has been built or run yet**; items marked
-"unverified" need a run to confirm.
-
-Factor used below: `k = (16/9) / (4/3) = 4/3`. A 4:3 picture centred in a
-16:9 frame takes the middle 75 % of the width; each side strip is 12.5 %.
-
-
 ## Census of screen-space drawing (2026-11-12)
 
 Asked for by the user after the dash effects were found cut at the 4:3
@@ -171,6 +160,17 @@ Not seen, covered only as far as the rules reach: start dash, mushroom
 and other item effects on the screen (the ones that block the view), hits
 and spins, goal, results and ranking, continue, name entry, card pages,
 time attack and versus screens, link screens, test menu, endings.
+
+# Survey (2026-11-11)
+
+Question: what does it take to show the PC port in 16:9 instead of the
+arcade's 4:3? This is a reading of the sources (mkgp2-pc `2502a6b`, Aurora
+`f77492f`). **Nothing here has been built or run yet**; items marked
+"unverified" need a run to confirm.
+
+Factor used below: `k = (16/9) / (4/3) = 4/3`. A 4:3 picture centred in a
+16:9 frame takes the middle 75 % of the width; each side strip is 12.5 %.
+
 
 ## 1. What exists today
 
