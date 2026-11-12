@@ -538,8 +538,12 @@ static void create_controls(void) {
   button(0, L"参照...", X + W - 80, y + 19, 80, ID_ISO_BROWSE);
   y += 64;
   check(0, L"カードを使う (ゲーム中に「カードを入れる」キーで挿入します)", X, y, W, ID_CARD);
-  label(0, L"カードのファイル (空欄ならこのフォルダーの card.bin。無ければ、ゲームで新しいカードを買ったときに作られます)", X, y + 28, W, 36);
-  edit(0, X, y + 66, W - 88, ID_CARD_FILE);
+  label(0, L"カードのファイル (空欄なら下に薄く出ている、このフォルダーの card.bin を使います。新しいカードで始めるには、まだ無いファイル名を書きます)", X, y + 28, W, 36);
+  {
+    /* the empty field shows where the card is then taken from */
+    HWND e = edit(0, X, y + 66, W - 88, ID_CARD_FILE);
+    SendMessageW(e, 0x1501 /* EM_SETCUEBANNER */, TRUE, (LPARAM)L"card.bin (このプログラムと同じフォルダー)");
+  }
   button(0, L"参照...", X + W - 80, y + 65, 80, ID_CARD_BROWSE);
   y += 112;
   check(0, L"ゲームを起動したらこの画面を閉じる", X, y, W, ID_CLOSE_ON_START);
