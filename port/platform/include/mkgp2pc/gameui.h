@@ -25,6 +25,7 @@ void mkgp2pc_gameui_frame(int res, float w, float h, float edge, int mirror, flo
                           float height, unsigned int rgba);
 void mkgp2pc_gameui_sheet(float x, float y, float width, float height);
 void mkgp2pc_gameui_white_sheet(float x, float y, float width, float height);
+void mkgp2pc_gameui_card_sheet(float x, float y, int squares, float scale, unsigned int rgba);
 void mkgp2pc_gameui_cursor(float x, float y, float width, float height, int t);
 
 float mkgp2pc_gameui_text_width(int font, float scale, const char* utf8);

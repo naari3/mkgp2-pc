@@ -217,9 +217,10 @@ plays back the same way.
 ## How the menu is drawn
 
 With the game's own fonts and panels (`port/platform/ui/gameui.c`,
-[`game_ui.md`](game_ui.md)): the white window of the yes/no cards, half
-see-through (cut into pieces, not stretched), the window cursor in orange,
-the 24 and 16 pixel text fonts in white with their outline. (The first version used the blue panel of the name entry
+[`game_ui.md`](game_ui.md)): the window of the card screens, half
+see-through (cut into pieces, not stretched), the pink bar of the same
+picture under the chosen row, the 24 and 16 pixel text fonts in white with
+their outline. (The first version used the blue panel of the name entry
 screen, stretched; it was hard to read, see game_ui.md, "Which frame, and
 why".) The game stands still meanwhile, so
 no scene is there to queue the sprites; instead the game's main loop stays

@@ -98,8 +98,8 @@ mkgp2pc_gameui_end();                    /* once, when it closes */
   small headings), optionally a value at the right of a row (then the labels
   stand at the left), marks that the list goes on above or below, the cursor
   on the chosen row, two small lines underneath.
-- `mkgp2pc_gameui_white_sheet(x, y, width, height)`: what the port's screens
-  write on. `mkgp2pc_gameui_frame(res, w, h, edge, mirror, ...)` draws any frame
+- `mkgp2pc_gameui_card_sheet(x, y, squares, scale, rgba)`: what the port's
+  screens write on. `mkgp2pc_gameui_frame(res, w, h, edge, mirror, ...)` draws any frame
   picture at any size without stretching it (corners as they are, sides and
   middle repeated); `mkgp2pc_gameui_cursor` is the glow and the arrow.
 
@@ -127,14 +127,22 @@ what the rule is now:
   (`/mnt/project-files/port/gameui/menu_variants_linux.png`, not in the
   repository); the owner chose the white window with white outlined text,
   and asked for the window to be half see-through.
-- **What it is now** (`kStyle`, `mkgp2pc_gameui_white_sheet`): the white
-  dotted window 0x72E of the yes/no cards over its shadow 0x72F, drawn with
-  alpha 0xA8 so that the stopped game shows through; text white with its
-  outline (the outline is what keeps it readable on the pale window);
-  title, headings and rules in the light blue of the game's labels; the
-  chosen row yellow, a little larger, on the window glow 0x8CE tinted
-  orange, with the striped arrow 0x8CD. `mkgp2pc_gameui_sheet` (the dark
-  bubble) is still there but no screen uses it.
+- That (PR 59: white dotted window 0x72E at alpha 0xA8, orange glow) the
+  owner then replaced by naming the frame they had in mind: the
+  window of the card screens, `sprite_card_1.tpl` (one 1024x512 picture,
+  resources 0x63F to 0x680).
+- **What it is now** (`kStyle`, `mkgp2pc_gameui_card_sheet`): the card
+  screens' window 0x63F (628x336: blue starred rim with a tab at the top
+  left, grey chequered ground) at alpha 0xC8, so that the stopped game
+  shows through. Its width is the picture's; its height is the top 56
+  pixels, the foot 40 and a whole number of the ground's 45 pixel squares,
+  so the pattern goes on without a seam (the rim's stars have another
+  period, 29, and may be cut once at each side). The title stands on the
+  tab; text is white with its outline; the chosen row lies on the pink bar
+  0x665 of the same picture (its right end runs off the picture, so the
+  left end is drawn turned round) with the striped arrow 0x8CD.
+  `mkgp2pc_gameui_sheet` (dark bubble) and `mkgp2pc_gameui_white_sheet`
+  are still there but no screen uses them.
 - The picture behind is darkened with 0x7F as the game's message windows
   do (`MsgPopup`).
 
