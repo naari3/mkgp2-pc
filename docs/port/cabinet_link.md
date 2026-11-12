@@ -67,6 +67,31 @@ Ports, with the default base 29500: UDP 29564 + (cabinet - 1) for
 everything a cabinet sends and receives, and UDP 29568, where every copy
 listens for announcements. No TCP.
 
+### Two copies on one PC, from one folder
+
+Start `mkgp2-launcher.exe` twice, choose 通信 = ネットワーク対戦 (`network`)
+with the cabinet number on 自動 in both, and start the game from each. Put a
+coin into each window (5); both come to the entry screen and count each
+other. No second port or folder is needed: every copy takes the lowest
+cabinet number not in use on the PC, and each number has its own UDP port.
+
+What the two copies share in the folder:
+
+| file | what happens |
+|---|---|
+| `mkgp2-pc.ini` | one file; the launcher that saves last wins. Harmless when both use the same settings |
+| `gfx.log` | the first game's. The second writes `gfx.2.log` (launcher; `run-gfx.cmd` started twice would write both into one file) |
+| `backup_ram.bin` | the first game's. The second uses `backup_ram.bin.2` (and so on to `.4`) |
+| `card.bin` | both read the same card and the one that writes last wins. Insert the card in one window only, or give the second copy another file (`MKGP2PC_CARD_FILE`) |
+| shader caches in the user directory | shared SQLite files |
+
+The keyboard goes to the window that has the focus, so one person drives one
+kart at a time; a controller can be given to one copy on the launcher's
+コントローラ page.
+
+Checked: several copies on one Linux machine, no-graphics build. Two
+rendering copies on one Windows PC have not been run yet.
+
 ### Between two networks (not tried on a real connection yet)
 
 Without forwarding ports: a room name and a rendezvous server, see

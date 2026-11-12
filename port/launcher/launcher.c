@@ -36,6 +36,7 @@
 #define GAME_EXE L"mkgp2-gfx.exe"
 #define INI_NAME L"mkgp2-pc.ini"
 #define LOG_NAME L"gfx.log"
+static wchar_t g_logName[32] = LOG_NAME; /* the log of the game this launcher started last */
 #define LEN(a) ((int)(sizeof(a) / sizeof((a)[0])))
 
 /* ---- settings ---------------------------------------------------------- */
@@ -466,8 +467,23 @@ static HANDLE start_game(const Settings* s, wchar_t* error, int errorSize) {
   apply_environment(s);
 
   SECURITY_ATTRIBUTES sa = {sizeof(sa), NULL, TRUE};
-  HANDLE out = CreateFileW(log, GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, &sa, CREATE_ALWAYS,
-                           FILE_ATTRIBUTE_NORMAL, NULL);
+  /* Nobody else may write the log while the game has it. A second game
+   * started from the same folder (two cabinets on one PC) then finds
+   * gfx.log taken and writes gfx.2.log, the third gfx.3.log, ... instead of
+   * emptying the log of the first. */
+  HANDLE out = INVALID_HANDLE_VALUE;
+  for (int copy = 1; copy <= 4 && out == INVALID_HANDLE_VALUE; copy++) {
+    if (copy == 1) {
+      wcscpy(g_logName, LOG_NAME);
+    } else {
+      swprintf(g_logName, LEN(g_logName), L"gfx.%d.log", copy);
+    }
+    dir_path(log, g_logName);
+    out = CreateFileW(log, GENERIC_WRITE, FILE_SHARE_READ, &sa, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (out == INVALID_HANDLE_VALUE && GetLastError() != ERROR_SHARING_VIOLATION) {
+      break;
+    }
+  }
   HANDLE in = CreateFileW(L"NUL", GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, &sa, OPEN_EXISTING, 0, NULL);
   if (out == INVALID_HANDLE_VALUE) {
     if (in != INVALID_HANDLE_VALUE) CloseHandle(in);
@@ -502,7 +518,7 @@ static void log_exit_code(DWORD code) {
   wchar_t log[MAX_PATH];
   char line[64];
   DWORD done;
-  dir_path(log, LOG_NAME);
+  dir_path(log, g_logName);
   HANDLE f = CreateFileW(log, FILE_APPEND_DATA, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
   if (f == INVALID_HANDLE_VALUE) return;
   if (code >= 0x80000000u) {
