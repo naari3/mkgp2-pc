@@ -1146,3 +1146,53 @@ for reaching courses directly: `features/round_select/round_select.cpp`
 tables it hooks, listed in `patch_map.md`), `features/debug_overlay/`,
 `features/race_restart/`, and `tasks/refactor_fun_800.md` (function names,
 including the debug menu `SeqMenuScene_*` at 0x8002F9B4..0x8002FC80).
+
+## 34. Kart shadow absent inside floor grooves (2026-11-12, open)
+
+Report from play on Windows, compared with the real cabinet: the kart's
+shadow is cut at the edge of the grooves in the floor (CASTLE OF CAKE, the
+plank road of the Yoshi cup) and does not show inside the groove. What was
+established on 32-bit Linux (software GL under Xvfb, 6f8f471); the cause of
+the difference from the cabinet is not known yet.
+
+- The scene reproduces on Linux from the dump's `input.txt`. The race starts
+  at another retrace there (11195 against about 18037 on Windows in the dump
+  of 14:03), so the lines of the driving part have to be shifted by that
+  difference; a `pause` line (kept in frame order, the reader does not sort)
+  stops on the scene.
+- How a shadow gets onto a floor: `HSD_Shadow` renders the kart into a
+  texture; `HSD_MObjSetup` appends that texture (`tobj_shadows`) to every
+  material whose render mode has `RENDER_SHADOW` (bit 26), as one more TEV
+  stage that multiplies the previous colour, with texture coordinates from
+  the position (`GX_TG_MTX3x4`, `GX_TG_POS`). The register state at the road
+  draws was read back from Aurora (`aurora::gx::g_gxState`) and is as HSD
+  sets it.
+- The game sets `RENDER_SHADOW` in one place, `CourseScene_Load`
+  (`src/game/CourseEnvironment.cpp`): `clNormal3D_SetFlags(model, 0x4000000,
+  joint)` for the joints named by the course's name table, entry 0 (shared
+  road) and entry 1 or 2 (short or long road). The walk covers the joint,
+  its children and the siblings after it.
+- Yoshi cup short (`YI_land_short_a.dat`, names checked against the file's
+  public symbols): `YI_land_share_road_joint` has one polygon set,
+  `YI_land_short_road_joint` five: four road pieces with render mode
+  0x44003012 (cut-out alpha, a 256x512 CMPR texture with three mip levels)
+  and one opaque painted lane 0x04003012. No other material of the course
+  has the bit.
+- The road texture has columns of 16 fully transparent texels at every mip
+  level: those are the grooves. HSD's pixel setup for such a material
+  compares alpha GREATER 0, so the groove pixels are discarded and what is
+  seen through them is the wooden lattice of the sibling joint just before
+  the road joint (render mode 0x40003012, about 60 units lower, not
+  coplanar). That joint is before the road joint in the sibling list, so the
+  game's walk never reaches it and it receives no shadow, on Linux as on
+  Windows.
+- Ruled out for this place: a wrong mip level, the joint lookup being off
+  by one, early depth test (`GXSetZCompLoc`), two coplanar layers fighting.
+- By the matched code and the disc data the cabinet would show the same, so
+  what the player sees as different may be something else in the same
+  place (how dark or deep the groove looks, the edge of the cut, draw
+  order). Asked; this section is to be completed.
+
+Tools: `port/docker/build-linux32.sh` (the Linux build in one step) and
+`port/tools/gdb_hsd.py` (joint tree with render modes, hiding one joint's
+polygons, setting render mode bits, single frame step from gdb).

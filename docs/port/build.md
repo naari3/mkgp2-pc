@@ -136,6 +136,13 @@ freetype, sqlite3, png and zlib. Without a display it runs under Xvfb with
 Mesa's software GL. `MKGP2PC_FRAMES=N` exits after N frames. What the build
 does is described in docs/port/census.md section 21.
 
+`port/docker/build-linux32.sh` runs all of this in order (standalone Aurora,
+MusyX, game objects, `mkgp2-gfx`) and lists the Ubuntu 24.04 packages in its
+header. Where release archives cannot be downloaded but git clones can, set
+`MKGP2PC_DEPS=<dir>` holding clones named `fmt` (12.1.0), `imgui`
+(v1.91.9b-docking), `sdl` (release-3.4.20), `tracy` (v0.14.1) and `xxhash`
+(v0.8.3), and install `nlohmann-json3-dev`.
+
 ### 32-bit Windows, with rendering
 
 Cross-built on Linux with clang and the MinGW-w64 runtime, like the
