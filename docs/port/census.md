@@ -1147,13 +1147,13 @@ tables it hooks, listed in `patch_map.md`), `features/debug_overlay/`,
 `features/race_restart/`, and `tasks/refactor_fun_800.md` (function names,
 including the debug menu `SeqMenuScene_*` at 0x8002F9B4..0x8002FC80).
 
-## 34. Kart shadow absent inside floor grooves (2026-11-12, open)
+## 34. Kart shadow absent inside floor grooves (2026-11-12, not a port defect)
 
 Report from play on Windows, compared with the real cabinet: the kart's
 shadow is cut at the edge of the grooves in the floor (CASTLE OF CAKE, the
 plank road of the Yoshi cup) and does not show inside the groove. What was
-established on 32-bit Linux (software GL under Xvfb, 6f8f471); the cause of
-the difference from the cabinet is not known yet.
+established on 32-bit Linux (software GL under Xvfb, 6f8f471); the
+port draws what the game's code and data ask for.
 
 - The scene reproduces on Linux from the dump's `input.txt`. The race starts
   at another retrace there (11195 against about 18037 on Windows in the dump
@@ -1189,9 +1189,10 @@ the difference from the cabinet is not known yet.
 - Ruled out for this place: a wrong mip level, the joint lookup being off
   by one, early depth test (`GXSetZCompLoc`), two coplanar layers fighting.
 - By the matched code and the disc data the cabinet would show the same, so
-  what the player sees as different may be something else in the same
-  place (how dark or deep the groove looks, the edge of the cut, draw
-  order). Asked; this section is to be completed.
+  the reporter, shown the Linux picture and this account, answered that
+  the shadow may well be like this on the cabinet too. Closed without a
+  change; to be reopened if a side-by-side with the cabinet shows a
+  difference.
 
 Tools: `port/docker/build-linux32.sh` (the Linux build in one step) and
 `port/tools/gdb_hsd.py` (joint tree with render modes, hiding one joint's
