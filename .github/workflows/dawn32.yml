@@ -16,6 +16,10 @@ on:
         description: "Attach the packages to a prerelease"
         type: boolean
         default: false
+      package_revision:
+        description: "Suffix of the release tag when the patches below change (for example -r2)"
+        default: "-r2"
+        required: false
 
 env:
   SCCACHE_GHA_ENABLED: "true"
@@ -80,6 +84,24 @@ jobs:
             src/dawn/native/vulkan/ResourceMemoryAllocatorVk.cpp
           git diff --stat
 
+      # 32-bit MSVC hands a class with an explicit alignment above 4 to a
+      # function through a pointer to a copy, but pushes the value itself
+      # when the argument is a conditional expression. Dawn's serial numbers
+      # (TypedInteger over uint64_t, alignas(T)) are such a class, and
+      # "return done ? waitSerial : kWaitSerialTimeout" in the D3D12 and D3D11
+      # queues is such a call: every real wait for the GPU ended in an access
+      # violation (docs/port/build.md, "32-bit Dawn packages"). Without the
+      # explicit alignment the class is passed like a plain 64-bit integer;
+      # its size and alignment stay the same.
+      - name: Patch for 32-bit MSVC
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          sed -i 's/class DAWN_TRIVIAL_ABI alignas(T) TypedIntegerImpl/class DAWN_TRIVIAL_ABI TypedIntegerImpl/' \
+            src/utils/typed_integer.h
+          git diff --exit-code --quiet src/utils/typed_integer.h && { echo "patch did not apply"; exit 1; }
+          git diff --stat
+
       - name: Configure
         run: >-
           cmake -S . -B build -G Ninja
@@ -127,12 +149,12 @@ jobs:
       - name: Create prerelease
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: dawn32-${{ inputs.dawn_ref }}
-          name: Dawn 32-bit packages (${{ inputs.dawn_ref }})
+          tag_name: dawn32-${{ inputs.dawn_ref }}${{ inputs.package_revision }}
+          name: Dawn 32-bit packages (${{ inputs.dawn_ref }}${{ inputs.package_revision }})
           prerelease: true
           body: |
             Dawn built from https://github.com/encounter/dawn at `${{ inputs.dawn_ref }}`
-            for 32-bit Windows and Linux, for the PC port's Aurora build
+            (plus the patches in .github/workflows/dawn32.yml) for 32-bit Windows and Linux, for the PC port's Aurora build
             (`AURORA_DAWN_PACKAGE_URL`). Dawn is BSD 3-Clause licensed; see the
             source repository for the licence texts of Dawn and its dependencies.
           files: "*.tar.gz"
