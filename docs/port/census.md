@@ -1618,3 +1618,38 @@ crescent with the ripple texture stands in the sky at the upper right.
   one silently plays without the card and lands in another cup).
 - Seen on the way and left: thin red horizontal quads at the karts' grid
   places at the start of this course (Linux too).
+
+## 40. A bluish half-tube that stays beside the driver's hand (2026-11-12)
+
+Report from play on Windows (build 72a0266f, dump `001_f18897`, just after
+the goal, 16:9, high-resolution textures on): something bluish white stands
+next to the hand the driver throws items with and never goes away.
+
+- What it is: the model of `swing_effect.dat`, the short streak the game
+  shows when an item is thrown (`KartFx_BoostChargeIconTick`,
+  src/game/KartFxChargeIcon.cpp, effect model 14). In the dumped frame it is
+  drawn 27 times: 23 times with the same matrix at the player's kart, 3 and 1
+  times at two other karts (`gx_fifo.py <dump> --at 367,262`; three triangle
+  strips of 59, 23 and 47 vertices, additive blending, so the copies add up
+  to white). One copy per item thrown; none was ever removed.
+- The fault: the effect model table `lbl_8041BC00` (152 rows of 20 bytes:
+  archive name, `mode` byte, last frame, `loop` byte) was written as an
+  array of pointers with the two bytes as `(char *)0x1000000`.
+  `VfxSlot_TickAnim` reads `mode` as a byte: 1 on the console, 0 here. Mode 0
+  lets the model's animation run freely and never sets the slot's state to
+  "ended", and the effect frees itself only on that state. 25 rows have mode
+  1 and 14 of them loop, so other play-once effects were touched as well
+  (they ran on instead of stopping at their last frame).
+- Correction: upstream 39d9b89, the table is `EffectModelRow[152]` with the
+  two fields as bytes (main.dol unchanged). The upstream search for such
+  tables (`tools/port_abi/byte_words.py`) had not looked at `char *` tables;
+  with that added this table was the only new hit.
+- Check (Linux, the dump's input replayed; on Linux the race runs at other
+  frames, so only one item gets thrown): before, the model is drawn once in
+  every sampled frame from retrace 12200 to 17000 (80 s); after, in none,
+  and `DrawEffect_Free` is reached from the effect's tick (never before).
+  Not checked on Windows. High-resolution textures play no part: the copies
+  are in the game's draw commands.
+- New in `gx_fifo.py`: `--at X,Y` lists the draws whose bounding box on the
+  640x480 picture holds a point, from the matrices and projection in the
+  record and the vertex arrays in the dump's memory.

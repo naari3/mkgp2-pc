@@ -145,6 +145,7 @@ gx_fifo.py <folder> --summary          counts, and problems found
 gx_fifo.py <folder>                    every command, one line each
 gx_fifo.py <folder> --draw 37 --verts  draw 37 with the commands since draw 36 and its vertices
 gx_fifo.py <folder> --prev             the frame before (crash folders)
+gx_fifo.py <folder> --at 367,262       the draws whose vertices surround that point of the 640x480 picture
 ```
 
 ```
