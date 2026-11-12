@@ -5,7 +5,8 @@ menu art) are shown from enlarged copies instead of the textures on the
 disc. Off by default; the original look stays what the port shows unless
 asked. 3D model textures are not touched.
 
-State 2026-11-12: written and tried on 32-bit Linux only (software GL under
+State 2026-11-12 (second version, after the user rejected the first: see
+the generator section): written and tried on 32-bit Linux only (software GL under
 Xvfb, window 1280x960, a recorded play replayed with and without the
 option through the menus into a race: the pictures are replaced, positions
 and sizes stay; also together with `MKGP2PC_ASPECT=16:9`). The glue compiles
@@ -24,7 +25,7 @@ uploaded.
 
 ## Using it
 
-1. Make the folder (once, about two minutes; about 700 MB):
+1. Make the folder (once, several minutes; about 650 MB):
 
    ```powershell
    .\port\docker\wsl-hires.ps1 -Iso 'C:\path\Mario Kart Arcade GP 2 (Japan).iso' -Distro Ubuntu-20.04
@@ -86,53 +87,62 @@ Shift-JIS code and the resource of the 16, 24 and 64 pixel glyph).
 **Sprites, HUD, menus** (about 2,400 textures, 230 million texels; formats
 C8, IA4, CMPR, RGB5A3, RGBA8, RGB565, IA8):
 
-1. Level smoothing. RGB5A3 has 16 levels per colour where a texel is
-   translucent and 32 where opaque, RGB565 32/64, palettes are RGB5A3 or
-   RGB565; gradients come out in steps. Each channel is moved toward the
-   average of its neighbourhood, never by more than half a level of its
-   format: a step that the format forced disappears, an edge that was in
-   the art (taller than one level) stays.
-2. Texels that are fully transparent and black get the colour of their
+1. Texels that are fully transparent and black get the colour of their
    neighbourhood, so that the enlargement does not draw a dark rim into
    every outline. (The original shows such rims where the game filters
    across them; this is the one place the result differs on purpose.)
-3. Lanczos enlargement, clamped to the smallest and largest value of the
-   source's 3x3 neighbourhood (no ringing).
-4. Edge tightening: within a strong edge the value is pushed toward the
-   nearer side. Off for CMPR and weak for RGB565 (rendered pictures, where
-   it would bring the compression blocks out).
+2. Bicubic enlargement at four times, clamped to the smallest and largest
+   value of the source's 3x3 neighbourhood (no ringing, no colour that was
+   not there).
+3. Edge tightening: where that neighbourhood spans an edge (more than 12
+   levels, fully from 40) the value is pushed toward the nearer side, twice
+   (smoothstep). Once and only on strong edges for CMPR and RGB565
+   (rendered pictures, where it would bring the compression blocks out).
+4. For `--scale 2` the result is averaged down to twice the size.
 
-This is a careful classical filter, not a redrawing: outlines and gradients
-are cleaner, detail that was never in the 640x480 art does not appear.
+This keeps the picture's own shapes: outlines of flat-coloured art become
+crisp instead of two blurred screen pixels wide, gradients stay gradients.
+It cannot add detail that was never in the 640x480 art (the texture of a
+rendered logo, small faces); only a neural enlarger invents that, see below.
 
 **Text fonts** (`tpl2_sysFONT_16_*`, `tpl2_sysFONT_24_*`: one 16x16 or 32x32
 IA4 texture per character, intensity = the shape, plus an `_a` texture with
-the grown shape that is drawn underneath as the outline; 652 and 654
-characters):
+the grown and offset shape that is drawn underneath as the outline; 652 and
+654 characters). The characters are the game's own bitmaps enlarged, nothing
+is drawn from another typeface:
 
-- Kana and kanji are drawn anew from an outline font, M PLUS Rounded 1c
-  ExtraBold (SIL Open Font License; downloaded from the Google Fonts
-  repository on first use, kept in `--cache`; `--font` takes another file,
-  `--no-font` skips this). The game's font is a rounded gothic of very
-  similar design. The size is fitted per font from the kanji (median ratio
-  of the original ink box to the drawing's), each character is centred on
-  the ink box of its original bitmap, so text sits where it sat. The outline
-  texture is the drawing grown by the reach whose ink matches the original
-  outlines.
-- Latin letters, digits and signs are of another, heavier design in the
-  game (an oblique bold in the 24 pixel font). They keep their own shapes:
-  the bitmap is enlarged and its soft edge narrowed.
-- Always four times with two mip levels (the textures are tiny).
+- Bicubic enlargement four times, then the soft edge is narrowed around the
+  half-coverage line (gain 3 for the character, 1.6 for the outline texture,
+  which keeps most of its soft fall-off). Two mip levels.
+- The outline texture is enlarged from the original outline texture, so its
+  width and its offset to the lower right are the original's.
+- A character of the 16 pixel font is too small to enlarge well (kanji
+  strokes are one texel). Where the 24 pixel font has the same drawing, its
+  bitmap is used instead, fitted ink box onto ink box so the character sits
+  where and as large as the 16 pixel one: kana and kanji (574 characters;
+  test: ink box proportions within 0.88 to 1.14 and overlap of the reduced
+  picture with the original at least 0.80). Latin letters and digits are a
+  different, narrower design in the 16 pixel font and are enlarged from
+  their own bitmap, as are all characters of the 24 pixel font.
 - The 64 pixel font and the atlas `gfont.tpl` are treated as sprites.
 
-Measured on the cloud machine (4 cores): whole disc at x2 in 90 s, 10,500
-files, 660 MB.
+Two things of the first version (PR 15) that must not come back. It smoothed
+the colour levels of the formats (RGB5A3 has 16 or 32 per channel, 8 of
+alpha) by up to half a level: that erased art that is one level deep (the
+faint stars of the menu background) and, on alpha, lifted transparent texels
+near a shape enough to draw a box around every sprite. The code is still
+there, off (`LEVEL_SMOOTHING`), colour only. And it kana and kanji from M PLUS Rounded 1c and grew
+its own outline. The user rejected it the same day: the shapes and the
+outline were not the game's. Do not bring a foreign typeface back.
+
+Measured on the cloud machine (4 cores): whole disc at x2 in 7 minutes,
+10,500 files, 630 MB.
 
 ### An outside enlarger for the sprites
 
-A neural enlarger (Real-ESRGAN and the like) gives more than the built-in
-filter on this kind of art, at the price of a slightly redrawn look. The
-generator can hand the sprites over and take the result back:
+A neural enlarger (Real-ESRGAN and the like) is the only way to more than
+crisp edges, at the price of a redrawn look. The generator can hand the
+sprites over and take the result back:
 
 ```sh
 python3 port/hires/make_hires.py --iso <image> --export-sprites work
@@ -143,9 +153,28 @@ python3 port/hires/make_hires.py --iso <image> --out hires --import-sprites up
 ```
 
 Textures without a picture in `up` get the built-in filter; the fonts are
-made as above either way. The plumbing was tried with a stand-in enlarger;
-**no neural enlarger has been run through it yet**, so its result on this
-game's art is unseen.
+made as above either way.
+
+On Windows `wsl-hires.ps1 -Ai` does all of it (the user asked for this on
+2026-11-12): export through the container into `build\hires-ai\src`,
+download of `realesrgan-ncnn-vulkan` v0.2.5.0 (BSD 3-clause; a Vulkan
+program, no Python or CUDA; kept in `build\hires-ai\tool`, nothing
+installed), both folders enlarged four times on the GPU into
+`build\hires-ai\up` (several GB), import. Models:
+
+- `realesrgan-x4plus-anime` (default; 6 residual blocks, 17 MB): trained on
+  illustrations; suits flat-coloured art with outlines, which is most of
+  this game's 2D (logos, icons, frames).
+- `-Model realesrgan-x4plus` (23 blocks, 64 MB, several times slower):
+  general pictures; suits the rendered pictures, tends to invent texture.
+
+The program works in tiles, so video memory use stays at a few GB at most
+(`-Tile` sets the size). Both models redraw: small text and faces can change
+shape.
+
+**Not run yet anywhere**: the cloud machine may not run the downloaded
+program, and the script has not been run on Windows. The export and import
+steps were tried on Linux with a stand-in enlarger.
 
 ## Known limits
 

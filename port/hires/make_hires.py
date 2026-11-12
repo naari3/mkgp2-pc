@@ -10,22 +10,17 @@ enlarged as PNG, named the way Dolphin names custom textures
 rendering library looks for when the game loads a texture
 (port/gfx/gx_shim.cpp, MKGP2PC_HIRES=1).
 
-  - Sprites, HUD and menu pictures: the steps that the texture formats' few
-    colour levels left in gradients are smoothed out (never by more than half
-    a level, so nothing that was in the picture is lost), then the picture is
-    enlarged with a ringing-free Lanczos filter and its edges are tightened.
-  - The text fonts (tpl2_sysFONT_16/24_*: one small texture per character):
-    kana and kanji are drawn anew from a rounded gothic outline font, each
-    placed and sized after the original bitmap. Latin letters, digits and
-    signs are of another design in the game: they keep the original shape,
-    enlarged with a tight edge.
+  - Sprites, HUD and menu pictures: enlarged without ringing and without
+    colours that were not there, and their edges are tightened.
+  - The text fonts (tpl2_sysFONT_16/24_*: one small texture per character,
+    and one for its outline): the game's own bitmaps enlarged with a tight
+    edge. Kana and kanji of the 16 pixel font, too small to enlarge well,
+    come from the 24 pixel font's bitmap of the same character.
 
 The output is derived from the game's data: it stays on the user's machine
 and is never committed.
 
-Needs Python 3 with numpy and Pillow (with FreeType); the xxhash module makes
-it faster. The outline font is M PLUS Rounded 1c (SIL Open Font License),
-downloaded on first use unless --font names a file.
+Needs Python 3 with numpy and Pillow; the xxhash module makes it faster.
 """
 import argparse
 import hashlib
@@ -38,7 +33,7 @@ import zlib
 from concurrent.futures import ProcessPoolExecutor
 
 import numpy as np
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image
 
 try:
     import xxhash
@@ -382,24 +377,31 @@ def _local_range(a):
     return lo, hi
 
 
+# Fraction of a colour level by which smooth_levels may move a texel. Zero:
+# off. Half a level takes the steps out of gradients, but it also flattens
+# art that is only one level deep (the faint stars of the menu background
+# were gone), so the pictures are left as they are.
+LEVEL_SMOOTHING = 0.0
+
+
 def smooth_levels(px, step):
-    """Takes out the steps of coarse colour levels: each channel moves toward
-    its neighbourhood's average, never by more than half a level, so an edge
-    that is taller than one level stays where it is."""
+    """Takes out the steps of coarse colour levels: each colour channel moves
+    toward its neighbourhood's average, never by more than LEVEL_SMOOTHING
+    of a level. Alpha is never touched: lifting a transparent texel by even
+    half of a 3-bit level draws a visible box around every sprite."""
     out = px.astype(np.float32)
+    if LEVEL_SMOOTHING <= 0:
+        return out
     weight = (px[..., 3] > 0).astype(np.float32)
-    for c in range(4):
-        tol = (step[..., c] if isinstance(step, np.ndarray) else np.float32(step[c])) * 0.5
+    for c in range(3):
+        tol = (step[..., c] if isinstance(step, np.ndarray) else np.float32(step[c])) * LEVEL_SMOOTHING
         if not np.any(tol > 0):
             continue
         orig = out[..., c].copy()
         cur = orig
         for radius in (1.0, 2.0):
-            if c < 3:  # colour under no alpha is not a colour: leave it out
-                den = _blur(weight, radius)
-                avg = np.where(den > 1e-3, _blur(cur * weight, radius) / np.maximum(den, 1e-3), cur)
-            else:
-                avg = _blur(cur, radius)
+            den = _blur(weight, radius)
+            avg = np.where(den > 1e-3, _blur(cur * weight, radius) / np.maximum(den, 1e-3), cur)
             cur = np.clip(avg, orig - tol, orig + tol)
         out[..., c] = cur
     return out
@@ -428,40 +430,52 @@ def fill_unknown(px):
     return out
 
 
-def enlarge(px, scale, sharpen=0.5):
-    """Lanczos enlargement of an RGBA float picture, kept between the
-    smallest and largest value of the source neighbourhood (no ringing), and
-    with edges tightened: inside a strong edge the value is pushed toward the
-    nearer side."""
+WORK_SCALE = 4  # edges are found at four times, whatever size is written
+
+
+def enlarge(px, scale, rounds=2, low=12.0, high=40.0):
+    """Enlargement of an RGBA float picture that keeps the picture's own
+    shapes and makes its edges crisp. Bicubic interpolation at four times,
+    kept between the smallest and largest value of the source's 3x3
+    neighbourhood (no ringing, no new colours); then, where that
+    neighbourhood spans an edge (more than `low` levels, fully from `high`),
+    the value is pushed toward the nearer side, `rounds` times. A gradient
+    stays a gradient. For twice the size the result is averaged down, which
+    keeps the edges where they were found."""
     h, w = px.shape[:2]
-    size = (w * scale, h * scale)
-    out = np.empty((h * scale, w * scale, 4), np.float32)
+    f = WORK_SCALE
+    size = (w * f, h * f)
+    out = np.empty((h * f, w * f, 4), np.float32)
     for c in range(4):
         a = np.ascontiguousarray(px[..., c], np.float32)
         if a.min() == a.max():
             out[..., c] = a.flat[0]
             continue
-        up = _resize(a, size, Image.LANCZOS)
+        up = _blur(_resize(a, size, Image.BICUBIC), f * 0.2)
         lo, hi = _local_range(a)
-        lo = _resize(lo, size, Image.BILINEAR)
-        hi = _resize(hi, size, Image.BILINEAR)
+        lo = _blur(_resize(lo, size, Image.BILINEAR), f * 0.5)
+        hi = _blur(_resize(hi, size, Image.BILINEAR), f * 0.5)
         up = np.clip(up, lo, hi)
-        if sharpen > 0:
+        if rounds > 0:
             span = hi - lo
             t = (up - lo) / np.maximum(span, 1e-3)
-            steep = t * t * (3 - 2 * t)
-            # only where the neighbourhood really is an edge, not a gradient
-            k = sharpen * np.clip((span - 24.0) / 64.0, 0.0, 1.0)
+            steep = t
+            for _ in range(rounds):
+                steep = steep * steep * (3 - 2 * steep)
+            k = np.clip((span - low) / (high - low), 0.0, 1.0)
             up = lo + span * (t + (steep - t) * k)
         out[..., c] = up
+    while f > scale:
+        out = halve(out)
+        f //= 2
     return out
 
 
 def enlarge_sprite(px, step, scale, fmt):
     # Block-compressed and 16-bit colour textures are mostly rendered
-    # pictures: tightening edges there brings the compression blocks out.
-    sharpen = {14: 0.0, 4: 0.2}.get(fmt, 0.5)
-    return enlarge(fill_unknown(smooth_levels(px, step)), scale, sharpen)
+    # pictures: tightening edges hard there brings the compression blocks out.
+    rounds, low, high = {14: (1, 32.0, 96.0), 4: (1, 24.0, 64.0)}.get(fmt, (2, 12.0, 40.0))
+    return enlarge(fill_unknown(smooth_levels(px, step)), scale, rounds, low, high)
 
 
 def halve(px):
@@ -476,59 +490,6 @@ def to_u8(px):
 # -------------------------------------------------------------------- fonts
 
 FONT_SCALE = 4   # the characters are small: always four times, with mip levels
-SS = 4           # the drawing is made at SS times the output and averaged down
-
-
-class Typeface:
-    """Draws a character into a cell so that it sits where the original
-    bitmap's character sits."""
-
-    def __init__(self, path):
-        self.path = path
-        self.fonts = {}
-        self.missing = None
-
-    def font(self, px):
-        px = int(round(px))
-        if px not in self.fonts:
-            self.fonts[px] = ImageFont.truetype(self.path, px)
-        return self.fonts[px]
-
-    def _small(self, ch):
-        im = Image.new("L", (96, 96), 0)
-        ImageDraw.Draw(im).text((16, 8), ch, font=self.font(64), fill=255)
-        return np.asarray(im)
-
-    def has(self, ch):
-        """Whether the font has ch (its drawing is not the missing-glyph box)."""
-        if self.missing is None:
-            self.missing = self._small("\uFFFF")
-        a = self._small(ch)
-        return bool(a.any()) and not np.array_equal(a, self.missing)
-
-    def ink(self, ch, px):
-        """Ink box of ch drawn at (0, 0) with a font of px pixels."""
-        im = Image.new("L", (px * 3, px * 3), 0)
-        ImageDraw.Draw(im).text((px, px), ch, font=self.font(px), fill=255)
-        box = im.getbbox()
-        return (box[0] - px, box[1] - px, box[2] - px, box[3] - px)
-
-    def ink_size(self, ch, px=256):
-        box = self.ink(ch, px)
-        return (box[2] - box[0]) / px, (box[3] - box[1]) / px
-
-    def draw(self, ch, em, w, h, cx, cy, scale):
-        """Coverage (0..1) of ch in a w x h cell enlarged by scale, its ink
-        box centred on (cx, cy) (cell texels)."""
-        k = scale * SS
-        px = int(round(em * k))
-        box = self.ink(ch, px)
-        im = Image.new("L", (w * k, h * k), 0)
-        x = cx * k - (box[0] + box[2]) / 2
-        y = cy * k - (box[1] + box[3]) / 2
-        ImageDraw.Draw(im).text((x, y), ch, font=self.font(px), fill=255)
-        a = np.asarray(im, np.float32) / 255
-        return a.reshape(h * scale, SS, w * scale, SS).mean((1, 3))
 
 
 def ink_box(cov, level=0.5):
@@ -551,13 +512,6 @@ def ink_box(cov, level=0.5):
     return ex[0], ey[0], ex[1], ey[1]
 
 
-def is_japanese(ch):
-    """Kana and kanji are drawn from the outline font, whose design is close
-    to the game's. The Latin letters, digits and signs of the game's fonts
-    are of another, heavier design: those keep their own shapes."""
-    return ch is not None and ("\u3041" <= ch <= "\u30FA" or "\u4E00" <= ch <= "\u9FFF")
-
-
 def area_down(a, scale):
     h, w = a.shape
     return a.reshape(h // scale, scale, w // scale, scale).mean((1, 3))
@@ -568,23 +522,34 @@ def likeness(a, b):
     return float(2 * np.minimum(a, b).sum() / max(a.sum() + b.sum(), 1e-6))
 
 
-def outline_of(cov, radius):
-    """The outline texture of a character: its shape grown by radius texels
-    of the enlarged picture, with a soft edge."""
-    sigma = max(radius, 0.5)
-    b = _blur(np.ascontiguousarray(cov * 255, np.float32), sigma) / 255
-    level = 0.1587  # a straight edge moves out by one sigma
-    ramp = 0.242 / sigma
-    return np.clip((b - level) / ramp + 0.5, 0.0, 1.0)
-
-
-def enlarge_coverage(cov, scale):
-    """A character without a usable outline drawing: the original bitmap
-    enlarged, with the soft edge made as narrow as the new texels."""
+def enlarge_coverage(cov, scale, gain):
+    """A character's shape (coverage 0..1) enlarged: smooth interpolation,
+    then the soft edge narrowed around the half-coverage line, which is where
+    the eye puts the outline of the original bitmap. The shape stays the
+    game's own; gain 1 would be plain interpolation."""
     h, w = cov.shape
     up = _resize(np.ascontiguousarray(cov, np.float32), (w * scale, h * scale), Image.BICUBIC)
-    up = _blur(up, scale * 0.3)
-    return np.clip((up - 0.5) * 2.2 + 0.5, 0.0, 1.0)
+    up = _blur(up, scale * 0.25)
+    return np.clip((up - 0.5) * gain + 0.5, 0.0, 1.0)
+
+
+MAIN_GAIN = 3.0     # the character itself: a crisp edge
+OUTLINE_GAIN = 1.6  # the outline texture keeps most of its soft fall-off
+
+
+def from_larger(src, src_box, dst_box, dst_w, dst_h):
+    """The same character from the larger font, already enlarged FONT_SCALE
+    times (src), brought to where and how large the small font's character
+    is: ink box onto ink box, one scale for both directions."""
+    k = ((dst_box[2] - dst_box[0]) / (src_box[2] - src_box[0]) + (dst_box[3] - dst_box[1]) / (src_box[3] - src_box[1])) / 2
+    scx, scy = (src_box[0] + src_box[2]) / 2, (src_box[1] + src_box[3]) / 2
+    dcx, dcy = (dst_box[0] + dst_box[2]) / 2, (dst_box[1] + dst_box[3]) / 2
+    f = FONT_SCALE
+    # output pixel (x, y) -> source pixel: u = (x / f - dcx) / k * f + scx * f
+    coeff = (1 / k, 0, (scx - dcx / k) * f, 0, 1 / k, (scy - dcy / k) * f)
+    im = Image.fromarray(np.ascontiguousarray(src, np.float32), "F")
+    out = im.transform((dst_w * f, dst_h * f), Image.AFFINE, coeff, Image.BICUBIC)
+    return np.clip(np.asarray(out, np.float32), 0.0, 1.0)
 
 
 # --------------------------------------------------------------------- work
@@ -655,104 +620,59 @@ def import_sprite(import_dir, stem, px, scale):
     return out
 
 
-_typeface = None
+def _planes(tex):
+    px, _ = tex_decode(tex[0], tex[1])
+    return px[..., 0].astype(np.float32) / 255, px[..., 3].astype(np.float32) / 255
 
 
 def do_glyph(job):
-    """One character: (main texture, outline texture). Returns how it was made."""
-    global _typeface
-    (ch, cw, chh, cls), main, outline, out_dir, font_path, em, grow = job
-    if _typeface is None and font_path:
-        _typeface = Typeface(font_path)
-    d, e, stem = main
-    px, _ = tex_decode(d, e)
-    cov = px[..., 0].astype(np.float32) / 255  # the main texture's intensity is the shape
+    """One character of a text font: its main texture (intensity = the
+    shape, alpha opaque) and its outline texture (the grown shape, in
+    intensity and alpha). Returns how it was made.
+
+    A character of the 16 pixel font is taken from the 24 pixel font's
+    bitmap of the same character when that, reduced to 16, is the same
+    drawing (kana and kanji are; the Latin letters and digits of the two
+    fonts are different designs). Otherwise its own bitmap is enlarged."""
+    (ch, cw, chh, cls), main, outline, big, out_dir = job
+    cov, _ = _planes(main)
     h, w = cov.shape
-    box = ink_box(cov[:chh, :cw])
-    drawn = None
-    if _typeface is not None and box is not None and em and is_japanese(ch) and _typeface.has(ch):
-        cx, cy = (box[0] + box[2]) / 2, (box[1] + box[3]) / 2
-        drawn = _typeface.draw(ch, em, w, h, cx, cy, FONT_SCALE)
-        if likeness(area_down(drawn, FONT_SCALE), cov) < 0.35:  # not this character after all
-            drawn = None
-    how = "drawn" if drawn is not None else "enlarged"
+    drawn = o_i = o_a = None
+    how = "own"
+    if big is not None:
+        (bcw, bch), big_main, big_outline = big
+        bcov, _ = _planes(big_main)
+        dst_box, src_box = ink_box(cov[:chh, :cw]), ink_box(bcov[:bch, :bcw])
+        same = False
+        if dst_box is not None and src_box is not None:
+            # the two fonts' Latin letters and digits are different designs:
+            # the 16 pixel ones are narrower (ink box 0.66 to 0.79 of the
+            # 24 pixel one's proportions), kana and kanji 0.94 to 1.06
+            shape = ((dst_box[2] - dst_box[0]) * (src_box[3] - src_box[1])) / ((dst_box[3] - dst_box[1]) * (src_box[2] - src_box[0]))
+            same = 0.88 <= shape <= 1.14
+        if same:
+            cand = from_larger(enlarge_coverage(bcov, FONT_SCALE, MAIN_GAIN), src_box, dst_box, w, h)
+            if likeness(area_down(cand, FONT_SCALE), np.clip((cov - 0.5) * MAIN_GAIN + 0.5, 0, 1)) >= LIKENESS:
+                drawn, how = cand, "larger"
+                if outline is not None and big_outline is not None:
+                    bi, ba = _planes(big_outline)
+                    o_i = from_larger(enlarge_coverage(bi, FONT_SCALE, OUTLINE_GAIN), src_box, dst_box, w, h)
+                    o_a = from_larger(enlarge_coverage(ba, FONT_SCALE, OUTLINE_GAIN), src_box, dst_box, w, h)
     if drawn is None:
-        drawn = enlarge_coverage(cov, FONT_SCALE)
+        drawn = enlarge_coverage(cov, FONT_SCALE, MAIN_GAIN)
     v = drawn * 255
-    full = np.full_like(v, 255)
-    write_with_mips(out_dir, stem, np.stack([v, v, v, full], -1), 2)
+    write_with_mips(out_dir, main[2], np.stack([v, v, v, np.full_like(v, 255)], -1), 2)
     if outline is not None:
-        d, e, stem = outline
-        if how == "drawn":
-            o = outline_of(drawn, grow * FONT_SCALE) * 255
-            write_with_mips(out_dir, stem, np.stack([o, o, o, o], -1), 2)
-        else:
-            px, _ = tex_decode(d, e)
-            oi = enlarge_coverage(px[..., 0].astype(np.float32) / 255, FONT_SCALE) * 255
-            oa = enlarge_coverage(px[..., 3].astype(np.float32) / 255, FONT_SCALE) * 255
-            write_with_mips(out_dir, stem, np.stack([oi, oi, oi, oa], -1), 2)
+        if o_i is None:
+            oi, oa = _planes(outline)
+            o_i = enlarge_coverage(oi, FONT_SCALE, OUTLINE_GAIN)
+            o_a = enlarge_coverage(oa, FONT_SCALE, OUTLINE_GAIN)
+        o_i, o_a = o_i * 255, o_a * 255
+        write_with_mips(out_dir, outline[2], np.stack([o_i, o_i, o_i, o_a], -1), 2)
     return how
 
 
-def fit_typeface(face, glyphs):
-    """Per size class: the font size (in original texels), from the median
-    ratio of the kanji's original ink boxes to the drawings'; and how far the
-    outline textures reach beyond the shape, as the reach whose outlines
-    carry as much ink as the original ones."""
-    em, grow = {}, {}
-    for cls in (16, 24):
-        ratios = []
-        sample = [g for g in glyphs if g[0][3] == cls and g[0][0] and "\u4e00" <= g[0][0] <= "\u9fff"][::3]
-        boxes = []
-        for (ch, cw, chh, _), main, outline in sample:
-            if not face.has(ch):
-                continue
-            px, _ = tex_decode(main[0], main[1])
-            box = ink_box(px[:chh, :cw, 0].astype(np.float32) / 255)
-            if box is None:
-                continue
-            iw, ih = face.ink_size(ch)
-            ratios.append(((box[2] - box[0]) / iw + (box[3] - box[1]) / ih) / 2)
-            boxes.append((ch, px.shape[1], px.shape[0], box, outline))
-        if not ratios:
-            continue
-        em[cls] = float(np.median(ratios))
-        reaches = np.arange(0.75, 3.01, 0.25)
-        ink = np.zeros(len(reaches))
-        target = 0.0
-        for ch, w, h, box, outline in boxes[::4]:
-            if outline is None:
-                continue
-            opx, _ = tex_decode(outline[0], outline[1])
-            target += float(opx[..., 3].sum()) / 255
-            drawn = face.draw(ch, em[cls], w, h, (box[0] + box[2]) / 2, (box[1] + box[3]) / 2, FONT_SCALE)
-            for i, r in enumerate(reaches):
-                ink[i] += float(outline_of(drawn, r * FONT_SCALE).sum()) / FONT_SCALE ** 2
-        grow[cls] = float(reaches[int(np.argmin(np.abs(ink - target)))]) if target else 1.0
-    return em, grow
-
-
-def find_font(path, cache_dir):
-    if path:
-        return path if os.path.exists(path) else None
-    here = os.path.join(os.path.dirname(os.path.abspath(__file__)), "MPLUSRounded1c-ExtraBold.ttf")
-    cached = os.path.join(cache_dir, "MPLUSRounded1c-ExtraBold.ttf")
-    for p in (here, cached):
-        if os.path.exists(p):
-            return p
-    try:
-        import urllib.request
-        os.makedirs(cache_dir, exist_ok=True)
-        print("downloading the outline font (M PLUS Rounded 1c, SIL Open Font License)")
-        with urllib.request.urlopen(FONT_URL, timeout=60) as r:
-            data = r.read()
-        with open(cached + ".part", "wb") as f:
-            f.write(data)
-        os.replace(cached + ".part", cached)
-        return cached
-    except Exception as ex:  # no network: the fonts are enlarged bitmaps then
-        print("could not download the outline font (%s)" % ex)
-        return None
+LIKENESS = 0.80
 
 
 def main():
@@ -760,10 +680,6 @@ def main():
     ap.add_argument("--iso", required=True, help="disc image of Mario Kart Arcade GP 2 (Japan)")
     ap.add_argument("--out", default="hires", help="folder to write (MKGP2PC_HIRES_DIR, 'hires' next to the executable)")
     ap.add_argument("--scale", type=int, default=2, choices=(2, 4), help="enlargement of sprites (default 2)")
-    ap.add_argument("--font", help="outline font file for the text fonts (default: M PLUS Rounded 1c ExtraBold)")
-    ap.add_argument("--cache", default=os.path.join(os.path.expanduser("~"), ".cache", "mkgp2-pc"),
-                    help="where the downloaded outline font is kept")
-    ap.add_argument("--no-font", action="store_true", help="enlarge the original font bitmaps instead of drawing anew")
     ap.add_argument("--export-sprites", metavar="DIR",
                     help="only write the sprite textures' source pictures to DIR/rgb and DIR/alpha, for an outside enlarger")
     ap.add_argument("--import-sprites", metavar="DIR",
@@ -825,20 +741,16 @@ def main():
         print("%d sprite textures exported to %s" % (len(sprites), args.export_sprites))
         return
 
-    font_path = None if args.no_font else find_font(args.font, args.cache)
-    em, grow = {}, {}
-    if font_path:
-        em, grow = fit_typeface(Typeface(font_path), glyphs)
-        print("outline font %s: size %s, outline reach %s (original texels)" % (
-            os.path.basename(font_path), {k: round(v, 2) for k, v in em.items()}, {k: round(v, 2) for k, v in grow.items()}))
-    elif not args.no_font:
-        print("no outline font: the text fonts are enlarged bitmaps")
-
-    glyph_jobs = [(g, m, o, args.out, font_path, em.get(g[3]), grow.get(g[3], 1.0)) for g, m, o in glyphs]
+    # the 24 pixel font's textures of each character, for the 16 pixel font
+    big_of = {}
+    for g, m, o in glyphs:
+        if g[3] == 24:
+            big_of[g[0]] = ((g[1], g[2]), m, o)
+    glyph_jobs = [(g, m, o, big_of.get(g[0]) if g[3] == 16 else None, args.out) for g, m, o in glyphs]
     print("%d sprite textures (x%d), %d characters (x%d), %d files skipped" % (
         len(sprites), args.scale, len(glyph_jobs), FONT_SCALE, skipped))
     sprites.sort(key=lambda j: -j[1]["w"] * j[1]["h"])
-    made = {"drawn": 0, "enlarged": 0}
+    made = {"own": 0, "larger": 0}
     with ProcessPoolExecutor(args.jobs) as pool:
         for how in pool.map(do_glyph, glyph_jobs, chunksize=16):
             made[how] += 1
@@ -850,7 +762,7 @@ def main():
             if time.time() - last > 10:
                 last = time.time()
                 print("  %3d %%" % (100 * done // max(total, 1)), flush=True)
-    print("characters: %d drawn from the outline font, %d enlarged from the bitmap" % (made["drawn"], made["enlarged"]))
+    print("characters: %d enlarged from their own bitmap, %d of the 16 pixel font from the 24 pixel bitmap" % (made["own"], made["larger"]))
     print("done in %.0f s: %s" % (time.time() - started, args.out))
 
 
