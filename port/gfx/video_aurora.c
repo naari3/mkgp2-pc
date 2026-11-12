@@ -878,6 +878,23 @@ static void wide_frame(void) {
   float k = ((float)size.fb_width / (float)size.fb_height) / (4.0f / 3.0f);
   mkgp2pc_wide_frame(k > 1.001f ? k : 1.0f);
 }
+/* One line in the log when the window's client area is not the size of the
+ * picture drawn into it (the band around the picture is then not ours to
+ * paint): looked at once, two seconds in, when the window has settled. */
+static void window_size_check(void) {
+  if (s_retrace != 120 || s_window == NULL) {
+    return;
+  }
+  int w = 0, h = 0;
+  SDL_GetWindowSizeInPixels(s_window, &w, &h);
+  AuroraWindowSize size = aurora_get_window_size();
+  if ((uint32_t)w != size.native_fb_width || (uint32_t)h != size.native_fb_height) {
+    fprintf(stderr, "window: client area %dx%d, picture %ux%u\n", w, h, (unsigned)size.native_fb_width,
+            (unsigned)size.native_fb_height);
+  } else {
+    fprintf(stderr, "window: client area %dx%d\n", w, h);
+  }
+}
 /* Anti-aliasing (docs/port/antialiasing.md). Two means, both the rendering
  * library's own, both off unless asked for:
  *   MKGP2PC_MSAA=4  four samples per pixel at the edges of polygons;
@@ -1005,7 +1022,18 @@ int __wrap_main(int argc, char** argv) {
    * Until that is understood the window keeps its size; MKGP2PC_SCALE sets
    * it, MKGP2PC_RESIZABLE=1 gives the frame back. */
   if (s_window != NULL && getenv("MKGP2PC_RESIZABLE") == NULL) {
+    /* SDL only swaps the style bits (SetWindowLong); the window keeps its
+     * outer size, and when Windows next works the frame out the thinner
+     * fixed frame leaves a client area 10 pixels wider and higher than the
+     * picture (1930x1090 around 1920x1080): a white band on all four sides
+     * (screenshot 2026-11-12). Setting the size again makes SDL place the
+     * window for the new frame, so the client area is the picture's size. */
+    int w = 0, h = 0;
+    SDL_GetWindowSize(s_window, &w, &h);
     SDL_SetWindowResizable(s_window, false);
+    if (w > 0 && h > 0) {
+      SDL_SetWindowSize(s_window, w, h);
+    }
   }
 #endif
   if (s_wide) {
@@ -1358,6 +1386,7 @@ void VIWaitForRetrace(void) {
   t[4] = SDL_GetTicksNS();
   int level = OSDisableInterrupts();
   s_retrace++;
+  window_size_check();
   mkgp2pc_script_tick(s_retrace);
   mkgp2pc_mediaboard_tick();
   keyboard_tick();
