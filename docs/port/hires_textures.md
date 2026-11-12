@@ -260,10 +260,27 @@ the way the game addresses it (repeat, mirror or clamp), in `models-rgb`
 and `models-alpha`, and the margin is cut off again on import. That is
 about 1.3 times the texels of the plain textures (97 million before the
 margin), so expect the general model to take a multiple of the sprites'
-time. **Not run with the real enlarger yet**; with a stand-in enlarger the
+time. With a stand-in enlarger the
 imported pictures line up with the built-in ones (Linux, whole disc) and
 all four folders pass through the Windows program under Wine (which found
 that the enlarger was started with relative paths: fixed).
+
+Run on the user's PC, 2026-11-12 (RTX 3060 Ti, `--ai-models
+realesrgan-x4plus`, whole disc): 699 s, of which 480 s colour and 63 s
+alpha of the 3,641 model textures; generator peak 2.1 GB, enlarger 1.3 GB;
+`models` 5,141 files, 784 MB. In the game (Windows, 16:9, one indoor course
+raced): private bytes peak 711 MB. The user: "まあいい感じ", and course
+textures could go one step further.
+
+`--scale-courses 4` is that step: the enlarger's output is four times the
+original and was being halved; textures used by a course's own archive (name
+of two or three capitals and an underscore, `YIA_cake.dat`,
+`MR_highway_long_A.dat`; not `AT_`, the attract film) now keep it, unless a
+side would pass 2048 texels. Textures the original gives no mip levels get
+one here (the picture at twice the size), so the far parts of a course do
+not shimmer and nothing is softer than the x2 pack. Yoshi Park's 74 course
+textures go from 46 MB to 185 MB of texels. Tried on Linux with a stand-in
+enlarger only; not yet with the real one, not yet in the game.
 
 **`mkgp2-hires.exe --ai` itself (the download, the unpacking on Windows,
 starting the enlarger) has not been run anywhere yet.** Tried: the archive
