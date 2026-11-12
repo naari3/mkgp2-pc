@@ -599,7 +599,9 @@ def cxx_renames(built):
             c = mwcc_names.canon_mwcc(k)
         for k, v in entries:
             c = mwcc_names.canon_mwcc(k)
-            if c and not v.startswith("@"):
+            if c and not v.startswith(("@", "extern:", "active:")):
+                # ("extern:NAME" and "active:NAME" are instructions to the matching
+                # build about a unit-local object, not a name for the host object)
                 table[unit][c] = v
             elif not c and re.fullmatch(r"[A-Za-z]\w*", k) and "__" not in k and re.fullmatch(r"(global:)?[A-Za-z]\w*", v):
                 # a C-linkage function or object the unit writes under a
