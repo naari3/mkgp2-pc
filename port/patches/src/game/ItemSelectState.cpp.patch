@@ -1,0 +1,19 @@
+--- a/src/game/ItemSelectState.cpp
++++ b/src/game/ItemSelectState.cpp
+@@ -436,10 +436,16 @@
+ }
+ ItemSelectState::~ItemSelectState() {
+     PlayerData *player=(PlayerData *)g_playerData;
++    /* PC port: the item screen can be left backwards before anything was
++     * chosen (port/platform/nav/nav.c). The three choices are then still -1
++     * and must not replace the ones kept for the card and for the next
++     * visit of this screen. */
++    if(selectedItemId0!=-1) {
+     setSel((PlayerData *)g_playerData,&selectedItemId0);
+     lbl_806D1264[0]=PlayerData_ResolveUnlockedIdByIndex(g_playerData,selectedItemId0);
+     lbl_806D1264[1]=PlayerData_ResolveUnlockedIdByIndex(g_playerData,selectedItemId1);
+     lbl_806D1264[2]=PlayerData_ResolveUnlockedIdByIndex(g_playerData,selectedItemId2);
++    }
+     if(iconArray) {delete iconArray;iconArray=0;}
+     if(auxBuffer) {delete auxBuffer;auxBuffer=0;}
+     for(int i=0;i<9;i++) if(groups[i]) {SpriteAnimHandle_Destroy(groups[i],1);groups[i]=0;}

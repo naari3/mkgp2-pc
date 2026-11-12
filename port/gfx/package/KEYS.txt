@@ -7,6 +7,9 @@ Keyboard (the game window needs the focus)
   I              put the card in (card.bin next to the program; the game
                  makes it when you buy a new card)
   F1 / F2        test / service button
+  Esc            menu: back to the title or to a selection screen,
+                 restart the race, quit (up / down, enter; Esc closes)
+  Backspace      in the selection screens before a race: one screen back
   P / O          pause or resume / one frame forward while paused
   F9             write a dump (dumps folder next to the program)
   F10            full speed on / off: the game runs as fast as the machine
