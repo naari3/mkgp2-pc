@@ -47,6 +47,7 @@ static const KeyAction kActions[] = {
     {L"accel", L"アクセル", {82, 29}},
     {L"brake", L"ブレーキ", {81, 27}},
     {L"item", L"アイテム", {44, 40}},
+    {L"cancel", L"キャンセル (マリオボタン)", {225, 0}},
     {L"coin", L"コイン", {34, 6}},
     {L"card", L"カード挿入", {12, 0}},
     {L"test", L"テスト", {58, 0}},
@@ -858,7 +859,7 @@ static void key_change(int slot, int ask) {
  * a job object, so that stopping it also stops the enlarger it may have
  * started. */
 
-enum { HR_METHOD = 1, HR_SCALE, HR_BAR, HR_TEXT, HR_START, HR_CLOSE };
+enum { HR_METHOD = 1, HR_SCALE, HR_MODELS, HR_BAR, HR_TEXT, HR_START, HR_CLOSE };
 
 static HWND g_hr;
 static HANDLE g_hrProc, g_hrJob, g_hrPipe;
@@ -869,7 +870,8 @@ static wchar_t g_hrStage[64], g_hrError[400];
 static const struct { const char* id; const wchar_t* text; } kHiresStages[] = {
     {"read", L"読み込み"},        {"fonts", L"フォント"},          {"sprites", L"スプライト"},
     {"export", L"書き出し"},      {"download", L"ダウンロード"},   {"enlarge-rgb", L"AI 拡大 (色)"},
-    {"enlarge-alpha", L"AI 拡大 (透明度)"}, {"import", L"取り込み"},
+    {"enlarge-alpha", L"AI 拡大 (透明度)"}, {"import", L"取り込み"}, {"models", L"3D のテクスチャ"},
+    {"import-models", L"取り込み (3D)"},
 };
 
 static void hires_text(void) {
@@ -900,6 +902,7 @@ static void hires_line(const char* line) {
 static void hires_running(int running) {
   EnableWindow(GetDlgItem(g_hr, HR_METHOD), !running);
   EnableWindow(GetDlgItem(g_hr, HR_SCALE), !running);
+  EnableWindow(GetDlgItem(g_hr, HR_MODELS), !running);
   EnableWindow(GetDlgItem(g_hr, HR_START), !running);
   SetDlgItemTextW(g_hr, HR_CLOSE, running ? L"中止" : L"閉じる");
 }
@@ -966,7 +969,8 @@ static void hires_start(void) {
     return;
   }
   if (method < 0 || method > 2) method = 0;
-  int n = swprintf(cmd, LEN(cmd), L"\"%ls\" --iso \"%ls\" --out \"%ls\" --scale %d", exe, iso, out, scale);
+  int n = swprintf(cmd, LEN(cmd), L"\"%ls\" --iso \"%ls\" --out \"%ls\" --scale %d%ls", exe, iso, out, scale,
+                   IsDlgButtonChecked(g_hr, HR_MODELS) == BST_CHECKED ? L" --models" : L"");
   if (method != 0) {
     if (GetFileAttributesW(tool) == INVALID_FILE_ATTRIBUTES) {
       /* the one place with a sentence: fetching a program needs a yes */
@@ -1076,6 +1080,7 @@ static void hires_window(void) {
   SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)L"2 倍");
   SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)L"4 倍");
   SendMessageW(c, CB_SETCURSEL, 0, 0);
+  hires_ctl(L"BUTTON", L"3D のテクスチャも", BS_AUTOCHECKBOX | WS_TABSTOP, 220, 52, 164, 20, HR_MODELS);
   c = hires_ctl(PROGRESS_CLASSW, L"", 0, 16, 90, 368, 18, HR_BAR);
   SendMessageW(c, PBM_SETRANGE, 0, MAKELPARAM(0, 100));
   hires_ctl(L"STATIC", L"", SS_LEFT | SS_ENDELLIPSIS, 16, 114, 368, 20, HR_TEXT);

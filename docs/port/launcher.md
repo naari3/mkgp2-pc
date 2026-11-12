@@ -81,8 +81,9 @@ starts as the cabinet does.
 
 The board check between the two (60 seconds unless `MKGP2PC_BOOT_CHECK`
 handling of the cabinet link shortens it, cabinet_link.md) lies inside the
-fast stretch too. The log says `boot: start-up screens begin/end at retrace
-N`. Measured 2026-11-12 with the no-graphics Linux build: the screens end
+fast stretch too. The log says `boot: start-up screens begin` and `... end` (without a
+retrace number: a port object that calls into the video layer does not link
+on Windows). Measured 2026-11-12 with the no-graphics Linux build: the screens end
 at retrace 4653 without the setting and 4054 with it (the 599 frames of the
 NOTICE); the fast stretch itself needs the rendering build and has not been
 run yet.
@@ -95,10 +96,10 @@ Read by `key_map_load` in `port/gfx/video_aurora.c`:
 
 `action=key[,key...]` separated by `;`, up to four keys per action. Actions
 not named keep their default keys; nothing after `=` leaves an action without
-a key. Actions: `left right accel brake item coin card test service pause
+a key. Actions: `left right accel brake item cancel coin card test service pause
 step fast fasthold dump hires menu back debug debugpage devup devdown devstart
-devsub` (`menu`, `back`: the port's menu and one selection screen back, menu.md;
-from `debug` on: the game's own debug output and the buttons of the
+devsub` (`menu`, `back`: the port's menu and one selection screen back,
+menu.md; from `debug` on: the game's own debug output and the buttons of the
 developers' scenes, debug.md). A key is an SDL scancode name (`A`, `Left`, `F9`,
 `Keypad 5`) or the scancode number, which is the USB keyboard usage (4 = A).
 A single character is always a name (`5` is the key 5), so numbers are

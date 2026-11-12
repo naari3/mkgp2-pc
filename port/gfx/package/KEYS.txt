@@ -4,6 +4,7 @@ Keyboard (the game window needs the focus)
   up or Z        accelerator
   down or X      brake
   space, enter   item button (also "decide" in the menus)
+  left shift     cancel button (the "Mario button")
   I              put the card in (card.bin next to the program; the game
                  makes it when you buy a new card)
   F1 / F2        test / service button
