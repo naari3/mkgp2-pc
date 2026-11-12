@@ -460,8 +460,9 @@ was started from (`MKGP2PC_DUMP_DIR` names another place; the folder is in
   script alike, as `<frame> <command>` lines in the `MKGP2PC_SCRIPT` syntax.
 - `state.txt`: frame number, paused or not, the `MKGP2PC_*` settings.
 - `frame_small.jpg`, `stacks.txt`, `memory.txt`, `mem1.bin.gz`,
-  `image.bin.gz`, `symbols.txt.gz`: a small copy of the picture, where every
-  thread was, and the game's memory. The same files (and a minidump on
+  `image.bin.gz`, `symbols.txt.gz`, `gx_fifo.bin.gz`: a small copy of the
+  picture, where every thread was, the game's memory, and the frame's draw
+  commands. The same files (and a minidump on
   Windows) are written to `dumps/crash_<time>/` when the program dies. See
   [dumps.md](dumps.md).
 

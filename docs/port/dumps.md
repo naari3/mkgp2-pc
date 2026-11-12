@@ -21,6 +21,7 @@ itself. Both hold:
 | `image.bin.gz` | the executable's data sections: the game's global variables (`.mw_data`, `.mw_bss`, `.mw_sdata`, ... are the original's sections), the port's and the libraries' |
 | `symbols.txt.gz` | address, kind (`T` code, `D` data) and name of every symbol of the executable that wrote the dump |
 | `input.txt`, `state.txt` | as before: the inputs since the start (replayable), the frame number and settings |
+| `gx_fifo.bin.gz` | the draw commands of the frame: everything the game's GX calls sent, in order (crash folders: the frame so far, and `gx_fifo_prev.bin.gz`, the frame before) |
 | `frame.png`, `frame_small.jpg` | F9 only: the picture, and a copy at most 640 wide (some tens of KB) |
 | `crash.dmp` | crash folders on Windows only: a minidump (all threads with their stacks, the module list, the exception) for WinDbg or Visual Studio |
 
@@ -127,10 +128,54 @@ A pointer into `mem1` is a heap object or loaded file; which one is not
 recorded (the heap's block headers are in the memory, a walker is not
 written).
 
+## The frame's draw commands
+
+Aurora's GX functions do not draw. They write the console's command stream
+(BP, CP and XF register loads and vertex data, as the real GX library
+does) into a buffer, with commands of Aurora's own where the console
+passed an address (vertex arrays, textures, copies), and a worker thread
+works through it. `port/gfx/gx_shim.cpp` copies that buffer as it grows, a
+frame at a time (about 0.7 MB for a race frame of the attract mode, 5500
+draws; 0.35 MB packed). `MKGP2PC_DUMP_GX=0` switches the copying off.
+
+`port/tools/gx_fifo.py <folder>` lists it:
+
+```
+gx_fifo.py <folder> --summary          counts, and problems found
+gx_fifo.py <folder>                    every command, one line each
+gx_fifo.py <folder> --draw 37 --verts  draw 37 with the commands since draw 36 and its vertices
+gx_fifo.py <folder> --prev             the frame before (crash folders)
+```
+
+```
+XF  posMtx0                  -0.000113 0.453948 -0.891028 34.8862 ...
+AUR array POS                811e6140 (mem1+0x11e6140) size 1224 big-endian
+CP  vcdLo                    00000400
+AUR loadTexObj map0 80f3a2c0 (mem1+0xf3a2c0) 64x64 CMPR tlut 0 object 12 version 1
+DRAW #2 tristrip fmt0 34 vertices  [POS:index8 TEX0:index8]
+-- GXCopyTex dest 0x9cab020 clear 0
+```
+
+Addresses are named when the dump's memory files are there, and the array
+or texture can then be read with `dump_inspect.py`. The tool reports an
+indexed load or draw whose array address is 0, which is what the library's
+"indexed XF load from unmapped array" is about.
+
+What the record does not have: state set in earlier frames (the vertex
+description and formats at the frame's start are recorded; matrices,
+textures and arrays set earlier and not again are not), and the commands a
+call writes just before it empties the buffer itself. For the calls known
+to do that (`GXDrawDone`, `GXCopyTex`, `GXCopyDisp`) the copy is taken
+around them and a note line names the call; if the buffer was emptied
+anywhere else the listing says `emptied unseen`. Register values are shown
+as numbers, with the register's name; they are not broken down into
+fields.
+
 ## What was verified where
 
 - Linux (cloud, Xvfb, software GL): F9 dump, `crash` and `abort` in the
-  game; folders complete; `dump_inspect.py` on them. `frame.png` and
+  game; folders complete; `dump_inspect.py` on them. `gx_fifo.py` read whole
+  frames of the attract mode's race to the last byte (5552 draws). `frame.png` and
   `frame_small.jpg` are not written there (no frame read-back); the JPEG
   writer was checked separately against a decoder.
 - Windows code paths, with `diag.c` built alone as a test program
@@ -154,7 +199,7 @@ thread is further down (look for `BootDispatcher`).
 
 ## Not done
 
-- The frame's draw commands (GX calls and state) are not in a dump. The
-  place to record them is the wrapper layer in `port/gfx/gx_shim.cpp`.
+- `gx_fifo.py` names registers but does not decode their fields, and
+  cannot draw the frame.
 - No heap walker and no typed view of structures in `dump_inspect.py`.
 - No picture in a crash folder.

@@ -38,6 +38,7 @@
 #include <aurora/texture.hpp>
 
 #include <cmath>
+#include <cstdarg>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -291,6 +292,169 @@ extern "C" void __wrap_GXSetTevKColor(u32 id, GXColor color) {
   }
   __real_GXSetTevKColor(id, color);
 }
+/*
+ * The frame's draw commands, for dumps (docs/port/dumps.md,
+ * port/tools/gx_fifo.py). Aurora's GX functions do not draw: they write the
+ * console's command stream (BP / CP / XF register loads, vertex data, and
+ * Aurora's own commands for what the console passed as addresses) into a
+ * buffer that a worker thread works through. That buffer is copied here as
+ * it grows, so that a dump can say what was sent for a frame, in order.
+ *
+ * The buffer is emptied inside some calls (GXDrawDone, the copies, the end
+ * of the frame). Before each of those known here the new bytes are taken
+ * and the buffer is emptied by hand (AuroraGXSync), so what such a call
+ * writes itself starts at zero again; a note names the call. Anywhere else
+ * a buffer that became shorter is recorded as "emptied unseen" (the bytes
+ * since the last look are missing).
+ *
+ * File: "MKGX1\0\0\0", then records: u32 kind, u32 length, payload
+ * (little-endian). Kind 0: stream bytes. 1: a note (text). 2: the vertex
+ * description and formats in force at the frame's start (21 attribute
+ * types, then 8 formats x 12 attributes x (count, type, shift)).
+ * MKGP2PC_DUMP_GX=0 switches the copying off.
+ */
+namespace aurora::gx::fifo {
+const uint8_t* get_buffer_data();
+uint32_t get_buffer_size();
+} // namespace aurora::gx::fifo
+extern "C" {
+typedef struct gzFile_s* gzFile; /* zlib without its header, as in diag.c */
+gzFile gzopen(const char* path, const char* mode);
+int gzwrite(gzFile file, const void* buf, unsigned len);
+int gzclose(gzFile file);
+}
+namespace {
+std::vector<uint8_t> sGxNow, sGxLast;
+uint32_t sGxSeen;
+bool sGxNeedState = true;
+int sGxOn = -1;
+bool gxlog_on() {
+  if (sGxOn < 0) {
+    const char* v = getenv("MKGP2PC_DUMP_GX");
+    sGxOn = v == nullptr || strcmp(v, "0") != 0;
+  }
+  return sGxOn != 0;
+}
+void gxlog_record(u32 kind, const void* data, u32 size) {
+  const u32 head[2] = {kind, size};
+  const auto* h = reinterpret_cast<const uint8_t*>(head);
+  sGxNow.insert(sGxNow.end(), h, h + 8);
+  const auto* d = static_cast<const uint8_t*>(data);
+  sGxNow.insert(sGxNow.end(), d, d + size);
+}
+void gxlog_state() {
+  uint8_t st[21 + 8 * 12 * 3];
+  for (int a = 0; a < 21; a++) {
+    GXAttrType t = GX_NONE;
+    GXGetVtxDesc(static_cast<GXAttr>(a), &t);
+    st[a] = static_cast<uint8_t>(t);
+  }
+  uint8_t* o = st + 21;
+  for (int f = 0; f < 8; f++) {
+    for (int a = GX_VA_POS; a <= GX_VA_TEX7; a++) {
+      GXCompCnt cnt = static_cast<GXCompCnt>(0);
+      GXCompType type = static_cast<GXCompType>(0);
+      u8 shift = 0;
+      GXGetVtxAttrFmt(static_cast<GXVtxFmt>(f), static_cast<GXAttr>(a), &cnt, &type, &shift);
+      *o++ = static_cast<uint8_t>(cnt);
+      *o++ = static_cast<uint8_t>(type);
+      *o++ = shift;
+    }
+  }
+  gxlog_record(2, st, sizeof(st));
+}
+void gxlog_sample() {
+  if (!gxlog_on()) {
+    return;
+  }
+  if (sGxNeedState) {
+    sGxNeedState = false;
+    gxlog_state();
+  }
+  const uint32_t size = aurora::gx::fifo::get_buffer_size();
+  if (size < sGxSeen) {
+    static const char text[] = "emptied unseen: commands since the last look are missing";
+    gxlog_record(1, text, sizeof(text) - 1);
+    sGxSeen = 0;
+  }
+  if (size > sGxSeen) {
+    gxlog_record(0, aurora::gx::fifo::get_buffer_data() + sGxSeen, size - sGxSeen);
+    sGxSeen = size;
+  }
+}
+/* around a call that empties the buffer itself */
+void gxlog_before_emptying() {
+  if (!gxlog_on()) {
+    return;
+  }
+  gxlog_sample();
+  AuroraGXSync();
+  sGxSeen = 0;
+}
+void gxlog_after_emptying(const char* fmt, ...) {
+  if (!gxlog_on()) {
+    return;
+  }
+  const uint32_t size = aurora::gx::fifo::get_buffer_size();
+  if (size != 0) {
+    /* all of the call's own commands, or those after its emptying */
+    gxlog_record(0, aurora::gx::fifo::get_buffer_data(), size);
+  }
+  sGxSeen = size;
+  char text[160];
+  va_list ap;
+  va_start(ap, fmt);
+  const int n = vsnprintf(text, sizeof(text), fmt, ap);
+  va_end(ap);
+  gxlog_record(1, text, static_cast<u32>(n < 0 ? 0 : n >= static_cast<int>(sizeof(text)) ? sizeof(text) - 1 : n));
+}
+void gxlog_file(const char* dir, const char* name, const std::vector<uint8_t>& bytes) {
+  char path[700];
+  snprintf(path, sizeof(path), "%s/%s", dir, name);
+  gzFile z = gzopen(path, "wb1");
+  if (z == nullptr) {
+    return;
+  }
+  gzwrite(z, "MKGX1\0\0\0", 8);
+  for (size_t at = 0; at < bytes.size();) {
+    const size_t n = bytes.size() - at < (1u << 24) ? bytes.size() - at : (1u << 24);
+    gzwrite(z, bytes.data() + at, static_cast<unsigned>(n));
+    at += n;
+  }
+  gzclose(z);
+}
+} // namespace
+/* video_aurora.c: before the frame is handed over (retrace: for the note) */
+extern "C" void mkgp2pc_gxlog_frame_end(void) { gxlog_sample(); }
+/* ... and after: the frame's record becomes "the frame before" */
+extern "C" void mkgp2pc_gxlog_frame_next(void) {
+  if (!gxlog_on()) {
+    return;
+  }
+  sGxLast.swap(sGxNow);
+  sGxNow.clear();
+  sGxSeen = 0;
+  sGxNeedState = true;
+}
+/* gx_fifo.bin.gz: the frame so far (at F9: the whole frame, the dump is made
+ * at its end). withLast (a crash): gx_fifo_prev.bin.gz, the frame before. */
+extern "C" void mkgp2pc_gxlog_write(const char* dir, int withLast) {
+  if (!gxlog_on()) {
+    return;
+  }
+  gxlog_sample();
+  gxlog_file(dir, "gx_fifo.bin.gz", sGxNow);
+  if (withLast) {
+    gxlog_file(dir, "gx_fifo_prev.bin.gz", sGxLast);
+  }
+}
+extern "C" void __real_GXDrawDone(void);
+extern "C" void __wrap_GXDrawDone(void) {
+  gxlog_before_emptying();
+  __real_GXDrawDone();
+  gxlog_after_emptying("GXDrawDone");
+}
+
 extern "C" bool mkgp2pc_skip_draw;
 extern "C" void __wrap_GXCallDisplayList(const void* list, u32 nbytes) {
   if (mkgp2pc_skip_draw) {
@@ -327,6 +491,7 @@ extern "C" void __wrap_GXCallDisplayList(const void* list, u32 nbytes) {
     }
   }
   __real_GXCallDisplayList(list, nbytes);
+  gxlog_sample();
 }
 /* video_aurora.c: at the end of each frame, and when a dump is written. */
 extern "C" void mkgp2pc_shadow_record_frame(void) {
@@ -812,6 +977,7 @@ void __wrap_GXEnd(void) {
   }
   if (!mkgp2pc_skip_draw) {
     __real_GXEnd();
+    gxlog_sample();
   }
 }
 void __real_GXBegin(GXPrimitive type, GXVtxFmt vtxfmt, u16 nverts);
@@ -828,12 +994,16 @@ void __wrap_GXCopyTex(void* dest, GXBool clear) {
     static int show = -1;
     if (show < 0) show = getenv("MKGP2PC_SHOW_COPY") != nullptr;
     if (show) { /* MKGP2PC_SHOW_COPY=1, debugging: the copied image stays on screen instead of the scene */
+      gxlog_before_emptying();
       __real_GXCopyTex(dest, GX_FALSE);
+      gxlog_after_emptying("GXCopyTex dest %p (shown instead of the scene)", dest);
       mkgp2pc_skip_draw = true;
       s_showHold = true;
       return;
     }
+    gxlog_before_emptying();
     __real_GXCopyTex(dest, clear);
+    gxlog_after_emptying("GXCopyTex dest %p clear %d", dest, (int)clear);
   }
 }
 void __real_GXCopyDisp(void* dest, GXBool clear);
@@ -843,7 +1013,9 @@ void __wrap_GXCopyDisp(void* dest, GXBool clear) {
     mkgp2pc_skip_draw = false;
   }
   if (!mkgp2pc_skip_draw) {
+    gxlog_before_emptying();
     __real_GXCopyDisp(dest, clear);
+    gxlog_after_emptying("GXCopyDisp dest %p clear %d", dest, (int)clear);
   }
 }
 }

@@ -215,6 +215,9 @@ static int s_dumpCount;
 static bool s_fast, s_fastHeld; /* F10 and Tab: no frame limit */
 
 void mkgp2pc_shadow_record_frame(void);  /* gx_shim.cpp */
+void mkgp2pc_gxlog_frame_end(void);      /* gx_shim.cpp: the frame's draw commands, for dumps */
+void mkgp2pc_gxlog_frame_next(void);
+void mkgp2pc_gxlog_write(const char* dir, int withLast);
 void mkgp2pc_shadow_record_write(FILE* f);
 /* the game's own debug facilities: port/platform/debug/debug.c, debug_overlay.cpp */
 int mkgp2pc_debug_on(void);
@@ -260,6 +263,12 @@ static void dump_text(const char* dir) {
   }
 }
 
+/* diag.c calls this for a crash folder */
+static void crash_extra(const char* dir) {
+  dump_text(dir);
+  mkgp2pc_gxlog_write(dir, 1);
+}
+
 /* Called with the frame drawn and not yet handed over. */
 static void dump_capture(void) {
   const char* base = getenv("MKGP2PC_DUMP_DIR");
@@ -271,6 +280,7 @@ static void dump_capture(void) {
   snprintf(dir, sizeof(dir), "%s/%03d_f%u", base, ++s_dumpCount, (unsigned)s_retrace);
   SDL_CreateDirectory(dir);
   dump_text(dir);
+  mkgp2pc_gxlog_write(dir, 0);
   mkgp2pc_diag_dump(dir);
   if (s_shotStream == 0) {
     s_shotStream = AuroraReadbackCreateStream();
@@ -711,7 +721,7 @@ static void wide_frame(void) {
 static void quit_now(void);
 int __wrap_main(int argc, char** argv) {
   mkgp2pc_diag_install();
-  mkgp2pc_diag_extra = &dump_text;
+  mkgp2pc_diag_extra = &crash_extra;
   AuroraConfig config;
   memset(&config, 0, sizeof(config));
   config.appName = "mkgp2-pc";
@@ -965,8 +975,10 @@ void VIWaitForRetrace(void) {
       dump_capture();
     }
     mkgp2pc_shadow_record_frame();
+    mkgp2pc_gxlog_frame_end();
     mkgp2pc_debug_overlay_draw();
     aurora_end_frame();
+    mkgp2pc_gxlog_frame_next();
     s_inFrame = false;
   }
   t[2] = SDL_GetTicksNS();

@@ -65,6 +65,8 @@ GFX_WRAPPED = ("GXInitTexObj", "GXInitTexObjCI", "GXInitTexObjLOD", "GXLoadTexOb
                "GXSetViewport", "GXSetViewportJitter", "GXSetCurrentMtx", "GXSetScissor", "GXGetScissor", "GXGetProjectionv", "GXSetProjectionv", "GXCallDisplayList", "GXSetTevKColor",
                # dropped on frames that are not shown (full speed, gx_shim.cpp)
                "GXBegin", "GXCopyTex", "GXCopyDisp",
+               # the draw commands of a frame, copied for dumps (gx_shim.cpp)
+               "GXDrawDone",
                "GXPosition3f32", "GXPosition3u16", "GXPosition3s16", "GXPosition3u8", "GXPosition3s8", "GXPosition2f32", "GXPosition2u16", "GXPosition2s16", "GXPosition2u8", "GXPosition2s8", "GXPosition1x16", "GXPosition1x8",
                "GXNormal3f32", "GXNormal3s16", "GXNormal3s8", "GXNormal1x16", "GXNormal1x8", "GXColor4u8", "GXColor3u8", "GXColor1u32", "GXColor1u16", "GXColor1x16", "GXColor1x8",
                "GXTexCoord2f32", "GXTexCoord2u16", "GXTexCoord2s16", "GXTexCoord2u8", "GXTexCoord2s8", "GXTexCoord1f32", "GXTexCoord1u16", "GXTexCoord1s16", "GXTexCoord1u8", "GXTexCoord1s8", "GXTexCoord1x16", "GXTexCoord1x8", "GXEnd",
