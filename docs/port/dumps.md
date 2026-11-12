@@ -21,6 +21,7 @@ itself. Both hold:
 | `image.bin.gz` | the executable's data sections: the game's global variables (`.mw_data`, `.mw_bss`, `.mw_sdata`, ... are the original's sections), the port's and the libraries' |
 | `symbols.txt.gz` | address, kind (`T` code, `D` data) and name of every symbol of the executable that wrote the dump |
 | `input.txt`, `state.txt` | as before: the inputs since the start (replayable), the frame number and settings |
+| `backup_start.bin` | the cabinet's backup memory (records, settings) as this run found it at its start, in the format of `backup_ram.bin`; a playback of `input.txt` starts from it ([backup_memory.md](backup_memory.md)) |
 | `gx_fifo.bin.gz` | the draw commands of the frame: everything the game's GX calls sent, in order (crash folders: the frame so far, and `gx_fifo_prev.bin.gz`, the frame before) |
 | `frame.png`, `frame_small.jpg` | F9 only: the picture, and a copy at most 640 wide (some tens of KB) |
 | `crash.dmp` | crash folders on Windows only: a minidump (all threads with their stacks, the module list, the exception) for WinDbg or Visual Studio |

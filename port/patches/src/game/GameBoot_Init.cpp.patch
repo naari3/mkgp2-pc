@@ -5,8 +5,8 @@
      } else CreditMgr_ResetState(0);
      SnapshotBootBackup();
 +#ifndef __MWERKS__
-+    /* PC port: the backup memory is not kept between runs, so the cabinet
-+     * number (test menu, PCB ID) can be given at start-up
++    /* PC port: the cabinet number (test menu, PCB ID) can also be given at
++     * start-up, over the one in the backup memory
 +     * (port/platform/triforce/netlink.c). */
 +    {
 +        extern void mkgp2pc_boot_cabinet(signed char *id);
