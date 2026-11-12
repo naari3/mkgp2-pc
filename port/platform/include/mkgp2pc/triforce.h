@@ -28,6 +28,10 @@ int mkgp2pc_netlink_command(uint16_t command, const uint32_t* arg, uint32_t* res
 int mkgp2pc_netlink_poll(uint16_t command, const uint32_t* arg, uint32_t* result);
 void mkgp2pc_netlink_tick(void);
 void mkgp2pc_netlink_pump(void); /* delayed sends of the measurement options; any time, lock held */
+/* For the game flow (linkflow.c); see netlink.c. */
+void mkgp2pc_netlink_set_active(int on);    /* the link at run time; starts on */
+unsigned mkgp2pc_netlink_heard_mask(void);  /* bit k: cabinet k+1 heard in the last 3 s */
+int mkgp2pc_netlink_address_ok(void);       /* 0: the cabinet number just set is taken on this PC */
 
 /* Baseboard (baseboard.c): runs the callback the game registered for an EXI
  * channel, as the interrupt would. */
