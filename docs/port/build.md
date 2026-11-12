@@ -327,6 +327,16 @@ program is started from (`MKGP2PC_CARD_FILE` names another file).
   at exit (before 01791c5) and during play were at the same offset.
 - `MKGP2PC_BACKEND=d3d12|d3d11|vulkan|opengl` asks Aurora for that backend
   instead of its own order. Not tried on Windows yet.
+- `MKGP2PC_SHADOW_NEAREST=1`: the kart shadow is an image the game draws
+  each frame (480x480 here, every kart within 300 units in it, so about
+  40x90 texels a kart on the starting grid) and samples with GX_NEAR when
+  magnified. Against the cabinet the port's shadow looked clearly more
+  jagged (USER 2026-11-12); no hardware filter explaining that was found
+  (copy filter 0,0,21,22,21,0,0, progressive output). As a deliberate
+  departure the port magnifies images copied out of the frame buffer with
+  GX_LINEAR; this variable gives the game's own setting back.
+  `MKGP2PC_SHOW_COPY=1` (debugging) leaves the copied image on screen
+  instead of the scene.
 - `MKGP2PC_ASYNC_PIPELINES=1`: Aurora compiles the pipeline for a draw's
   state on a worker thread and drops the draw until it is ready (backends
   with a pipeline thread, D3D12 among them), so after a scene change models

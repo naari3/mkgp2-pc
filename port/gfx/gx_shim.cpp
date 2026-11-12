@@ -39,8 +39,10 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <map>
+#include <set>
 #include <tuple>
 
 extern "C" {
@@ -114,6 +116,22 @@ void __wrap_GXInitTexObjLOD(GameTexObj* o, u32 minFilt, u32 magFilt, float minLo
   o->lodBias = lodBias;
 }
 
+// Images the game copies out of the frame buffer (the kart shadow image,
+// HSD_ShadowEndRender). The game samples the shadow with GX_NEAR when it is
+// magnified, which shows every texel of the 480x480 image as a hard-edged
+// block on the ground; the user compared with the cabinet (2026-11-12) and
+// the port looked clearly more jagged. No hardware filter that would explain
+// the cabinet's smoother look was found (copy filter is 0,0,21,22,21,0,0,
+// progressive output), so this is a deliberate departure: such images are
+// magnified with GX_LINEAR. MKGP2PC_SHADOW_NEAREST=1 gives the game's own
+// setting back.
+static std::set<const void*> sCopyTargets;
+static bool smooth_copies() {
+  static int v = -1;
+  if (v < 0) v = getenv("MKGP2PC_SHADOW_NEAREST") == nullptr;
+  return v != 0;
+}
+
 bool mkgp2pc_board_texture;
 void __wrap_GXLoadTexObj(GameTexObj* o, u32 id) {
   if (id == 0) {
@@ -141,7 +159,11 @@ void __wrap_GXLoadTexObj(GameTexObj* o, u32 id) {
   GXTexObj* real = &it->second;
   GXInitTexObjWrapMode(real, static_cast<GXTexWrapMode>(o->wrapS), static_cast<GXTexWrapMode>(o->wrapT));
   if (o->flags & kLod) {
-    __real_GXInitTexObjLOD(real, static_cast<GXTexFilter>(o->minFilt), static_cast<GXTexFilter>(o->magFilt), o->minLod,
+    u32 magFilt = o->magFilt;
+    if (magFilt == GX_NEAR && smooth_copies() && sCopyTargets.count(o->data) != 0) {
+      magFilt = GX_LINEAR;
+    }
+    __real_GXInitTexObjLOD(real, static_cast<GXTexFilter>(o->minFilt), static_cast<GXTexFilter>(magFilt), o->minLod,
                            o->maxLod, o->lodBias, (o->flags & kBiasClamp) != 0, (o->flags & kEdgeLod) != 0,
                            static_cast<GXAnisotropy>(o->aniso));
   }
@@ -561,14 +583,28 @@ void __wrap_GXBegin(GXPrimitive type, GXVtxFmt vtxfmt, u16 nverts) {
     __real_GXBegin(type, vtxfmt, nverts);
   }
 }
+static bool s_showHold;
 void __real_GXCopyTex(void* dest, GXBool clear);
 void __wrap_GXCopyTex(void* dest, GXBool clear) {
   if (!mkgp2pc_skip_draw) {
+    sCopyTargets.insert(dest);
+    static int show = -1;
+    if (show < 0) show = getenv("MKGP2PC_SHOW_COPY") != nullptr;
+    if (show) { /* MKGP2PC_SHOW_COPY=1, debugging: the copied image stays on screen instead of the scene */
+      __real_GXCopyTex(dest, GX_FALSE);
+      mkgp2pc_skip_draw = true;
+      s_showHold = true;
+      return;
+    }
     __real_GXCopyTex(dest, clear);
   }
 }
 void __real_GXCopyDisp(void* dest, GXBool clear);
 void __wrap_GXCopyDisp(void* dest, GXBool clear) {
+  if (s_showHold) {
+    s_showHold = false;
+    mkgp2pc_skip_draw = false;
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXCopyDisp(dest, clear);
   }
