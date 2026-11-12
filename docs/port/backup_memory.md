@@ -96,6 +96,10 @@ Linux, the no-graphics executable (2026-11-12):
 - Two copies at once: the second uses `backup_ram.bin.2`.
 - `MKGP2PC_BACKUP=0` and `MKGP2PC_BACKUP_FILE`.
 
+Linux, the rendering executable under Xvfb: first run makes the file, the
+second reads it; an `F9` dump holds `backup_start.bin` and a run given a
+copy of it with `MKGP2PC_BACKUP_FILE` reads it.
+
 Windows: `baseboard.c` and `reset.c` compile with the MinGW compiler; the
 Windows paths (`MoveFileEx` with replace and write-through, `_commit`, the
 lock file opened without sharing) have not been run.
