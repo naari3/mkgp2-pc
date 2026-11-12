@@ -1172,7 +1172,14 @@ void __wrap_GXSetProjectionv(const f32* p) {
   mkgp2pc_wide_projection();
 }
 void __wrap_fn_8013879C(float* frustum, float fovy, float aspect, float zfar, float znear) {
-  __real_fn_8013879C(frustum, fovy, aspect * mkgp2pc_wide_k, zfar, znear);
+  /* MKGP2PC_WIDE_CULL=x widens the frustum x times more (investigation:
+   * does something missing at the sides come back). */
+  static float extra = 0.0f;
+  if (extra == 0.0f) {
+    const char* e = getenv("MKGP2PC_WIDE_CULL");
+    extra = e != nullptr && atof(e) > 0 ? static_cast<float>(atof(e)) : 1.0f;
+  }
+  __real_fn_8013879C(frustum, fovy, aspect * mkgp2pc_wide_k * (mkgp2pc_wide_on ? extra : 1.0f), zfar, znear);
 }
 
 void mkgp2pc_wide_end(void);
