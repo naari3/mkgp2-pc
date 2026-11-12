@@ -24,7 +24,9 @@ shell do not leak in), and starts `mkgp2-gfx.exe` with
 
 - the program's folder as the current folder (`card.bin`, `dumps\`),
 - standard output and error going to `gfx.log` (overwritten on every start,
-  as `run-gfx.cmd` does),
+  as `run-gfx.cmd` does). While a game holds `gfx.log`, a second one started
+  from the same folder writes `gfx.2.log`, a third `gfx.3.log`, a fourth
+  `gfx.4.log` (two cabinets on one PC, cabinet_link.md),
 - no console window (`CREATE_NO_WINDOW`).
 
 While the game runs the start button is disabled; when it ends the exit code
