@@ -29,7 +29,9 @@ those ends in again, behind a switch. Code: `port/platform/debug/debug.c`,
 | key `debugpage` (F4, with Shift backwards) | next overlay page; works with debugging off too, but nothing is drawn then |
 | `MKGP2PC_START_SCENE=N` | `main` starts with entry N of the scene table; -4 = the scene list |
 
-Both keys can be reassigned with `MKGP2PC_KEYS` (docs/port/launcher.md).
+Both keys can be reassigned with `MKGP2PC_KEYS` or in the settings program
+(docs/port/launcher.md), whose page その他 takes the two variables as
+`MKGP2PC_DEBUG=1` and `MKGP2PC_START_SCENE=-4`.
 
 With debugging on:
 
