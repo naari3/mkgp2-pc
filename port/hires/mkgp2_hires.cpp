@@ -3,7 +3,7 @@
 // work as make_hires.py, as one program without Python, so that it can be
 // handed out next to the game and started from the settings program.
 //
-//   mkgp2-hires --iso <disc image> --out <folder> [--scale 2|4] [--jobs N]
+//   mkgp2-hires --iso <disc image> --out <folder> [--scale 2|4] [--models] [--jobs N]
 //   mkgp2-hires --iso ... --out ... --ai <model> --work <folder> [--tool <folder>] [--download] [--tile N]
 //   mkgp2-hires --iso ... --export-sprites <folder>
 //   mkgp2-hires --iso ... --out ... --import-sprites <folder>
@@ -13,7 +13,8 @@
 // the rendering library looks for (port/gfx/gx_shim.cpp, MKGP2PC_HIRES=1).
 //
 // Standard output carries lines for the settings program:
-//   stage <name>      what is being done (read, fonts, sprites, export, download, enlarge-rgb, enlarge-alpha, import)
+//   stage <name>      what is being done (read, fonts, sprites, models, export, download, enlarge-rgb,
+//                     enlarge-alpha, import, import-models)
 //   progress <0-100>  how far the stage is
 //   error <text>      why it stopped (exit code 1)
 //   done <folder>
@@ -915,12 +916,16 @@ struct Tex {
   std::shared_ptr<Bytes> data;
   Entry e;
   std::string stem;
+  // textures of 3D models (from the *.dat files): how they repeat along each
+  // axis (GX: 0 clamp, 1 repeat, 2 mirror) and whether they carry mip levels
+  bool model = false, mipped = false;
+  int wrapS = 0, wrapT = 0;
 };
 
 struct Options {
   std::string iso, out, exportDir, importDir, only, ai, work, tool;
   int scale = 2, jobs = 0, tile = 0;
-  bool download = false;
+  bool download = false, models = false;
 };
 
 static bool read_png_plane(const fs::path& path, int w, int h, int scale, Plane out[3], int channels) {
@@ -965,6 +970,39 @@ static bool import_sprite(const fs::path& dir, const Tex& t, const std::vector<u
   return true;
 }
 
+static const int MODEL_PAD = 4;  // texels of surrounding added to a model texture before enlarging
+
+static inline int wrap_index(int i, int n, int mode) {
+  if (mode == 1) return ((i % n) + n) % n;
+  if (mode == 2) {
+    int m = ((i % (2 * n)) + 2 * n) % (2 * n);
+    return m < n ? m : 2 * n - 1 - m;
+  }
+  return std::min(std::max(i, 0), n - 1);
+}
+
+// A model texture is drawn repeating or mirrored, and the game filters
+// across its edge into the other side. The enlargement has to see the same
+// neighbours or a seam shows where two copies meet: the picture is extended
+// by what the wrap mode puts there, enlarged, and cut back.
+static Picture enlarge_model(const Tex& t, const std::vector<uint8_t>& px, int scale) {
+  int w = t.e.w, h = t.e.h, P = MODEL_PAD, W = w + 2 * P, H = h + 2 * P;
+  std::vector<uint8_t> padded((size_t)W * H * 4);
+  for (int y = 0; y < H; y++)
+    for (int x = 0; x < W; x++)
+      memcpy(&padded[((size_t)y * W + x) * 4],
+             &px[((size_t)wrap_index(y - P, h, t.wrapT) * w + wrap_index(x - P, w, t.wrapS)) * 4], 4);
+  Picture big = enlarge_sprite(padded, W, H, scale, t.e.fmt);
+  Picture out;
+  for (int k = 0; k < 4; k++) {
+    out.c[k] = Plane(w * scale, h * scale);
+    for (int y = 0; y < h * scale; y++)
+      memcpy(&out.c[k].v[(size_t)y * w * scale], &big.c[k].v[(size_t)(y + P * scale) * W * scale + P * scale],
+             sizeof(float) * w * scale);
+  }
+  return out;
+}
+
 static void do_sprite(const Tex& t, const Options& o, const fs::path& outDir, int scale, bool allowImport) {
   std::vector<uint8_t> px = tex_decode(*t.data, t.e);
   int w = t.e.w, h = t.e.h;
@@ -985,9 +1023,18 @@ static void do_sprite(const Tex& t, const Options& o, const fs::path& outDir, in
   }
   Picture big;
   if (!(allowImport && !o.importDir.empty() && import_sprite(upath(o.importDir), t, px, scale, big)))
-    big = enlarge_sprite(px, w, h, scale, t.e.fmt);
+    big = t.model ? enlarge_model(t, px, scale) : enlarge_sprite(px, w, h, scale, t.e.fmt);
   int levels = scale >= 4 ? 1 : 0;
-  write_with_mips(outDir, t.stem, big, levels);
+  if (t.model) {
+    // A model texture gets mip levels only where the original has them
+    // (then all the way down). Given levels where the original has none,
+    // the game drew it from a smaller level and it came out softer than the
+    // original (seen on the start banner of Yoshi Park, Linux, 2026-11-12).
+    levels = 0;
+    if (t.mipped)
+      for (int m = std::min(w, h) * scale; m > 4; m /= 2) levels++;
+  }
+  write_with_mips(t.model ? outDir / "models" : outDir, t.stem, big, levels);
 }
 
 struct GlyphJob {
@@ -1119,8 +1166,12 @@ static void run_jobs(size_t n, int threads, uint64_t budget, W weight, F fn, con
   for (auto& t : pool) t.join();
 }
 
+static bool dat_bytes(Bytes& d);
+static void dat_textures(const Bytes& d, std::vector<Tex>& out, std::set<std::string>& seen, int& skipped);
+
 struct Work {
   std::vector<Tex> sprites;
+  std::vector<Tex> models;         // textures of the 3D models, written to <out>/models
   std::vector<Tex> strayOutlines;  // enlarged like sprites, at the font scale
   std::vector<GlyphJob> glyphs;
   int skipped = 0;
@@ -1143,8 +1194,17 @@ static Work collect(Disc& disc, const Options& o) {
     int percent = (int)(100 * ++count / total);
     if (percent != lastPercent) say("progress %d", lastPercent = percent);
     std::string base = lower(f.first.substr(f.first.rfind('/') + 1));
-    if (base.size() < 4 || base.compare(base.size() - 4, 4, ".tpl") != 0) continue;
     if (!only.empty() && base.find(only) == std::string::npos) continue;
+    if (o.models && base.size() >= 4 && base.compare(base.size() - 4, 4, ".dat") == 0) {
+      Bytes d = disc.at(f.second.first, f.second.second);
+      if (dat_bytes(d)) {
+        dat_textures(d, wk.models, seen, wk.skipped);
+      } else {
+        wk.skipped++;
+      }
+      continue;
+    }
+    if (base.size() < 4 || base.compare(base.size() - 4, 4, ".tpl") != 0) continue;
     auto data = std::make_shared<Bytes>(disc.at(f.second.first, f.second.second));
     if (!tpl_bytes(*data)) {
       wk.skipped++;
@@ -1215,9 +1275,89 @@ static Work collect(Disc& disc, const Options& o) {
   // character's (dropped above as a duplicate) is enlarged like a sprite
   for (auto& m : glyphOutline)
     if (!usedOutlines.count(m.first)) wk.strayOutlines.push_back(m.second.t);
+  // A picture that is both in a sprite file and in a model is made once, as
+  // whichever was read first; the folder it lands in does not matter to the game.
   std::stable_sort(wk.sprites.begin(), wk.sprites.end(),
                    [](const Tex& a, const Tex& b) { return a.e.w * a.e.h > b.e.w * b.e.h; });
+  std::stable_sort(wk.models.begin(), wk.models.end(),
+                   [](const Tex& a, const Tex& b) { return a.e.w * a.e.h > b.e.w * b.e.h; });
   return wk;
+}
+
+// ------------------------------------------------------------ model files
+//
+// The textures of the 3D models are inside the model archives (*.dat, the
+// HSD library's format: a 0x20 byte header, the data, then a table of the
+// offsets in the data that hold pointers). A texture is an image record
+// {pointer to the texels, u16 width, u16 height, u32 format, u32 mip flag,
+// ...} that a texture object points at from its offset 0x4C; the texture
+// object has its wrap modes at 0x34 and 0x38. They are found by looking at
+// every pointer in the table, without walking the model tree.
+
+static bool dat_bytes(Bytes& d) {
+  if (d.size() >= 0x20 && be32(&d[0]) == d.size()) return true;
+  if (d.size() < 16) return false;
+  int len = 0;
+  char* p = stbi_zlib_decode_malloc_guesssize((const char*)d.data() + 8, (int)d.size() - 8, (int)d.size() * 4, &len);
+  if (!p) return false;
+  d.assign((uint8_t*)p, (uint8_t*)p + len);
+  free(p);
+  return d.size() >= 0x20 && be32(&d[0]) == d.size();
+}
+
+static void dat_textures(const Bytes& d, std::vector<Tex>& out, std::set<std::string>& seen, int& skipped) {
+  uint32_t ds = be32(&d[4]), nrel = be32(&d[8]);
+  if ((uint64_t)0x20 + ds + (uint64_t)nrel * 4 > d.size()) return;
+  auto data = std::make_shared<Bytes>(d.begin() + 0x20, d.begin() + 0x20 + ds);
+  const Bytes& b = *data;
+  std::map<uint32_t, uint32_t> target;  // where a pointer is -> where it points
+  for (uint32_t i = 0; i < nrel; i++) {
+    uint32_t at = be32(&d[0x20 + ds + i * 4]);
+    if ((uint64_t)at + 4 <= ds) target[at] = be32(&b[at]);
+  }
+  std::map<uint32_t, Tex> found;  // by the image record's offset
+  for (auto& t : target) {
+    uint32_t at = t.first, texels = t.second;
+    if ((uint64_t)at + 0x18 > ds || target.count(at + 4) || target.count(at + 8)) continue;
+    Entry e;
+    e.w = be16(&b[at + 4]);
+    e.h = be16(&b[at + 6]);
+    e.fmt = (int)be32(&b[at + 8]);
+    e.off = texels;
+    uint32_t mip = be32(&b[at + 12]);
+    Block blk;
+    if (e.w < 1 || e.h < 1 || e.w > 1024 || e.h > 1024 || mip > 1 || !block_of(e.fmt, blk)) continue;
+    if (e.fmt == 8 || e.fmt == 9 || e.fmt == 10) continue;  // none on this disc; they would need the palette record
+    if ((uint64_t)texels + tex_size(e.w, e.h, e.fmt) > ds) continue;
+    Tex tex;
+    tex.data = data;
+    tex.e = e;
+    tex.model = true;
+    tex.mipped = mip != 0;
+    found[at] = tex;
+  }
+  std::set<uint32_t> used;
+  for (auto& t : target) {
+    auto f = found.find(t.second);
+    if (f == found.end()) continue;
+    used.insert(t.second);
+    if (t.first >= 0x4C) {  // the texture object that points here
+      uint32_t ws = be32(&b[t.first - 0x4C + 0x34]), wt = be32(&b[t.first - 0x4C + 0x38]);
+      // drawn both ways somewhere: repeating wins, a clamped use shows less of the edge
+      auto merge = [](int have, uint32_t now) { return now == 1 || have == 1 ? 1 : now == 2 || have == 2 ? 2 : 0; };
+      if (ws <= 2) f->second.wrapS = merge(f->second.wrapS, ws);
+      if (wt <= 2) f->second.wrapT = merge(f->second.wrapT, wt);
+    }
+  }
+  for (uint32_t at : used) {
+    Tex& tex = found[at];
+    tex.stem = tex_key(*data, tex.e);
+    if (tex.stem.empty()) {
+      skipped++;
+      continue;
+    }
+    if (seen.insert(tex.stem).second) out.push_back(tex);
+  }
 }
 
 static uint64_t texels(const Tex& t) { return (uint64_t)t.e.w * t.e.h; }
@@ -1227,6 +1367,7 @@ static void export_sprites(const Work& wk, const Options& o, int threads, uint64
   fs::create_directories(upath(o.exportDir) / "alpha");
   std::vector<const Tex*> all;
   for (auto& t : wk.sprites) all.push_back(&t);
+  for (auto& t : wk.models) all.push_back(&t);
   run_jobs(all.size(), threads, budget, [&](size_t i) { return texels(*all[i]); },
            [&](size_t i) { do_sprite(*all[i], o, fs::path(), o.scale, true); }, "export");
   say("note %d sprite textures exported", (int)all.size());
@@ -1234,8 +1375,10 @@ static void export_sprites(const Work& wk, const Options& o, int threads, uint64
 
 static void make_pack(const Work& wk, const Options& o, const fs::path& outDir, int threads, uint64_t budget) {
   fs::create_directories(outDir);
-  say("note %d sprite textures (x%d), %d characters (x%d), %d files skipped", (int)(wk.sprites.size() + wk.strayOutlines.size()),
-      o.scale, (int)wk.glyphs.size(), FONT_SCALE, wk.skipped);
+  if (!wk.models.empty()) fs::create_directories(outDir / "models");
+  say("note %d sprite textures (x%d), %d characters (x%d), %d model textures, %d files skipped",
+      (int)(wk.sprites.size() + wk.strayOutlines.size()), o.scale, (int)wk.glyphs.size(), FONT_SCALE, (int)wk.models.size(),
+      wk.skipped);
   std::atomic<int> larger{0};
   run_jobs(wk.glyphs.size(), threads, budget, [&](size_t) { return (uint64_t)1; },
            [&](size_t i) { larger += do_glyph(wk.glyphs[i], outDir) ? 1 : 0; }, "fonts");
@@ -1246,6 +1389,9 @@ static void make_pack(const Work& wk, const Options& o, const fs::path& outDir, 
   run_jobs(wk.sprites.size(), threads, budget, [&](size_t i) { return texels(wk.sprites[i]); },
            [&](size_t i) { do_sprite(wk.sprites[i], plain, outDir, o.scale, true); },
            o.importDir.empty() ? "sprites" : "import");
+  run_jobs(wk.models.size(), threads, budget, [&](size_t i) { return texels(wk.models[i]); },
+           [&](size_t i) { do_sprite(wk.models[i], plain, outDir, o.scale, true); },
+           o.importDir.empty() ? "models" : "import-models");
   say("note characters: %d enlarged from their own bitmap, %d of the 16 pixel font from the 24 pixel bitmap",
       (int)wk.glyphs.size() - larger.load(), larger.load());
 }
@@ -1451,6 +1597,7 @@ static int run(const std::vector<std::string>& args) {
     else if (a == "--tool") o.tool = value();
     else if (a == "--tile") o.tile = atoi(value().c_str());
     else if (a == "--download") o.download = true;
+    else if (a == "--models") o.models = true;
     else fail("unknown argument %s", a.c_str());
   }
   if (o.iso.empty()) fail("--iso <disc image> is needed");

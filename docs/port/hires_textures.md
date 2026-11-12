@@ -169,6 +169,40 @@ outline were not the game's. Do not bring a foreign typeface back.
 Measured on the cloud machine (4 cores): whole disc at x2 in 7 minutes,
 10,500 files, 630 MB.
 
+### Textures of the 3D models (`--models`, C++ program only)
+
+Off unless asked for (`mkgp2-hires --models`, the check box 3D のテクスチャも
+in the settings program's window; the user asked on 2026-11-12 whether the
+in-game textures can be done too). They go to `hires/models`; the game
+reads the folder with its subfolders, so nothing changes on its side.
+
+The textures are inside the model archives (`*.dat`, 1,918 files; HSD
+format: 0x20 byte header, data, a table of the offsets that hold pointers;
+most files are 8 bytes plus a zlib stream like the `*.tpl`). A texture is
+an image record {pointer to texels, u16 width, u16 height, u32 format, u32
+mip flag} that a texture object points at from offset 0x4C; the texture
+object's wrap modes are at 0x34 and 0x38. The program looks at every pointer
+of the table instead of walking the model tree. Found: 3,641 different
+textures, 97 million texels (CMPR 2,937, RGB5A3 441, RGBA8 240, RGB565 50,
+IA4 5; no palette formats), 265 with mip levels.
+
+- Repeating and mirrored textures are extended by 4 texels of what the wrap
+  mode puts beside them before enlarging, and cut back, so that no seam
+  shows where two copies meet.
+- Mip levels are written only where the original has them. A first try
+  gave every model texture a level of the original size: the start banner
+  of Yoshi Park then came out softer than the original, without the level
+  it is as sharp as the original.
+- Whole disc at x2: 2 minutes on 4 cores, 5,141 files, 580 MB.
+
+Tried on Linux (replay into a race on Yoshi Park, window 1280x960): the game
+runs and nothing is misplaced. **With the built-in filter the 3D picture is
+practically the same as the original**: most of these textures are CMPR
+(block compressed, rendered or painted pictures), where the filter is held
+back on purpose, and they are seen through perspective and motion. Whether
+a neural enlarger gives more here is untried. Memory of the 32-bit game
+with a whole course's textures doubled has not been measured on Windows.
+
 ### An outside enlarger for the sprites
 
 A neural enlarger (Real-ESRGAN and the like) is the only way to more than
