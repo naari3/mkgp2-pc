@@ -12,4 +12,7 @@ Keyboard (the game window needs the focus)
   F10            full speed on / off: the game runs as fast as the machine
                  can, the window still shows about 60 pictures a second;
                  Tab does the same while held
+These are the default keys. mkgp2-launcher.exe (the settings window, in
+Japanese) changes them, picks the ISO, the window size and the other
+settings, and starts the game.
 Sound: effects and music through the default playback device.

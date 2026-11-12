@@ -41,6 +41,7 @@ typedef void (*RetraceCallback)(uint32_t retraceCount);
  *   P              pause / resume
  *   O              while paused: advance one frame
  *   F9             dump (see "Dumps" below); works paused or running
+ * These are the defaults; MKGP2PC_KEYS changes them (see key_event).
  * Once a key has been used the keyboard owns the inputs; until then a
  * script (MKGP2PC_SCRIPT) may drive them.
  */
@@ -319,59 +320,142 @@ static int script_extra(const char* cmd) {
   return 1;
 }
 
-static void key_event(const SDL_Event* e) {
-  bool down = e->type == SDL_EVENT_KEY_DOWN;
-  switch (e->key.scancode) {
-  case SDL_SCANCODE_LEFT: s_keyLeft = down; break;
-  case SDL_SCANCODE_RIGHT: s_keyRight = down; break;
-  case SDL_SCANCODE_UP: case SDL_SCANCODE_Z: s_keyAccel = down; break;
-  case SDL_SCANCODE_DOWN: case SDL_SCANCODE_X: s_keyBrake = down; break;
-  case SDL_SCANCODE_SPACE: case SDL_SCANCODE_RETURN: s_keyItem = down; break;
-  case SDL_SCANCODE_F1: s_keyTest = down; break;
-  case SDL_SCANCODE_F2: s_keyService = down; break;
-  case SDL_SCANCODE_5: case SDL_SCANCODE_C:
-    if (down && !e->key.repeat) {
-      rec(s_retrace + 1, "coin%.0u%.0u", 0, 0);
-      mkgp2pc_jvs_add_coin(0);
-    }
-    break;
-  case SDL_SCANCODE_I:
-    if (down && !e->key.repeat) {
-      rec(s_retrace + 1, "card%.0u%.0u", 0, 0);
-      mkgp2pc_card_insert();
-    }
-    break;
-  case SDL_SCANCODE_P:
-    if (down && !e->key.repeat) {
-      s_paused = !s_paused;
-      fprintf(stderr, "%s at retrace %u\n", s_paused ? "paused" : "resumed", (unsigned)s_retrace);
-    }
-    return;
-  case SDL_SCANCODE_O:
-    if (down && s_paused) {
-      s_step = true;
-    }
-    return;
-  case SDL_SCANCODE_F10: /* as fast as the machine goes, until pressed again */
-    if (down && !e->key.repeat) {
-      s_fast = !s_fast;
-      fprintf(stderr, "frame limit %s at retrace %u\n", s_fast ? "off" : "on", (unsigned)s_retrace);
-    }
-    return;
-  case SDL_SCANCODE_TAB: /* the same while held */
-    s_fastHeld = down;
-    return;
-  case SDL_SCANCODE_F9:
-    if (down && !e->key.repeat) {
-      s_dumpWanted = true;
-      if (s_paused) {
-        s_step = true; /* a frame has to be drawn for the picture */
+/*
+ * Which key does what. MKGP2PC_KEYS replaces the keys of the actions it
+ * names and leaves the others as they are:
+ *   MKGP2PC_KEYS="accel=A;brake=S,Left Shift;coin="
+ * action=key[,key...] separated by ';'. A key is an SDL scancode name
+ * ("A", "Left", "F9", "Keypad 5"; a physical key, whatever the layout
+ * prints on it) or its number (the USB keyboard usage, 4 for A). Nothing
+ * after '=' leaves the action without a key. One character is always a
+ * name ("5" is the key 5); the settings program (port/launcher) writes
+ * numbers with two digits or more ("04").
+ */
+enum {
+  KEY_LEFT, KEY_RIGHT, KEY_ACCEL, KEY_BRAKE, KEY_ITEM, KEY_TEST, KEY_SERVICE,
+  KEY_COIN, KEY_CARD, KEY_PAUSE, KEY_STEP, KEY_FAST, KEY_FASTHOLD, KEY_DUMP,
+  KEY_ACTIONS
+};
+#define KEYS_PER_ACTION 4
+static const char* const s_actionNames[KEY_ACTIONS] = {
+    "left", "right", "accel", "brake", "item", "test", "service",
+    "coin", "card", "pause", "step", "fast", "fasthold", "dump"};
+static int s_keyMap[KEY_ACTIONS][KEYS_PER_ACTION] = {
+    {SDL_SCANCODE_LEFT}, {SDL_SCANCODE_RIGHT}, {SDL_SCANCODE_UP, SDL_SCANCODE_Z},
+    {SDL_SCANCODE_DOWN, SDL_SCANCODE_X}, {SDL_SCANCODE_SPACE, SDL_SCANCODE_RETURN},
+    {SDL_SCANCODE_F1}, {SDL_SCANCODE_F2}, {SDL_SCANCODE_5, SDL_SCANCODE_C},
+    {SDL_SCANCODE_I}, {SDL_SCANCODE_P}, {SDL_SCANCODE_O}, {SDL_SCANCODE_F10},
+    {SDL_SCANCODE_TAB}, {SDL_SCANCODE_F9}};
+
+static void key_map_load(void) {
+  const char* p = getenv("MKGP2PC_KEYS");
+  while (p != NULL && *p != 0) {
+    size_t len = strcspn(p, ";");
+    const char* eq = memchr(p, '=', len);
+    int action = -1;
+    for (int i = 0; eq != NULL && i < KEY_ACTIONS; i++) {
+      if (strlen(s_actionNames[i]) == (size_t)(eq - p) && strncmp(s_actionNames[i], p, (size_t)(eq - p)) == 0) {
+        action = i;
       }
     }
-    return;
-  default: return;
+    if (action < 0) {
+      if (len != 0) fprintf(stderr, "MKGP2PC_KEYS: unknown entry '%.*s'\n", (int)len, p);
+    } else {
+      const char* k = eq + 1;
+      const char* end = p + len;
+      int n = 0;
+      memset(s_keyMap[action], 0, sizeof(s_keyMap[action]));
+      while (k < end) {
+        char name[32];
+        size_t klen = strcspn(k, ",;");
+        char* stop;
+        long code;
+        snprintf(name, sizeof(name), "%.*s", (int)klen, k);
+        code = strtol(name, &stop, 10);
+        if (*stop != 0 || stop == name || klen == 1) {
+          code = SDL_GetScancodeFromName(name);
+        }
+        if (code <= 0 || code >= SDL_SCANCODE_COUNT) {
+          if (klen != 0) fprintf(stderr, "MKGP2PC_KEYS: unknown key '%s'\n", name);
+        } else if (n < KEYS_PER_ACTION) {
+          s_keyMap[action][n++] = (int)code;
+        }
+        k += klen;
+        if (k < end) k++;
+      }
+    }
+    p += len;
+    if (*p == ';') p++;
   }
-  s_keyboardUsed = true;
+}
+
+static void key_event(const SDL_Event* e) {
+  bool down = e->type == SDL_EVENT_KEY_DOWN;
+  bool press = down && !e->key.repeat;
+  bool control = false;
+  for (int action = 0; action < KEY_ACTIONS; action++) {
+    bool hit = false;
+    for (int i = 0; i < KEYS_PER_ACTION; i++) {
+      hit |= s_keyMap[action][i] != 0 && s_keyMap[action][i] == (int)e->key.scancode;
+    }
+    if (!hit) {
+      continue;
+    }
+    switch (action) {
+    case KEY_LEFT: s_keyLeft = down; control = true; break;
+    case KEY_RIGHT: s_keyRight = down; control = true; break;
+    case KEY_ACCEL: s_keyAccel = down; control = true; break;
+    case KEY_BRAKE: s_keyBrake = down; control = true; break;
+    case KEY_ITEM: s_keyItem = down; control = true; break;
+    case KEY_TEST: s_keyTest = down; control = true; break;
+    case KEY_SERVICE: s_keyService = down; control = true; break;
+    case KEY_COIN:
+      if (press) {
+        rec(s_retrace + 1, "coin%.0u%.0u", 0, 0);
+        mkgp2pc_jvs_add_coin(0);
+      }
+      control = true;
+      break;
+    case KEY_CARD:
+      if (press) {
+        rec(s_retrace + 1, "card%.0u%.0u", 0, 0);
+        mkgp2pc_card_insert();
+      }
+      control = true;
+      break;
+    case KEY_PAUSE:
+      if (press) {
+        s_paused = !s_paused;
+        fprintf(stderr, "%s at retrace %u\n", s_paused ? "paused" : "resumed", (unsigned)s_retrace);
+      }
+      break;
+    case KEY_STEP:
+      if (down && s_paused) {
+        s_step = true;
+      }
+      break;
+    case KEY_FAST: /* as fast as the machine goes, until pressed again */
+      if (press) {
+        s_fast = !s_fast;
+        fprintf(stderr, "frame limit %s at retrace %u\n", s_fast ? "off" : "on", (unsigned)s_retrace);
+      }
+      break;
+    case KEY_FASTHOLD: /* the same while held */
+      s_fastHeld = down;
+      break;
+    case KEY_DUMP:
+      if (press) {
+        s_dumpWanted = true;
+        if (s_paused) {
+          s_step = true; /* a frame has to be drawn for the picture */
+        }
+      }
+      break;
+    }
+  }
+  if (control) {
+    s_keyboardUsed = true;
+  }
 }
 
 static void keyboard_tick(void) {
@@ -461,6 +545,7 @@ int __wrap_main(int argc, char** argv) {
   setvbuf(stdout, NULL, _IONBF, 0);
   setvbuf(stderr, NULL, _IONBF, 0);
   s_fast = getenv("MKGP2PC_FAST") != NULL; /* start at full speed, as after F10 */
+  key_map_load();
   const char* limit = getenv("MKGP2PC_FRAMES");
   if (limit != NULL) {
     s_frameLimit = strtol(limit, NULL, 10);

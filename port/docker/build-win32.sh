@@ -81,4 +81,7 @@ for dll in webgpu_dawn.dll dxcompiler.dll dxil.dll SDL3.dll libpng16.dll libzlib
   cp "$found" "$DIST/"
 done
 cp port/gfx/package/run-gfx.cmd port/gfx/package/KEYS.txt "$DIST/"
+
+step "Settings program (mkgp2-launcher.exe, docs/port/launcher.md)"
+port/launcher/build.sh "$DIST"
 ls -l "$DIST"
