@@ -130,7 +130,8 @@ def link_gfx_windows(stubs, thunks, cxxrt, replaced, aurora_fns, aurora_data, po
         fetched = os.path.join(ROOT, "build", "aurora-win32", "_deps", "sdl-src", "include")
         if os.path.isdir(fetched):
             sdl_inc = [fetched]
-    # Dear ImGui's headers (debug_overlay.cpp draws with it): same search
+    # Dear ImGui's headers (port_ui.cpp and debug_overlay.cpp draw with it):
+    # found the same way; the settings are those Aurora builds ImGui with
     imgui_inc = []
     for line in open(cache) if os.path.exists(cache) else []:
         m = re.match(r"(imgui_SOURCE_DIR|FETCHCONTENT_SOURCE_DIR_IMGUI)\w*:\w+=(.+)", line)
@@ -147,7 +148,9 @@ def link_gfx_windows(stubs, thunks, cxxrt, replaced, aurora_fns, aurora_data, po
         o = os.path.join(OUT, "gfx__" + os.path.basename(src) + ".o")
         cxx = src.endswith(".cpp")
         r = subprocess.run(["clang++" if cxx else "clang", "-target", WIN_TARGET, "-femulated-tls", "-O2", "-g", "-fno-omit-frame-pointer", "-msse2", "-c", src, "-o", o,
-                            "-DAURORA", "-DAURORA_ENABLE_GX", "-DTARGET_PC=1", "-I" + os.path.join(aurora, "include")]
+                            "-DAURORA", "-DAURORA_ENABLE_GX", "-DTARGET_PC=1", "-I" + os.path.join(aurora, "include"),
+                            "-I" + os.path.join(ROOT, "port", "platform", "include"),
+                            '-DIMGUI_USER_CONFIG="aurora/imgui_config.h"']
                            + ["-I" + d for d in sdl_inc + imgui_inc]
                            + (["-std=gnu++20", "-femulated-tls"] if cxx else []), capture_output=True, text=True)
         if r.returncode != 0:

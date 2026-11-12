@@ -344,7 +344,9 @@ submodule commit fixes them too.
 `port/gfx/video_aurora.c` maps the keyboard to the cabinet's controls while
 the window has the focus: left / right = steering wheel, up or Z =
 accelerator, down or X = brake, space or enter = item button (also "decide"
-in the menus), 5 or C = coin, F1 / F2 = test / service button. Until a key
+in the menus), 5 or C = coin, F1 / F2 = test / service button. Esc opens
+the port's menu and Backspace goes one selection screen back
+(docs/port/menu.md). Until a key
 is used, `MKGP2PC_SCRIPT` may drive the inputs. Not tested with a real
 keyboard yet (the cloud build machine has no input device); the same input
 calls driven by the script steer and accelerate the kart.

@@ -24,6 +24,7 @@ clean-up.
 | [`readiness.md`](readiness.md) | Assessment of how far the decomp is from a port: measured gaps, comparable projects, staged plan (estimates) |
 | [`char_sign.md`](char_sign.md) | Plain `char` is signed in the game's build: the flag per directory, the census of what the wrong sign changed (one line, the camera's end-of-picture test) |
 | [`widescreen.md`](widescreen.md) | Survey: what a 16:9 display needs (projection, culling, 2D layer, whole-screen effects), options |
+| [`menu.md`](menu.md) | The port's menu (Esc) and "one screen back" (Backspace): what they do, how they reach the game's flows and selection screens |
 | [`hires_textures.md`](hires_textures.md) | High-resolution 2D textures (fonts, sprites): the switch, how the folder is made from the user's disc image, the filters |
 | [`game_ui.md`](game_ui.md) | Port screens drawn with the game's own fonts, panels and control hints (`port/platform/ui/gameui.c`): what there is, how to use it, what the game's sprite system expects |
 | [`debug.md`](debug.md) | The game's own debug output, overlay pages and developers' scene list, and the switches that bring them back |
