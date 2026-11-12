@@ -30,6 +30,13 @@
  * MKGP2PC_LINK=0 turns all of it off (every socket command fails, as before
  * this file existed). MKGP2PC_TRACE_LINK=1 logs the commands.
  *
+ * For the game flow (port/platform/triforce/linkflow.c):
+ * mkgp2pc_netlink_set_active() is the same switch at run time,
+ * mkgp2pc_netlink_heard_mask() says which cabinet numbers are taken, also
+ * while the link is off and before this copy has a number, and
+ * mkgp2pc_netlink_address_ok() says whether the number just set was free on
+ * this PC.
+ *
  * All calls come from the game with the port's "interrupt" lock held or from
  * the retrace tick; nothing here blocks for long and there are no threads.
  */
@@ -120,6 +127,10 @@ static int s_fixedPeers;
 static uint8_t s_address[4]; /* this cabinet's game address; 0 until the game sets it */
 static HostSocket s_announce = NO_SOCKET;
 static int s_announceIndex = -1;
+static HostSocket s_observe = NO_SOCKET; /* hears the announcements without a cabinet number */
+static uint64_t s_heard[MAX_CABINETS];   /* when each cabinet was last heard; 0 never */
+static uint64_t s_probed;
+static int s_active = 1; /* mkgp2pc_netlink_set_active */
 static uint64_t s_announced;
 static int s_state; /* 0 not looked at, 1 on, -1 off */
 static int s_trace;
@@ -146,7 +157,7 @@ static uint64_t now_ms(void) {
     } \
   } while (0)
 
-static int enabled(void) {
+static int configured(void) {
   if (s_state == 0) {
     const char* e = getenv("MKGP2PC_LINK");
     const char* port = getenv("MKGP2PC_LINK_PORT");
@@ -203,6 +214,8 @@ static int enabled(void) {
   return s_state == 1;
 }
 
+static int enabled(void) { return configured() && s_active; }
+
 /* 192.168.29.150 is cabinet index 0. -1: not a cabinet address. */
 static int cabinet_index(const uint8_t* a) {
   if (a[0] == 192 && a[1] == 168 && a[2] == 29 && a[3] >= 150 && a[3] < 150 + MAX_CABINETS) {
@@ -241,11 +254,68 @@ static void tune(HostSocket s) {
 
 /* ---- announcements --------------------------------------------------------- */
 
+#define OBSERVE_PORT (s_base + 64 + MAX_CABINETS)
+
+static int bound_to(HostSocket s, int port) {
+  struct sockaddr_in a;
+  socklen_t_ size = sizeof(a);
+  return getsockname(s, (struct sockaddr*)&a, &size) == 0 && ntohs(a.sin_port) == port;
+}
+
+/* Every copy listens here as well, several on one PC side by side: the
+ * announcements sent to the broadcast address arrive at all of them. That
+ * is how a copy without a cabinet number hears the other PCs. */
+static void observe_open(void) {
+  struct sockaddr_in a;
+  int on = 1;
+  if (s_observe != NO_SOCKET) {
+    return;
+  }
+  s_observe = socket(AF_INET, SOCK_DGRAM, 0);
+  if (s_observe == NO_SOCKET) {
+    return;
+  }
+  setsockopt(s_observe, SOL_SOCKET, SO_REUSEADDR, (const char*)&on, sizeof(on));
+#ifdef SO_REUSEPORT
+  setsockopt(s_observe, SOL_SOCKET, SO_REUSEPORT, (const char*)&on, sizeof(on));
+#endif
+  memset(&a, 0, sizeof(a));
+  a.sin_family = AF_INET;
+  a.sin_addr.s_addr = htonl(INADDR_ANY);
+  a.sin_port = htons((uint16_t)OBSERVE_PORT);
+  if (bind(s_observe, (struct sockaddr*)&a, sizeof(a)) != 0) {
+    close_host(s_observe);
+    s_observe = NO_SOCKET;
+    return;
+  }
+  non_blocking(s_observe);
+}
+
+/* Cabinets on this PC, for a copy that has no number and so no announcement
+ * port of its own: a number is taken when its port cannot be bound. */
+static void local_probe(uint64_t now) {
+  for (int k = 0; k < MAX_CABINETS; k++) {
+    struct sockaddr_in a;
+    HostSocket s = socket(AF_INET, SOCK_DGRAM, 0);
+    if (s == NO_SOCKET) {
+      return;
+    }
+    memset(&a, 0, sizeof(a));
+    a.sin_family = AF_INET;
+    a.sin_addr.s_addr = htonl(INADDR_ANY);
+    a.sin_port = htons((uint16_t)(s_base + 64 + k));
+    if (bind(s, (struct sockaddr*)&a, sizeof(a)) != 0) {
+      s_heard[k] = now;
+    }
+    close_host(s);
+  }
+}
+
 static void announce_open(void) {
   int index = cabinet_index(s_address);
   struct sockaddr_in a;
   int on = 1;
-  if (index == s_announceIndex) {
+  if (index == s_announceIndex && (index < 0 || s_announce != NO_SOCKET)) {
     return;
   }
   if (s_announce != NO_SOCKET) {
@@ -266,6 +336,11 @@ static void announce_open(void) {
   a.sin_addr.s_addr = htonl(INADDR_ANY);
   a.sin_port = htons((uint16_t)(s_base + 64 + index));
   if (bind(s_announce, (struct sockaddr*)&a, sizeof(a)) != 0) {
+    uint64_t start = now_ms(); /* a copy without a number may be looking at the port this instant (local_probe) */
+    while (now_ms() - start < 3 && bind(s_announce, (struct sockaddr*)&a, sizeof(a)) != 0) {
+    }
+  }
+  if (!bound_to(s_announce, s_base + 64 + index)) {
     fprintf(stderr, "link: UDP port %d is in use: is another copy running as cabinet %d? (MKGP2PC_PCB_ID)\n",
             s_base + 64 + index, index + 1);
     close_host(s_announce);
@@ -279,21 +354,28 @@ static void announce_open(void) {
 static void announce_tick(uint64_t now) {
   uint8_t msg[ANNOUNCE_SIZE];
   struct sockaddr_in from;
-  if (s_announce == NO_SOCKET) {
-    return;
-  }
+  HostSocket source = s_observe;
+  observe_open();
   for (;;) {
     socklen_t_ size = sizeof(from);
-    int n = (int)recvfrom(s_announce, (char*)msg, sizeof(msg), 0, (struct sockaddr*)&from, &size);
+    int n = source != NO_SOCKET ? (int)recvfrom(source, (char*)msg, sizeof(msg), 0, (struct sockaddr*)&from, &size) : -1;
     int index, local;
     if (n < 0) {
-      break;
+      if (source == s_announce) {
+        break;
+      }
+      source = s_announce;
+      continue;
     }
     if (n != ANNOUNCE_SIZE || memcmp(msg, "MKGP2PC1", 8) != 0) {
       continue;
     }
     index = cabinet_index(msg + 8);
-    if (index < 0 || index == s_announceIndex || s_fixedPeers) {
+    if (index < 0 || index == s_announceIndex) {
+      continue;
+    }
+    s_heard[index] = now;
+    if (s_fixedPeers || !s_active) {
       continue;
     }
     /* A cabinet on this PC is heard twice, through the broadcast and
@@ -312,15 +394,22 @@ static void announce_tick(uint64_t now) {
     s_peer[index].known = 1;
     s_peer[index].host = from.sin_addr;
   }
+  if (s_announce == NO_SOCKET) {
+    if (now - s_probed >= 1000) {
+      s_probed = now;
+      local_probe(now);
+    }
+    return;
+  }
   if (s_announced == 0 || now - s_announced >= 1000) {
     static const uint32_t targets[2] = {INADDR_BROADCAST, INADDR_LOOPBACK};
     s_announced = now;
     memcpy(msg, "MKGP2PC1", 8);
     memcpy(msg + 8, s_address, 4);
     for (int t = 0; t < 2; t++) {
-      for (int k = 0; k < MAX_CABINETS; k++) {
+      for (int k = 0; k <= MAX_CABINETS; k++) { /* the last one is the port everybody listens on */
         struct sockaddr_in to;
-        if (k == s_announceIndex) {
+        if (k == s_announceIndex || (k == MAX_CABINETS && t == 1)) {
           continue;
         }
         memset(&to, 0, sizeof(to));
@@ -938,9 +1027,12 @@ static void probe_tick(uint64_t now) {
 }
 
 void mkgp2pc_netlink_tick(void) {
-  if (s_state == 1) {
+  if (configured()) {
     uint64_t now = now_ms();
     announce_tick(now);
+    if (!s_active) {
+      return;
+    }
     mkgp2pc_netlink_pump();
     if (s_probe) {
       probe_tick(now);
@@ -962,4 +1054,65 @@ void mkgp2pc_boot_cabinet(signed char* id) {
   if (e != NULL && atoi(e) >= 1 && atoi(e) <= MAX_CABINETS) {
     *id = (signed char)atoi(e);
   }
+}
+
+/* ---- for the game flow (linkflow.c) ------------------------------------------ */
+
+/* The link at run time. Off: every link socket is closed, this copy stops
+ * announcing itself and every socket command fails, as with MKGP2PC_LINK=0
+ * (which stays off whatever is asked here). On: commands work again; the
+ * game sets its address anew (MODIFY_MY_IP) and opens its sockets. */
+void mkgp2pc_netlink_set_active(int on) {
+  on = on != 0;
+  if (on == s_active) {
+    return;
+  }
+  s_active = on;
+  if (!on && s_state == 1) {
+    for (int i = 0; i < MAX_SOCKETS; i++) {
+      if (s_sock[i].kind != FREE) {
+        release(&s_sock[i]);
+      }
+    }
+    if (s_announce != NO_SOCKET) {
+      close_host(s_announce);
+      s_announce = NO_SOCKET;
+    }
+    s_announceIndex = -1;
+    memset(s_address, 0, sizeof(s_address));
+    if (!s_fixedPeers) {
+      memset(s_peer, 0, sizeof(s_peer));
+    }
+  }
+  TRACE("link %s", on ? "on" : "off");
+}
+
+/* Bit k: cabinet k+1 was heard in the last 3 s, on this PC or on the network.
+ * This copy's own number is not in it (unless mkgp2pc_netlink_address_ok()
+ * says it belongs to somebody else). Also answers while the link is off
+ * and before the game has set an address; the first answer after a start may
+ * come up to a second too early to be complete. */
+unsigned mkgp2pc_netlink_heard_mask(void) {
+  unsigned mask = 0;
+  uint64_t now;
+  if (!configured()) {
+    return 0;
+  }
+  now = now_ms();
+  if (s_announce == NO_SOCKET && (s_probed == 0 || now - s_probed >= 1000)) {
+    s_probed = now;
+    local_probe(now);
+  }
+  for (int k = 0; k < MAX_CABINETS; k++) {
+    if ((k != s_announceIndex || s_announce == NO_SOCKET) && s_heard[k] != 0 && now - s_heard[k] < 3000) {
+      mask |= 1u << k;
+    }
+  }
+  return mask;
+}
+
+/* After the game has set its address: 0 when that cabinet number's port
+ * could not be taken, because another copy on this PC has the number. */
+int mkgp2pc_netlink_address_ok(void) {
+  return s_state != 1 || !s_active || s_announceIndex < 0 || s_announce != NO_SOCKET;
 }
