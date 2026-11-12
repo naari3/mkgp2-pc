@@ -18,20 +18,41 @@ by people.
 
 ## Using it
 
-Start each copy with a different cabinet number:
+Nothing has to be set. After the coin the game asks "1 PLAYER" or "NETWORK
+VS" (steer to choose, the button or the accelerator to decide). Every copy
+that chooses NETWORK VS, on this PC or on the same LAN, meets the others in
+the entry screen; it shows how many are there and stays open until one of
+them presses the button, then closes for all of them three seconds later. Two
+to four copies become a versus group; one alone plays alone. The cabinet
+number is taken automatically (the lowest one not in use). The first network
+game may bring up the firewall question for the program; it has to be allowed
+on private networks. How this is done: "Network versus on demand" below.
 
-    MKGP2PC_PCB_ID=1 ...   (first PC or first copy)
-    MKGP2PC_PCB_ID=2 ...   (second)
+Since 2026-11-12 (owner's decision: the mode is chosen before the start for
+the time being) that question only comes with `MKGP2PC_LINK_MODE=ask`. The
+variable, which the launcher's 通信 choice sets, says what a coin does:
 
-On Windows: `set MKGP2PC_PCB_ID=2` before `run-gfx.cmd`. Nothing else is
-needed on one LAN or on one PC: the copies announce themselves and find each
-other. The first start may bring up the firewall question for the program;
-it has to be allowed on private networks.
+| `MKGP2PC_LINK_MODE` | a coin leads to |
+|---|---|
+| `solo`, or not set | a game alone, no question; the link stays asleep |
+| `network` | the network entry screen described above, no question: link on at that moment, cabinet number automatic |
+| `ask` | the question |
+| `arcade` | the cabinet's behaviour, see below |
+
+`MKGP2PC_LINK_MODE=arcade` gives the cabinet's behaviour instead: the link
+is up from the start, there is no question, a coin leads to the entry screen
+when another cabinet is connected, and each copy needs its own number:
+
+    MKGP2PC_LINK_MODE=arcade MKGP2PC_PCB_ID=1 ...   (first PC or first copy)
+    MKGP2PC_LINK_MODE=arcade MKGP2PC_PCB_ID=2 ...   (second)
 
 | variable | meaning |
 |---|---|
-| `MKGP2PC_PCB_ID=1..4` | cabinet number at start-up. Without it every copy is cabinet 1, because the backup memory (where the test menu's PCB ID lives) is not kept between runs. The test menu (F1) still changes it for the rest of the run |
-| `MKGP2PC_LINK=0` | link off: every socket command fails, as before 2026-11-11 |
+| `MKGP2PC_LINK_MODE=solo`, `network`, `ask`, `arcade` | what a coin does, see the table above; `arcade` is link always on and no question, as on the cabinet |
+| `MKGP2PC_PCB_ID=1..4` | cabinet number at start-up, for `MKGP2PC_LINK_MODE=arcade`; a network game chosen after the coin takes its own number. Without it every copy starts as cabinet 1, because the backup memory (where the test menu's PCB ID lives) is not kept between runs |
+| `MKGP2PC_NET_CHOICE=1` or `2` | answers the question after the coin at once (1 alone, 2 network), for scripted runs |
+| `MKGP2PC_BOOT_CHECK=1` | show the arcade program's 60 second screen "PCB ID : n CHECKING..." at start-up; another number is that many seconds. Without it the screen is skipped (see "Start-up without the wait") |
+| `MKGP2PC_LINK=0` | no link and no question: every socket command fails, as before 2026-11-11 |
 | `MKGP2PC_LINK_PEERS=2=192.168.1.20,3=pc3:29566` | where the other cabinets are, by hand: host name or address, optionally `:port`. For networks that drop broadcasts and for play over the internet. The cabinets not named are still found by their announcements |
 | `MKGP2PC_LINK_PORT=29500` | base of the port numbers (see below); the same on all copies |
 | `MKGP2PC_LINK_PACE=0` | the arcade program's own rule for when the host waits for a client (see "How a race is kept in step") |
@@ -51,8 +72,12 @@ Without forwarding ports: a room name and a rendezvous server, see
 Each side forwards its cabinet's UDP port (29564 for cabinet 1, 29565 for
 cabinet 2, ...) to the PC and names the other side:
 
-    MKGP2PC_PCB_ID=1 MKGP2PC_LINK_PEERS=2=other.example.org
-    MKGP2PC_PCB_ID=2 MKGP2PC_LINK_PEERS=1=first.example.org
+    MKGP2PC_LINK_MODE=arcade MKGP2PC_PCB_ID=1 MKGP2PC_LINK_PEERS=2=other.example.org
+    MKGP2PC_LINK_MODE=arcade MKGP2PC_PCB_ID=2 MKGP2PC_LINK_PEERS=1=first.example.org
+
+(`MKGP2PC_LINK_MODE=arcade` because the peers are named by cabinet number;
+the question after the coin takes numbers by itself and has not been fitted
+to named peers yet.)
 
 One side naming the other is enough when only that other side can forward a
 port: a cabinet answers to where a datagram came from. The datagrams are
@@ -182,6 +207,99 @@ message converted.
 
 Dolphin (GPL, facts only, no code used) supports the same link for the
 original program by redirecting the fixed addresses to configured ones.
+
+## Start-up without the wait
+
+The arcade program shows "PCB ID : n CHECKING..." for up to 60 seconds after
+the card reader check (`BootDispatcher.cpp`: `PCBComm_Init`,
+`BootPCBCheck_Init`, then `BootPCBCheck_Poll` each frame). The screen ends
+early only when all four boards are connected both ways, or with two buttons
+held (input bits 0x2000 and 0x400); with fewer than four cabinets it always
+takes the full time.
+
+The screen only displays. Nothing later reads a result of it:
+
+- `PCBComm_Process(1, 1)` runs on every frame of the main loop and keeps
+  trying, accepting and polling the connections; the per-cabinet flags the
+  game asks about (`polled`, `receiving` in `PCBCheckProcess.c`) are
+  refreshed there every tick.
+- A cabinet that starts later is taken in at any time: its connection is
+  accepted, and the accept revives the outgoing connection that had given up
+  (`PcbConn_RecycleIfOver`).
+- Whether a coin leads to a linked game is decided when the coin is
+  confirmed (`fn_801B76C8.cpp`): with no connected cabinet the game goes
+  straight on alone, otherwise to the entry screen (`clFlowEntry`, 15
+  seconds, shared countdown), where two or more cabinets become a versus
+  group.
+
+So the port skips the screen: `port/patches/src/game/PCBCheckRecv.c.patch`
+asks `mkgp2pc_boot_check_frames()` (`port/platform/triforce/linkflow.c`) for
+its length, which is 0 unless `MKGP2PC_BOOT_CHECK` is set. Checked on Linux
+with the no-graphics build at 60 retraces a second: the cabinet's scene
+number is 54 with the timer counting down when the variable is 1, and without
+it the game is in the notice (55) and then the attract scenes while the link
+is up (`g_pcbCommEnabled` 1).
+
+## Network versus on demand
+
+The arcade program has no menu for versus. With a coin confirmed in the
+attract loop (`fn_801B76C8.cpp`) it goes on alone when no other cabinet is
+connected, and otherwise to the entry screen (`clFlowEntry`,
+`fn_801BA318.cpp` and `fn_801BA1A4.cpp`, scene 7). The entry screen closes
+when every connected cabinet has entered or when a timer shared by the
+cabinets (15 s, counted in `PCBComm_UpdateSyncPhase1` by the lowest connected
+cabinet) runs out; `PCBComm_ConfirmHostLobby` then makes the cabinets in it a
+group, and `g_gameMode` becomes 2 (versus). The mode button of the class
+select only switches between Grand Prix and time attack.
+
+The port (decisions in `port/platform/triforce/linkflow.c`, game side in
+patches):
+
+- `GameBoot_Init.cpp.patch`: the link is switched off at start
+  (`mkgp2pc_netlink_set_active(0)`); the game's link objects run as on a
+  cabinet nobody answers.
+- `fn_801B76C8.cpp.patch`: the confirmed coin puts up the question instead
+  of deciding by the connected cabinets; `fn_801B785C.cpp.patch` draws it
+  with the boot screens' text (`DrawText`, ASCII only). "1 PLAYER" goes on
+  as the arcade program does alone. "NETWORK VS" switches the link on, takes
+  the lowest cabinet number that `mkgp2pc_netlink_heard_mask()` does not
+  report (the next one if `mkgp2pc_netlink_address_ok()` says the number was
+  taken at the same moment), writes it where the test menu keeps the PCB ID,
+  and does what the arcade program does around its test menu:
+  `PcbIdToIpAndModify`, `PcbComm_Shutdown`, `PCBComm_Init`. Then the entry
+  screen.
+- `fn_801BA1A4.cpp.patch` and `PCBCheckRecv.c.patch`: in a network game the
+  entry screen does not close because everybody connected has entered, and
+  the shared timer is held at 10 s until a cabinet in the entry screen sends
+  the arcade program's "hurry" flag (its button, `SetPcbScratchFlag_806d11a4`),
+  then runs out from 3 s. The button is not taken during the first second
+  and a half, and an empty timer table right after the restart of the link
+  objects does not count as run out. `fn_801BA318.cpp.patch` draws the
+  number of players and the hint.
+- The link is switched off again when the entry screen ends with nobody
+  else, and when the attract loop starts (`clFlowTitle`).
+
+Checked 2026-11-12 with two copies of the no-graphics build on one Linux
+machine, inputs from scripts: both choose NETWORK VS by steering, get
+cabinets 1 and 2, connect, stay in the entry screen for 20 s, one button
+press closes it on both, both are in one group (`g_gameMode` 2, the first is
+host) and go on to the class and character selection; a copy that chooses
+1 PLAYER sends nothing; a copy alone in the entry screen plays alone after
+the button. Not checked: how the two texts look (the no-graphics build draws
+nothing), the rendering build, Windows, two PCs, three or four copies, a
+second network game after the first one has ended.
+
+`MKGP2PC_LINK_MODE` (`mkgp2pc_linkflow_preset`) answers in place of the
+question for `solo` and `network`; `fn_801B76C8.cpp.patch` then goes the
+same way as after the answer. Checked 2026-11-12 on the same build: two
+copies with `network` take cabinets 1 and 2 at their coins, wait in the
+entry screen and become one group on a button press; a copy without the
+variable, with `solo` plus `MKGP2PC_LINK=0` (what the launcher sets) or with
+an unknown word plays alone without a question; `ask` gives the question.
+
+Known gap: a copy only hears about a network game after choosing NETWORK VS
+itself; the arcade program's invitation in the attract loop (scene 6) does
+not appear, because the link of a waiting copy is off.
 
 ## How a race is kept in step
 
