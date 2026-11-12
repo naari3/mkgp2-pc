@@ -1,0 +1,43 @@
+--- a/src/game/MainGameLoop.cpp
++++ b/src/game/MainGameLoop.cpp
+@@ -35,6 +35,14 @@
+ void fn_8011F994(int);
+ void fn_801A1280();
+ void Game_Shutdown();
++/* PC port: the port's menu may ask for another flow (port/platform/nav/nav.c).
++ * The three flags are the game's own "continue" switches, read once by the
++ * menu flow's constructor to choose its first screen. */
++int mkgp2pc_nav_flow_hook(int current, int *entry);
++extern unsigned char lbl_806D17F0, lbl_806D17F1, lbl_806D17F2;
++/* PC port: the port's menu drawn with the game's fonts
++ * (port/platform/ui/gamemenu.c); one call is one frame of a stopped game. */
++int mkgp2pc_gamemenu_frame(void);
+ }
+ class FrameInput {
+ public:
+@@ -62,6 +70,25 @@
+     const char *text = lbl_802E89A0;
+     unsigned char error = 0;
+     while (!error) {
++        /* PC port: while the port's menu is open the game stands still
++         * here, between two frames. */
++        while (mkgp2pc_gamemenu_frame()) {
++        }
++        {
++            /* PC port: before anything of the frame is drawn, so that no
++             * drawing command still refers to the flow that is deleted. */
++            int entry;
++            int wanted = mkgp2pc_nav_flow_hook(self->currentIndex, &entry);
++            if (wanted != -2) {
++                if (entry >= 0) {
++                    lbl_806D17F0 = entry != 0;
++                    lbl_806D17F1 = entry == 1;
++                    lbl_806D17F2 = entry == 2;
++                }
++                GXDrawDone();
++                Flow_TransitionTo(self, wanted);
++            }
++        }
+         DebugOverlay_Dispatch(self);
+         MetricsTable_ResetAll();
+         Sci2Card_PollAndAdvanceState();
