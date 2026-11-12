@@ -1541,7 +1541,7 @@ What the port does now:
 Not done, and what it would take: a faster first compilation (the Vulkan
 backend skips DXC; `MKGP2PC_BACKEND=vulkan` is untested on Windows), several
 pipeline threads in Aurora, a general shader in Aurora. Dolphin, for
-comparison (its documentation, no code read): it offers synchronous
+comparison (its graphics settings as publicly described; no code read): it offers synchronous
 specialised shaders, "ubershaders" (one general shader interpreting the
 state, exclusively or while the specialised one compiles), skipping the
 draw, and compiling the cached shaders before the game starts.
