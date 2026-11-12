@@ -41,12 +41,11 @@ Found in the decompiled source; nothing here comes from another project.
 | The camera's web server: a connection to 192.168.29.104-107 port 80 is answered inside the network stand-in, no host socket involved | `port/platform/triforce/netlink.c`, "the camera" |
 | The picture source, the newest picture at 320x240, the HTTP answer; the four THP functions on the camera's path | `port/platform/camera/camera.c` |
 | Webcam on Windows (Media Foundation source reader) | `port/platform/camera/camera_mf.c` |
-| End-of-picture test readable by a conforming compiler | `port/patches/src/game/NamCam_GetImageHandle.c.patch` |
 | The shutter's drawing selects the matrix it loads | `port/patches/src/game/DrawNamCamImage.c.patch` |
 | Camera option left on when a source is set | `port/platform/triforce/card_reader.c` |
 | Refresh of one changed texture | `mkgp2pc_gx_texture_changed`, `port/gfx/gx_shim.cpp` |
 
-The game's code runs unchanged apart from the two one-line patches: its
+The game's code runs unchanged apart from one one-line patch: its
 connection state machine, its timeouts and its scenes are the cabinet's.
 
 **The picture is not a real JPEG.** The answer carries a JPEG's first and
@@ -60,12 +59,12 @@ is refused with a log line. Writing a JPEG decoder was not worth it for a
 picture that never leaves the process.
 
 **The end-of-picture test** in the arcade program is
-`end[-2] == -1 && end[-1] == -0x27` on plain `char`, which is unsigned in
-the game's build. MWCC compares at byte width (`lbz; extsb; cmpwi`), so the
-cabinet finds FF D9; a conforming compiler promotes the unsigned byte to
-255 and never does. The patch writes the two operands as `signed char`.
-The same MWCC habit may hide elsewhere in the game (a plain `char` compared
-with a negative constant); it has not been looked for.
+`end[-2] == -1 && end[-1] == -0x27` on plain `char`. That finds FF D9 only
+where plain `char` is signed, which it is in the cabinet's build of the game
+code. The port used to compile everything with unsigned `char`, so no
+picture was ever accepted; since 2026-11-12 the sign is set per file as in
+the matching build (`docs/port/char_sign.md`) and the line works as written.
+An earlier version of this page blamed the compiler; that was wrong.
 
 **The shutter.** `DrawNamCamImage` draws the camera texture as one quad
 into the top left 128x128 pixels of the frame buffer and copies that out as

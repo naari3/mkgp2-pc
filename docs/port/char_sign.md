@@ -64,9 +64,8 @@ nothing in `src/triforce`. The game keeps almost all of its small numbers in
 "No" means the two readings give the same result for every value the code
 can meet there, by reading the source; none of it was run with both.
 
-The camera patch (`port/patches/src/game/NamCam_GetImageHandle.c.patch`,
-with the camera work) casts the two bytes to `signed char`. With the flag
-right it is no longer needed; it does no harm.
+The camera work first carried a patch casting the two bytes to `signed
+char`; with the flag right it was dropped.
 
 ## Checked
 
