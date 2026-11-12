@@ -153,10 +153,28 @@ python3 port/hires/make_hires.py --iso <image> --out hires --import-sprites up
 ```
 
 Textures without a picture in `up` get the built-in filter; the fonts are
-made as above either way. The plumbing was tried with a stand-in enlarger;
-**no neural enlarger has been run through it yet** (it cannot be run on the
-cloud machine; it would run on the user's PC, on their decision), so its
-result on this game's art is unseen.
+made as above either way.
+
+On Windows `wsl-hires.ps1 -Ai` does all of it (the user asked for this on
+2026-11-12): export through the container into `build\hires-ai\src`,
+download of `realesrgan-ncnn-vulkan` v0.2.5.0 (BSD 3-clause; a Vulkan
+program, no Python or CUDA; kept in `build\hires-ai\tool`, nothing
+installed), both folders enlarged four times on the GPU into
+`build\hires-ai\up` (several GB), import. Models:
+
+- `realesrgan-x4plus-anime` (default; 6 residual blocks, 17 MB): trained on
+  illustrations; suits flat-coloured art with outlines, which is most of
+  this game's 2D (logos, icons, frames).
+- `-Model realesrgan-x4plus` (23 blocks, 64 MB, several times slower):
+  general pictures; suits the rendered pictures, tends to invent texture.
+
+The program works in tiles, so video memory use stays at a few GB at most
+(`-Tile` sets the size). Both models redraw: small text and faces can change
+shape.
+
+**Not run yet anywhere**: the cloud machine may not run the downloaded
+program, and the script has not been run on Windows. The export and import
+steps were tried on Linux with a stand-in enlarger.
 
 ## Known limits
 
