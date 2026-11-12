@@ -141,6 +141,16 @@ has no Japanese font of its own; copying a Japanese font into the prefix's
 `HKCU\Software\Wine\Fonts\Replacements` for `Tahoma` makes the texts
 readable.
 
+## Page colour
+
+Labels and check boxes are children of the main window, placed over the tab
+control. They are painted in the colour of the tab control's page, which no
+system colour names (Windows 11: 249,249,249, not the window colour; with
+the window colour they stood out as white bands). `page_color_update` asks
+the tab control to draw itself into a bitmap (`WM_PRINTCLIENT`) and reads
+one point; it runs again on a theme change. Wine's page is plain white, so
+the difference only shows on Windows.
+
 ## Why a separate program
 
 The alternative was a menu inside the game window (Aurora carries Dear
