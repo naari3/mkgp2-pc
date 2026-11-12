@@ -42,17 +42,27 @@ int mkgp2pc_boot_check_frames(int arcade) {
 #include <string.h>
 #include <stdio.h>
 
+#include "mkgp2pc/gameui.h"
+
 void mkgp2pc_netlink_set_active(int on);
 unsigned mkgp2pc_netlink_heard_mask(void);
 int mkgp2pc_netlink_address_ok(void);
 
 static int s_onDemand = -1;
 static int s_choosing; /* the question is on the screen */
+static int s_age;      /* frames the question has been up */
+static int s_drawn;    /* its sprites and text are loaded */
+static int s_armed;    /* the pedal has been let go since the question came */
+static int s_up;       /* frames in a row the pedal has been up */
+#define ARM_FRAMES 3
+#define CHOICE_GUARD 15 /* frames the window takes to open */
 static int s_cursor;   /* 0 alone, 1 network */
 static int s_network;  /* this game was started as network versus */
 static int s_go;       /* somebody closed the entry screen */
 static int s_counting; /* the entry screen's timer has been seen running */
 static int s_frames;   /* frames of the entry screen so far */
+static float s_timer;  /* the entry screen's timer as last seen */
+static int s_lobbyDrawn;
 
 int mkgp2pc_linkflow_on_demand(void) {
   if (s_onDemand < 0) {
@@ -91,6 +101,34 @@ int mkgp2pc_linkflow_cursor(void) { return s_cursor; }
 void mkgp2pc_linkflow_ask(void) {
   s_choosing = 1;
   s_cursor = 0;
+  s_age = 0;
+  s_armed = 0;
+  s_up = 0;
+}
+
+/* clFlowTitle::Draw, every frame: the question, drawn with the game's own
+ * text and sprites (port/platform/ui/gameui.c). */
+#define CHOICE_LAYER 7
+void mkgp2pc_linkflow_draw(void) {
+  static const char* const ja[] = {"ひとりで遊ぶ", "通信対戦"};
+  static const char* const en[] = {"1 PLAYER", "NETWORK VS"};
+  if (!s_choosing) {
+    if (s_drawn) {
+      mkgp2pc_gameui_end();
+      s_drawn = 0;
+    }
+    return;
+  }
+  if (!s_drawn) {
+    mkgp2pc_gameui_begin(CHOICE_LAYER);
+    s_drawn = 1;
+  }
+  if (mkgp2pc_gameui_english()) {
+    mkgp2pc_gameui_choice("SELECT GAME", en, 2, s_cursor, s_age);
+  } else {
+    mkgp2pc_gameui_choice("遊び方を選んでください", ja, 2, s_cursor, s_age);
+  }
+  s_age++;
 }
 
 /* One frame of the question. Returns 0 while open, 1 for a game alone, 2 for
@@ -98,7 +136,8 @@ void mkgp2pc_linkflow_ask(void) {
  * runs). */
 int mkgp2pc_linkflow_choose(int left, int right, int decide) {
   const char* e = getenv("MKGP2PC_NET_CHOICE");
-  if (e != NULL && (e[0] == '1' || e[0] == '2')) {
+  int scripted = e != NULL && (e[0] == '1' || e[0] == '2');
+  if (scripted) {
     s_cursor = e[0] - '1';
     decide = 1;
   }
@@ -108,10 +147,22 @@ int mkgp2pc_linkflow_choose(int left, int right, int decide) {
   if (right) {
     s_cursor = 1;
   }
-  if (!decide) {
+  /* The pedal that confirmed the coin is usually still down when the
+   * question comes up, and `decide` is its state, not the moment it goes
+   * down (the game's InputPlayer::IsPressed says "is down"). The answer has
+   * to be a press made after the pedal was let go, with the window open. */
+  s_up = decide || s_age < CHOICE_GUARD ? 0 : s_up + 1;
+  if (s_up >= ARM_FRAMES) {
+    s_armed = 1;
+  }
+  if (!scripted && (!decide || !s_armed)) {
     return 0;
   }
   s_choosing = 0;
+  if (s_drawn) {
+    mkgp2pc_gameui_end();
+    s_drawn = 0;
+  }
   return s_cursor + 1;
 }
 
@@ -166,6 +217,7 @@ int mkgp2pc_linkflow_lobby_over(float timer) {
     return timer <= 0.0f;
   }
   s_frames++;
+  s_timer = timer;
   if (timer > 0.0f) {
     s_counting = 1;
   }
@@ -181,3 +233,28 @@ int mkgp2pc_linkflow_lobby_button(void) { return !s_network || s_frames > 90; }
  * entry screen starts held again, also on a cabinet that is racing and only
  * counts the timer for the others. */
 void mkgp2pc_linkflow_lobby_empty(void) { s_go = 0; }
+
+/* clFlowEntry::Draw, every frame. The entry screen of a network game stays
+ * open until somebody presses the button; the hint for that, in the game's
+ * own text, under the game's "please wait". It goes away once the timer is
+ * running out (below the 10 s it is held at). */
+void mkgp2pc_linkflow_lobby_draw(void) {
+  if (!s_network) {
+    return;
+  }
+  if (!s_lobbyDrawn) {
+    mkgp2pc_gameui_begin(CHOICE_LAYER);
+    s_lobbyDrawn = 1;
+  }
+  if (!s_counting || s_timer >= 10.0f) {
+    mkgp2pc_gameui_hint_button(320.0f, 436.0f, s_frames, mkgp2pc_gameui_english() ? "START" : "スタート");
+  }
+}
+
+/* clFlowEntry's destructor. */
+void mkgp2pc_linkflow_lobby_closed(void) {
+  if (s_lobbyDrawn) {
+    mkgp2pc_gameui_end();
+    s_lobbyDrawn = 0;
+  }
+}

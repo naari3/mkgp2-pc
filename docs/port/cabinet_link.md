@@ -18,8 +18,11 @@ by people.
 
 ## Using it
 
-Nothing has to be set. After the coin the game asks "1 PLAYER" or "NETWORK
-VS" (steer to choose, the button or the accelerator to decide). Every copy
+Nothing has to be set. After the coin the game asks "ひとりで遊ぶ" (1 PLAYER)
+or "通信対戦" (NETWORK VS): steer to choose, the button or the accelerator to
+decide (let the accelerator go first if it is still down from confirming the
+coin). The window is drawn with the game's own text and panels
+([`game_ui.md`](game_ui.md)). Every copy
 that chooses NETWORK VS, on this PC or on the same LAN, meets the others in
 the entry screen; it shows how many are there and stays open until one of
 them presses the button, then closes for all of them three seconds later. Two
@@ -248,8 +251,14 @@ patches):
   (`mkgp2pc_netlink_set_active(0)`); the game's link objects run as on a
   cabinet nobody answers.
 - `fn_801B76C8.cpp.patch`: the confirmed coin puts up the question instead
-  of deciding by the connected cabinets; `fn_801B785C.cpp.patch` draws it
-  with the boot screens' text (`DrawText`, ASCII only). "1 PLAYER" goes on
+  of deciding by the connected cabinets; `fn_801B785C.cpp.patch` has it
+  drawn every frame (`mkgp2pc_linkflow_draw`, with the game's fonts and
+  sprites through `port/platform/ui/gameui.c`; until 2026-11-12 it was the
+  boot screens' `DrawText`, ASCII only). The pedal's state is what the game
+  hands over as "decide", so the answer only counts once the pedal has been
+  up for three frames after the window opened; before that, holding the
+  accelerator a quarter of a second longer than needed for the coin answered
+  "1 PLAYER" unseen. "1 PLAYER" goes on
   as the arcade program does alone. "NETWORK VS" switches the link on, takes
   the lowest cabinet number that `mkgp2pc_netlink_heard_mask()` does not
   report (the next one if `mkgp2pc_netlink_address_ok()` says the number was
