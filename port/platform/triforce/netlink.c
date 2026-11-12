@@ -98,6 +98,7 @@ static void no_reset_reports(HostSocket s) { (void)s; }
 #endif
 
 #include "mkgp2pc/triforce.h"
+#include "netmeet.h"
 
 /* Error numbers as the game's log names them (src/game/AcError_LogIfError.c
  * knows 9, 23, 24, 50, 55): the BSD ones. */
@@ -123,7 +124,7 @@ typedef struct {
 
 typedef struct {
   int known;
-  int fixed; /* from MKGP2PC_LINK_PEERS */
+  int fixed; /* 1 from MKGP2PC_LINK_PEERS, 2 from the room (netmeet.c) */
   struct in_addr host;
   uint16_t port;  /* network order */
   uint64_t local; /* when it was last heard on this PC */
@@ -712,6 +713,13 @@ static void wire_input(HostSocket source, uint64_t now) {
       errors++; /* Windows reports here that an earlier datagram found no port open */
       continue;
     }
+    if (source == s_announce && mkgp2pc_meet_datagram(d, n, &from)) {
+      continue; /* the STUN server's answer */
+    }
+    if (!mkgp2pc_meet_allows(from.sin_addr.s_addr)) {
+      s_dropped++; /* with a room, only its members and this LAN are heard */
+      continue;
+    }
     if (n == ANNOUNCE_SIZE && memcmp(d, "MKGP2PC1", 8) == 0) {
       announce_input(d, &from, now);
     } else if (n >= 4 && memcmp(d, "MKL2", 4) == 0 && source == s_announce && s_active) {
@@ -842,6 +850,13 @@ static void announce_input(const uint8_t* msg, const struct sockaddr_in* from, u
     return;
   }
   s_heard[index] = now;
+  if (s_peer[index].fixed == 2 && s_peer[index].host.s_addr == from->sin_addr.s_addr && s_peer[index].port != from->sin_port) {
+    /* The room named another port than the one this cabinet's datagrams
+     * come from: its router numbers the way to here differently. Answers
+     * only pass to where they came from. */
+    fprintf(stderr, "link: cabinet %d sends from port %d\n", index + 1, ntohs(from->sin_port));
+    s_peer[index].port = from->sin_port;
+  }
   if (s_peer[index].fixed || !s_active) {
     return;
   }
@@ -867,6 +882,7 @@ static void announce_tick(uint64_t now) {
   uint8_t msg[ANNOUNCE_SIZE];
   observe_open();
   wire_input(s_observe, now);
+  mkgp2pc_meet_tick((uintptr_t)s_announce, s_announce != NO_SOCKET ? s_announceIndex : -1, now);
   if (s_announce == NO_SOCKET) {
     if (now - s_probed >= 1000) {
       s_probed = now;
@@ -1764,6 +1780,27 @@ void mkgp2pc_boot_cabinet(signed char* id) {
   if (e != NULL && atoi(e) >= 1 && atoi(e) <= MAX_CABINETS) {
     *id = (signed char)atoi(e);
   }
+  if (configured() && mkgp2pc_meet_on()) { /* two players of a room must not have one number */
+    int given = mkgp2pc_meet_boot_id(e != NULL ? *id : 0);
+    if (given >= 1 && given <= MAX_CABINETS) {
+      *id = (signed char)given;
+      fprintf(stderr, "link: room: this is cabinet %d\n", given);
+    }
+  }
+}
+
+/* From netmeet.c: the room says where cabinet `index` is. It is sent the
+ * announcements like one named in MKGP2PC_LINK_PEERS, which is also what
+ * opens this side's router for its datagrams. */
+void mkgp2pc_netlink_room_peer(int index, uint32_t host, uint16_t port) {
+  if (index < 0 || index >= MAX_CABINETS || s_peer[index].fixed == 1) {
+    return;
+  }
+  s_peer[index].known = 1;
+  s_peer[index].fixed = 2;
+  s_peer[index].host.s_addr = host;
+  s_peer[index].port = port;
+  s_peer[index].local = 0;
 }
 
 /* ---- for the game flow (linkflow.c) ------------------------------------------ */

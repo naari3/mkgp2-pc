@@ -45,6 +45,9 @@ listens for announcements. No TCP.
 
 ### Between two networks (not tried on a real connection yet)
 
+Without forwarding ports: a room name and a rendezvous server, see
+[internet_play.md](internet_play.md). By hand:
+
 Each side forwards its cabinet's UDP port (29564 for cabinet 1, 29565 for
 cabinet 2, ...) to the PC and names the other side:
 
