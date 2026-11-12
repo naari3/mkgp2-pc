@@ -220,6 +220,7 @@ static uint32_t s_shotW, s_shotH;
 static char s_shotPath[600];
 static int s_dumpCount;
 static bool s_fast, s_fastHeld; /* F10 and Tab: no frame limit */
+extern int mkgp2pc_boot_fast;   /* the same during start-up (port/platform/runtime/boot_skip.c) */
 
 void mkgp2pc_shadow_record_frame(void);  /* gx_shim.cpp */
 void mkgp2pc_shadow_record_write(FILE* f);
@@ -932,7 +933,7 @@ static void frame_limit(void) {
     off = getenv("MKGP2PC_NOLIMIT") != NULL;
   }
   s_limitWanted = 0;
-  if (off || s_fast || s_fastHeld) {
+  if (off || s_fast || s_fastHeld || mkgp2pc_boot_fast) {
     next = 0; /* the pace starts afresh when the limit comes back */
     return;
   }
@@ -954,7 +955,7 @@ static void frame_limit(void) {
 extern bool mkgp2pc_skip_draw;
 static bool show_next_frame(void) {
   static Uint64 shown;
-  if (!(s_fast || s_fastHeld) || s_paused || s_dumpWanted) {
+  if (!(s_fast || s_fastHeld || mkgp2pc_boot_fast) || s_paused || s_dumpWanted) {
     shown = 0;
     return true;
   }

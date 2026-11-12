@@ -71,6 +71,7 @@ typedef struct {
   int card;
   wchar_t cardFile[MAX_PATH];
   int closeOnStart;
+  int bootSkip;
   int wide;            /* 16:9 instead of 4:3 */
   int scale;           /* window height in hundredths of 480 lines: 150 = 720 */
   wchar_t backend[16]; /* "" = the library's own choice */
@@ -134,6 +135,7 @@ static void load_settings(Settings* s) {
   s->card = ini_int(L"card", 1) != 0;
   ini_str(L"card_file", s->cardFile, LEN(s->cardFile));
   s->closeOnStart = ini_int(L"close_on_start", 0) != 0;
+  s->bootSkip = ini_int(L"boot_skip", 0) != 0;
   s->wide = ini_int(L"wide", 0) != 0;
   {
     wchar_t text[16] = L"1";
@@ -198,6 +200,7 @@ static int save_settings(const Settings* s) {
   put_int(L"card", s->card);
   put_str(L"card_file", s->cardFile);
   put_int(L"close_on_start", s->closeOnStart);
+  put_int(L"boot_skip", s->bootSkip);
   put_int(L"wide", s->wide);
   {
     wchar_t text[16];
@@ -303,6 +306,7 @@ static void apply_environment(const Settings* s) {
   env_text(L"MKGP2_ISO", s->iso);
   env_text(L"MKGP2PC_CARD", s->card ? NULL : L"0");
   env_text(L"MKGP2PC_CARD_FILE", s->cardFile);
+  env_flag(L"MKGP2PC_BOOT_SKIP", s->bootSkip);
   swprintf(text, LEN(text), L"%g", s->scale / 100.0);
   env_text(L"MKGP2PC_SCALE", s->scale != 100 ? text : NULL);
   env_text(L"MKGP2PC_ASPECT", s->wide ? L"16:9" : NULL);
@@ -431,7 +435,7 @@ static void log_exit_code(DWORD code) {
 
 enum {
   ID_TAB = 100, ID_SAVE, ID_START, ID_STATUS,
-  ID_ISO, ID_ISO_BROWSE, ID_CARD, ID_CARD_FILE, ID_CARD_BROWSE, ID_CLOSE_ON_START,
+  ID_ISO, ID_ISO_BROWSE, ID_CARD, ID_CARD_FILE, ID_CARD_BROWSE, ID_CLOSE_ON_START, ID_BOOT_SKIP,
   ID_ASPECT, ID_SCALE, ID_BACKEND, ID_RESIZABLE, ID_SHADOW, ID_FAST, ID_ASYNC, ID_GOODS, ID_HIRES,
   ID_LINK, ID_PCB, ID_PEERS, ID_PORT, ID_ROOM, ID_SERVER,
   ID_KEYS, ID_KEY_SET1, ID_KEY_SET2, ID_KEY_CLEAR1, ID_KEY_CLEAR2, ID_KEY_RESET,
@@ -565,6 +569,8 @@ static void create_controls(void) {
   }
   button(0, L"カードを選ぶ", X + W - 80, y + 47, 80, ID_CARD_BROWSE);
   y += 92;
+  check(0, L"デバイスチェックと NOTICE を飛ばす", X, y, W, ID_BOOT_SKIP);
+  y += 28;
   check(0, L"起動後に閉じる", X, y, W, ID_CLOSE_ON_START);
 
   /* 表示 */
@@ -672,6 +678,7 @@ static void settings_to_window(void) {
   CheckDlgButton(g_wnd, ID_CARD, g_set.card);
   SetDlgItemTextW(g_wnd, ID_CARD_FILE, g_set.cardFile);
   CheckDlgButton(g_wnd, ID_CLOSE_ON_START, g_set.closeOnStart);
+  CheckDlgButton(g_wnd, ID_BOOT_SKIP, g_set.bootSkip);
   SendDlgItemMessageW(g_wnd, ID_ASPECT, CB_SETCURSEL, (WPARAM)g_set.wide, 0);
   scale_fill(g_set.wide, g_set.scale);
   int backend = 0;
@@ -700,6 +707,7 @@ static void window_to_settings(void) {
   g_set.card = checked(ID_CARD);
   GetDlgItemTextW(g_wnd, ID_CARD_FILE, g_set.cardFile, LEN(g_set.cardFile));
   g_set.closeOnStart = checked(ID_CLOSE_ON_START);
+  g_set.bootSkip = checked(ID_BOOT_SKIP);
   g_set.scale = scale_selected();
   g_set.wide = SendDlgItemMessageW(g_wnd, ID_ASPECT, CB_GETCURSEL, 0, 0) == 1;
   int backend = (int)SendDlgItemMessageW(g_wnd, ID_BACKEND, CB_GETCURSEL, 0, 0);

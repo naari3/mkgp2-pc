@@ -42,6 +42,7 @@ window. Empty fields show their default as grey text.
 | 基本 | ISO file | `MKGP2_ISO` |
 | 基本 | use the card unit (off = `0`) | `MKGP2PC_CARD` |
 | 基本 | card file (empty = `card.bin` in the folder) | `MKGP2PC_CARD_FILE` |
+| 基本 | skip the device check and the NOTICE at start-up (see below) | `MKGP2PC_BOOT_SKIP` |
 | 基本 | close this window after starting | (launcher only) |
 | 表示 | aspect 4:3 or 16:9 (4:3 = not set); what 16:9 does is in widescreen.md | `MKGP2PC_ASPECT` |
 | 表示 | window size: height 480 x factor, width from the aspect. 4:3 offers 1 to 6, 16:9 offers 1, 1.5 (1280x720), 2, 2.25 (1920x1080), 3, 4.5. | `MKGP2PC_SCALE` |
@@ -63,6 +64,27 @@ window. Empty fields show their default as grey text.
 Variables for investigation (`MKGP2PC_TRACE_*`, `MKGP2PC_SCRIPT`,
 `MKGP2PC_FRAMES`, ...) have no control of their own; they go into the free
 lines of the last page.
+
+## Start-up screens: `MKGP2PC_BOOT_SKIP`
+
+Read by `port/platform/runtime/boot_skip.c`, used from
+`port/patches/src/game/BootDispatcher.cpp.patch`. Off by default: the game
+starts as the cabinet does.
+
+- Device check (card reader, printer, camera): it still runs, since it also
+  brings the card unit up, but without the frame limit and with only about
+  60 of its frames a second drawn, like full speed (F10). It is over as fast
+  as the machine does its frames.
+- NOTICE (ten seconds of text): left out, the way the game itself leaves it
+  out when byte 0x2A of its settings record is set.
+
+The board check between the two (60 seconds unless `MKGP2PC_BOOT_CHECK`
+handling of the cabinet link shortens it, cabinet_link.md) lies inside the
+fast stretch too. The log says `boot: start-up screens begin/end at retrace
+N`. Measured 2026-11-12 with the no-graphics Linux build: the screens end
+at retrace 4653 without the setting and 4054 with it (the 599 frames of the
+NOTICE); the fast stretch itself needs the rendering build and has not been
+run yet.
 
 ## Keys: `MKGP2PC_KEYS`
 
