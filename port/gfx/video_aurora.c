@@ -57,6 +57,8 @@ typedef void (*RetraceCallback)(uint32_t retraceCount);
  *   P              pause / resume
  *   O              while paused: advance one frame
  *   F9             dump (see "Dumps" below); works paused or running
+ *   Esc            the port's menu (port_menu.cpp); the game stands still
+ *   Backspace      one selection screen back (port/platform/nav/nav.c)
  *   F8             high-resolution 2D textures on / off (docs/port/hires_textures.md)
  * These are the defaults; MKGP2PC_KEYS changes them (see key_event).
  * Once a key has been used the keyboard owns the inputs; until then a
@@ -367,9 +369,61 @@ static void dump_poll(void) {
   s_shotPixels = NULL;
 }
 
+/* port_menu.cpp, port_ui.cpp */
+bool mkgp2pc_menu_is_open(void);
+void mkgp2pc_menu_set_open(bool open);
+void mkgp2pc_menu_key(int key);
+void mkgp2pc_menu_draw(void);
+void mkgp2pc_ui_init(const AuroraWindowSize* size);
+void mkgp2pc_script_run(const char* cmd, uint32_t at); /* port/nogfx/input_script.c */
+
+/* The menu is drawn by the game itself, with its fonts and panels
+ * (port/platform/ui/gamemenu.c), when the game's main loop runs: that loop
+ * then makes the frames of the stopped game. Otherwise, and with
+ * MKGP2PC_MENU=plain, the game waits inside VIWaitForRetrace and the menu is
+ * drawn over its last picture (port_ui.cpp). */
+static bool s_menuByGame;
+static bool s_menuFrame; /* the frame that ends now was one of the stopped game */
+static int s_menuUnserved;
+static bool s_mainLoopRuns;
+
+bool mkgp2pc_video_menu_frame(void) {
+  if (!s_menuByGame) {
+    return false;
+  }
+  s_menuFrame = true;
+  s_menuUnserved = 0;
+  return true;
+}
+
+static void menu_open(bool open) {
+  if (open && !mkgp2pc_menu_is_open()) {
+    const char* style = getenv("MKGP2PC_MENU");
+    s_menuByGame = s_mainLoopRuns && (style == NULL || strcmp(style, "plain") != 0);
+    s_menuUnserved = 0;
+  }
+  if (open) {
+    /* nothing stays held down behind the menu */
+    s_keyLeft = s_keyRight = s_keyAccel = s_keyBrake = s_keyItem = s_keyTest = s_keyService = false;
+    s_fastHeld = false;
+  }
+  mkgp2pc_menu_set_open(open);
+}
+
+/* For the menu: a script command applied to the frame that follows, and
+ * written into the recording by the script module. */
+void mkgp2pc_video_command(const char* cmd) { mkgp2pc_script_run(cmd, s_retrace + 1); }
+
+/* The game's main loop asks for flow requests once per frame; before it (the
+ * boot checks) and in loops of its own (test mode) nobody would take one. */
+bool mkgp2pc_video_main_loop_runs(void) { return s_mainLoopRuns || (mkgp2pc_menu_is_open() && s_menuByGame); }
+unsigned mkgp2pc_nav_flow_ticks(void);
+
 extern int (*mkgp2pc_script_extra)(const char* cmd);
 static int script_extra(const char* cmd) {
-  if (strcmp(cmd, "pause") == 0) {
+  if (strcmp(cmd, "menu") == 0) {
+    menu_open(!mkgp2pc_menu_is_open());
+  } else if (strcmp(cmd, "pause") == 0) {
     s_paused = !s_paused;
     fprintf(stderr, "script: %s at retrace %u\n", s_paused ? "paused" : "resumed", (unsigned)s_retrace);
   } else if (strcmp(cmd, "step") == 0) {
@@ -406,14 +460,14 @@ static int script_extra(const char* cmd) {
 enum {
   KEY_LEFT, KEY_RIGHT, KEY_ACCEL, KEY_BRAKE, KEY_ITEM, KEY_TEST, KEY_SERVICE,
   KEY_COIN, KEY_CARD, KEY_PAUSE, KEY_STEP, KEY_FAST, KEY_FASTHOLD, KEY_DUMP,
-  KEY_HIRES, KEY_DEBUG, KEY_DEBUGPAGE,
+  KEY_MENU, KEY_BACK, KEY_HIRES, KEY_DEBUG, KEY_DEBUGPAGE,
   KEY_DEVUP, KEY_DEVDOWN, KEY_DEVSTART, KEY_DEVSUB, KEY_CANCEL,
   KEY_ACTIONS
 };
 #define KEYS_PER_ACTION 4
 static const char* const s_actionNames[KEY_ACTIONS] = {
     "left", "right", "accel", "brake", "item", "test", "service",
-    "coin", "card", "pause", "step", "fast", "fasthold", "dump", "hires",
+    "coin", "card", "pause", "step", "fast", "fasthold", "dump", "menu", "back", "hires",
     "debug", "debugpage",
     "devup", "devdown", "devstart", "devsub", "cancel"};
 static int s_keyMap[KEY_ACTIONS][KEYS_PER_ACTION] = {
@@ -421,8 +475,8 @@ static int s_keyMap[KEY_ACTIONS][KEYS_PER_ACTION] = {
     {SDL_SCANCODE_DOWN, SDL_SCANCODE_X}, {SDL_SCANCODE_SPACE, SDL_SCANCODE_RETURN},
     {SDL_SCANCODE_F1}, {SDL_SCANCODE_F2}, {SDL_SCANCODE_5, SDL_SCANCODE_C},
     {SDL_SCANCODE_I}, {SDL_SCANCODE_P}, {SDL_SCANCODE_O}, {SDL_SCANCODE_F10},
-    {SDL_SCANCODE_TAB}, {SDL_SCANCODE_F9}, {SDL_SCANCODE_F8},
-    {SDL_SCANCODE_F3}, {SDL_SCANCODE_F4},
+    {SDL_SCANCODE_TAB}, {SDL_SCANCODE_F9}, {SDL_SCANCODE_ESCAPE}, {SDL_SCANCODE_BACKSPACE},
+    {SDL_SCANCODE_F8}, {SDL_SCANCODE_F3}, {SDL_SCANCODE_F4},
     {SDL_SCANCODE_PAGEUP}, {SDL_SCANCODE_PAGEDOWN}, {SDL_SCANCODE_END}, {SDL_SCANCODE_HOME},
     {SDL_SCANCODE_LSHIFT}};
 
@@ -476,6 +530,33 @@ static void input_event(const SDL_Event* e, int padAction, bool padDown) {
   bool down = e != NULL ? e->type == SDL_EVENT_KEY_DOWN : padDown;
   bool press = e != NULL ? down && !e->key.repeat : padDown;
   bool control = false;
+  if (mkgp2pc_menu_is_open()) {
+    /* The menu has the keyboard: the arrow keys, Enter and Esc always work,
+     * and so do the keys given to accelerator / brake (up / down), item
+     * (decide), menu and back (close). */
+    int key = 0;
+    if (down) {
+      switch (e->key.scancode) {
+      case SDL_SCANCODE_UP: key = 1; break;
+      case SDL_SCANCODE_DOWN: key = 2; break;
+      case SDL_SCANCODE_RETURN: case SDL_SCANCODE_KP_ENTER: key = 3; break;
+      case SDL_SCANCODE_ESCAPE: key = 4; break;
+      default: break;
+      }
+      static const int same[][2] = {{KEY_ACCEL, 1}, {KEY_BRAKE, 2}, {KEY_ITEM, 3}, {KEY_MENU, 4}, {KEY_BACK, 4}};
+      for (int a = 0; key == 0 && a < 5; a++) {
+        for (int i = 0; i < KEYS_PER_ACTION; i++) {
+          if (s_keyMap[same[a][0]][i] != 0 && s_keyMap[same[a][0]][i] == (int)e->key.scancode) {
+            key = same[a][1];
+          }
+        }
+      }
+    }
+    if (key != 0 && (!e->key.repeat || key <= 2)) {
+      mkgp2pc_menu_key(key);
+    }
+    return;
+  }
   for (int action = 0; action < KEY_ACTIONS; action++) {
     bool hit = e == NULL && action == padAction;
     for (int i = 0; e != NULL && i < KEYS_PER_ACTION; i++) {
@@ -530,6 +611,16 @@ static void input_event(const SDL_Event* e, int padAction, bool padDown) {
       break;
     case KEY_FASTHOLD: /* the same while held */
       s_fastHeld = down;
+      break;
+    case KEY_MENU:
+      if (press) {
+        menu_open(true);
+      }
+      break;
+    case KEY_BACK:
+      if (press) {
+        mkgp2pc_video_command("back");
+      }
       break;
     case KEY_DUMP:
       if (press) {
@@ -942,6 +1033,16 @@ int __wrap_main(int argc, char** argv) {
   memset(&config, 0, sizeof(config));
   config.appName = "mkgp2-pc";
   config.logCallback = &log_callback;
+  config.imGuiInitCallback = &mkgp2pc_ui_init;
+  /* The picture shown is the copy the game makes of its frame buffer at
+   * the end of a frame (GXCopyDisp), as on the console, not the frame
+   * buffer itself: the copy stays when no new frame is drawn, which is what
+   * the port's menu stands on while the game is stopped. Without it the
+   * menu has a black background. MKGP2PC_XFB=0 turns it off. */
+  {
+    const char* xfb = getenv("MKGP2PC_XFB");
+    config.emulateXfb = xfb == NULL || strcmp(xfb, "0") != 0;
+  }
   /* MKGP2PC_SCALE: the window's height in units of 480 lines (2 opens
    * 1280x960); fractions are taken (1.5 is 720 lines). MKGP2PC_ASPECT=16:9
    * (any W:H wider than 4:3) asks for a wide picture: the window gets that
@@ -1081,6 +1182,7 @@ __declspec(dllimport) int __stdcall TerminateProcess(void* process, unsigned int
 #else
 #include <unistd.h>
 #endif
+void mkgp2pc_video_quit(void);
 static void quit_now(void) {
   mkgp2pc_baseboard_flush(); /* the backup memory file is up to date */
   fflush(NULL);
@@ -1089,6 +1191,8 @@ static void quit_now(void) {
 #endif
   _exit(0);
 }
+
+void mkgp2pc_video_quit(void) { quit_now(); }
 
 static Uint64 s_limitWanted; /* how long the last frame_limit meant to sleep */
 static void frame_limit(void) {
@@ -1352,7 +1456,19 @@ static void stall_beat(bool gameRuns) {
 void VIWaitForRetrace(void) {
   static Uint64 lastReturn;
   Uint64 t[7];
-  bool skip = s_paused || s_dumpWanted || s_shotWait != 0;
+  bool skip = s_paused || s_dumpWanted || s_shotWait != 0 || mkgp2pc_menu_is_open();
+  bool menuFrame = s_menuFrame;
+  s_menuFrame = false;
+  if (mkgp2pc_menu_is_open() && s_menuByGame && !menuFrame && ++s_menuUnserved > 3) {
+    /* the game is in a loop that does not come by its main loop's top */
+    s_menuByGame = false;
+  }
+  if (!menuFrame) {
+    static unsigned ticks;
+    unsigned now = mkgp2pc_nav_flow_ticks();
+    s_mainLoopRuns = now != ticks;
+    ticks = now;
+  }
   t[0] = lastReturn;
   t[1] = SDL_GetTicksNS();
   stall_beat(false);
@@ -1375,7 +1491,19 @@ void VIWaitForRetrace(void) {
   dump_poll();
   s_step = false;
   skip |= s_paused;
-  while (s_paused && !s_step) {
+  while ((s_paused && !s_step) || (mkgp2pc_menu_is_open() && !s_menuByGame)) {
+    if (mkgp2pc_menu_is_open()) {
+      /* The game's last picture stays (it is the copy the game made of its
+       * frame buffer); each pass presents it again with the menu on top. */
+      if (!s_inFrame) {
+        s_inFrame = aurora_begin_frame();
+      }
+      if (s_inFrame) {
+        mkgp2pc_menu_draw();
+        aurora_end_frame();
+        s_inFrame = false;
+      }
+    }
     SDL_Delay(10);
     pump_events();
     dump_poll();
@@ -1384,6 +1512,32 @@ void VIWaitForRetrace(void) {
   t[3] = SDL_GetTicksNS();
   frame_limit();
   t[4] = SDL_GetTicksNS();
+  if (menuFrame) {
+    /* A frame of the stopped game: no retrace is counted and the inputs
+     * are not read, so that a recording of the inputs does not see the time
+     * spent in the menu. The game's retrace callbacks do run: its video
+     * library hands its display buffers on in them, and without that it
+     * stops copying frames to the display. */
+    {
+      int level = OSDisableInterrupts();
+      if (s_pre) {
+        s_pre(s_retrace);
+      }
+      if (s_post) {
+        s_post(s_retrace);
+      }
+      OSRestoreInterrupts(level);
+    }
+    if (!s_inFrame) {
+      s_inFrame = aurora_begin_frame();
+      begin_frame_state();
+      wide_frame();
+    }
+    mkgp2pc_skip_draw = false;
+    lastReturn = SDL_GetTicksNS();
+    stall_beat(true);
+    return;
+  }
   int level = OSDisableInterrupts();
   s_retrace++;
   window_size_check();

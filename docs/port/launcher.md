@@ -24,7 +24,9 @@ shell do not leak in), and starts `mkgp2-gfx.exe` with
 
 - the program's folder as the current folder (`card.bin`, `dumps\`),
 - standard output and error going to `gfx.log` (overwritten on every start,
-  as `run-gfx.cmd` does),
+  as `run-gfx.cmd` does). While a game holds `gfx.log`, a second one started
+  from the same folder writes `gfx.2.log`, a third `gfx.3.log`, a fourth
+  `gfx.4.log` (two cabinets on one PC, cabinet_link.md),
 - no console window (`CREATE_NO_WINDOW`).
 
 While the game runs the start button is disabled; when it ends the exit code
@@ -48,6 +50,7 @@ window. Empty fields show their default as grey text.
 | 基本 | close this window after starting | (launcher only) |
 | 基本 | camera: なし, or one of the cameras connected when the list is opened (by name); [camera.md](camera.md) | `MKGP2PC_CAMERA` |
 | 表示 | aspect 4:3 or 16:9 (4:3 = not set); what 16:9 does is in widescreen.md | `MKGP2PC_ASPECT` |
+| 表示 | 16:9 only (grey at 4:3): race HUD where 4:3 has it (centre, not set) or at the edges (`edge`); ini `wide_hud=center|edge`. Game side on its way (widescreen.md), `edge` marked 未対応 until then | `MKGP2PC_WIDE_HUD` |
 | 表示 | window size: height 480 x factor, width from the aspect. 4:3 offers 1 to 6, 16:9 offers 1, 1.5 (1280x720), 2, 2.25 (1920x1080), 3, 4.5. | `MKGP2PC_SCALE` |
 | 表示 | rendering backend (automatic, d3d12, d3d11, vulkan, opengl) | `MKGP2PC_BACKEND` |
 | 表示 | anti-aliasing: none, MSAA 4x, SSAA 2x, both (antialiasing.md) | `MKGP2PC_MSAA`, `MKGP2PC_SSAA` |
@@ -102,8 +105,9 @@ Read by `key_map_load` in `port/gfx/video_aurora.c`:
 `action=key[,key...]` separated by `;`, up to four keys per action. Actions
 not named keep their default keys; nothing after `=` leaves an action without
 a key. Actions: `left right accel brake item cancel coin card test service pause
-step fast fasthold dump hires debug debugpage devup devdown devstart devsub`
-(from `debug` on: the game's own debug output and the buttons of the
+step fast fasthold dump hires menu back debug debugpage devup devdown devstart
+devsub` (`menu`, `back`: the port's menu and one selection screen back,
+menu.md; from `debug` on: the game's own debug output and the buttons of the
 developers' scenes, debug.md). A key is an SDL scancode name (`A`, `Left`, `F9`,
 `Keypad 5`) or the scancode number, which is the USB keyboard usage (4 = A).
 A single character is always a name (`5` is the key 5), so numbers are
@@ -138,6 +142,16 @@ has no Japanese font of its own; copying a Japanese font into the prefix's
 `windows/Fonts` and naming it under
 `HKCU\Software\Wine\Fonts\Replacements` for `Tahoma` makes the texts
 readable.
+
+## Page colour
+
+Labels and check boxes are children of the main window, placed over the tab
+control. They are painted in the colour of the tab control's page, which no
+system colour names (Windows 11: 249,249,249, not the window colour; with
+the window colour they stood out as white bands). `page_color_update` asks
+the tab control to draw itself into a bitmap (`WM_PRINTCLIENT`) and reads
+one point; it runs again on a theme change. Wine's page is plain white, so
+the difference only shows on Windows.
 
 ## Why a separate program
 

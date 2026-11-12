@@ -36,6 +36,7 @@
 #define GAME_EXE L"mkgp2-gfx.exe"
 #define INI_NAME L"mkgp2-pc.ini"
 #define LOG_NAME L"gfx.log"
+static wchar_t g_logName[32] = LOG_NAME; /* the log of the game this launcher started last */
 #define LEN(a) ((int)(sizeof(a) / sizeof((a)[0])))
 
 /* ---- settings ---------------------------------------------------------- */
@@ -64,6 +65,8 @@ static const KeyAction kActions[] = {
     {L"fasthold", L"全速 (押下中)", {43, 0}},
     {L"dump", L"ダンプ", {66, 0}},
     {L"hires", L"高解像度 (切り替え)", {65, 0}},
+    {L"menu", L"メニュー", {41, 0}},
+    {L"back", L"一つ前の画面に戻る", {42, 0}},
     {L"debug", L"デバッグ表示 (切り替え)", {60, 0}},
     {L"debugpage", L"デバッグ表示のページ送り", {61, 0}},
     {L"devup", L"開発用 上", {75, 0}},
@@ -85,6 +88,7 @@ typedef struct {
   int bootSkip;
   wchar_t camera[256]; /* MKGP2PC_CAMERA: "" none, otherwise a device's name */
   int wide;            /* 16:9 instead of 4:3 */
+  int wideHudEdge;     /* 16:9: the race HUD at the edges, not where 4:3 has it */
   int scale;           /* window height in hundredths of 480 lines: 150 = 720 */
   wchar_t backend[16]; /* "" = the library's own choice */
   int resizable;
@@ -162,6 +166,11 @@ static void load_settings(Settings* s) {
   s->bootSkip = ini_int(L"boot_skip", 0) != 0;
   ini_str(L"camera", s->camera, LEN(s->camera));
   s->wide = ini_int(L"wide", 0) != 0;
+  {
+    wchar_t text[16] = L"";
+    ini_str(L"wide_hud", text, LEN(text));
+    s->wideHudEdge = wcscmp(text, L"edge") == 0;
+  }
   {
     wchar_t text[16] = L"1";
     ini_str(L"scale", text, LEN(text));
@@ -242,6 +251,7 @@ static int save_settings(const Settings* s) {
   put_int(L"boot_skip", s->bootSkip);
   put_str(L"camera", s->camera);
   put_int(L"wide", s->wide);
+  put_str(L"wide_hud", s->wideHudEdge ? L"edge" : L"center");
   {
     wchar_t text[16];
     swprintf(text, LEN(text), L"%g", s->scale / 100.0);
@@ -360,6 +370,7 @@ static void apply_environment(const Settings* s) {
   swprintf(text, LEN(text), L"%g", s->scale / 100.0);
   env_text(L"MKGP2PC_SCALE", s->scale != 100 ? text : NULL);
   env_text(L"MKGP2PC_ASPECT", s->wide ? L"16:9" : NULL);
+  env_text(L"MKGP2PC_WIDE_HUD", s->wide && s->wideHudEdge ? L"edge" : NULL);
   env_text(L"MKGP2PC_BACKEND", s->backend);
   env_flag(L"MKGP2PC_RESIZABLE", s->resizable);
   env_flag(L"MKGP2PC_SHADOW_NEAREST", !s->shadowSmooth);
@@ -456,8 +467,23 @@ static HANDLE start_game(const Settings* s, wchar_t* error, int errorSize) {
   apply_environment(s);
 
   SECURITY_ATTRIBUTES sa = {sizeof(sa), NULL, TRUE};
-  HANDLE out = CreateFileW(log, GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, &sa, CREATE_ALWAYS,
-                           FILE_ATTRIBUTE_NORMAL, NULL);
+  /* Nobody else may write the log while the game has it. A second game
+   * started from the same folder (two cabinets on one PC) then finds
+   * gfx.log taken and writes gfx.2.log, the third gfx.3.log, ... instead of
+   * emptying the log of the first. */
+  HANDLE out = INVALID_HANDLE_VALUE;
+  for (int copy = 1; copy <= 4 && out == INVALID_HANDLE_VALUE; copy++) {
+    if (copy == 1) {
+      wcscpy(g_logName, LOG_NAME);
+    } else {
+      swprintf(g_logName, LEN(g_logName), L"gfx.%d.log", copy);
+    }
+    dir_path(log, g_logName);
+    out = CreateFileW(log, GENERIC_WRITE, FILE_SHARE_READ, &sa, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (out == INVALID_HANDLE_VALUE && GetLastError() != ERROR_SHARING_VIOLATION) {
+      break;
+    }
+  }
   HANDLE in = CreateFileW(L"NUL", GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, &sa, OPEN_EXISTING, 0, NULL);
   if (out == INVALID_HANDLE_VALUE) {
     if (in != INVALID_HANDLE_VALUE) CloseHandle(in);
@@ -492,7 +518,7 @@ static void log_exit_code(DWORD code) {
   wchar_t log[MAX_PATH];
   char line[64];
   DWORD done;
-  dir_path(log, LOG_NAME);
+  dir_path(log, g_logName);
   HANDLE f = CreateFileW(log, FILE_APPEND_DATA, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
   if (f == INVALID_HANDLE_VALUE) return;
   if (code >= 0x80000000u) {
@@ -509,7 +535,7 @@ static void log_exit_code(DWORD code) {
 enum {
   ID_TAB = 100, ID_SAVE, ID_START, ID_STATUS,
   ID_ISO, ID_ISO_BROWSE, ID_CARD, ID_CARD_FILE, ID_CARD_BROWSE, ID_CLOSE_ON_START, ID_BOOT_SKIP, ID_CAMERA,
-  ID_ASPECT, ID_SCALE, ID_BACKEND, ID_RESIZABLE, ID_SHADOW, ID_FAST, ID_ASYNC, ID_GOODS, ID_HIRES, ID_HIRES_MAKE, ID_AA,
+  ID_ASPECT, ID_WIDE_HUD, ID_SCALE, ID_BACKEND, ID_RESIZABLE, ID_SHADOW, ID_FAST, ID_ASYNC, ID_GOODS, ID_HIRES, ID_HIRES_MAKE, ID_AA,
   ID_LINK, ID_PCB, ID_PEERS, ID_PORT, ID_ROOM, ID_SERVER,
   ID_KEYS, ID_KEY_SET1, ID_KEY_SET2, ID_KEY_CLEAR1, ID_KEY_CLEAR2, ID_KEY_RESET,
   ID_EXTRA, ID_OPEN_LOG, ID_OPEN_FOLDER,
@@ -665,6 +691,9 @@ static void create_controls(void) {
   HWND c = combo(1, X + 116, y, 220, ID_ASPECT);
   SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)L"4:3");
   SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)L"16:9");
+  c = combo(1, X + 344, y, W - 344, ID_WIDE_HUD);
+  SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)L"HUD は中央");
+  SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)L"HUD は両端 (未対応)");
   y += 34;
   label(1, L"窓の大きさ", X, y + 3, 110, 18);
   combo(1, X + 116, y, 220, ID_SCALE);
@@ -897,6 +926,8 @@ static void settings_to_window(void) {
   CheckDlgButton(g_wnd, ID_BOOT_SKIP, g_set.bootSkip);
   camera_fill(g_set.camera, 0);
   SendDlgItemMessageW(g_wnd, ID_ASPECT, CB_SETCURSEL, (WPARAM)g_set.wide, 0);
+  SendDlgItemMessageW(g_wnd, ID_WIDE_HUD, CB_SETCURSEL, (WPARAM)g_set.wideHudEdge, 0);
+  EnableWindow(GetDlgItem(g_wnd, ID_WIDE_HUD), g_set.wide);
   scale_fill(g_set.wide, g_set.scale);
   int backend = 0;
   for (int i = 0; i < LEN(kBackendIds); i++) {
@@ -934,6 +965,7 @@ static void window_to_settings(void) {
   camera_selected(g_set.camera, LEN(g_set.camera));
   g_set.scale = scale_selected();
   g_set.wide = SendDlgItemMessageW(g_wnd, ID_ASPECT, CB_GETCURSEL, 0, 0) == 1;
+  g_set.wideHudEdge = SendDlgItemMessageW(g_wnd, ID_WIDE_HUD, CB_GETCURSEL, 0, 0) == 1;
   int backend = (int)SendDlgItemMessageW(g_wnd, ID_BACKEND, CB_GETCURSEL, 0, 0);
   wcscpy(g_set.backend, kBackendIds[backend < 0 || backend >= LEN(kBackendIds) ? 0 : backend]);
   g_set.resizable = checked(ID_RESIZABLE);
@@ -1740,6 +1772,39 @@ static void open_path(const wchar_t* name) {
   }
 }
 
+/* The colour of the tab control's page. With the Windows 11 theme it is a
+ * light grey (249,249,249), not the window colour, and labels and check
+ * boxes painted in the window colour stood on it as white bands (seen
+ * 2026-11-12). No system colour names it, so the tab control is asked to
+ * draw itself into a bitmap and one point of the page is read. */
+static HBRUSH g_pageBrush;
+static void page_color_update(void) {
+  RECT rc, page;
+  COLORREF color = GetSysColor(COLOR_WINDOW);
+  if (g_tab == NULL) return;
+  GetClientRect(g_tab, &rc);
+  page = rc;
+  SendMessageW(g_tab, TCM_ADJUSTRECT, FALSE, (LPARAM)&page);
+  HDC screen = GetDC(g_tab);
+  HDC dc = CreateCompatibleDC(screen);
+  HBITMAP bitmap = CreateCompatibleBitmap(screen, rc.right, rc.bottom);
+  if (dc != NULL && bitmap != NULL) {
+    HGDIOBJ old = SelectObject(dc, bitmap);
+    HBRUSH fill = CreateSolidBrush(color);
+    FillRect(dc, &rc, fill);
+    DeleteObject(fill);
+    SendMessageW(g_tab, WM_PRINTCLIENT, (WPARAM)dc, PRF_CLIENT | PRF_ERASEBKGND);
+    COLORREF got = GetPixel(dc, (page.left + page.right) / 2, (page.top + page.bottom) / 2);
+    if (got != CLR_INVALID) color = got;
+    SelectObject(dc, old);
+  }
+  if (bitmap != NULL) DeleteObject(bitmap);
+  if (dc != NULL) DeleteDC(dc);
+  ReleaseDC(g_tab, screen);
+  if (g_pageBrush != NULL) DeleteObject(g_pageBrush);
+  g_pageBrush = CreateSolidBrush(color);
+}
+
 static LRESULT CALLBACK main_proc(HWND wnd, UINT msg, WPARAM wp, LPARAM lp) {
   switch (msg) {
   case WM_COMMAND:
@@ -1754,6 +1819,7 @@ static LRESULT CALLBACK main_proc(HWND wnd, UINT msg, WPARAM wp, LPARAM lp) {
       if (HIWORD(wp) == CBN_SELCHANGE) {
         /* the list still shows the other ratio's sizes: read with that one */
         int wide = SendDlgItemMessageW(wnd, ID_ASPECT, CB_GETCURSEL, 0, 0) == 1;
+        EnableWindow(GetDlgItem(wnd, ID_WIDE_HUD), wide);
         int i = (int)SendDlgItemMessageW(wnd, ID_SCALE, CB_GETCURSEL, 0, 0);
         scale_fill(wide, scale_list(!wide)[i < 0 || i >= SCALE_CHOICES ? 0 : i]);
       }
@@ -1821,8 +1887,15 @@ static LRESULT CALLBACK main_proc(HWND wnd, UINT msg, WPARAM wp, LPARAM lp) {
     if (wp == TIMER_GAME) game_poll();
     return 0;
   case WM_CTLCOLORSTATIC:
+    /* labels and check boxes stand on the tab control's page */
     SetBkMode((HDC)wp, TRANSPARENT);
+    if (g_pageBrush != NULL && GetDlgCtrlID((HWND)lp) != ID_STATUS) return (LRESULT)g_pageBrush;
     return (LRESULT)GetSysColorBrush(COLOR_WINDOW);
+  case WM_THEMECHANGED:
+  case WM_SYSCOLORCHANGE:
+    page_color_update();
+    InvalidateRect(wnd, NULL, TRUE);
+    break;
   case WM_DESTROY:
     PostQuitMessage(0);
     return 0;
@@ -1889,6 +1962,7 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE prev, PWSTR cmd, int show) {
   g_wnd = CreateWindowExW(0, L"Mkgp2Launcher", L"mkgp2-pc 設定", style, CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left,
                           rc.bottom - rc.top, NULL, NULL, inst, NULL);
   create_controls();
+  page_color_update();
   settings_to_window();
   show_page(0);
   wchar_t exe[MAX_PATH];

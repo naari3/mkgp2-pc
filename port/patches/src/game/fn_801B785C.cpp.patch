@@ -1,30 +1,13 @@
 --- a/src/game/fn_801B785C.cpp
 +++ b/src/game/fn_801B785C.cpp
-@@ -88,7 +88,35 @@ public:
+@@ -88,7 +88,18 @@ public:
      SceneChild *child;
  };
  
 +#ifndef __MWERKS__
 +extern "C" {
 +void mkgp2pc_linkflow_idle(void);
-+int mkgp2pc_linkflow_choosing(void);
-+int mkgp2pc_linkflow_cursor(void);
-+void DrawText(void *ctx, int x, int y, int color, float scale, const char *fmt, ...);
-+void DisplayContext_Flush(void *ctx);
-+extern void *lbl_806D1880;
-+}
-+/* The question after the coin, in the text the boot screens use (the
-+ * display context BootPCBCheck_Init made). */
-+static void PortDrawChoice(void) {
-+    void *ctx = lbl_806D1880;
-+    int net = mkgp2pc_linkflow_cursor();
-+    if (ctx == 0) return;
-+    DrawText(ctx, 200, 168, 7, 1.0f, "SELECT GAME");
-+    DrawText(ctx, 200, 216, 7, 1.0f, "%s 1 PLAYER", net ? " " : ">");
-+    DrawText(ctx, 200, 240, 7, 1.0f, "%s NETWORK VS", net ? ">" : " ");
-+    DrawText(ctx, 200, 288, 7, 1.0f, "STEER LEFT / RIGHT : SELECT");
-+    DrawText(ctx, 200, 312, 7, 1.0f, "BUTTON OR GAS : OK");
-+    DisplayContext_Flush(ctx);
++void mkgp2pc_linkflow_draw(void);
 +}
 +#endif
  clFlowTitle::clFlowTitle() {
@@ -36,11 +19,13 @@
      lbl_806D1193 = 1;
      SetSyncTarget(2);
      child = (SceneChild *)fn_80124064();
-@@ -138,4 +166,7 @@ void clFlowTitle::Draw() {
+@@ -138,4 +149,9 @@ void clFlowTitle::Draw() {
      if (child != 0) {
          child->vC();
      }
 +#ifndef __MWERKS__
-+    if (mkgp2pc_linkflow_choosing()) PortDrawChoice();
++    /* PC port: the question after the coin, queued with the game's sprites
++     * (port/platform/triforce/linkflow.c, port/platform/ui/gameui.c). */
++    mkgp2pc_linkflow_draw();
 +#endif
  }

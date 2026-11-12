@@ -18,8 +18,11 @@ by people.
 
 ## Using it
 
-Nothing has to be set. After the coin the game asks "1 PLAYER" or "NETWORK
-VS" (steer to choose, the button or the accelerator to decide). Every copy
+Nothing has to be set. After the coin the game asks "ひとりで遊ぶ" (1 PLAYER)
+or "通信対戦" (NETWORK VS): steer to choose, the button or the accelerator to
+decide (let the accelerator go first if it is still down from confirming the
+coin). The window is drawn with the game's own text and panels
+([`game_ui.md`](game_ui.md)). Every copy
 that chooses NETWORK VS, on this PC or on the same LAN, meets the others in
 the entry screen; it shows how many are there and stays open until one of
 them presses the button, then closes for all of them three seconds later. Two
@@ -63,6 +66,31 @@ when another cabinet is connected, and each copy needs its own number:
 Ports, with the default base 29500: UDP 29564 + (cabinet - 1) for
 everything a cabinet sends and receives, and UDP 29568, where every copy
 listens for announcements. No TCP.
+
+### Two copies on one PC, from one folder
+
+Start `mkgp2-launcher.exe` twice, choose 通信 = ネットワーク対戦 (`network`)
+with the cabinet number on 自動 in both, and start the game from each. Put a
+coin into each window (5); both come to the entry screen and count each
+other. No second port or folder is needed: every copy takes the lowest
+cabinet number not in use on the PC, and each number has its own UDP port.
+
+What the two copies share in the folder:
+
+| file | what happens |
+|---|---|
+| `mkgp2-pc.ini` | one file; the launcher that saves last wins. Harmless when both use the same settings |
+| `gfx.log` | the first game's. The second writes `gfx.2.log` (launcher; `run-gfx.cmd` started twice would write both into one file) |
+| `backup_ram.bin` | the first game's. The second uses `backup_ram.bin.2` (and so on to `.4`) |
+| `card.bin` | both read the same card and the one that writes last wins. Insert the card in one window only, or give the second copy another file (`MKGP2PC_CARD_FILE`) |
+| shader caches in the user directory | shared SQLite files |
+
+The keyboard goes to the window that has the focus, so one person drives one
+kart at a time; a controller can be given to one copy on the launcher's
+コントローラ page.
+
+Checked: several copies on one Linux machine, no-graphics build. Two
+rendering copies on one Windows PC have not been run yet.
 
 ### Between two networks (not tried on a real connection yet)
 
@@ -259,8 +287,14 @@ patches):
   (`mkgp2pc_netlink_set_active(0)`); the game's link objects run as on a
   cabinet nobody answers.
 - `fn_801B76C8.cpp.patch`: the confirmed coin puts up the question instead
-  of deciding by the connected cabinets; `fn_801B785C.cpp.patch` draws it
-  with the boot screens' text (`DrawText`, ASCII only). "1 PLAYER" goes on
+  of deciding by the connected cabinets; `fn_801B785C.cpp.patch` has it
+  drawn every frame (`mkgp2pc_linkflow_draw`, with the game's fonts and
+  sprites through `port/platform/ui/gameui.c`; until 2026-11-12 it was the
+  boot screens' `DrawText`, ASCII only). The pedal's state is what the game
+  hands over as "decide", so the answer only counts once the pedal has been
+  up for three frames after the window opened; before that, holding the
+  accelerator a quarter of a second longer than needed for the coin answered
+  "1 PLAYER" unseen. "1 PLAYER" goes on
   as the arcade program does alone. "NETWORK VS" switches the link on, takes
   the lowest cabinet number that `mkgp2pc_netlink_heard_mask()` does not
   report (the next one if `mkgp2pc_netlink_address_ok()` says the number was
