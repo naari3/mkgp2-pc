@@ -25,19 +25,27 @@ uploaded.
 
 ## Using it
 
-1. Make the folder (once, several minutes; about 650 MB):
+1. Make the folder (once; several minutes; 650 to 850 MB). In the settings
+   program: 表示 page, button 作成... next to the check box. The window
+   that opens offers the method (内蔵フィルタ, or AI with one of two
+   Real-ESRGAN models) and the size (2 or 4 times), shows the progress and
+   can stop the run. It takes the disc image named on the 基本 page and
+   writes the folder `hires` next to the programs. Choosing AI asks once
+   before it downloads the enlarger (see "An outside enlarger").
 
-   ```powershell
-   .\port\docker\wsl-hires.ps1 -Iso 'C:\path\Mario Kart Arcade GP 2 (Japan).iso' -Distro Ubuntu-20.04
+   The window only starts `mkgp2-hires.exe`, which sits next to the game
+   and can be used alone:
+
+   ```
+   mkgp2-hires.exe --iso <image> --out hires [--scale 4]
+   mkgp2-hires.exe --iso <image> --out hires --ai realesrgan-x4plus-anime --work hires-ai --download
    ```
 
-   It runs `port/hires/make_hires.py` in the build container (WSL and
-   docker, as `wsl-build.ps1`) and writes `build\pc-gfx-win\dist\hires`,
-   next to `mkgp2-gfx.exe`. `-Scale 4` makes the sprites four times instead
-   of two (for windows larger than 1280x960; four times the disk space and
-   time). On Linux call the script directly:
-   `python3 port/hires/make_hires.py --iso <image> --out <folder>` (numpy,
-   Pillow; `xxhash` makes it faster).
+   On Linux build it with
+   `g++ -std=c++17 -O2 -pthread -o mkgp2-hires port/hires/mkgp2_hires.cpp`.
+   `port/hires/make_hires.py` (numpy, Pillow) is the same work in Python,
+   the version the filters were developed in; `port\docker\wsl-hires.ps1`
+   runs that one through WSL and docker.
 
 2. Switch it on: the check box on the settings program's 表示 page, or
    `MKGP2PC_HIRES=1`. The game reads the folder `hires` under the folder it
@@ -77,7 +85,30 @@ exact average).
 Because the naming is Dolphin's, a texture pack made for Dolphin from the
 same disc should load as well (not tried).
 
-### The generator (port/hires/make_hires.py)
+### The generator (port/hires/mkgp2_hires.cpp, port/hires/make_hires.py)
+
+Two programs that do the same. `mkgp2_hires.cpp` is the one handed out
+(`mkgp2-hires.exe`, built by `port/hires/build.sh` in the Windows build): one
+C++ file plus `stb_image.h` and `stb_image_write.h` (public domain) for PNG
+and zlib, no Python, nothing of the game or the port linked in. The user
+asked for it on 2026-11-12: the enlarged pictures may not be handed out, so
+every player has to be able to make them. `make_hires.py` came first and is
+kept for experiments. The description below holds for both.
+
+Checked against each other on the whole disc (Linux, 2026-11-12): the same
+10,518 file names; of 400 files compared, all but two agree to within
+rounding (the two are one character, ☆ of the 16 pixel font, whose likeness
+to the 24 pixel one is exactly on the threshold). The C++ program takes 6
+to 7 minutes on 4 cores, as the Python one; its PNG files are larger (850 MB
+against 630 MB).
+
+`mkgp2-hires.exe` prints lines for the settings program: `stage <name>`,
+`progress <0-100>`, `note <text>`, `error <text>`, `done <folder>`. It
+writes into `<folder>.making` and renames at the end, so a run that is
+stopped leaves the old folder untouched. It is a 32-bit program like the
+game: at most 6 million source texels are in work at a time (about 100
+bytes of memory each), and it is linked large-address-aware.
+
 
 Reads the disc image directly: the file table, every `*.tpl` (plain, or 8
 bytes followed by a zlib stream), and three tables of `main.dol` (the sprite
@@ -155,12 +186,15 @@ python3 port/hires/make_hires.py --iso <image> --out hires --import-sprites up
 Textures without a picture in `up` get the built-in filter; the fonts are
 made as above either way.
 
-On Windows `wsl-hires.ps1 -Ai` does all of it (the user asked for this on
-2026-11-12): export through the container into `build\hires-ai\src`,
-download of `realesrgan-ncnn-vulkan` v0.2.5.0 (BSD 3-clause; a Vulkan
-program, no Python or CUDA; kept in `build\hires-ai\tool`, nothing
-installed), both folders enlarged four times on the GPU into
-`build\hires-ai\up` (several GB), import. Models:
+`mkgp2-hires.exe --ai <model> --work <folder> [--download]` does all of it
+on Windows, and so does `wsl-hires.ps1 -Ai` with the Python program (the
+user asked for this on 2026-11-12): export into `<work>\src`, download of
+`realesrgan-ncnn-vulkan` v0.2.5.0 (BSD 3-clause; a Vulkan program, no Python
+or CUDA; unpacked into `<work>\tool`, nothing installed; only with
+`--download`, which the settings program passes after the player said yes),
+both folders enlarged four times on the GPU into `<work>\up` (several GB,
+deleted afterwards), import. The enlarger runs in a job object and dies with
+`mkgp2-hires.exe`. Models:
 
 - `realesrgan-x4plus-anime` (default; 6 residual blocks, 17 MB): trained on
   illustrations; suits flat-coloured art with outlines, which is most of
@@ -172,11 +206,20 @@ The program works in tiles, so video memory use stays at a few GB at most
 (`-Tile` sets the size). Both models redraw: small text and faces can change
 shape.
 
-Run once on the user's PC, 2026-11-12 (RTX 3060 Ti, default model): 586 s
+Run once on the user's PC through `wsl-hires.ps1 -Ai`, 2026-11-12 (RTX 3060
+Ti, default model): 586 s
 in all, of which 429 s enlarging (colour 2,694 pictures, alpha 1,286);
-`build\hires-ai\up` 2.4 GB; pack 10,518 files, 723 MB. **How the result
-looks in the game has not been judged yet.** The cloud machine may not run
+`build\hires-ai\up` 2.4 GB; pack 10,518 files, 723 MB. The user's first verdict: quite good, some
+odd places (halftone dots in logo backgrounds vanish, soft translucent
+edges turn wavy, gradients flatten). The cloud machine may not run
 the downloaded program, so there is no picture of it from there.
+
+**`mkgp2-hires.exe --ai` itself (the download, the unpacking on Windows,
+starting the enlarger) has not been run anywhere yet.** Tried: the archive
+reader on Linux against `unzip` (same files), export and import with a
+stand-in enlarger on Linux, the rest of the program under Wine (whole disc
+with the built-in filter), and the settings program's window under Wine
+(start, progress, stop).
 
 ## Known limits
 

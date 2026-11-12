@@ -49,6 +49,7 @@ window. Empty fields show their default as grey text.
 | 表示 | rendering backend (automatic, d3d12, d3d11, vulkan, opengl) | `MKGP2PC_BACKEND` |
 | 表示 | smooth kart shadow (off = `1`) | `MKGP2PC_SHADOW_NEAREST` |
 | 表示 | high-resolution 2D textures from the folder `hires` (hires_textures.md says how the folder is made) | `MKGP2PC_HIRES` |
+| 表示 | 作成...: a window that makes the folder `hires` with `mkgp2-hires.exe` (method, size, progress, stop; hires_textures.md) | (launcher only) |
 | 表示 | start at full speed | `MKGP2PC_FAST` |
 | 表示 | coin tally popups as on the disc (English) | `MKGP2PC_GOODS_DISC` |
 | 表示 | do not wait for pipelines | `MKGP2PC_ASYNC_PIPELINES` |
