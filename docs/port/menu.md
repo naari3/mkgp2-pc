@@ -131,6 +131,19 @@ library's command reader, with drawing commands read from freed memory):
   flow's number: the same flow is entry 3 and, through a trampoline, entry
   8 (`Yamana`) of the table.
 
+A race flow (entry 4) is only started when a race is set up. The
+selection-screen flow clears the players' slots when it begins
+(`PcbSlot_ResetScratchAreas`, `SyncSlot_Reset`), and the developers' scene
+list offers `GameMain` all the same (hidden on the cabinet): the kart's
+constructor then indexed the parameter table with character -1 and the
+process died (Windows, 2026-11-12, second race of a session entered from
+the scene list). `Flow_TransitionTo` (`port/patches/src/game/Flow_TransitionTo.cpp.patch`)
+now looks at the player's character and class after the flow that is left
+has been deleted (the developers' set-up page writes its settings in its
+destructor) and starts the normal flow (entry 3) instead, with a `nav:`
+line in the log. Other settings the developers' set-up page allows (a
+course variant without data, for one) are not checked.
+
 Restarting a race runs the race flow's constructor again, which counts a
 play in the statistics and writes the backup record, as every race start
 does.

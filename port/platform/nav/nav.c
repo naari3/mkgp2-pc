@@ -160,3 +160,10 @@ int mkgp2pc_nav_scene_hook(int next) {
   s_scene = next;
   return next;
 }
+
+/* A race flow was asked for with no race set up; the normal flow is started
+ * instead (src/game/Flow_TransitionTo.cpp patch). */
+void mkgp2pc_nav_refused(int flow, int character, int ccClass) {
+  fprintf(stderr, "nav: flow %d not started, no race is set up (character %d, class %d): flow 3 instead\n", flow, character,
+          ccClass);
+}
