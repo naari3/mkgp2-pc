@@ -35,12 +35,14 @@
  * else (viewport, scissor, copy, texture matrix) follows the image's size.
  */
 #include <dolphin/gx.h>
+#include <aurora/texture.hpp>
 
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
 #include <map>
 #include <set>
 #include <tuple>
@@ -1518,4 +1520,54 @@ void mkgp2pc_wide_end(void) {
     runFull = full;
   }
 }
+}
+
+/*
+ * High-resolution 2D textures (docs/port/hires_textures.md).
+ *
+ * Aurora can stand in an image file for a texture the game loads, found by
+ * the texture's size, format and a hash of its texels (the file naming of
+ * Dolphin's custom textures). The files are made on the user's machine from
+ * their own disc image (port/hires) and are never part of this repository.
+ * Off unless MKGP2PC_HIRES=1; MKGP2PC_HIRES_DIR names the folder ("hires"
+ * under the launch folder otherwise). The key action "hires" (F8) switches
+ * while the game runs, for comparing.
+ */
+namespace {
+aurora::texture::ReplacementGroup sHiresGroup;
+bool sHiresOn;
+const char* hires_dir() {
+  const char* dir = getenv("MKGP2PC_HIRES_DIR");
+  return dir != nullptr && *dir != 0 ? dir : "hires";
+}
+void hires_set(bool on) {
+  if (on == sHiresOn) {
+    return;
+  }
+  sHiresOn = on;
+  if (on) {
+    std::error_code ec;
+    if (!std::filesystem::is_directory(hires_dir(), ec)) {
+      fprintf(stderr, "hires: no folder '%s' (make it with mkgp2-hires, docs/port/hires_textures.md)\n", hires_dir());
+      sHiresOn = false;
+      return;
+    }
+    sHiresGroup = aurora::texture::load_replacement_directory(hires_dir());
+    fprintf(stderr, "hires: on, %u textures from '%s'\n", static_cast<unsigned>(sHiresGroup.registrations.size()),
+            hires_dir());
+  } else {
+    aurora::texture::unregister_replacements(sHiresGroup);
+    sHiresGroup.registrations.clear();
+    fprintf(stderr, "hires: off\n");
+  }
+}
+} // namespace
+
+extern "C" {
+/* after aurora_initialize */
+void mkgp2pc_hires_init(void) {
+  const char* e = getenv("MKGP2PC_HIRES");
+  hires_set(e != nullptr && *e != 0 && strcmp(e, "0") != 0);
+}
+void mkgp2pc_hires_toggle(void) { hires_set(!sHiresOn); }
 }

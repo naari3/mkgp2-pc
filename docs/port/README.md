@@ -23,6 +23,7 @@ clean-up.
 | [`readiness.md`](readiness.md) | Assessment of how far the decomp is from a port: measured gaps, comparable projects, staged plan (estimates) |
 | [`widescreen.md`](widescreen.md) | Survey: what a 16:9 display needs (projection, culling, 2D layer, whole-screen effects), options |
 | [`menu.md`](menu.md) | The port's menu (Esc) and "one screen back" (Backspace): what they do, how they reach the game's flows and selection screens |
+| [`hires_textures.md`](hires_textures.md) | High-resolution 2D textures (fonts, sprites): the switch, how the folder is made from the user's disc image, the filters |
 | [`launcher.md`](launcher.md) | The settings program `mkgp2-launcher.exe`: what it sets, the ini file, `MKGP2PC_KEYS`, how it is built |
 
 ## What goes where

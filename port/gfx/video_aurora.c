@@ -44,6 +44,7 @@ typedef void (*RetraceCallback)(uint32_t retraceCount);
  *   F9             dump (see "Dumps" below); works paused or running
  *   Esc            the port's menu (port_menu.cpp); the game stands still
  *   Backspace      one selection screen back (port/platform/nav/nav.c)
+ *   F8             high-resolution 2D textures on / off (docs/port/hires_textures.md)
  * These are the defaults; MKGP2PC_KEYS changes them (see key_event).
  * Once a key has been used the keyboard owns the inputs; until then a
  * script (MKGP2PC_SCRIPT) may drive them.
@@ -367,19 +368,23 @@ static int script_extra(const char* cmd) {
 enum {
   KEY_LEFT, KEY_RIGHT, KEY_ACCEL, KEY_BRAKE, KEY_ITEM, KEY_TEST, KEY_SERVICE,
   KEY_COIN, KEY_CARD, KEY_PAUSE, KEY_STEP, KEY_FAST, KEY_FASTHOLD, KEY_DUMP,
-  KEY_MENU, KEY_BACK,
+  KEY_MENU, KEY_BACK, KEY_HIRES,
   KEY_ACTIONS
 };
 #define KEYS_PER_ACTION 4
 static const char* const s_actionNames[KEY_ACTIONS] = {
     "left", "right", "accel", "brake", "item", "test", "service",
-    "coin", "card", "pause", "step", "fast", "fasthold", "dump", "menu", "back"};
+    "coin", "card", "pause", "step", "fast", "fasthold", "dump", "menu", "back", "hires"};
 static int s_keyMap[KEY_ACTIONS][KEYS_PER_ACTION] = {
     {SDL_SCANCODE_LEFT}, {SDL_SCANCODE_RIGHT}, {SDL_SCANCODE_UP, SDL_SCANCODE_Z},
     {SDL_SCANCODE_DOWN, SDL_SCANCODE_X}, {SDL_SCANCODE_SPACE, SDL_SCANCODE_RETURN},
     {SDL_SCANCODE_F1}, {SDL_SCANCODE_F2}, {SDL_SCANCODE_5, SDL_SCANCODE_C},
     {SDL_SCANCODE_I}, {SDL_SCANCODE_P}, {SDL_SCANCODE_O}, {SDL_SCANCODE_F10},
-    {SDL_SCANCODE_TAB}, {SDL_SCANCODE_F9}, {SDL_SCANCODE_ESCAPE}, {SDL_SCANCODE_BACKSPACE}};
+    {SDL_SCANCODE_TAB}, {SDL_SCANCODE_F9}, {SDL_SCANCODE_ESCAPE}, {SDL_SCANCODE_BACKSPACE},
+    {SDL_SCANCODE_F8}};
+
+void mkgp2pc_hires_init(void); /* gx_shim.cpp */
+void mkgp2pc_hires_toggle(void);
 
 static void key_map_load(void) {
   const char* p = getenv("MKGP2PC_KEYS");
@@ -520,6 +525,11 @@ static void key_event(const SDL_Event* e) {
         if (s_paused) {
           s_step = true; /* a frame has to be drawn for the picture */
         }
+      }
+      break;
+    case KEY_HIRES: /* high-resolution 2D textures on and off (gx_shim.cpp) */
+      if (press) {
+        mkgp2pc_hires_toggle();
       }
       break;
     }
@@ -766,6 +776,7 @@ int __wrap_main(int argc, char** argv) {
   mkgp2pc_script_record = &rec_script;
   cache_check(config.appName);
   s_window = aurora_initialize(argc, argv, &config).window;
+  mkgp2pc_hires_init();
 #ifdef _WIN32
   /* Every change of the window's size on Windows (drag, maximize) ended in
    * webgpu_dawn.dll, in the surface reconfiguration that Aurora's present
