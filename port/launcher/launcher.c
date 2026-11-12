@@ -64,7 +64,8 @@ typedef struct {
   int card;
   wchar_t cardFile[MAX_PATH];
   int closeOnStart;
-  int scale;           /* 1.. */
+  int wide;            /* 16:9 instead of 4:3 */
+  int scale;           /* window height in hundredths of 480 lines: 150 = 720 */
   wchar_t backend[16]; /* "" = the library's own choice */
   int resizable;
   int shadowSmooth;
@@ -94,7 +95,7 @@ static void defaults_keys(Settings* s) {
 static void defaults(Settings* s) {
   ZeroMemory(s, sizeof(*s));
   s->card = 1;
-  s->scale = 1;
+  s->scale = 100;
   s->shadowSmooth = 1;
   s->link = 1;
   s->pcbId = 1;
@@ -123,7 +124,12 @@ static void load_settings(Settings* s) {
   s->card = ini_int(L"card", 1) != 0;
   ini_str(L"card_file", s->cardFile, LEN(s->cardFile));
   s->closeOnStart = ini_int(L"close_on_start", 0) != 0;
-  s->scale = clampi(ini_int(L"scale", 1), 1, 8, 1);
+  s->wide = ini_int(L"wide", 0) != 0;
+  {
+    wchar_t text[16] = L"1";
+    ini_str(L"scale", text, LEN(text));
+    s->scale = clampi((int)(wcstod(text, NULL) * 100 + 0.5), 25, 800, 100);
+  }
   ini_str(L"backend", s->backend, LEN(s->backend));
   s->resizable = ini_int(L"resizable", 0) != 0;
   s->shadowSmooth = ini_int(L"shadow_smooth", 1) != 0;
@@ -179,7 +185,12 @@ static int save_settings(const Settings* s) {
   put_int(L"card", s->card);
   put_str(L"card_file", s->cardFile);
   put_int(L"close_on_start", s->closeOnStart);
-  put_int(L"scale", s->scale);
+  put_int(L"wide", s->wide);
+  {
+    wchar_t text[16];
+    swprintf(text, LEN(text), L"%g", s->scale / 100.0);
+    put_str(L"scale", text);
+  }
   put_str(L"backend", s->backend);
   put_int(L"resizable", s->resizable);
   put_int(L"shadow_smooth", s->shadowSmooth);
@@ -276,8 +287,9 @@ static void apply_environment(const Settings* s) {
   env_text(L"MKGP2_ISO", s->iso);
   env_text(L"MKGP2PC_CARD", s->card ? NULL : L"0");
   env_text(L"MKGP2PC_CARD_FILE", s->cardFile);
-  swprintf(text, LEN(text), L"%d", s->scale);
-  env_text(L"MKGP2PC_SCALE", s->scale > 1 ? text : NULL);
+  swprintf(text, LEN(text), L"%g", s->scale / 100.0);
+  env_text(L"MKGP2PC_SCALE", s->scale != 100 ? text : NULL);
+  env_text(L"MKGP2PC_ASPECT", s->wide ? L"16:9" : NULL);
   env_text(L"MKGP2PC_BACKEND", s->backend);
   env_flag(L"MKGP2PC_RESIZABLE", s->resizable);
   env_flag(L"MKGP2PC_SHADOW_NEAREST", !s->shadowSmooth);
@@ -401,7 +413,7 @@ static void log_exit_code(DWORD code) {
 enum {
   ID_TAB = 100, ID_SAVE, ID_START, ID_STATUS,
   ID_ISO, ID_ISO_BROWSE, ID_CARD, ID_CARD_FILE, ID_CARD_BROWSE, ID_CLOSE_ON_START,
-  ID_SCALE, ID_BACKEND, ID_RESIZABLE, ID_SHADOW, ID_FAST, ID_ASYNC, ID_GOODS,
+  ID_ASPECT, ID_SCALE, ID_BACKEND, ID_RESIZABLE, ID_SHADOW, ID_FAST, ID_ASYNC, ID_GOODS,
   ID_LINK, ID_PCB, ID_PEERS, ID_PORT,
   ID_KEYS, ID_KEY_SET1, ID_KEY_SET2, ID_KEY_CLEAR1, ID_KEY_CLEAR2, ID_KEY_RESET,
   ID_EXTRA, ID_OPEN_LOG, ID_OPEN_FOLDER,
@@ -472,6 +484,35 @@ static void keys_fill(void) {
   }
 }
 
+/* The sizes on offer follow the aspect. The game makes the window
+ * 480 lines times MKGP2PC_SCALE high and as wide as the ratio says (even
+ * number); for 16:9 the factors are the ones that give the usual sizes. */
+static const int kScales43[] = {100, 200, 300, 400, 500, 600};
+static const int kScales169[] = {100, 150, 200, 225, 300, 450};
+static const int* scale_list(int wide) { return wide ? kScales169 : kScales43; }
+#define SCALE_CHOICES 6
+
+static void scale_fill(int wide, int scale) {
+  HWND c = GetDlgItem(g_wnd, ID_SCALE);
+  const int* list = scale_list(wide);
+  int best = 0;
+  SendMessageW(c, CB_RESETCONTENT, 0, 0);
+  for (int i = 0; i < SCALE_CHOICES; i++) {
+    wchar_t text[48];
+    int height = 480 * list[i] / 100;
+    int width = wide ? (height * 16 / 9 + 1) & ~1 : height * 4 / 3;
+    swprintf(text, LEN(text), L"%d x %d (%g 倍)", width, height, list[i] / 100.0);
+    SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)text);
+    if (abs(list[i] - scale) < abs(list[best] - scale)) best = i;
+  }
+  SendMessageW(c, CB_SETCURSEL, (WPARAM)best, 0);
+}
+static int scale_selected(void) {
+  int wide = SendDlgItemMessageW(g_wnd, ID_ASPECT, CB_GETCURSEL, 0, 0) == 1;
+  int i = (int)SendDlgItemMessageW(g_wnd, ID_SCALE, CB_GETCURSEL, 0, 0);
+  return scale_list(wide)[i < 0 || i >= SCALE_CHOICES ? 0 : i];
+}
+
 static void create_controls(void) {
   const int X = 24, W = 512; /* inside the tab control */
   int y;
@@ -506,13 +547,14 @@ static void create_controls(void) {
 
   /* 表示 */
   y = 48;
+  label(1, L"画面の比率", X, y + 3, 110, 18);
+  HWND c = combo(1, X + 116, y, 220, ID_ASPECT);
+  SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)L"4:3 (元のゲームどおり)");
+  SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)L"16:9 (ワイド)");
+  label(1, L"16:9 はゲーム側の対応待ちです", X + 344, y + 3, W - 344, 18);
+  y += 34;
   label(1, L"窓の大きさ", X, y + 3, 110, 18);
-  HWND c = combo(1, X + 116, y, 220, ID_SCALE);
-  for (int i = 1; i <= 6; i++) {
-    wchar_t text[48];
-    swprintf(text, LEN(text), L"%d x %d (%d 倍)", 640 * i, 480 * i, i);
-    SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)text);
-  }
+  combo(1, X + 116, y, 220, ID_SCALE);
   y += 34;
   label(1, L"描画方式", X, y + 3, 110, 18);
   c = combo(1, X + 116, y, 220, ID_BACKEND);
@@ -605,7 +647,8 @@ static void settings_to_window(void) {
   CheckDlgButton(g_wnd, ID_CARD, g_set.card);
   SetDlgItemTextW(g_wnd, ID_CARD_FILE, g_set.cardFile);
   CheckDlgButton(g_wnd, ID_CLOSE_ON_START, g_set.closeOnStart);
-  SendDlgItemMessageW(g_wnd, ID_SCALE, CB_SETCURSEL, (WPARAM)(g_set.scale > 6 ? 5 : g_set.scale - 1), 0);
+  SendDlgItemMessageW(g_wnd, ID_ASPECT, CB_SETCURSEL, (WPARAM)g_set.wide, 0);
+  scale_fill(g_set.wide, g_set.scale);
   int backend = 0;
   for (int i = 0; i < LEN(kBackendIds); i++) {
     if (wcscmp(kBackendIds[i], g_set.backend) == 0) backend = i;
@@ -629,7 +672,8 @@ static void window_to_settings(void) {
   g_set.card = checked(ID_CARD);
   GetDlgItemTextW(g_wnd, ID_CARD_FILE, g_set.cardFile, LEN(g_set.cardFile));
   g_set.closeOnStart = checked(ID_CLOSE_ON_START);
-  g_set.scale = (int)SendDlgItemMessageW(g_wnd, ID_SCALE, CB_GETCURSEL, 0, 0) + 1;
+  g_set.scale = scale_selected();
+  g_set.wide = SendDlgItemMessageW(g_wnd, ID_ASPECT, CB_GETCURSEL, 0, 0) == 1;
   int backend = (int)SendDlgItemMessageW(g_wnd, ID_BACKEND, CB_GETCURSEL, 0, 0);
   wcscpy(g_set.backend, kBackendIds[backend < 0 || backend >= LEN(kBackendIds) ? 0 : backend]);
   g_set.resizable = checked(ID_RESIZABLE);
@@ -642,7 +686,6 @@ static void window_to_settings(void) {
   GetDlgItemTextW(g_wnd, ID_PEERS, g_set.peers, LEN(g_set.peers));
   GetDlgItemTextW(g_wnd, ID_PORT, g_set.port, LEN(g_set.port));
   GetDlgItemTextW(g_wnd, ID_EXTRA, g_set.extra, LEN(g_set.extra));
-  if (g_set.scale < 1) g_set.scale = 1;
   if (g_set.pcbId < 1) g_set.pcbId = 1;
 }
 
@@ -806,6 +849,14 @@ static LRESULT CALLBACK main_proc(HWND wnd, UINT msg, WPARAM wp, LPARAM lp) {
       break;
     case ID_CARD_BROWSE:
       browse(ID_CARD_FILE, L"カードのファイルを選ぶ", L"カード (*.bin)\0*.bin\0すべてのファイル\0*.*\0");
+      break;
+    case ID_ASPECT:
+      if (HIWORD(wp) == CBN_SELCHANGE) {
+        /* the list still shows the other ratio's sizes: read with that one */
+        int wide = SendDlgItemMessageW(wnd, ID_ASPECT, CB_GETCURSEL, 0, 0) == 1;
+        int i = (int)SendDlgItemMessageW(wnd, ID_SCALE, CB_GETCURSEL, 0, 0);
+        scale_fill(wide, scale_list(!wide)[i < 0 || i >= SCALE_CHOICES ? 0 : i]);
+      }
       break;
     case ID_SAVE: save_from_window(); break;
     case ID_START:

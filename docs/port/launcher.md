@@ -39,7 +39,8 @@ code is written then. `run-gfx.cmd` still works and ignores the ini file.
 | 基本 | use the card unit (off = `0`) | `MKGP2PC_CARD` |
 | 基本 | card file (empty = `card.bin` in the folder) | `MKGP2PC_CARD_FILE` |
 | 基本 | close this window after starting | (launcher only) |
-| 表示 | window size 1x to 6x of 640x480 | `MKGP2PC_SCALE` |
+| 表示 | aspect 4:3 or 16:9 (4:3 = not set). The game side is being written in the widescreen thread (widescreen.md); until it lands the game ignores it and the page says so | `MKGP2PC_ASPECT` |
+| 表示 | window size: height 480 x factor, width from the aspect. 4:3 offers 1 to 6, 16:9 offers 1, 1.5 (1280x720), 2, 2.25 (1920x1080), 3, 4.5. Fractions need the game build that has `MKGP2PC_ASPECT`; older ones read the whole part | `MKGP2PC_SCALE` |
 | 表示 | rendering backend (automatic, d3d12, d3d11, vulkan, opengl) | `MKGP2PC_BACKEND` |
 | 表示 | smooth kart shadow (off = `1`) | `MKGP2PC_SHADOW_NEAREST` |
 | 表示 | start at full speed | `MKGP2PC_FAST` |
