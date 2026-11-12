@@ -153,8 +153,11 @@ plays back the same way.
 ## How the menu is drawn
 
 With the game's own fonts and panels (`port/platform/ui/gameui.c`,
-[`game_ui.md`](game_ui.md)): the blue panel and the cursor of the name entry
-screen, the 24 and 16 pixel text fonts. The game stands still meanwhile, so
+[`game_ui.md`](game_ui.md)): the dark caption bubble as the sheet (cut
+into pieces, not stretched), the window cursor, the 24 and 16 pixel text
+fonts in white. (The first version used the blue panel of the name entry
+screen, stretched; it was hard to read, see game_ui.md, "Which frame, and
+why".) The game stands still meanwhile, so
 no scene is there to queue the sprites; instead the game's main loop stays
 at the top of its pass while the menu is open
 (`mkgp2pc_gamemenu_frame()`, `port/platform/ui/gamemenu.c`, called from

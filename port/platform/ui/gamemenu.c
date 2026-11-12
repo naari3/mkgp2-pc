@@ -45,7 +45,8 @@ int mkgp2pc_gamemenu_frame(void) {
   if (mkgp2pc_gamemenu_backdrop != NULL) {
     mkgp2pc_gamemenu_backdrop();
   }
-  mkgp2pc_gameui_list(v.title, v.text, v.kind, v.count, v.cursor, v.note, v.footer, s_age++);
+  mkgp2pc_gameui_list(v.title, v.text, v.kind, v.value, v.count, v.cursor, v.more_above, v.more_below, v.note, v.footer,
+                      s_age++);
   mkgp2pc_gameui_overlay_draw();
   Frame_PostDrawOverlay();
   return 1;
