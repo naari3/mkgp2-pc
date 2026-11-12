@@ -1,5 +1,5 @@
 /*
- * Cabinet link: the network board's socket commands on host sockets.
+ * Cabinet link: the network board's socket commands on the host's network.
  *
  * The game talks to the other cabinets through the ac* socket library
  * (src/triforce/acsocket*.c), which turns every call into a media board
@@ -13,22 +13,31 @@
  * to the other three. It recognises an incoming connection by its source
  * address. None of that exists on a PC, so:
  *
- *  - Game address 192.168.29.(150+k), port 5000+c is real TCP port
- *    BASE + 16*k + c on the host where cabinet k+1 runs (BASE 29500,
- *    MKGP2PC_LINK_PORT). Several cabinets on one PC do not collide.
+ *  - Every cabinet has one real UDP port, BASE + 64 + k for cabinet k+1
+ *    (BASE 29500, MKGP2PC_LINK_PORT). Several cabinets on one PC do not
+ *    collide. Everything between two cabinets travels between those two
+ *    ports: the announcements and all of the game's connections.
  *  - Where a cabinet runs is learned from announcements: every second each
- *    cabinet sends a small UDP datagram to the broadcast address and to this
- *    PC, to ports BASE + 64 + k of the other three. MKGP2PC_LINK_PEERS
- *    ("2=192.168.1.20,3=192.168.1.21") names hosts by hand instead.
- *  - A connection begins with 8 bytes from the connecting side, "MKL1" and
- *    its game address. The accepting side reports that address to the game.
- *    So this is a link between PC builds only; it is not the wire format of
- *    the arcade board (and the game's own messages are in host byte order).
+ *    cabinet sends a small datagram to the broadcast address and to this PC,
+ *    to the ports of the other three, and to BASE + 68, where every copy
+ *    listens. MKGP2PC_LINK_PEERS ("2=192.168.1.20,3=example.org:29566")
+ *    names hosts by hand instead; those are sent the announcement directly.
+ *  - The game's TCP connections are streams inside datagrams (see
+ *    "connections" below): bytes arrive complete and in order as the game
+ *    expects, but a lost datagram does not hold the stream up the way TCP
+ *    does, because every datagram repeats what has not been confirmed yet.
+ *    A connection is named by the cabinet that opened it and a number, and
+ *    carries the game address of its sender, which the accepting side
+ *    reports to the game.
  *  - A cabinet that has not been heard from behaves like an address nobody
  *    answers at: the connect fails after the game's connect timeout.
  *
+ * So this is a link between PC builds only; it is not the wire format of the
+ * arcade board (and the game's own messages are in host byte order).
+ *
  * MKGP2PC_LINK=0 turns all of it off (every socket command fails, as before
- * this file existed). MKGP2PC_TRACE_LINK=1 logs the commands.
+ * this file existed). MKGP2PC_TRACE_LINK=1 logs connections and once in five
+ * seconds the traffic, 2 also the commands.
  *
  * For the game flow (port/platform/triforce/linkflow.c):
  * mkgp2pc_netlink_set_active() is the same switch at run time,
@@ -38,7 +47,7 @@
  * this PC.
  *
  * All calls come from the game with the port's "interrupt" lock held or from
- * the retrace tick; nothing here blocks for long and there are no threads.
+ * the retrace tick; nothing here blocks and there are no threads.
  */
 #include <stdint.h>
 #include <stdio.h>
@@ -59,13 +68,21 @@ static void non_blocking(HostSocket s) {
   u_long on = 1;
   ioctlsocket(s, FIONBIO, &on);
 }
+#ifndef SIO_UDP_CONNRESET
+#define SIO_UDP_CONNRESET _WSAIOW(IOC_VENDOR, 12)
+#endif
+/* A datagram to a port nobody has open must not make the next receive fail. */
+static void no_reset_reports(HostSocket s) {
+  BOOL off = FALSE;
+  DWORD done = 0;
+  WSAIoctl(s, SIO_UDP_CONNRESET, &off, sizeof(off), NULL, 0, &done, NULL, NULL);
+}
 #else
 #include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <netdb.h>
 #include <netinet/in.h>
-#include <netinet/tcp.h>
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -76,6 +93,7 @@ typedef socklen_t socklen_t_;
 static int host_error(void) { return errno; }
 static int would_block(int e) { return e == EWOULDBLOCK || e == EAGAIN || e == EINPROGRESS || e == EALREADY; }
 static void non_blocking(HostSocket s) { fcntl(s, F_SETFL, fcntl(s, F_GETFL, 0) | O_NONBLOCK); }
+static void no_reset_reports(HostSocket s) { (void)s; }
 #endif
 
 #include "mkgp2pc/triforce.h"
@@ -86,38 +104,27 @@ enum { E_BADF = 9, E_INVAL = 22, E_NFILE = 23, E_WOULDBLOCK = 35, E_NETDOWN = 50
 
 #define MAX_SOCKETS 64
 #define MAX_CABINETS 4
-#define MAX_GREETING 8
-#define GREETING_SIZE 8
 #define ANNOUNCE_SIZE 12
 
 typedef enum { FREE, FRESH, LISTENING, CONNECTING, CONNECTED } Kind;
 
 typedef struct {
-  HostSocket host;
-  uint32_t address; /* game address, bytes in memory order */
-  uint8_t data[GREETING_SIZE];
-  int have;
-  uint64_t since;
-} Greeting;
-
-typedef struct {
   Kind kind;
-  HostSocket host;
   int error;
   uint32_t timeout[3]; /* send, receive, connect; milliseconds */
   uint16_t port;       /* game port bound to */
+  int chan;            /* CONNECTING, CONNECTED: its connection, or -1 */
   /* connect */
   uint8_t target[4];
   uint16_t targetPort;
-  int started; /* the host connect has been issued */
   uint64_t since;
-  /* accept: connections that have not sent their greeting yet */
-  Greeting greeting[MAX_GREETING];
 } Sock;
 
 typedef struct {
   int known;
+  int fixed; /* from MKGP2PC_LINK_PEERS */
   struct in_addr host;
+  uint16_t port;  /* network order */
   uint64_t local; /* when it was last heard on this PC */
 } Peer;
 
@@ -125,7 +132,7 @@ static Sock s_sock[MAX_SOCKETS];
 static Peer s_peer[MAX_CABINETS];
 static int s_fixedPeers;
 static uint8_t s_address[4]; /* this cabinet's game address; 0 until the game sets it */
-static HostSocket s_announce = NO_SOCKET;
+static HostSocket s_announce = NO_SOCKET; /* this cabinet's port: announcements and connections */
 static int s_announceIndex = -1;
 static HostSocket s_observe = NO_SOCKET; /* hears the announcements without a cabinet number */
 static uint64_t s_heard[MAX_CABINETS];   /* when each cabinet was last heard; 0 never */
@@ -135,9 +142,10 @@ static uint64_t s_announced;
 static int s_state; /* 0 not looked at, 1 on, -1 off */
 static int s_trace;
 static int s_base = 29500;
-static uint64_t s_sent, s_received, s_reported; /* bytes, for the trace */
+static uint64_t s_sent, s_received, s_reported;         /* bytes of the game, for the trace */
+static uint64_t s_datagrams, s_repeats, s_lost, s_dropped; /* sent, sent again, not sent (MKGP2PC_LINK_LOSS), not understood */
 static int s_probe;
-static int s_delay, s_jitter, s_loss; /* measurement options, see late_send() */
+static int s_delay, s_jitter, s_loss; /* measurement options, see wire_send() */
 
 static uint64_t now_ms(void) {
 #ifdef _WIN32
@@ -179,24 +187,29 @@ static int configured(void) {
       }
     }
 #endif
-    while (s_state == 1 && peers != NULL && *peers != 0) { /* "2=host,3=host" */
+    while (s_state == 1 && peers != NULL && *peers != 0) { /* "2=host,3=host:port" */
       char name[128];
       int id = atoi(peers), n = 0;
       const char* p = strchr(peers, '=');
       const char* end = strchr(peers, ',');
       if (p != NULL && (end == NULL || p < end)) {
-        for (p++; *p != 0 && *p != ',' && n < (int)sizeof(name) - 1; p++) {
+        int udp = 0;
+        for (p++; *p != 0 && *p != ',' && *p != ':' && n < (int)sizeof(name) - 1; p++) {
           name[n++] = *p;
         }
         name[n] = 0;
+        if (*p == ':') {
+          udp = atoi(p + 1);
+        }
         if (id >= 1 && id <= MAX_CABINETS) {
           struct addrinfo hints, *info = NULL;
           memset(&hints, 0, sizeof(hints));
           hints.ai_family = AF_INET;
-          hints.ai_socktype = SOCK_STREAM;
+          hints.ai_socktype = SOCK_DGRAM;
           if (getaddrinfo(name, NULL, &hints, &info) == 0 && info != NULL) {
             s_peer[id - 1].host = ((struct sockaddr_in*)info->ai_addr)->sin_addr;
-            s_peer[id - 1].known = 1;
+            s_peer[id - 1].port = htons((uint16_t)(udp > 0 && udp < 65536 ? udp : s_base + 64 + id - 1));
+            s_peer[id - 1].known = s_peer[id - 1].fixed = 1;
             s_fixedPeers = 1;
             freeaddrinfo(info);
           } else {
@@ -207,7 +220,7 @@ static int configured(void) {
       peers = end != NULL ? end + 1 : "";
     }
     if (s_state == 1) {
-      fprintf(stderr, "link: cabinet link on, ports %d-%d%s\n", s_base, s_base + 64 + MAX_CABINETS - 1,
+      fprintf(stderr, "link: cabinet link on, UDP ports %d-%d%s\n", s_base + 64, s_base + 64 + MAX_CABINETS,
               s_fixedPeers ? ", peers from MKGP2PC_LINK_PEERS" : "");
     }
   }
@@ -224,32 +237,499 @@ static int cabinet_index(const uint8_t* a) {
   return -1;
 }
 
-static int real_port(int index, uint16_t gamePort) {
-  if (index >= 0 && gamePort >= 5000 && gamePort < 5016) {
-    return s_base + 16 * index + (gamePort - 5000);
+/* ---- the wire, and a worse one for measurements --------------------------------
+ *
+ * MKGP2PC_LINK_DELAY=<ms>   every datagram leaves that much later (one way)
+ * MKGP2PC_LINK_JITTER=<ms>  plus a random 0..ms each, so they may overtake
+ * MKGP2PC_LINK_LOSS=<%>     that share of the datagrams is not sent at all
+ * The waiting ones leave from mkgp2pc_netlink_pump(), which runs on every
+ * retrace, with every send, receive and select of the game, and every
+ * millisecond while the no-graphics build waits (MKGP2PC_HZ). */
+typedef struct Late {
+  struct Late* next;
+  uint64_t at;
+  int peer, length;
+  uint8_t data[1];
+} Late;
+static Late* s_late;
+
+static void wire_out(int peer, const uint8_t* data, int length) {
+  struct sockaddr_in to;
+  if (s_announce == NO_SOCKET || !s_peer[peer].known) {
+    return;
   }
-  return gamePort; /* not the cabinet link (the camera, 192.168.29.104-107): as it is */
+  memset(&to, 0, sizeof(to));
+  to.sin_family = AF_INET;
+  to.sin_addr = s_peer[peer].host;
+  to.sin_port = s_peer[peer].port;
+  sendto(s_announce, (const char*)data, length, 0, (struct sockaddr*)&to, sizeof(to));
 }
 
-static int ready(HostSocket s, int forWrite, int* failed) {
-  fd_set set, bad;
-  struct timeval tv = {0, 0};
-  int n;
-  FD_ZERO(&set);
-  FD_ZERO(&bad);
-  FD_SET(s, &set);
-  FD_SET(s, &bad);
-  n = select((int)s + 1, forWrite ? NULL : &set, forWrite ? &set : NULL, &bad, &tv);
-  if (failed != NULL) {
-    *failed = n > 0 && FD_ISSET(s, &bad);
+static void wire_send(int peer, const uint8_t* data, int length) {
+  Late *e, **p;
+  s_datagrams++;
+  if (s_loss > 0 && rand() % 100 < s_loss) {
+    s_lost++;
+    return;
   }
-  return n > 0 && FD_ISSET(s, &set);
+  if (s_delay <= 0 && s_jitter <= 0) {
+    wire_out(peer, data, length);
+    return;
+  }
+  e = (Late*)malloc(sizeof(Late) + (size_t)length);
+  if (e == NULL) {
+    return;
+  }
+  e->at = now_ms() + (uint64_t)(s_delay > 0 ? s_delay : 0) + (s_jitter > 0 ? (uint64_t)(rand() % (s_jitter + 1)) : 0);
+  e->peer = peer;
+  e->length = length;
+  memcpy(e->data, data, (size_t)length);
+  for (p = &s_late; *p != NULL && (*p)->at <= e->at; p = &(*p)->next) {
+  }
+  e->next = *p;
+  *p = e;
 }
 
-static void tune(HostSocket s) {
-  int on = 1;
-  non_blocking(s);
-  setsockopt(s, IPPROTO_TCP, TCP_NODELAY, (const char*)&on, sizeof(on)); /* one small message a frame */
+static void late_release(uint64_t now, int all) {
+  while (s_late != NULL && (all || s_late->at <= now)) {
+    Late* e = s_late;
+    s_late = e->next;
+    if (!all) {
+      wire_out(e->peer, e->data, e->length);
+    }
+    free(e);
+  }
+}
+
+/* ---- connections -------------------------------------------------------------
+ *
+ * A connection of the game is a pair of byte streams between two cabinets'
+ * UDP ports. Datagram: 32 bytes of header, then up to MSS bytes of one
+ * stream. Fields are in host byte order, like the game's own messages.
+ *
+ *    0  "MKL2"
+ *    4  u8  type: 1 open, 2 opened, 3 data, 4 no such connection
+ *    5  u8  flags: 1 the stream ends after these bytes, 2 the sender is
+ *           missing bytes before some it already has, 4 "echo" is valid,
+ *           8 the sender is the side that opened the connection
+ *    6  u16 number of the connection, chosen by the side that opened it
+ *    8  4 bytes: game address of the sender
+ *   12  u16 game port connected to
+ *   14  u16 number of stream bytes that follow the header
+ *   16  u32 offset of those bytes in the sender's stream
+ *   20  u32 how far the sender has the other stream, complete
+ *   24  u32 sender's clock, milliseconds
+ *   28  u32 the other side's clock as last received, plus the time since
+ *
+ * There is no waiting for a lost datagram: every datagram with new bytes
+ * also repeats the unconfirmed bytes before them, as far as they fit, and
+ * the game sends every frame. Only when that is not enough (more than MSS
+ * bytes open, or nothing new to send) the oldest unconfirmed piece is sent
+ * again, on the receiver's hint (flag 2) or after 1.5 round trips. Every
+ * datagram with bytes is confirmed on the next pump.
+ *
+ * The game opens one connection per direction and writes on the one it
+ * opened, about 250 bytes a frame; the buffers here are far larger than
+ * anything it sends. */
+#define HEADER 32
+#define MSS 1200
+#define RING (1u << 18)
+#define WINDOW 0x8000u /* bytes sent and not confirmed, at most */
+#define MAX_CHANS 48
+#define MAX_RANGES 16
+
+enum { T_OPEN = 1, T_OPENED, T_DATA, T_NONE };
+enum { F_END = 1, F_GAP = 2, F_ECHO = 4, F_OPENER = 8 };
+
+typedef enum { CH_FREE, CH_OPENING, CH_INCOMING, CH_OPEN, CH_DEAD } ChanState;
+
+typedef struct {
+  ChanState state;
+  int peer;   /* cabinet index of the other side */
+  int opener; /* this side opened it */
+  int owned;  /* a socket of the game has it */
+  uint16_t id;
+  uint16_t gamePort;
+  uint8_t *tx, *rx;        /* RING bytes each, indexed by stream offset */
+  uint32_t una, sent, end; /* out: confirmed, sent at least once, written by the game */
+  uint32_t rxRead, rxNext; /* in: read by the game, complete up to */
+  struct {
+    uint32_t from, to;
+  } range[MAX_RANGES]; /* pieces received beyond rxNext */
+  int ranges;
+  int ended; /* the other side closed; its stream ends at endAt */
+  uint32_t endAt;
+  int needAck;
+  uint64_t heard, progress, nudged, openAt, quiet;
+  int backoff;
+  int rtt; /* round trip, smoothed, ms; -1 not measured */
+  int haveStamp;
+  uint32_t stamp;
+  uint64_t stampAt;
+} Chan;
+
+static Chan s_chan[MAX_CHANS];
+static uint16_t s_nextId;
+
+static int32_t ahead(uint32_t a, uint32_t b) { return (int32_t)(a - b); } /* > 0: a is after b */
+
+static Chan* chan_new(int peer, int opener, uint16_t id, uint16_t gamePort, ChanState state, uint64_t now) {
+  for (int i = 0; i < MAX_CHANS; i++) {
+    Chan* c = &s_chan[i];
+    if (c->state == CH_FREE) {
+      memset(c, 0, sizeof(*c));
+      c->tx = (uint8_t*)malloc(RING);
+      c->rx = (uint8_t*)malloc(RING);
+      if (c->tx == NULL || c->rx == NULL) {
+        free(c->tx);
+        free(c->rx);
+        return NULL;
+      }
+      c->state = state;
+      c->peer = peer;
+      c->opener = opener;
+      c->id = id;
+      c->gamePort = gamePort;
+      c->rtt = -1;
+      c->heard = c->progress = c->quiet = now;
+      return c;
+    }
+  }
+  return NULL;
+}
+
+static void chan_free(Chan* c) {
+  free(c->tx);
+  free(c->rx);
+  c->tx = c->rx = NULL;
+  c->state = CH_FREE;
+}
+
+static Chan* chan_find(int peer, int opener, uint16_t id) {
+  for (int i = 0; i < MAX_CHANS; i++) {
+    Chan* c = &s_chan[i];
+    if (c->state != CH_FREE && c->peer == peer && c->opener == opener && c->id == id) {
+      return c;
+    }
+  }
+  return NULL;
+}
+
+static void emit_raw(int peer, int type, int flags, uint16_t id, uint16_t gamePort, uint32_t offset, uint32_t ack,
+                     uint32_t stamp, uint32_t echo, const uint8_t* ring, uint32_t length) {
+  uint8_t d[HEADER + MSS];
+  uint16_t length16 = (uint16_t)length;
+  memcpy(d, "MKL2", 4);
+  d[4] = (uint8_t)type;
+  d[5] = (uint8_t)flags;
+  memcpy(d + 6, &id, 2);
+  memcpy(d + 8, s_address, 4);
+  memcpy(d + 12, &gamePort, 2);
+  memcpy(d + 14, &length16, 2);
+  memcpy(d + 16, &offset, 4);
+  memcpy(d + 20, &ack, 4);
+  memcpy(d + 24, &stamp, 4);
+  memcpy(d + 28, &echo, 4);
+  for (uint32_t i = 0; i < length; i++) {
+    d[HEADER + i] = ring[(offset + i) & (RING - 1)];
+  }
+  wire_send(peer, d, (int)(HEADER + length));
+}
+
+static void emit(Chan* c, int type, int flags, uint32_t offset, uint32_t length, uint64_t now) {
+  uint32_t echo = 0;
+  if (c->opener) {
+    flags |= F_OPENER;
+  }
+  if (c->ranges > 0) {
+    flags |= F_GAP;
+  }
+  if (c->haveStamp) {
+    flags |= F_ECHO;
+    echo = c->stamp + (uint32_t)(now - c->stampAt);
+  }
+  emit_raw(c->peer, type, flags, c->id, c->gamePort, offset, c->rxNext, (uint32_t)now, echo, c->tx, length);
+  c->needAck = 0;
+  c->quiet = now;
+}
+
+/* The oldest bytes not confirmed, once more. */
+static void repeat(Chan* c, uint64_t now) {
+  uint32_t n = c->sent - c->una;
+  emit(c, T_DATA, 0, c->una, n > MSS ? MSS : n, now);
+  s_repeats++;
+}
+
+/* New bytes of the game, each datagram filled up with what went before. */
+static void flush(Chan* c, uint64_t now) {
+  if (c->state != CH_OPEN) {
+    return;
+  }
+  while (ahead(c->end, c->sent) > 0 && ahead(c->una + WINDOW, c->sent) > 0) {
+    uint32_t from = c->sent;
+    uint32_t n = c->end - c->sent;
+    uint32_t room = c->una + WINDOW - c->sent;
+    if (n > room) {
+      n = room;
+    }
+    if (n > MSS) {
+      n = MSS;
+    }
+    if (c->una == c->sent) {
+      c->progress = now;
+    }
+    c->sent = from + n;
+    if (n < MSS) {
+      uint32_t back = from - c->una;
+      if (back > MSS - n) {
+        back = MSS - n;
+      }
+      from -= back;
+      n += back;
+    }
+    emit(c, T_DATA, 0, from, n, now);
+  }
+}
+
+static void chan_close(Chan* c, uint64_t now) {
+  if (c->state == CH_OPEN) {
+    uint32_t n = c->end - c->una; /* the end of the stream, with what is still open if it fits */
+    if (n > MSS) {
+      n = MSS;
+    }
+    emit(c, T_DATA, F_END, c->end - n, n, now);
+    emit(c, T_DATA, F_END, c->end - n, n, now);
+  } else if (c->state == CH_OPENING || c->state == CH_INCOMING) {
+    emit_raw(c->peer, T_NONE, c->opener ? F_OPENER : 0, c->id, c->gamePort, 0, 0, 0, 0, NULL, 0);
+  }
+  chan_free(c);
+}
+
+static int listening_on(uint16_t gamePort) {
+  for (int i = 0; i < MAX_SOCKETS; i++) {
+    if (s_sock[i].kind == LISTENING && s_sock[i].port == gamePort) {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+static void chan_data(Chan* c, uint32_t offset, const uint8_t* data, uint32_t length) {
+  uint32_t from = offset, to = offset + length;
+  if (ahead(c->rxNext, from) > 0) { /* the front is known already */
+    uint32_t skip = c->rxNext - from;
+    if (skip >= length) {
+      return;
+    }
+    data += skip;
+    from = c->rxNext;
+  }
+  if (ahead(to, c->rxRead + RING) > 0) { /* more than the game has room for: it comes again */
+    to = c->rxRead + RING;
+    if (ahead(to, from) <= 0) {
+      return;
+    }
+  }
+  for (uint32_t i = 0; i < to - from; i++) {
+    c->rx[(from + i) & (RING - 1)] = data[i];
+  }
+  if (from != c->rxNext) {
+    int at = -1;
+    for (int r = 0; r < c->ranges; r++) {
+      if (ahead(from, c->range[r].to) <= 0 && ahead(c->range[r].from, to) <= 0) {
+        at = r;
+        break;
+      }
+    }
+    if (at >= 0) {
+      if (ahead(c->range[at].from, from) > 0) {
+        c->range[at].from = from;
+      }
+      if (ahead(to, c->range[at].to) > 0) {
+        c->range[at].to = to;
+      }
+    } else if (c->ranges < MAX_RANGES) {
+      c->range[c->ranges].from = from;
+      c->range[c->ranges].to = to;
+      c->ranges++;
+    }
+    return;
+  }
+  c->rxNext = to;
+  for (int r = 0; r < c->ranges;) {
+    if (ahead(c->range[r].from, c->rxNext) <= 0) {
+      if (ahead(c->range[r].to, c->rxNext) > 0) {
+        c->rxNext = c->range[r].to;
+      }
+      c->range[r] = c->range[--c->ranges];
+      r = 0;
+    } else {
+      r++;
+    }
+  }
+}
+
+static void chan_input(const uint8_t* d, int size, const struct sockaddr_in* from, uint64_t now) {
+  uint16_t id, gamePort, length;
+  uint32_t offset, ack, stamp, echo;
+  int type, flags, peer;
+  Chan* c;
+  if (size < HEADER) {
+    s_dropped++;
+    return;
+  }
+  type = d[4];
+  flags = d[5];
+  memcpy(&id, d + 6, 2);
+  memcpy(&gamePort, d + 12, 2);
+  memcpy(&length, d + 14, 2);
+  memcpy(&offset, d + 16, 4);
+  memcpy(&ack, d + 20, 4);
+  memcpy(&stamp, d + 24, 4);
+  memcpy(&echo, d + 28, 4);
+  peer = cabinet_index(d + 8);
+  if (peer < 0 || peer == s_announceIndex || length > MSS || HEADER + (int)length != size) {
+    s_dropped++;
+    return;
+  }
+  if (!s_peer[peer].known) { /* it knows this cabinet from its MKGP2PC_LINK_PEERS and no announcement comes through */
+    s_peer[peer].known = 1;
+    s_peer[peer].host = from->sin_addr;
+    s_peer[peer].port = from->sin_port;
+  }
+  s_heard[peer] = now;
+  c = chan_find(peer, !(flags & F_OPENER), id);
+  if (type == T_NONE) {
+    if (c != NULL) {
+      c->state = CH_DEAD;
+    }
+    return;
+  }
+  if (type == T_OPEN && c == NULL && listening_on(gamePort)) {
+    c = chan_new(peer, 0, id, gamePort, CH_INCOMING, now);
+  }
+  if (c == NULL) {
+    emit_raw(peer, T_NONE, (flags & F_OPENER) ? 0 : F_OPENER, id, gamePort, 0, 0, 0, 0, NULL, 0);
+    return;
+  }
+  if (c->state == CH_DEAD) {
+    return;
+  }
+  c->heard = now;
+  c->stamp = stamp;
+  c->stampAt = now;
+  c->haveStamp = 1;
+  if (flags & F_ECHO) {
+    int32_t sample = (int32_t)((uint32_t)now - echo);
+    if (sample >= 0 && sample < 10000) {
+      c->rtt = c->rtt < 0 ? sample : c->rtt + (sample - c->rtt) / 8;
+    }
+  }
+  if (type == T_OPEN) {
+    emit(c, T_OPENED, 0, 0, 0, now);
+    return;
+  }
+  if (c->state == CH_OPENING) {
+    c->state = CH_OPEN;
+  }
+  if (type != T_DATA) {
+    return;
+  }
+  if (ahead(ack, c->una) > 0 && ahead(ack, c->sent) <= 0) {
+    c->una = ack;
+    c->progress = now;
+    c->backoff = 0;
+  }
+  if ((flags & F_GAP) && c->una != c->sent && now - c->nudged >= (uint64_t)(c->rtt > 20 ? c->rtt / 2 : 10)) {
+    c->nudged = now;
+    repeat(c, now);
+  }
+  if (length > 0) {
+    chan_data(c, offset, d + HEADER, length);
+    c->needAck = 1;
+  }
+  if (flags & F_END) {
+    c->ended = 1;
+    c->endAt = offset + length;
+    c->needAck = 1;
+  }
+}
+
+static void chan_timers(uint64_t now) {
+  for (int i = 0; i < MAX_CHANS; i++) {
+    Chan* c = &s_chan[i];
+    switch (c->state) {
+    case CH_OPENING:
+      if (s_peer[c->peer].known && (c->openAt == 0 || now - c->openAt >= 100)) {
+        c->openAt = now;
+        emit(c, T_OPEN, 0, 0, 0, now);
+      }
+      break;
+    case CH_OPEN:
+    case CH_INCOMING:
+      if (now - c->heard > 30000) { /* the game gives up long before (180 polls without data) */
+        c->state = CH_DEAD;
+        break;
+      }
+      flush(c, now);
+      if (c->una != c->sent) {
+        uint64_t wait = (uint64_t)((c->rtt < 0 ? 100 : c->rtt) * 3 / 2 + 20) << (c->backoff > 4 ? 4 : c->backoff);
+        if (now - c->progress >= (wait > 1000 ? 1000 : wait)) {
+          c->progress = now;
+          c->backoff++;
+          repeat(c, now);
+        }
+      }
+      if (c->needAck || now - c->quiet >= 500) {
+        emit(c, T_DATA, 0, c->sent, 0, now);
+      }
+      break;
+    case CH_DEAD:
+      if (!c->owned) {
+        chan_free(c);
+      }
+      break;
+    default:
+      break;
+    }
+  }
+}
+
+static void announce_input(const uint8_t* msg, const struct sockaddr_in* from, uint64_t now);
+
+/* Everything that has arrived at one of the two ports. */
+static void wire_input(HostSocket source, uint64_t now) {
+  uint8_t d[HEADER + MSS + 16];
+  struct sockaddr_in from;
+  for (int errors = 0; source != NO_SOCKET && errors < 16;) {
+    socklen_t_ size = sizeof(from);
+    int n = (int)recvfrom(source, (char*)d, sizeof(d), 0, (struct sockaddr*)&from, &size);
+    if (n < 0) {
+      if (would_block(host_error())) {
+        break;
+      }
+      errors++; /* Windows reports here that an earlier datagram found no port open */
+      continue;
+    }
+    if (n == ANNOUNCE_SIZE && memcmp(d, "MKGP2PC1", 8) == 0) {
+      announce_input(d, &from, now);
+    } else if (n >= 4 && memcmp(d, "MKL2", 4) == 0 && source == s_announce && s_active) {
+      chan_input(d, n, &from, now);
+    } else {
+      s_dropped++;
+    }
+  }
+}
+
+void mkgp2pc_netlink_pump(void) {
+  uint64_t now;
+  if (s_state != 1 || !s_active || s_announce == NO_SOCKET) {
+    return;
+  }
+  now = now_ms();
+  late_release(now, 0);
+  wire_input(s_announce, now);
+  chan_timers(now);
 }
 
 /* ---- announcements --------------------------------------------------------- */
@@ -348,52 +828,44 @@ static void announce_open(void) {
     return;
   }
   non_blocking(s_announce);
+  no_reset_reports(s_announce);
+  on = 1 << 20; /* a frame's worth from three cabinets waits here between two pumps */
+  setsockopt(s_announce, SOL_SOCKET, SO_RCVBUF, (const char*)&on, sizeof(on));
   s_announced = 0;
+}
+
+static void announce_input(const uint8_t* msg, const struct sockaddr_in* from, uint64_t now) {
+  int index = cabinet_index(msg + 8);
+  int local;
+  if (index < 0 || index == s_announceIndex) {
+    return;
+  }
+  s_heard[index] = now;
+  if (s_peer[index].fixed || !s_active) {
+    return;
+  }
+  /* A cabinet on this PC is heard twice, through the broadcast and
+   * directly: the direct address wins while it keeps coming. */
+  local = from->sin_addr.s_addr == htonl(INADDR_LOOPBACK);
+  if (local) {
+    s_peer[index].local = now;
+  } else if (s_peer[index].known && now - s_peer[index].local < 5000) {
+    return;
+  }
+  if (!s_peer[index].known || s_peer[index].host.s_addr != from->sin_addr.s_addr) {
+    char text[32];
+    snprintf(text, sizeof(text), "%s", inet_ntoa(from->sin_addr));
+    fprintf(stderr, "link: cabinet %d is at %s\n", index + 1, text);
+  }
+  s_peer[index].known = 1;
+  s_peer[index].host = from->sin_addr;
+  s_peer[index].port = from->sin_port; /* every announcement leaves from the cabinet's own port */
 }
 
 static void announce_tick(uint64_t now) {
   uint8_t msg[ANNOUNCE_SIZE];
-  struct sockaddr_in from;
-  HostSocket source = s_observe;
   observe_open();
-  for (;;) {
-    socklen_t_ size = sizeof(from);
-    int n = source != NO_SOCKET ? (int)recvfrom(source, (char*)msg, sizeof(msg), 0, (struct sockaddr*)&from, &size) : -1;
-    int index, local;
-    if (n < 0) {
-      if (source == s_announce) {
-        break;
-      }
-      source = s_announce;
-      continue;
-    }
-    if (n != ANNOUNCE_SIZE || memcmp(msg, "MKGP2PC1", 8) != 0) {
-      continue;
-    }
-    index = cabinet_index(msg + 8);
-    if (index < 0 || index == s_announceIndex) {
-      continue;
-    }
-    s_heard[index] = now;
-    if (s_fixedPeers || !s_active) {
-      continue;
-    }
-    /* A cabinet on this PC is heard twice, through the broadcast and
-     * directly: the direct address wins while it keeps coming. */
-    local = from.sin_addr.s_addr == htonl(INADDR_LOOPBACK);
-    if (local) {
-      s_peer[index].local = now;
-    } else if (s_peer[index].known && now - s_peer[index].local < 5000) {
-      continue;
-    }
-    if (!s_peer[index].known || s_peer[index].host.s_addr != from.sin_addr.s_addr) {
-      char text[32];
-      snprintf(text, sizeof(text), "%s", inet_ntoa(from.sin_addr));
-      fprintf(stderr, "link: cabinet %d is at %s\n", index + 1, text);
-    }
-    s_peer[index].known = 1;
-    s_peer[index].host = from.sin_addr;
-  }
+  wire_input(s_observe, now);
   if (s_announce == NO_SOCKET) {
     if (now - s_probed >= 1000) {
       s_probed = now;
@@ -401,6 +873,7 @@ static void announce_tick(uint64_t now) {
     }
     return;
   }
+  wire_input(s_announce, now);
   if (s_announced == 0 || now - s_announced >= 1000) {
     static const uint32_t targets[2] = {INADDR_BROADCAST, INADDR_LOOPBACK};
     s_announced = now;
@@ -419,6 +892,16 @@ static void announce_tick(uint64_t now) {
         sendto(s_announce, (const char*)msg, sizeof(msg), 0, (struct sockaddr*)&to, sizeof(to));
       }
     }
+    for (int k = 0; k < MAX_CABINETS; k++) { /* the ones named by hand may be out of reach of a broadcast */
+      if (s_peer[k].fixed && k != s_announceIndex) {
+        struct sockaddr_in to;
+        memset(&to, 0, sizeof(to));
+        to.sin_family = AF_INET;
+        to.sin_addr = s_peer[k].host;
+        to.sin_port = s_peer[k].port;
+        sendto(s_announce, (const char*)msg, sizeof(msg), 0, (struct sockaddr*)&to, sizeof(to));
+      }
+    }
   }
 }
 
@@ -431,34 +914,34 @@ static Sock* sock(uint32_t s) {
   return &s_sock[s];
 }
 
-static int new_sock(HostSocket host, Kind kind) {
+static int new_sock(Kind kind) {
   for (int i = 1; i < MAX_SOCKETS; i++) { /* 0 stays free: the game uses slot 0 for calls without a socket */
     if (s_sock[i].kind == FREE) {
       Sock* k = &s_sock[i];
       memset(k, 0, sizeof(*k));
       k->kind = kind;
-      k->host = host;
+      k->chan = -1;
       k->timeout[0] = k->timeout[1] = k->timeout[2] = 6000;
-      for (int g = 0; g < MAX_GREETING; g++) {
-        k->greeting[g].host = NO_SOCKET;
-      }
       return i;
     }
   }
   return -1;
 }
 
-static void late_drop(int socket);
-
 static void release(Sock* k) {
-  late_drop((int)(k - s_sock));
-  for (int g = 0; g < MAX_GREETING; g++) {
-    if (k->greeting[g].host != NO_SOCKET) {
-      close_host(k->greeting[g].host);
-    }
+  uint64_t now = now_ms();
+  if (k->chan >= 0) {
+    chan_close(&s_chan[k->chan], now);
   }
-  if (k->host != NO_SOCKET) {
-    close_host(k->host);
+  if (k->kind == LISTENING) {
+    k->kind = FREE;
+    if (!listening_on(k->port)) { /* callers nobody will answer any more */
+      for (int i = 0; i < MAX_CHANS; i++) {
+        if (s_chan[i].state == CH_INCOMING && s_chan[i].gamePort == k->port) {
+          chan_close(&s_chan[i], now);
+        }
+      }
+    }
   }
   k->kind = FREE;
 }
@@ -480,135 +963,80 @@ static int32_t fail(Sock* k, int error) {
 }
 
 static int32_t do_bind(Sock* k, uint32_t at) {
-  struct sockaddr_in a;
   uint8_t address[4];
   uint16_t port;
-  int on = 1;
   read_address(at, address, &port);
   if (k->kind != FRESH) {
     return fail(k, E_INVAL);
   }
-  memset(&a, 0, sizeof(a));
-  a.sin_family = AF_INET;
-  a.sin_addr.s_addr = htonl(INADDR_ANY);
-  a.sin_port = htons((uint16_t)real_port(cabinet_index(s_address), port));
-#ifndef _WIN32
-  /* a listener closed a moment ago must not block the next one */
-  setsockopt(k->host, SOL_SOCKET, SO_REUSEADDR, (const char*)&on, sizeof(on));
-#else
-  (void)on;
-#endif
-  if (bind(k->host, (struct sockaddr*)&a, sizeof(a)) != 0) {
-    TRACE("bind to real port %d failed (%d)", ntohs(a.sin_port), host_error());
-    return fail(k, E_INVAL);
-  }
   k->port = port;
-  TRACE("bind game port %u = real port %d", port, ntohs(a.sin_port));
+  TRACE("bind game port %u", port);
   return 0;
 }
 
-static int connect_start(Sock* k) {
+static void do_connect(Sock* k, uint64_t now) {
   int index = cabinet_index(k->target);
-  struct sockaddr_in a;
-  if (index < 0 || !s_peer[index].known) {
-    return 0; /* not heard from yet: keep waiting, up to the game's time limit */
+  k->kind = CONNECTING;
+  k->since = now;
+  k->chan = -1;
+  /* Any other address (the camera, 192.168.29.104-107) is one nobody answers at. */
+  if (index >= 0 && index != s_announceIndex && s_announce != NO_SOCKET) {
+    Chan* c;
+    if (s_nextId == 0) {
+      s_nextId = (uint16_t)(((uint32_t)now * 2654435761u) >> 16);
+    }
+    c = chan_new(index, 1, s_nextId++, k->targetPort, CH_OPENING, now);
+    if (c != NULL) {
+      c->owned = 1;
+      k->chan = (int)(c - s_chan);
+    }
   }
-  memset(&a, 0, sizeof(a));
-  a.sin_family = AF_INET;
-  a.sin_addr = s_peer[index].host;
-  a.sin_port = htons((uint16_t)real_port(index, k->targetPort));
-  k->started = 1;
-  if (connect(k->host, (struct sockaddr*)&a, sizeof(a)) != 0 && !would_block(host_error())) {
-    return -1;
-  }
-  return 1;
 }
 
 /* 1 connected, 0 not yet, -1 failed (k->error set) */
 static int connect_poll(Sock* k, uint64_t now) {
-  int bad = 0;
-  if (!k->started) {
-    if (connect_start(k) < 0) {
-      k->error = E_CONNREFUSED;
-      return -1;
-    }
+  Chan* c = k->chan >= 0 ? &s_chan[k->chan] : NULL;
+  if (c != NULL && c->state == CH_OPEN) {
+    k->kind = CONNECTED;
+    return 1;
   }
-  if (k->started && ready(k->host, 1, &bad) && !bad) {
-    int error = 0;
-    socklen_t_ size = sizeof(error);
-    getsockopt(k->host, SOL_SOCKET, SO_ERROR, (char*)&error, &size);
-    if (error == 0) {
-      uint8_t hello[GREETING_SIZE];
-      memcpy(hello, "MKL1", 4);
-      memcpy(hello + 4, s_address, 4);
-      if (send(k->host, (const char*)hello, sizeof(hello), 0) != (int)sizeof(hello)) {
-        k->error = E_NOTCONN;
-        return -1;
-      }
-      k->kind = CONNECTED;
-      return 1;
-    }
-    bad = 1;
-  }
-  if (bad) {
+  if (c != NULL && c->state == CH_DEAD) {
+    chan_free(c);
+    k->chan = -1;
     k->error = E_CONNREFUSED;
     return -1;
   }
   if (now - k->since >= k->timeout[2]) {
+    if (c != NULL) {
+      chan_close(c, now);
+      k->chan = -1;
+    }
     k->error = E_TIMEDOUT;
     return -1;
   }
   return 0;
 }
 
-/* A connection that has sent its greeting: its index, or -1. */
-static int accept_poll(Sock* k, uint64_t now) {
-  for (int g = 0; g < MAX_GREETING; g++) {
-    Greeting* e = &k->greeting[g];
-    if (e->host == NO_SOCKET) {
-      struct sockaddr_in from;
-      socklen_t_ size = sizeof(from);
-      HostSocket s = accept(k->host, (struct sockaddr*)&from, &size);
-      if (s == NO_SOCKET) {
-        continue;
-      }
-      tune(s);
-      e->host = s;
-      e->have = 0;
-      e->since = now;
-    }
-    if (e->have < GREETING_SIZE) {
-      int n = (int)recv(e->host, (char*)e->data + e->have, GREETING_SIZE - e->have, 0);
-      if (n > 0) {
-        e->have += n;
-      } else if (n == 0 || !would_block(host_error()) || now - e->since > 3000) {
-        close_host(e->host); /* not one of ours */
-        e->host = NO_SOCKET;
-        continue;
-      }
-    }
-    if (e->have == GREETING_SIZE) {
-      if (memcmp(e->data, "MKL1", 4) != 0) {
-        close_host(e->host);
-        e->host = NO_SOCKET;
-        continue;
-      }
-      memcpy(&e->address, e->data + 4, 4);
-      return g;
+/* A connection waiting to be accepted on this listener: its index, or -1. */
+static int accept_poll(Sock* k) {
+  for (int i = 0; i < MAX_CHANS; i++) {
+    if (s_chan[i].state == CH_INCOMING && s_chan[i].gamePort == k->port) {
+      return i;
     }
   }
   return -1;
 }
 
-static int32_t accept_finish(Sock* k, int g, uint32_t addressAt, uint32_t lengthAt) {
-  Greeting* e = &k->greeting[g];
-  int s = new_sock(e->host, CONNECTED);
+static int32_t accept_finish(Sock* k, int chan, uint32_t addressAt, uint32_t lengthAt) {
+  Chan* c = &s_chan[chan];
+  int s = new_sock(CONNECTED);
   if (s < 0) {
-    close_host(e->host);
-    e->host = NO_SOCKET;
+    chan_close(c, now_ms());
     return fail(k, E_NFILE);
   }
-  e->host = NO_SOCKET;
+  s_sock[s].chan = chan;
+  c->state = CH_OPEN;
+  c->owned = 1;
   if (addressAt != 0) {
     uint8_t raw[16];
     uint8_t length[4] = {0, 0, 0, 16}; /* the game reads the length byte-swapped (acsocket_m8.c) */
@@ -616,19 +1044,25 @@ static int32_t accept_finish(Sock* k, int g, uint32_t addressAt, uint32_t length
     raw[0] = 16;
     raw[1] = 2;
     memcpy(raw + 2, &k->port, 2);
-    memcpy(raw + 4, e->data + 4, 4);
+    raw[4] = 192, raw[5] = 168, raw[6] = 29, raw[7] = (uint8_t)(150 + c->peer);
     mkgp2pc_mediaboard_store(addressAt, raw, sizeof(raw));
     if (lengthAt != 0) {
       mkgp2pc_mediaboard_store(lengthAt, length, sizeof(length));
     }
   }
-  TRACE("accept on %d: socket %d from %u.%u.%u.%u", (int)(k - s_sock), s, e->data[4], e->data[5], e->data[6], e->data[7]);
+  TRACE("accept on %d: socket %d from cabinet %d", (int)(k - s_sock), s, c->peer + 1);
   return s;
 }
 
 /* The game's descriptor sets: 8 words, each stored byte-swapped
  * (src/game/TCPConnSend.c TCPConn_SendMask). */
 static uint32_t swap32(uint32_t v) { return (v << 24) | ((v << 8) & 0xFF0000) | ((v >> 8) & 0xFF00) | (v >> 24); }
+
+static int chan_readable(const Chan* c) {
+  return c->rxNext != c->rxRead || c->state == CH_DEAD || (c->ended && c->rxRead == c->endAt);
+}
+
+static int chan_writable(const Chan* c) { return c->state == CH_DEAD || c->end - c->una < RING / 2; }
 
 static int select_set(uint32_t at, uint32_t count, int forWrite) {
   uint32_t set[8];
@@ -643,9 +1077,9 @@ static int select_set(uint32_t at, uint32_t count, int forWrite) {
       Sock* k = s < count ? sock(s) : NULL;
       int on = 0;
       if (k != NULL && k->kind == CONNECTED) {
-        on = ready(k->host, forWrite, NULL);
+        on = forWrite ? chan_writable(&s_chan[k->chan]) : chan_readable(&s_chan[k->chan]);
       } else if (k != NULL && k->kind == LISTENING && !forWrite) {
-        on = accept_poll(k, now_ms()) >= 0;
+        on = accept_poll(k) >= 0;
       }
       if (on) {
         n++;
@@ -658,140 +1092,62 @@ static int select_set(uint32_t at, uint32_t count, int forWrite) {
   return n;
 }
 
-/* ---- a worse network, for measurements ---------------------------------------
- *
- * MKGP2PC_LINK_DELAY=<ms>   every send leaves that much later (one way)
- * MKGP2PC_LINK_JITTER=<ms>  plus a random 0..ms
- * MKGP2PC_LINK_LOSS=<%>     that share of the sends waits for a retransmission
- *                           (200 ms or twice the delay, whichever is longer)
- * Order is kept, as TCP keeps it: data behind a late piece is late too. The
- * queue is emptied from the retrace tick and from mkgp2pc_netlink_pump(),
- * which the no-graphics build calls every millisecond while it waits. */
-typedef struct Late {
-  struct Late* next;
-  int socket;
-  uint64_t at;
-  uint32_t length, done;
-  uint8_t data[1];
-} Late;
-static Late *s_late, *s_lateEnd;
-static uint64_t s_lateLast;
-
-static void late_drop(int socket) {
-  Late** p = &s_late;
-  s_lateEnd = NULL;
-  while (*p != NULL) {
-    if ((*p)->socket == socket) {
-      Late* dead = *p;
-      *p = dead->next;
-      free(dead);
-    } else {
-      s_lateEnd = *p;
-      p = &(*p)->next;
-    }
-  }
-}
-
-void mkgp2pc_netlink_pump(void) {
-  uint64_t now;
-  if (s_late == NULL) {
-    return;
-  }
-  now = now_ms();
-  while (s_late != NULL && s_late->at <= now) {
-    Late* e = s_late;
-    Sock* k = &s_sock[e->socket];
-    int n = (int)send(k->host, (const char*)e->data + e->done, (int)(e->length - e->done), 0);
-    if (n > 0) {
-      e->done += (uint32_t)n;
-      s_sent += (uint32_t)n;
-    } else if (would_block(host_error())) {
-      return;
-    } else {
-      e->done = e->length; /* the link is gone; the game notices on its own */
-    }
-    if (e->done == e->length) {
-      s_late = e->next;
-      if (s_late == NULL) {
-        s_lateEnd = NULL;
-      }
-      free(e);
-    }
-  }
-}
-
-static int32_t late_send(Sock* k, const uint8_t* data, uint32_t length) {
-  Late* e = (Late*)malloc(sizeof(Late) + length);
-  uint64_t at = now_ms() + (uint64_t)s_delay + (s_jitter > 0 ? (uint64_t)(rand() % (s_jitter + 1)) : 0);
-  if (e == NULL) {
-    return fail(k, E_WOULDBLOCK);
-  }
-  if (s_loss > 0 && rand() % 100 < s_loss) {
-    at += 2 * s_delay > 200 ? (uint64_t)(2 * s_delay) : 200;
-  }
-  if (at < s_lateLast) {
-    at = s_lateLast;
-  }
-  s_lateLast = at;
-  e->next = NULL;
-  e->socket = (int)(k - s_sock);
-  e->at = at;
-  e->length = length;
-  e->done = 0;
-  memcpy(e->data, data, length);
-  if (s_lateEnd != NULL) {
-    s_lateEnd->next = e;
-  } else {
-    s_late = e;
-  }
-  s_lateEnd = e;
-  return (int32_t)length;
-}
-
 static int32_t do_send(Sock* k, uint32_t at, uint32_t length) {
   static uint8_t data[0x80000];
-  uint64_t start = now_ms();
-  uint32_t done = 0;
-  if (k->kind != CONNECTED) {
+  Chan* c;
+  uint32_t room;
+  if (k->kind != CONNECTED || s_chan[k->chan].state != CH_OPEN) {
     return fail(k, E_NOTCONN);
   }
   if (length > sizeof(data)) {
     return fail(k, E_INVAL);
   }
+  c = &s_chan[k->chan];
+  room = RING - (c->end - c->una);
+  if (room == 0 && length > 0) {
+    return fail(k, E_WOULDBLOCK); /* the other side has stopped confirming */
+  }
+  if (length > room) {
+    length = room;
+  }
   mkgp2pc_mediaboard_load(at, data, length);
-  if (s_delay > 0 || s_jitter > 0 || s_loss > 0) {
-    return late_send(k, data, length);
+  for (uint32_t i = 0; i < length; i++) {
+    c->tx[(c->end + i) & (RING - 1)] = data[i];
   }
-  while (done < length) {
-    int n = (int)send(k->host, (const char*)data + done, (int)(length - done), 0);
-    if (n > 0) {
-      done += (uint32_t)n;
-      s_sent += (uint32_t)n;
-    } else if (!would_block(host_error())) {
-      return fail(k, E_NOTCONN);
-    } else if (now_ms() - start > 200) { /* the other side has stopped reading */
-      return done > 0 ? (int32_t)done : fail(k, E_WOULDBLOCK);
-    }
-  }
-  return (int32_t)done;
+  c->end += length;
+  s_sent += length;
+  flush(c, now_ms());
+  return (int32_t)length;
 }
 
 static int32_t do_recv(Sock* k, uint32_t at, uint32_t length) {
   static uint8_t data[0x80000];
-  int n;
+  Chan* c;
+  uint32_t have;
   if (k->kind != CONNECTED) {
     return fail(k, E_NOTCONN);
+  }
+  c = &s_chan[k->chan];
+  have = c->rxNext - c->rxRead;
+  if (have == 0) {
+    if (c->state == CH_DEAD || (c->ended && c->rxRead == c->endAt)) {
+      return 0; /* closed by the other side */
+    }
+    return fail(k, E_WOULDBLOCK);
   }
   if (length > sizeof(data)) {
     length = sizeof(data);
   }
-  n = (int)recv(k->host, (char*)data, (int)length, 0);
-  if (n < 0) {
-    return fail(k, would_block(host_error()) ? E_WOULDBLOCK : E_NOTCONN);
+  if (length > have) {
+    length = have;
   }
-  s_received += (uint32_t)n;
-  mkgp2pc_mediaboard_store(at, data, (uint32_t)n);
-  return n; /* 0: closed by the other side */
+  for (uint32_t i = 0; i < length; i++) {
+    data[i] = c->rx[(c->rxRead + i) & (RING - 1)];
+  }
+  c->rxRead += length;
+  s_received += length;
+  mkgp2pc_mediaboard_store(at, data, length);
+  return (int32_t)length;
 }
 
 /* ---- commands --------------------------------------------------------------- */
@@ -845,6 +1201,9 @@ int mkgp2pc_netlink_command(uint16_t command, const uint32_t* arg, uint32_t* res
   }
   now = now_ms();
   k = sock(arg[0]);
+  if (command == CMD_SELECT || command == CMD_SEND || command == CMD_RECV) {
+    mkgp2pc_netlink_pump(); /* what has arrived since the retrace */
+  }
   if (s_trace > 1 && command != CMD_SELECT && command != CMD_SEND && command != CMD_RECV) {
     TRACE("%8llu command %04x %x %x %x %x", (unsigned long long)now, command, arg[0], arg[1], arg[2], arg[3]);
   }
@@ -866,18 +1225,9 @@ int mkgp2pc_netlink_command(uint16_t command, const uint32_t* arg, uint32_t* res
     memcpy(result, a, 4); /* address bytes as they are: the game does not swap this answer */
     return MKGP2PC_NETLINK_DONE;
   }
-  case CMD_SOCKET: {
-    HostSocket s = socket(AF_INET, SOCK_STREAM, 0);
-    if (s == NO_SOCKET) {
-      break;
-    }
-    tune(s);
-    r = new_sock(s, FRESH);
-    if (r < 0) {
-      close_host(s);
-    }
+  case CMD_SOCKET:
+    r = new_sock(FRESH);
     break;
-  }
   case CMD_SET_TIMEOUTS:
     if (k != NULL) {
       k->timeout[0] = arg[1], k->timeout[1] = arg[2], k->timeout[2] = arg[3];
@@ -898,7 +1248,7 @@ int mkgp2pc_netlink_command(uint16_t command, const uint32_t* arg, uint32_t* res
     r = k != NULL ? do_bind(k, arg[1]) : -1;
     break;
   case CMD_LISTEN:
-    if (k != NULL && k->kind == FRESH && listen(k->host, (int)arg[1]) == 0) {
+    if (k != NULL && k->kind == FRESH) {
       k->kind = LISTENING;
       r = 0;
     } else {
@@ -926,9 +1276,7 @@ int mkgp2pc_netlink_command(uint16_t command, const uint32_t* arg, uint32_t* res
       break;
     }
     read_address(arg[1], k->target, &k->targetPort);
-    k->kind = CONNECTING;
-    k->started = 0;
-    k->since = now;
+    do_connect(k, now);
     TRACE("connect %u to %u.%u.%u.%u:%u", arg[0], k->target[0], k->target[1], k->target[2], k->target[3], k->targetPort);
     return MKGP2PC_NETLINK_LATER;
   case CMD_ACCEPT:
@@ -961,9 +1309,10 @@ int mkgp2pc_netlink_poll(uint16_t command, const uint32_t* arg, uint32_t* result
     TRACE("connect %u: %s", arg[0], state > 0 ? "connected" : k->error == E_TIMEDOUT ? "nobody there" : "refused");
     if (state < 0) {
       k->kind = FRESH; /* the game closes it */
+      k->chan = -1;
     }
   } else {
-    int g = k->kind == LISTENING ? accept_poll(k, now) : -1;
+    int g = k->kind == LISTENING ? accept_poll(k) : -1;
     if (g >= 0) {
       r = accept_finish(k, g, arg[1], arg[2]);
     } else if (k->kind == LISTENING && now - k->since < k->timeout[1]) {
@@ -1038,8 +1387,20 @@ void mkgp2pc_netlink_tick(void) {
       probe_tick(now);
     }
     if (s_trace && now - s_reported >= 5000) {
+      int open = 0, rtt = -1;
+      for (int i = 0; i < MAX_CHANS; i++) {
+        if (s_chan[i].state == CH_OPEN) {
+          open++;
+          if (s_chan[i].rtt > rtt) {
+            rtt = s_chan[i].rtt;
+          }
+        }
+      }
       s_reported = now;
-      TRACE("%llu bytes sent, %llu received", (unsigned long long)s_sent, (unsigned long long)s_received);
+      TRACE("%llu bytes sent, %llu received; %llu datagrams, %llu repeats, %llu withheld, %llu not understood; "
+            "%d connections, round trip up to %d ms",
+            (unsigned long long)s_sent, (unsigned long long)s_received, (unsigned long long)s_datagrams,
+            (unsigned long long)s_repeats, (unsigned long long)s_lost, (unsigned long long)s_dropped, open, rtt);
     }
   }
 }
@@ -1074,14 +1435,22 @@ void mkgp2pc_netlink_set_active(int on) {
         release(&s_sock[i]);
       }
     }
+    for (int i = 0; i < MAX_CHANS; i++) {
+      if (s_chan[i].state != CH_FREE) {
+        chan_close(&s_chan[i], now_ms());
+      }
+    }
+    late_release(0, 1);
     if (s_announce != NO_SOCKET) {
       close_host(s_announce);
       s_announce = NO_SOCKET;
     }
     s_announceIndex = -1;
     memset(s_address, 0, sizeof(s_address));
-    if (!s_fixedPeers) {
-      memset(s_peer, 0, sizeof(s_peer));
+    for (int k = 0; k < MAX_CABINETS; k++) {
+      if (!s_peer[k].fixed) {
+        memset(&s_peer[k], 0, sizeof(s_peer[k]));
+      }
     }
   }
   TRACE("link %s", on ? "on" : "off");
