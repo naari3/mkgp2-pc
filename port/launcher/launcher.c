@@ -25,13 +25,10 @@
 #include <commdlg.h>
 #include <objbase.h>
 #include <shellapi.h>
-<<<<<<< HEAD
 #include <mfidl.h>
 #include <mfobjects.h>
-=======
 #include <stdbool.h>
 #include <stddef.h>
->>>>>>> origin/main
 #include <stdio.h>
 #include <stdlib.h>
 #include <wchar.h>
