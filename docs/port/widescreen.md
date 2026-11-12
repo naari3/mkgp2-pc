@@ -94,6 +94,84 @@ arcade's 4:3? This is a reading of the sources (mkgp2-pc `2502a6b`, Aurora
 Factor used below: `k = (16/9) / (4/3) = 4/3`. A 4:3 picture centred in a
 16:9 frame takes the middle 75 % of the width; each side strip is 12.5 %.
 
+
+## Census of screen-space drawing (2026-11-12)
+
+Asked for by the user after the dash effects were found cut at the 4:3
+edge: instead of fixing effects one at a time, every way the game draws in
+screen space is listed here with the rule that applies to it. The rules
+work on what is drawn (its extent on the screen), not on which effect it
+is, so an effect that was never seen is still covered if it comes through
+one of these paths.
+
+Tool: `MKGP2PC_WIDE_CENSUS=1` prints, for every place that sets a
+projection, what was drawn under it (a line when first seen, the table
+every 1000 retraces; addresses are offsets from the load address, look
+them up with `nm -n`). `MKGP2PC_TRACE_WIDE=1` prints every 2D primitive and
+display list with its extent and the retrace.
+
+### Who sets a projection
+
+| Set by | Kind | What is drawn under it | Wide picture | Seen in a run |
+|---|---|---|---|---|
+| `setupNormalCamera` (HSD camera) | perspective, whole screen | the 3D scene: course, karts, demo scenes | widened, culling follows | yes |
+| `fn_801F6790` (`GX_BeginDraw`: the scene's projection put back after 2D) | perspective, whole screen | 3D effects and particles drawn by game code, as primitives and display lists | widened like the scene | yes |
+| `fn_8011EC18` (`SpriteHandle.cpp`, sprite and glyph layer) | 2D, whole screen | menus, HUD, text, backgrounds, fades | 2D rules below | yes |
+| `fn_801F6588` (`GX_EndDraw`; from `FrameSelection_Methods.c`, `Scene_8014E0C4.cpp`, `fn_801F0CBC.cpp`, `NamCamFlow.cpp`, `Scene_801721B0.cpp`) | 2D, whole screen | the overlay of a race: sprites, and models as display lists (the tunnel and rays of a dash) | 2D rules below, display lists included | yes |
+| `ScreenProjection` (`TransitionEffect.cpp`) | 2D, whole screen | scene transitions: the saved frame, the roulette | 2D rules below | yes |
+| `DisplayContext_Flush` | 2D, whole screen | boot and service text | centred, clipped (its vertices are not floats, so the rules do not look at it) | boot only |
+| `DrawColoredQuad`, `fn_8015376C` and its sibling (`Scene_8014E0C4.cpp`) | 2D, whole screen | coloured quads and texture fade panels | 2D rules below | no |
+| `CardCreate_Page.cpp` | 2D, whole screen | card creation pages | 2D rules below | no (no card in the runs) |
+| `DbgMenu.cpp` | 2D | debug menu | centred | no |
+| `setupOffscreenCamera`, `HSD_ShadowStartRender`, `DrawNamCamImage` | part of the frame buffer | kart shadow image, pictures rendered for textures | not touched | yes |
+
+### 2D rules (whole-screen 2D projection)
+
+In the order they are tried, per primitive (a quad, a triangle, a whole
+strip) or per display list:
+
+1. Edge tile of a grid (three or more equal quads in a row, at most a
+   quarter of the picture wide): drawn again outwards. Menu star pattern.
+2. As wide as the 4:3 picture or wider, wherever it is: stretched over the
+   whole width. Fades, saved frames, bands, and the dash model (2.5 units
+   wide, it overfills the arcade screen too).
+3. Part of a row: consecutive quads of the same height that continue each
+   other from the left edge to the right edge. Whole-screen images cut
+   into textures are drawn like this (640 = 512 + 128). Stretched together.
+   Found in the census: the band of cup and round select, the background of
+   the screen before a race.
+4. Moving and reaching beyond the left or right edge: moved outwards (see
+   above).
+5. Everything else: its shape and place in the centred 4:3 picture,
+   clipped at its edges.
+
+Rules 1 and 3 need the neighbours, so they act from the second frame a
+picture is on the screen.
+
+### What this does not reach
+
+- A 3D effect that the game sizes to the edges of the 4:3 view (something
+  fixed in front of the camera) would end at the 4:3 edge. None was
+  identified; the dash effect was thought to be one and is not. It cannot
+  be told apart from scenery by the wide code.
+- 2D that touches one edge only and rests there (title bars, HUD panels):
+  rule 5, so it ends at the 4:3 edge. Deliberate: these are layout, and
+  stretching a panel that is 26 pixels over the edge distorts it.
+- A whole-screen effect made of pieces that are not a row (left and right
+  halves at different heights, a frame of four borders) would stay
+  centred. None seen.
+
+### Seen and not seen
+
+Seen in replays on Linux (recorded session, Yoshi Park, no card): attract
+logo and demo, class, character, cup and round select, the screen before a
+race, countdown, race HUD, the dash panel effect.
+
+Not seen, covered only as far as the rules reach: start dash, mushroom
+and other item effects on the screen (the ones that block the view), hits
+and spins, goal, results and ranking, continue, name entry, card pages,
+time attack and versus screens, link screens, test menu, endings.
+
 ## 1. What exists today
 
 | Layer | State | Where |
