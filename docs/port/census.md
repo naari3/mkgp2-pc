@@ -1580,6 +1580,30 @@ executable.
   Vulkan backend compiled in (`MKGP2PC_BACKEND=vulkan`, launcher field),
   which has no DXC step. Not timed yet.
 
+### The list in the repository (2026-11-12)
+
+- `port/gfx/package/initial_pipeline_cache.db`: 592 GX pipelines (the
+  user's lists from Windows play, the rows saved from a damaged list, a
+  Linux replay, 32 attract-demo runs over every cup). naari3 agreed to
+  having it in the public repository. It holds render-state records only:
+  one table of fixed-size configuration blobs (TEV stages, channels,
+  texgens, vertex layout, blend and depth state) with a hash and the frame
+  number of first use. No texture, model, file name or path is in it
+  (checked: no printable string beyond the table definition).
+- Builds: `build-win32.sh` puts it in the output directory, `wsl-build.sh`
+  in the destination. A list already there is merged with it, never
+  replaced. `build-linux32.sh` copies it next to the executable if none is
+  there.
+- Refreshing it: collect `pipeline_cache.db` files (the user directory,
+  `%APPDATA%\mkgp2-pc` or `~/.local/share/mkgp2-pc`, after play; or
+  `port/tools/pipeline_sweep.sh` for the attract demo over every cup) and
+  run `python3 -I port/tools/pipeline_list.py -o
+  port/gfx/package/initial_pipeline_cache.db
+  port/gfx/package/initial_pipeline_cache.db LIST...`. Lists from any
+  machine and either system mix. After a change of Aurora's pipeline
+  config version the old rows are dropped by the tool and the list has to
+  be collected again.
+
 ### Second Windows run, 593 pipelines ready (2026-11-12, build 72a0266f)
 
 - Start: `shaders: 133 pipelines prepared before the game in 0.2 s`, then
@@ -1633,3 +1657,34 @@ crescent with the ripple texture stands in the sky at the upper right.
   one silently plays without the card and lands in another cup).
 - Seen on the way and left: thin red horizontal quads at the karts' grid
   places at the start of this course (Linux too).
+
+## 40. Guide pictures of the attract demo repeated sideways (2026-11-12)
+
+- Seen on Windows (build f2fa4360) in the "game explanation" part of the
+  attract demo: about ten steering wheels overlapping at the top, a row of
+  cut-off glyphs, three wheels at the bottom right. Same picture on Linux
+  with scripted `pause` lines at retraces 17200, 17500 and 17800 of an
+  untouched attract loop (`MKGP2PC_FAST=1 MKGP2PC_LINK=0`).
+- Cause: `SprEntry` in src/game/Scene_8014E0C4.cpp, the 80-entry table of
+  attract sprites (`Scene_8014E0C4_rodata_803644D0`), held each sprite's
+  origin on its texture as `char name[8]` filled with the big-endian bytes
+  of two floats. `SprScene::Draw` hands that field to `fn_801F6D58`, which
+  reads x, y, width, height as floats. On a little-endian host x and y came
+  out as denormals, so every sprite of the table was cut from the top-left
+  corner of its sheet with the right size. The steering wheel is what sits
+  in that corner of the guide sheet.
+- Correction: the field is `float x, y` and the table is written with float
+  literals. Same bytes under MWCC (`Scene_8014E0C4.o` and `main.dol`
+  unchanged), so the change went to mkgp2-decomp (PR 6180) and is carried
+  here as the same edit. Checked on Linux at the three retraces: speech
+  balloon with its text, the "ゲーム説明" banner, the aiming mark. Not
+  checked on Windows.
+- Not covered by `port/tools/data_width_census.py`, which compares the
+  element types of a definition and its declarations; here the definition
+  and the declaration agreed and the reader was a function taking `void *`.
+  A search of `src/` for brace-enclosed byte lists that look like big-endian
+  floats inside table rows found only this table. Whole pools written as
+  byte arrays (`Cave16ACtor_rodata_8036CF68`, `Jungle16ACtor_rodata_8036CA00`,
+  `CGameCoin_8012BF5C_rodata_80356730`, `resultscene_rodata_803682B0`,
+  `lbl_803776C8`) hold floats in the same form; how each is read on the host
+  was not examined here.

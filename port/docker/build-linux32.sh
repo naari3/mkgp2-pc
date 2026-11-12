@@ -71,4 +71,5 @@ python3 port/tools/link_census.py $DIRS --gfx --link
 step "mkgp2-gfx"
 cmake -S port/gfx -B build/pc-gfx/cmake "${AURORA_ARGS[@]}"
 cmake --build build/pc-gfx/cmake --target mkgp2-gfx
+[ -f build/pc-gfx/cmake/initial_pipeline_cache.db ] || cp port/gfx/package/initial_pipeline_cache.db build/pc-gfx/cmake/
 ls -l build/pc-gfx/cmake/mkgp2-gfx
