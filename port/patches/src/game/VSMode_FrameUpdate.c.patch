@@ -1,16 +1,19 @@
 --- a/src/game/VSMode_FrameUpdate.c
 +++ b/src/game/VSMode_FrameUpdate.c
-@@ -294,6 +294,9 @@
+@@ -294,6 +294,12 @@
  void CoinJumpFlasher_Toggle(void *car);
  char *RingBuffer_GetKartSlot(int kart);
  void VIWaitForRetrace(void);
 +#ifndef __MWERKS__
-+int mkgp2pc_link_backlog(int kart, int queued); /* PC port, port/platform/triforce/netlink.c */
++/* PC port, port/platform/triforce/netlink.c */
++int mkgp2pc_link_backlog(int kart, int queued);
++int mkgp2pc_link_kart(int kart, int own, int host, char *slot, const float *matrix);
++void mkgp2pc_link_kart_done(const float *matrix, float value);
 +#endif
  void Frame_UpdatePerFrameState(void);
  void Timer_Decrement(void);
  void PCBComm_Process(int a, int b);
-@@ -493,9 +496,24 @@
+@@ -493,9 +499,24 @@
                  if (g_carObjects[i] != 0) {
                      char *slot = RingBuffer_GetKartSlot(i);
                      held[i] |= *(unsigned int *)(slot + 0xc);
@@ -35,3 +38,57 @@
                  }
              }
              if (lag < 2) {
+@@ -660,6 +681,16 @@
+         if (car == 0) {
+             continue;
+         }
++#ifndef __MWERKS__
++        /* PC port: every cabinet drives its own kart with the input of this
++         * very frame and reports where it is, instead of the host driving it
++         * from an input that has travelled there and back; "The own kart" in
++         * port/platform/triforce/netlink.c. 0: as the arcade program does,
++         * 1: this cabinet's kart, it stays where it is (and the frame's
++         * pedals and wheel for it have been replaced by this cabinet's),
++         * 2: host, the kart of a cabinet that reports its position. */
++        int placing = mkgp2pc_link_kart(i, i == lbl_806CF140, g_isCommHost == 1, slot, CarObject_GetTransformMatrix(car));
++#endif
+         if (VSMode_FrameUpdate_bss_806D1310 > 0) {
+             /* first frames after the start sync: no input */
+             VSMode_FrameUpdate_bss_806D1310--;
+@@ -708,13 +739,23 @@
+         }
+ 
+         if (g_isCommHost == 1) {
++#ifndef __MWERKS__
++            if (placing == 2) {
++                CarObject_SetPosition(car, slot + 0x10);
++                KartItem_SetCarObjectField1c8Float(car, VS_F32(slot, 0x1c));
++            }
++#endif
+             float *m = CarObject_GetTransformMatrix(car);
+             *(unsigned int *)(slot + 0xc) = h;
+             VS_F32(slot, 0x10) = m[12];
+             VS_F32(slot, 0x14) = m[13];
+             VS_F32(slot, 0x18) = m[14];
+             VS_F32(slot, 0x1c) = VS_F32(VS_PTR(car, 0x28), 0x1c8);
+-        } else {
++        } else
++#ifndef __MWERKS__
++        if (placing != 1)
++#endif
++        {
+             CarObject_SetPosition(car, slot + 0x10);
+             KartItem_SetCarObjectField1c8Float(car, VS_F32(slot, 0x1c));
+         }
+@@ -725,6 +766,11 @@
+             CarObject_ApplyInput_AI(car, started, accel, accel, steer, brake);
+         }
+         CarObject_FrameUpdate(car, h);
++#ifndef __MWERKS__
++        if (i == lbl_806CF140 && !g_isCommHost) {
++            mkgp2pc_link_kart_done(CarObject_GetTransformMatrix(car), VS_F32(VS_PTR(car, 0x28), 0x1c8));
++        }
++#endif
+         if (i == lbl_806CF140) {
+             ItemBox_ProcessPickup(g_itemSelects[i], car, 0, h, 1, steer);
+         } else {

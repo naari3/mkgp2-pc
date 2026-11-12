@@ -49,6 +49,7 @@
  * All calls come from the game with the port's "interrupt" lock held or from
  * the retrace tick; nothing here blocks and there are no threads.
  */
+#include <math.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -1378,25 +1379,182 @@ int mkgp2pc_link_backlog(int kart, int queued) {
   return queued;
 }
 
+/* ---- the own kart ---------------------------------------------------------------
+ *
+ * In the arcade program only the host moves karts on its own account: a
+ * client's pedals and wheel go to the host, the host steps that kart, and
+ * the client sees the result when the frame comes back, which is two ways
+ * and the client's reserve of frames later (measured: 80 ms on one machine,
+ * 230 ms at 50 ms one way). The host's own player waits one frame.
+ *
+ * Here every cabinet steps its own kart with the input of the very frame,
+ * as the host does, and the kart's position goes the other way: with every
+ * input sample a client reports where its kart is, and the host puts its
+ * copy of that kart there before stepping it with that sample, exactly as
+ * the clients have always done with the positions in the host's frame. The
+ * host goes on sending every kart's position to everybody, so the other
+ * clients need not know. Buttons (items) still take the long way: the host
+ * says which item a kart holds, and using one before the host knows would
+ * give it back for a moment.
+ *
+ * The 18 bytes of the input sample between the buttons and "queued" are
+ * unused on the way to the host (src/game/PCBCommBroadcast.c, pad3C) and
+ * are copied by the host as they come:
+ *   +0x10  3 floats: the kart's position after its last step
+ *   +0x1C  float: the value the host sends at +0x1C of a kart's entry
+ *   +0x20  u8: 0x5A "this cabinet can drive its kart", 0xA5 "and does"
+ *   +0x21  u8: counts the samples, so that the host places a kart once
+ * The host answers in the kart's entry of its frame, byte +0x23 (unused,
+ * passed through from the sample): 0xA5 "positions are taken". A client
+ * drives its kart only while it sees that, so a host or a client without
+ * this (MKGP2PC_LINK_OWNKART=0, an older build) leaves the race as it was.
+ *
+ * Called from port/patches/src/game/VSMode_FrameUpdate.c.patch. */
+extern int g_currentSceneState;
+extern unsigned char PCBComm_BuildBroadcastSlot_bss_805A60C4[];
+
+enum { KART_CAN = 0x5A, KART_DOES = 0xA5 };
+static int s_ownKart = -1;
+static int s_driving;            /* client: this cabinet's kart is driven here */
+static uint8_t s_sample;         /* client: number of the last sample */
+static int s_placedSample[MAX_CABINETS]; /* host: last sample placed, -1 none */
+static uint64_t s_placed;
+static double s_offSum, s_offMax; /* host: how far its copy was from the reported place, before placing */
+static double s_way;              /* host: how far the reported places moved */
+static float s_placedAt[MAX_CABINETS][3];
+
+/* MKGP2PC_LINK_PROBE: from a change of this cabinet's pedals or wheel to the
+ * step of its kart that uses it. */
+static float s_probeLocal[3];
+static uint64_t s_probeChanged, s_probeSum;
+static int s_probeWaiting, s_probeCount, s_probeWorst;
+
+static void probe_used(const void* used, uint64_t now) {
+  if (s_probeWaiting && memcmp(s_probeLocal, used, sizeof(s_probeLocal)) == 0) {
+    int ms = (int)(now - s_probeChanged);
+    s_probeWaiting = 0;
+    s_probeSum += (uint64_t)ms;
+    s_probeCount++;
+    if (ms > s_probeWorst) {
+      s_probeWorst = ms;
+    }
+  }
+}
+
+static int own_kart(void) {
+  if (s_ownKart < 0) {
+    const char* e = getenv("MKGP2PC_LINK_OWNKART");
+    s_ownKart = e == NULL || e[0] != '0';
+    for (int k = 0; k < MAX_CABINETS; k++) {
+      s_placedSample[k] = -1;
+    }
+  }
+  return s_ownKart;
+}
+
+/* For kart `kart` in this frame, before its step. 0: as the arcade program
+ * does. 1: this cabinet's kart, driven here: it stays where it is, and the
+ * pedals and wheel in `slot` have been replaced by this cabinet's newest.
+ * 2: host, the kart of a cabinet that drives it: put it at slot + 0x10. */
+int mkgp2pc_link_kart(int kart, int own, int host, char* slot, const float* matrix) {
+  uint8_t* b = (uint8_t*)slot;
+  if (!own_kart() || slot == NULL || kart < 0 || kart >= MAX_CABINETS) {
+    return 0;
+  }
+  if (host) {
+    float at[3];
+    double off;
+    if (own) {
+      return 0;
+    }
+    if (b[0x20] != KART_CAN && b[0x20] != KART_DOES) {
+      b[0x23] = 0;
+      s_placedSample[kart] = -1;
+      return 0;
+    }
+    b[0x23] = KART_DOES;
+    if (b[0x20] != KART_DOES) {
+      s_placedSample[kart] = -1;
+      return 0;
+    }
+    if (s_placedSample[kart] == b[0x21]) {
+      return 1; /* no new sample: the copy runs on by itself */
+    }
+    s_placedSample[kart] = b[0x21];
+    memcpy(at, b + 0x10, sizeof(at));
+    off = sqrt((double)(at[0] - matrix[12]) * (at[0] - matrix[12]) + (double)(at[1] - matrix[13]) * (at[1] - matrix[13]) +
+               (double)(at[2] - matrix[14]) * (at[2] - matrix[14]));
+    s_placed++;
+    s_way += sqrt((double)(at[0] - s_placedAt[kart][0]) * (at[0] - s_placedAt[kart][0]) +
+                  (double)(at[1] - s_placedAt[kart][1]) * (at[1] - s_placedAt[kart][1]) +
+                  (double)(at[2] - s_placedAt[kart][2]) * (at[2] - s_placedAt[kart][2]));
+    memcpy(s_placedAt[kart], at, sizeof(at));
+    s_offSum += off;
+    if (off > s_offMax) {
+      s_offMax = off;
+    }
+    return 2;
+  }
+  if (!own) {
+    return 0;
+  }
+  s_driving = b[0x23] == KART_DOES;
+  if (!s_driving) {
+    return 0;
+  }
+  memcpy(slot, PCBComm_BuildBroadcastSlot_bss_805A60C4 + 0x2C, 12);
+  if (s_probe) {
+    probe_used(slot, now_ms());
+  }
+  return 1;
+}
+
+/* Client, after the step of its own kart: where it is now, for the host. */
+void mkgp2pc_link_kart_done(const float* matrix, float value) {
+  uint8_t* pad = PCBComm_BuildBroadcastSlot_bss_805A60C4 + 0x2C + 0x10;
+  if (!own_kart()) {
+    return;
+  }
+  memcpy(pad, matrix + 12, 12);
+  memcpy(pad + 12, &value, 4);
+  pad[0x10] = s_driving ? KART_DOES : KART_CAN;
+  pad[0x11] = ++s_sample;
+}
+
+/* Every retrace: outside a race nothing is reported, so that the place a
+ * kart had at the end of one race is not taken for its place in the next. */
+static void own_kart_tick(void) {
+  static int scene = -1;
+  if (s_trace && g_currentSceneState != scene) {
+    scene = g_currentSceneState;
+    TRACE("scene 0x%X", scene);
+  }
+  if (own_kart() && (g_currentSceneState < 0x2B || g_currentSceneState > 0x2D)) {
+    memset(PCBComm_BuildBroadcastSlot_bss_805A60C4 + 0x2C + 0x10, 0, 0x12);
+    s_driving = 0;
+    for (int k = 0; k < MAX_CABINETS; k++) {
+      s_placedSample[k] = -1;
+    }
+  }
+}
+
 /* ---- MKGP2PC_LINK_PROBE=1: what a race over the link feels like -------------
  *
  * Once a second, from the game's own variables (src/game/VSMode_FrameUpdate.c,
  * PCBCheckRecv.c): how fast the race runs (seconds of race clock per second),
  * how many retraces passed, and how long this cabinet's pedals and wheel take
- * to come back in the frame the race is run from (the host's frame; on the
- * host its own), and in how many retraces the race clock stood still. The
+ * to reach the step of its kart (through the host's frame and back, unless
+ * the kart is driven here), and in how many retraces the race clock stood still. The
  * delay is measured whenever the local input changes. */
 extern float g_raceTimeRemaining;
 extern unsigned char g_isCommHost;
-extern int g_currentSceneState;
 extern int lbl_806CF140; /* this cabinet's kart */
-extern unsigned char PCBComm_BuildBroadcastSlot_bss_805A60C4[];
 void* RingBuffer_GetKartSlot(int kart);
 
 static void probe_tick(uint64_t now) {
-  static uint64_t second, changed, sum;
-  static float clockThen, local[3];
-  static int waiting, count, worst, retraces, still;
+  static uint64_t second;
+  static float clockThen;
+  static int retraces, still;
   static float clockLast;
   float* mine = (float*)(PCBComm_BuildBroadcastSlot_bss_805A60C4 + 0x2C);
   retraces++;
@@ -1406,19 +1564,13 @@ static void probe_tick(uint64_t now) {
   clockLast = g_raceTimeRemaining;
   if (g_currentSceneState == 0x2C && lbl_806CF140 >= 0 && lbl_806CF140 < 4) {
     float* back = (float*)RingBuffer_GetKartSlot(lbl_806CF140);
-    if (memcmp(local, mine, sizeof(local)) != 0) {
-      memcpy(local, mine, sizeof(local));
-      changed = now;
-      waiting = 1;
+    if (memcmp(s_probeLocal, mine, sizeof(s_probeLocal)) != 0) {
+      memcpy(s_probeLocal, mine, sizeof(s_probeLocal));
+      s_probeChanged = now;
+      s_probeWaiting = 1;
     }
-    if (waiting && back != NULL && memcmp(local, back, sizeof(local)) == 0) {
-      int ms = (int)(now - changed);
-      waiting = 0;
-      sum += (uint64_t)ms;
-      count++;
-      if (ms > worst) {
-        worst = ms;
-      }
+    if (back != NULL && !s_driving) { /* a kart driven here says so itself (mkgp2pc_link_kart) */
+      probe_used(back, now);
     }
   }
   if (now - second >= 1000) {
@@ -1426,13 +1578,14 @@ static void probe_tick(uint64_t now) {
       fprintf(stderr,
               "probe: %s race clock %.2f s/s, %d retraces, input comes back after %d ms (worst %d, %d changes), "
               "%d retraces without a step\n",
-              g_isCommHost ? "host" : "client", (double)(clockThen - g_raceTimeRemaining) * 1000.0 / (double)(now - second),
-              retraces, count ? (int)(sum / (uint64_t)count) : -1, worst, count, still);
+              g_isCommHost ? "host" : s_driving ? "client (drives its kart)" : "client",
+              (double)(clockThen - g_raceTimeRemaining) * 1000.0 / (double)(now - second), retraces,
+              s_probeCount ? (int)(s_probeSum / (uint64_t)s_probeCount) : -1, s_probeWorst, s_probeCount, still);
     }
     second = now;
     clockThen = g_raceTimeRemaining;
-    retraces = count = worst = still = 0;
-    sum = 0;
+    retraces = still = s_probeCount = s_probeWorst = 0;
+    s_probeSum = 0;
   }
 }
 
@@ -1444,6 +1597,7 @@ void mkgp2pc_netlink_tick(void) {
       return;
     }
     mkgp2pc_netlink_pump();
+    own_kart_tick();
     if (s_probe) {
       probe_tick(now);
     }
@@ -1458,6 +1612,15 @@ void mkgp2pc_netlink_tick(void) {
         }
       }
       s_reported = now;
+      if (s_placed > 0) {
+        TRACE("host: %llu positions taken from clients, %.1f apart on average; its copies were off by %.3f on "
+              "average, %.3f at most",
+              (unsigned long long)s_placed, s_way / (double)s_placed, s_offSum / (double)s_placed, s_offMax);
+        s_placed = 0;
+        s_offSum = s_offMax = s_way = 0;
+      } else if (s_driving) {
+        TRACE("client: this cabinet's kart is driven here");
+      }
       TRACE("%llu bytes sent, %llu received; %llu datagrams, %llu repeats, %llu withheld, %llu not understood; "
             "%d connections, round trip up to %d ms; the host waited %llu times",
             (unsigned long long)s_sent, (unsigned long long)s_received, (unsigned long long)s_datagrams,
