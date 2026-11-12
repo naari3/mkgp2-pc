@@ -84,6 +84,34 @@ The rest of this file is the survey written before the implementation.
 
 ---
 
+## Race HUD at the screen edges (2026-11-12)
+
+Asked for by the user: at 16:9, choose whether the race UI stays where it
+is at 4:3 or moves out into the side areas; no choice at 4:3.
+
+- `MKGP2PC_WIDE_HUD=edge` moves it out; unset or `center` keeps the 4:3
+  place, which stays the default (it is what the option did until now, and
+  the arcade layout). ini key `[settings] wide_hud=center|edge` (launcher,
+  port menu). While the game runs: `mkgp2pc_wide_hud_set(int)` /
+  `mkgp2pc_wide_hud_get()` in `gx_shim.cpp`, effective from the next frame.
+  At 4:3 the setting does nothing.
+- What counts as HUD: everything the game draws inside `fn_80253448` (the
+  HUD manager's draw; time, laps, rank, map, coins, speed, character
+  panel, and its pop-ups) and `ItemSelect_DrawUIHelperIfActive` (the item
+  box). Both are wrapped. Found with `MKGP2PC_WIDE_STACK=<retrace>`, which
+  prints the call stack of every 2D primitive of that frame. Marks that
+  follow karts and overlay effects come from `fn_801721B0` and are not
+  moved, so they stay on what they point at.
+- How far: by the centre of each primitive. Up to 50 pixels (of 640) from
+  the middle of the screen it stays (countdown, GO, messages); from 110
+  pixels on it moves by the full width of a side area, so the 4:3 edge
+  lands on the screen edge; a ramp in between. At rest the HUD is all
+  outside 110 pixels (left group ends at x = 201, right group starts at
+  478), so every panel moves as one piece.
+- Known limit: something of the HUD that rests or passes between 50 and
+  110 pixels from the middle and is made of several primitives would be
+  pulled apart a little. Not seen.
+
 ## Census of screen-space drawing (2026-11-12)
 
 Asked for by the user after the dash effects were found cut at the 4:3

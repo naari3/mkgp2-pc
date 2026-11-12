@@ -77,7 +77,9 @@ GFX_WRAPPED = ("GXInitTexObj", "GXInitTexObjCI", "GXInitTexObjLOD", "GXLoadTexOb
 # original stays reachable as __real_<name>).
 # port/gfx/gx_shim.cpp. OSAllocFromHeap is the game's own (src/game/OSAlloc_Game.c):
 # vertex buffer extents are forgotten when the heap hands memory out again.
-GAME_WRAPPED = ("HSD_ShadowSetSize", "fn_8013879C", "OSAllocFromHeap")
+GAME_WRAPPED = ("HSD_ShadowSetSize", "fn_8013879C", "OSAllocFromHeap",
+                # the race HUD's draws, for its place in a wide picture (gx_shim.cpp)
+                "fn_80253448", "ItemSelect_DrawUIHelperIfActive")
 
 
 def asm_name(name):
