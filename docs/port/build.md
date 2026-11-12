@@ -396,6 +396,8 @@ program is started from (`MKGP2PC_CARD_FILE` names another file).
   complete and may take longer once; compiled pipelines stay in the cache
   file. This variable gives the dropping behaviour back. Seen in Aurora's
   source (lib/gfx/pipeline_cache.cpp), not yet confirmed on Windows.
+- `MKGP2PC_DEBUG=1`, `MKGP2PC_START_SCENE=N`, keys F3 and F4: the game's
+  own debug output, overlay and scene list (docs/port/debug.md).
 - `MKGP2PC_SPIKE_MS=N`: frames longer than N milliseconds get a `spike:`
   line in the log with where the time went (default 25; 0 turns it off).
   Fields: comment above `spike_log` in port/gfx/video_aurora.c, background

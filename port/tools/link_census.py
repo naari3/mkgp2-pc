@@ -126,6 +126,16 @@ def link_gfx_windows(stubs, thunks, cxxrt, replaced, aurora_fns, aurora_data, po
         fetched = os.path.join(ROOT, "build", "aurora-win32", "_deps", "sdl-src", "include")
         if os.path.isdir(fetched):
             sdl_inc = [fetched]
+    # Dear ImGui's headers (debug_overlay.cpp draws with it): same search
+    imgui_inc = []
+    for line in open(cache) if os.path.exists(cache) else []:
+        m = re.match(r"(imgui_SOURCE_DIR|FETCHCONTENT_SOURCE_DIR_IMGUI)\w*:\w+=(.+)", line)
+        if m and os.path.exists(os.path.join(m.group(2), "imgui.h")):
+            imgui_inc = [m.group(2)]
+    if not imgui_inc:
+        fetched = os.path.join(ROOT, "build", "aurora-win32", "_deps", "imgui-src")
+        if os.path.exists(os.path.join(fetched, "imgui.h")):
+            imgui_inc = [fetched]
     aurora = os.path.join(ROOT, "port", "extern", "aurora")
     for src in sorted(glob.glob(os.path.join(ROOT, "port", "gfx", "*.c*"))):
         if os.path.basename(src).startswith("dawn_"):
@@ -134,7 +144,7 @@ def link_gfx_windows(stubs, thunks, cxxrt, replaced, aurora_fns, aurora_data, po
         cxx = src.endswith(".cpp")
         r = subprocess.run(["clang++" if cxx else "clang", "-target", WIN_TARGET, "-femulated-tls", "-O2", "-g", "-msse2", "-c", src, "-o", o,
                             "-DAURORA", "-DAURORA_ENABLE_GX", "-DTARGET_PC=1", "-I" + os.path.join(aurora, "include")]
-                           + ["-I" + d for d in sdl_inc]
+                           + ["-I" + d for d in sdl_inc + imgui_inc]
                            + (["-std=gnu++20", "-femulated-tls"] if cxx else []), capture_output=True, text=True)
         if r.returncode != 0:
             print(r.stderr[:3000])
@@ -1078,6 +1088,31 @@ def main():
                 if c not in defined and c not in weak and c not in ours:
                     missing.setdefault(c, set())
         print(f"address-named references resolved to the symbol at that address: {by_addr}")
+        # A data label declared inside a namespace (`view9::lbl_806D15FC`
+        # in src/game/mapobject/fn_8017CE1C.cpp, one namespace per type the
+        # unit sees the object as) is that object. Without this every such
+        # name became a stub and the unit read code bytes as its data.
+        in_ns = 0
+        for n in sorted(missing):
+            m = re.match(r"_ZN(\d+)", n)
+            if not m or n in alias:
+                continue
+            rest = n[m.end() + int(m.group(1)):]
+            m = re.match(r"(\d+)", rest)
+            if not m or rest[m.end() + int(m.group(1)):] != "E":
+                continue   # a function (parameters follow) or a deeper name
+            c = rest[m.end():-1]
+            known = lambda x: x in defined or x in weak or x in ours or x in missing or x in info
+            if not known(c):
+                m = re.search(r"_(8[0-9A-Fa-f]{7})$", c)
+                c = at.get(int(m.group(1), 16)) if m else None
+                if c is None or not known(c):
+                    continue
+            alias[n] = c
+            in_ns += 1
+            if c not in defined and c not in weak and c not in ours:
+                missing.setdefault(c, set())   # placed like any other object the sources only declare
+        print(f"data names inside a namespace wired to the plain name: {in_ns}")
         defsyms = [f"-Wl,--defsym={n}={t}" for n, t in sorted(alias.items()) if n in missing] + thunk_defsyms
         missing = {n: u for n, u in missing.items() if n not in alias}
         print(f"wired to an existing definition (linkage or prototype mismatch): {len(defsyms)}")
