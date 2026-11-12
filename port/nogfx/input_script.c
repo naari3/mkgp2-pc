@@ -13,7 +13,11 @@
  *   sw=<hex>,...  JVS switch bytes: system, player 1 (two bytes), player 2
  *   op=<hex>      baseboard operator switches (0x80 service, 0x40 test, 0x01 DIP)
  *   card          the card file is put into the card unit's slot
+ *   back          one selection screen back (port/platform/nav/nav.c)
+ *   flow=<n>,<e>  go to top-level flow n, the menu flow beginning at entry e
+ *                 (numbers in port/platform/include/mkgp2pc/nav.h)
  *   pause, step, dump   the P, O and F9 keys of the rendering executable
+ *   menu          the port's menu opens or closes (rendering executable)
  */
 #include <stdint.h>
 #include <stdio.h>
@@ -25,6 +29,8 @@ void mkgp2pc_jvs_set_analog(int channel, uint16_t value);
 void mkgp2pc_jvs_add_coin(int slot);
 void mkgp2pc_baseboard_set_operator_switches(uint8_t pressed);
 void mkgp2pc_card_insert(void);
+void mkgp2pc_nav_request_back(void);
+void mkgp2pc_nav_request_flow(int flow, int entry);
 
 /* Set by the rendering executable: commands that are not inputs. */
 int (*mkgp2pc_script_extra)(const char* cmd);
@@ -101,10 +107,15 @@ static void parse(void) {
 
 static void run(const char* cmd) {
   unsigned a, b;
+  int flow, entry;
   if (strcmp(cmd, "coin") == 0) {
     mkgp2pc_jvs_add_coin(0);
   } else if (strcmp(cmd, "card") == 0) {
     mkgp2pc_card_insert();
+  } else if (strcmp(cmd, "back") == 0) {
+    mkgp2pc_nav_request_back();
+  } else if (sscanf(cmd, "flow=%d,%d", &flow, &entry) == 2) {
+    mkgp2pc_nav_request_flow(flow, entry);
   } else if (sscanf(cmd, "an%u=%x", &a, &b) == 2) {
     mkgp2pc_jvs_set_analog((int)a, (uint16_t)b);
   } else if (sscanf(cmd, "op=%x", &a) == 1) {
@@ -126,6 +137,15 @@ static void run(const char* cmd) {
   if (mkgp2pc_script_record != NULL) {
     mkgp2pc_script_record(s_now, cmd);
   }
+}
+
+/* One command from outside the script (a key, the port's menu), for the
+ * frame `at`: applied now and recorded like the script's own. */
+void mkgp2pc_script_run(const char* cmd, uint32_t at) {
+  uint32_t now = s_now;
+  s_now = at;
+  run(cmd);
+  s_now = now;
 }
 
 void mkgp2pc_script_tick(uint32_t retrace) {
