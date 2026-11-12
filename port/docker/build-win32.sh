@@ -58,6 +58,13 @@ if [ -n "${MKGP2PC_DEPS:-}" ]; then
     "-DFETCHCONTENT_SOURCE_DIR_TRACY=$MKGP2PC_DEPS/tracy"
     "-DFETCHCONTENT_SOURCE_DIR_XXHASH=$MKGP2PC_DEPS/xxhash"
   )
+  # also taken from there when present (docs/port/build.md, "the exact
+  # environment"): zlib (zlib-ng), png, abseil, freetype, sqlite3
+  for pair in ZLIB:zlib PNG:png ABSEIL-CPP:abseil FREETYPE:freetype SQLITE3:sqlite3; do
+    if [ -d "$MKGP2PC_DEPS/${pair#*:}" ]; then
+      AURORA_ARGS+=("-DFETCHCONTENT_SOURCE_DIR_${pair%%:*}=$MKGP2PC_DEPS/${pair#*:}")
+    fi
+  done
 fi
 
 step "Aurora (standalone; link_census.py reads its symbol lists)"

@@ -60,6 +60,9 @@ static int s_wheel; /* -0x7FFF .. 0x7FFF */
  *               MKGP2PC_SCRIPT_FILE=<that file> plays it back, which brings
  *               another machine to the same retrace with the same inputs
  *   state.txt   retrace number, whether paused, the environment settings
+ *   frame_small.jpg  the same picture, at most 640 wide
+ *   stacks.txt, memory.txt, mem1.bin.gz, image.bin.gz, symbols.txt.gz
+ *               where every thread was and the game's memory (diag.c)
  * The retrace count does not advance while paused, so a recording made with
  * pauses plays back without them.
  */
@@ -145,6 +148,9 @@ static void png_chunk(FILE* f, const char* type, const uint8_t* data, uint32_t l
   fwrite(data, 1, len, f);
   fwrite(tail, 1, 4, f);
 }
+/* zlib without its header (see port/gfx/diag.c) */
+unsigned long compressBound(unsigned long sourceLen);
+int compress2(unsigned char* dest, unsigned long* destLen, const unsigned char* source, unsigned long sourceLen, int level);
 static bool png_write(const char* path, const uint8_t* rgba, uint32_t w, uint32_t h) {
   FILE* f = fopen(path, "wb");
   if (f == NULL) {
@@ -152,8 +158,7 @@ static bool png_write(const char* path, const uint8_t* rgba, uint32_t w, uint32_
   }
   const uint32_t row = 1 + w * 3;
   const uint32_t raw = row * h;
-  const uint32_t blocks = (raw + 65534) / 65535;
-  const uint32_t zlen = 2 + raw + blocks * 5 + 4;
+  unsigned long zlen = compressBound(raw);
   uint8_t* z = (uint8_t*)malloc(zlen);
   uint8_t* scan = (uint8_t*)malloc(raw);
   if (z == NULL || scan == NULL) {
@@ -162,7 +167,6 @@ static bool png_write(const char* path, const uint8_t* rgba, uint32_t w, uint32_
     free(scan);
     return false;
   }
-  uint32_t a = 1, b = 0;
   for (uint32_t y = 0; y < h; y++) {
     uint8_t* d = scan + y * row;
     *d++ = 0;
@@ -173,27 +177,12 @@ static bool png_write(const char* path, const uint8_t* rgba, uint32_t w, uint32_
       *d++ = s[2];
     }
   }
-  for (uint32_t i = 0; i < raw; i++) {
-    a = (a + scan[i]) % 65521;
-    b = (b + a) % 65521;
+  if (compress2(z, &zlen, scan, raw, 6) != 0) {
+    fclose(f);
+    free(z);
+    free(scan);
+    return false;
   }
-  uint8_t* o = z;
-  *o++ = 0x78;
-  *o++ = 0x01;
-  for (uint32_t off = 0; off < raw; off += 65535) {
-    uint32_t n = raw - off < 65535 ? raw - off : 65535;
-    *o++ = off + n == raw;
-    *o++ = (uint8_t)n;
-    *o++ = (uint8_t)(n >> 8);
-    *o++ = (uint8_t)~n;
-    *o++ = (uint8_t)(~n >> 8);
-    memcpy(o, scan + off, n);
-    o += n;
-  }
-  *o++ = (uint8_t)(b >> 8);
-  *o++ = (uint8_t)b;
-  *o++ = (uint8_t)(a >> 8);
-  *o++ = (uint8_t)a;
   static const uint8_t sig[8] = {0x89, 'P', 'N', 'G', 13, 10, 26, 10};
   uint8_t ihdr[13] = {(uint8_t)(w >> 24), (uint8_t)(w >> 16), (uint8_t)(w >> 8), (uint8_t)w,
                       (uint8_t)(h >> 24), (uint8_t)(h >> 16), (uint8_t)(h >> 8), (uint8_t)h,
@@ -201,7 +190,7 @@ static bool png_write(const char* path, const uint8_t* rgba, uint32_t w, uint32_
                       0};
   fwrite(sig, 1, 8, f);
   png_chunk(f, "IHDR", ihdr, 13);
-  png_chunk(f, "IDAT", z, (uint32_t)(o - z));
+  png_chunk(f, "IDAT", z, (uint32_t)zlen);
   png_chunk(f, "IEND", ihdr, 0);
   fclose(f);
   free(z);
@@ -210,6 +199,12 @@ static bool png_write(const char* path, const uint8_t* rgba, uint32_t w, uint32_
 }
 
 bool mkgp2pc_window_shot(SDL_Window* window, uint8_t** rgba, uint32_t* width, uint32_t* height); /* shot_win32.c */
+bool mkgp2pc_jpeg_write(const char* path, const uint8_t* rgba, uint32_t w, uint32_t h, uint32_t maxWidth, int quality); /* jpeg_min.c */
+/* diag.c: stacks and memory for a dump, and the same when the program dies */
+void mkgp2pc_diag_install(void);
+void mkgp2pc_diag_dump(const char* dir);
+void mkgp2pc_diag_fatal(const char* why);
+extern void (*mkgp2pc_diag_extra)(const char* dir);
 static SDL_Window* s_window;
 static int s_shotWait; /* polls left before the window's own picture is taken instead */
 static AuroraReadbackStream s_shotStream;
@@ -276,6 +271,7 @@ static void dump_capture(void) {
   snprintf(dir, sizeof(dir), "%s/%03d_f%u", base, ++s_dumpCount, (unsigned)s_retrace);
   SDL_CreateDirectory(dir);
   dump_text(dir);
+  mkgp2pc_diag_dump(dir);
   if (s_shotStream == 0) {
     s_shotStream = AuroraReadbackCreateStream();
   }
@@ -290,13 +286,21 @@ static void dump_capture(void) {
   }
   snprintf(s_shotPath, sizeof(s_shotPath), "%s/frame.png", dir);
   s_shotWait = 40;
-  fprintf(stderr, "dump: %s (inputs and state written)\n", dir);
+  fprintf(stderr, "dump: %s (inputs, state, stacks and memory written)\n", dir);
 }
 
 /* The picture arrives when the GPU has finished with that frame. Where
  * Aurora cannot read back (it says so in the log at start-up) the window's
  * own picture is taken after a short wait: the frame on screen then, which
  * is the dumped one when paused and a slightly later one when running. */
+static bool shot_write(const uint8_t* rgba, uint32_t w, uint32_t h) {
+  char small[640];
+  size_t n = strlen(s_shotPath);
+  /* beside frame.png: at most 640 wide, some tens of KB */
+  snprintf(small, sizeof(small), "%.*s_small.jpg", (int)(n > 4 ? n - 4 : n), s_shotPath);
+  mkgp2pc_jpeg_write(small, rgba, w, h, 640, 80);
+  return png_write(s_shotPath, rgba, w, h);
+}
 static void dump_poll(void) {
   if (s_shotWait == 0) {
     return;
@@ -305,7 +309,7 @@ static void dump_poll(void) {
   if (s_shotPixels != NULL) {
     AuroraReadbackDest dest = {(uint64_t)s_dumpCount, s_shotPixels, s_shotW * s_shotH * 4, GX_FALSE};
     if (AuroraReadbackGet(s_shotStream, &dest, 1) && dest.found) {
-      ok = png_write(s_shotPath, s_shotPixels, s_shotW, s_shotH);
+      ok = shot_write(s_shotPixels, s_shotW, s_shotH);
       s_shotWait = 1;
     }
   }
@@ -316,7 +320,7 @@ static void dump_poll(void) {
     uint8_t* pixels = NULL;
     uint32_t w = 0, h = 0;
     if (mkgp2pc_window_shot(s_window, &pixels, &w, &h)) {
-      ok = png_write(s_shotPath, pixels, w, h);
+      ok = shot_write(pixels, w, h);
       free(pixels);
     }
   }
@@ -334,6 +338,11 @@ static int script_extra(const char* cmd) {
     s_step = true;
   } else if (strcmp(cmd, "dump") == 0) {
     s_dumpWanted = true;
+  } else if (strcmp(cmd, "crash") == 0) {
+    /* to try the crash folder (docs/port/dumps.md): a write to address 8 */
+    *(volatile int*)8 = 1;
+  } else if (strcmp(cmd, "abort") == 0) {
+    abort();
   } else if (strcmp(cmd, "debug") == 0) {
     mkgp2pc_debug_set(!mkgp2pc_debug_on());
   } else if (strcmp(cmd, "debugpage") == 0) {
@@ -543,6 +552,10 @@ static void log_callback(AuroraLogLevel level, const char* module, const char* m
     s_cacheMarker[0] = 0;
   }
   if (level == LOG_FATAL) {
+    /* where the game was when the library gave up: the log and a crash folder */
+    char why[400];
+    snprintf(why, sizeof(why), "fatal message of %s: %s", module, message);
+    mkgp2pc_diag_fatal(why);
     abort();
   }
 }
@@ -695,10 +708,10 @@ static void wide_frame(void) {
   float k = ((float)size.fb_width / (float)size.fb_height) / (4.0f / 3.0f);
   mkgp2pc_wide_frame(k > 1.001f ? k : 1.0f);
 }
-void mkgp2pc_crash_log_install(void); /* shot_win32.c */
 static void quit_now(void);
 int __wrap_main(int argc, char** argv) {
-  mkgp2pc_crash_log_install();
+  mkgp2pc_diag_install();
+  mkgp2pc_diag_extra = &dump_text;
   AuroraConfig config;
   memset(&config, 0, sizeof(config));
   config.appName = "mkgp2-pc";

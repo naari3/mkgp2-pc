@@ -142,7 +142,7 @@ def link_gfx_windows(stubs, thunks, cxxrt, replaced, aurora_fns, aurora_data, po
             continue   # needs Dawn's headers: CMake compiles it
         o = os.path.join(OUT, "gfx__" + os.path.basename(src) + ".o")
         cxx = src.endswith(".cpp")
-        r = subprocess.run(["clang++" if cxx else "clang", "-target", WIN_TARGET, "-femulated-tls", "-O2", "-g", "-msse2", "-c", src, "-o", o,
+        r = subprocess.run(["clang++" if cxx else "clang", "-target", WIN_TARGET, "-femulated-tls", "-O2", "-g", "-fno-omit-frame-pointer", "-msse2", "-c", src, "-o", o,
                             "-DAURORA", "-DAURORA_ENABLE_GX", "-DTARGET_PC=1", "-I" + os.path.join(aurora, "include")]
                            + ["-I" + d for d in sdl_inc + imgui_inc]
                            + (["-std=gnu++20", "-femulated-tls"] if cxx else []), capture_output=True, text=True)
