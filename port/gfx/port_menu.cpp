@@ -14,6 +14,7 @@
 #include <dolphin/mtx.h>
 
 #include <cstdio>
+#include <vector>
 
 extern "C" {
 /* video_aurora.c: applies a command of the input script now and records it */
@@ -35,6 +36,8 @@ using portui::Item;
 using portui::Text;
 
 bool g_open;
+/* the lists open, the one shown last; empty: the menu itself */
+std::vector<portui::ListMenu*> g_over;
 
 void flow(int index, int entry) {
   char cmd[40];
@@ -74,6 +77,8 @@ portui::ListMenu& menu() {
                     "ゲーム内蔵の一覧です。動かないシーンもあります。F2: 移動、Space: 決定",
                     "動かないシーンもあります。F2: 移動、Space: 決定"}},
           Item{Text{"", ""}, {}},
+          Item::Sub(Text{"Settings", "設定"}, [] { portui::open_list(portui::settings_menu()); }, {},
+                    Text{"Graphics and keys", "グラフィック、キー入力"}),
           Item{Text{"Quit the game", "ゲームを終了する"}, [] { mkgp2pc_video_quit(); }},
       },
       Text{"Up/Down: choose   Enter: decide   Esc: close", "上下: 選択   Enter: 決定   Esc: 閉じる",
@@ -87,7 +92,14 @@ struct Announce {
   Announce() { menu(); }
 } g_announce;
 
+portui::ListMenu& shown() { return g_over.empty() ? menu() : *g_over.back(); }
+
 } // namespace
+
+void portui::open_list(ListMenu& m) {
+  m.reset();
+  g_over.push_back(&m);
+}
 
 extern "C" {
 
@@ -95,21 +107,36 @@ bool mkgp2pc_menu_is_open(void) { return g_open; }
 
 void mkgp2pc_menu_set_open(bool open) {
   if (open && !g_open) {
+    g_over.clear();
     menu().reset();
   }
   g_open = open;
 }
 
-/* key: 1 up, 2 down, 3 decide, 4 cancel */
+/* key: 1 up, 2 down, 3 decide, 4 cancel (one list back, or close), 5 left, 6 right */
 void mkgp2pc_menu_key(int key) {
-  if (g_open && menu().key(static_cast<portui::Key>(key))) {
+  if (!g_open) {
+    return;
+  }
+  switch (shown().key(static_cast<portui::Key>(key))) {
+  case portui::Result::Close:
     g_open = false;
+    break;
+  case portui::Result::Back:
+    if (g_over.empty()) {
+      g_open = false;
+    } else {
+      g_over.pop_back();
+    }
+    break;
+  default:
+    break;
   }
 }
 
 void mkgp2pc_menu_draw(void) {
   if (g_open) {
-    menu().draw();
+    shown().draw();
   }
 }
 
@@ -119,11 +146,11 @@ static int game_view(Mkgp2pcMenuView* v) {
   if (!g_open || !mkgp2pc_video_menu_frame()) {
     return 0;
   }
-  const portui::ListMenu& m = menu();
+  const portui::ListMenu& m = shown();
   v->title = m.title();
   v->note = m.note();
   v->footer = m.footer();
-  v->count = m.rows(v->text, v->kind, MKGP2PC_MENU_ROWS);
+  v->count = m.rows(v->text, v->kind, v->value, MKGP2PC_MENU_ROWS, &v->more_above, &v->more_below);
   v->cursor = m.cursor();
   return 1;
 }

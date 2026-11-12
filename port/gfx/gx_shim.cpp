@@ -132,10 +132,15 @@ void __wrap_GXInitTexObjLOD(GameTexObj* o, u32 minFilt, u32 magFilt, float minLo
 // magnified with GX_LINEAR. MKGP2PC_SHADOW_NEAREST=1 gives the game's own
 // setting back.
 static std::set<const void*> sCopyTargets;
+static int sSmoothCopies = -1;
 static bool smooth_copies() {
-  static int v = -1;
-  if (v < 0) v = getenv("MKGP2PC_SHADOW_NEAREST") == nullptr;
-  return v != 0;
+  if (sSmoothCopies < 0) sSmoothCopies = getenv("MKGP2PC_SHADOW_NEAREST") == nullptr;
+  return sSmoothCopies != 0;
+}
+extern "C" {
+/* the menu's setting (port_settings.h); read at every load of the image, so it holds from the next frame */
+int mkgp2pc_shadow_smooth(void) { return smooth_copies(); }
+void mkgp2pc_shadow_smooth_set(int on) { sSmoothCopies = on != 0; }
 }
 
 bool mkgp2pc_board_texture;
@@ -2075,4 +2080,7 @@ void mkgp2pc_hires_init(void) {
   hires_set(e != nullptr && *e != 0 && strcmp(e, "0") != 0);
 }
 void mkgp2pc_hires_toggle(void) { hires_set(!sHiresOn); }
+/* the menu's setting (port_settings.h) */
+int mkgp2pc_hires_on(void) { return sHiresOn; }
+void mkgp2pc_hires_set(int on) { hires_set(on != 0); }
 }
