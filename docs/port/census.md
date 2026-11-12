@@ -1107,8 +1107,31 @@ loading, reading address 0x6e6e7540 in `fn_8017BC24`.
   crash with the same address. After: Mario cup short and long, courses 0, 1
   and 2 load and run their update and draw calls with the right `def`
   tables. Not checked on Windows.
-- Other classes in the same table of cxx_classes.md can fail the same way
-  wherever a C function reads their objects through a private struct.
+- Second case, found by loading every cup the same way
+  (`port/tools/cup_sweep.sh`): the Bowser cup (cup 5) crashed in
+  `fn_8016E7E4`, the list append of `CoursePropNode` (course props of
+  `clMapEffectKP`, `src/game/mapeffect/CoursePropCtor.cpp`; MWCC has the
+  vtable pointer at +0x10). Its two update functions `fn_8016E8B8` and
+  `fn_8016E8E0` read the objects through private structs too. Three more
+  patches (`port/patches/src/game/misc3d/`).
+- After both corrections the sweep (cups 1..8, short and long, course 0..3,
+  one demo load each, no-graphics build on Linux) has no crash in a course
+  that exists. It reports three combinations the game does not have: cup 3
+  course 3 (`clWCYukinko` has cases 0..2) and cup 8 long course 3 (no
+  collision file `dn_stadium__long.bin`).
+- `port/tools/vptr_layout_census.py <executable>` lists every class whose
+  vtable pointer MWCC does not put first, from the debug information: 30
+  definitions on 2026-11-12. Members declared before the first virtual:
+  `clModel`, `Obj`, `CoursePropNode`, `PropNode`, `Zone`, `SyncWaiter`,
+  `clCSPartsInerface`, and two thunk helper bases. A base without virtual
+  functions in front (the `Pad14` pattern, vtable pointer at +0x14 or
+  +0x80): `VObj14`, `VObj14F`, `Model`, `Widget`, `OptionDrawPanel`,
+  `HudGauge`, `LapItem`, `FxBase`, `CreditBase162`, `DebugModel163`.
+  Looked at for C functions over private structs: `clModel`/`Obj`,
+  `CoursePropNode`/`PropNode` (corrected above), `Zone` (none: all in
+  `ZoneList.c` through the class). Not looked at: the others; they are
+  menu, result-screen and debug-scene objects, where a mismatch would show
+  as a crash or as members read one word off.
 
 The owner's patch repository https://github.com/naari3/mkgp2-patch (Kamek
 patches for the original program, not part of this project) has material
