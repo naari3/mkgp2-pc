@@ -1,6 +1,6 @@
 --- a/src/game/fn_801B76C8.cpp
 +++ b/src/game/fn_801B76C8.cpp
-@@ -31,6 +31,37 @@ struct EntryWait {
+@@ -31,6 +31,51 @@ struct EntryWait {
      int next;
  };
  
@@ -8,6 +8,7 @@
 +/* PC port: network versus on demand (port/platform/triforce/linkflow.c). */
 +extern "C" {
 +int mkgp2pc_linkflow_on_demand(void);
++int mkgp2pc_linkflow_preset(void);
 +int mkgp2pc_linkflow_choosing(void);
 +void mkgp2pc_linkflow_ask(void);
 +int mkgp2pc_linkflow_choose(int left, int right, int decide);
@@ -34,39 +35,47 @@
 +    PCBComm_Init();
 +    return 1;
 +}
++/* 1: on alone, as the arcade program does with no cabinet connected.
++ * 2: network versus, the entry screen. 0: not decided yet. */
++static void PortApplyChoice(EntryWait *self, int choice) {
++    if (choice == 2 && PortStartNetwork()) {
++        SetSyncTarget(7);
++        SetLocalPcbRole(1);
++        self->next = 7;
++    } else if (choice != 0) {
++        g_gameMode = 0;
++        SetTimerModeEnabled(0);
++        self->next = 9;
++    }
++}
 +#endif
  extern "C" int fn_801B76C8(EntryWait *self) {
      unsigned char ready;
      InputPlayer *player;
-@@ -44,6 +75,21 @@ extern "C" int fn_801B76C8(EntryWait *self) {
+@@ -44,6 +89,12 @@ extern "C" int fn_801B76C8(EntryWait *self) {
          ready = 1;
      }
      player = InputMgr_GetPlayer(GetInputManager(), 0);
 +#ifndef __MWERKS__
 +    if (mkgp2pc_linkflow_choosing()) {
-+        int choice = mkgp2pc_linkflow_choose(player->IsPressed(0x10), player->IsPressed(0x20), player->IsPressed(0x2100));
-+        if (choice == 2 && PortStartNetwork()) {
-+            SetSyncTarget(7);
-+            SetLocalPcbRole(1);
-+            self->next = 7;
-+        } else if (choice != 0) {
-+            g_gameMode = 0;
-+            SetTimerModeEnabled(0);
-+            self->next = 9;
-+        }
++        PortApplyChoice(self, mkgp2pc_linkflow_choose(player->IsPressed(0x10), player->IsPressed(0x20), player->IsPressed(0x2100)));
 +        return self->next;
 +    }
 +#endif
      confirmed = 0;
      if (lbl_806D117C == 1) {
          if (player->IsHeld(0x2100) && CreditMgr_TryConfirmPlay(0)) {
-@@ -54,6 +100,12 @@ extern "C" int fn_801B76C8(EntryWait *self) {
+@@ -54,6 +105,16 @@ extern "C" int fn_801B76C8(EntryWait *self) {
      }
      if (confirmed) {
          lbl_806D12B0 = 1;
 +#ifndef __MWERKS__
 +        if (mkgp2pc_linkflow_on_demand()) {
-+            mkgp2pc_linkflow_ask();
++            /* Alone or network as set before the start (the launcher), or
++             * the question on the screen. */
++            int preset = mkgp2pc_linkflow_preset();
++            if (preset == 0) mkgp2pc_linkflow_ask();
++            else PortApplyChoice(self, preset);
 +            return self->next;
 +        }
 +#endif

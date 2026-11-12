@@ -54,16 +54,41 @@ static int s_go;       /* somebody closed the entry screen */
 static int s_counting; /* the entry screen's timer has been seen running */
 static int s_frames;   /* frames of the entry screen so far */
 
+/* MKGP2PC_LINK_MODE, set before the start (the launcher's 通信 page):
+ *   solo     no question, a coin goes on alone (also when not set)
+ *   network  no question, a coin goes to the network entry screen
+ *   ask      the question after the coin
+ *   arcade   the cabinet's behaviour: link always on, MKGP2PC_PCB_ID
+ * MKGP2PC_LINK=0 (no link at all) plays alone whatever the mode says. */
+static int s_preset; /* 0 ask, 1 alone, 2 network */
+
 int mkgp2pc_linkflow_on_demand(void) {
   if (s_onDemand < 0) {
     const char* mode = getenv("MKGP2PC_LINK_MODE");
     const char* link = getenv("MKGP2PC_LINK");
     s_onDemand = 1;
-    if ((mode != NULL && strcmp(mode, "arcade") == 0) || (link != NULL && link[0] == '0')) {
+    s_preset = 1;
+    if (mode != NULL && strcmp(mode, "arcade") == 0) {
+      s_onDemand = 0;
+    } else if (mode != NULL && strcmp(mode, "network") == 0) {
+      s_preset = 2;
+    } else if (mode != NULL && strcmp(mode, "ask") == 0) {
+      s_preset = 0;
+    } else if (mode != NULL && mode[0] != 0 && strcmp(mode, "solo") != 0) {
+      fprintf(stderr, "link: MKGP2PC_LINK_MODE=%s is not solo, network, ask or arcade; taken as solo\n", mode);
+    }
+    if (link != NULL && link[0] == '0') {
       s_onDemand = 0;
     }
   }
   return s_onDemand;
+}
+
+/* The coin was confirmed with the link on demand: 1 on alone, 2 network
+ * versus, 0 put the question up. */
+int mkgp2pc_linkflow_preset(void) {
+  mkgp2pc_linkflow_on_demand();
+  return s_preset;
 }
 
 /* GameBoot_Init, before the game gives the board its address. */

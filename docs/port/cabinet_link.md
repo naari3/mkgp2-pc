@@ -28,6 +28,17 @@ number is taken automatically (the lowest one not in use). The first network
 game may bring up the firewall question for the program; it has to be allowed
 on private networks. How this is done: "Network versus on demand" below.
 
+Since 2026-11-12 (owner's decision: the mode is chosen before the start for
+the time being) that question only comes with `MKGP2PC_LINK_MODE=ask`. The
+variable, which the launcher's 通信 choice sets, says what a coin does:
+
+| `MKGP2PC_LINK_MODE` | a coin leads to |
+|---|---|
+| `solo`, or not set | a game alone, no question; the link stays asleep |
+| `network` | the network entry screen described above, no question: link on at that moment, cabinet number automatic |
+| `ask` | the question |
+| `arcade` | the cabinet's behaviour, see below |
+
 `MKGP2PC_LINK_MODE=arcade` gives the cabinet's behaviour instead: the link
 is up from the start, there is no question, a coin leads to the entry screen
 when another cabinet is connected, and each copy needs its own number:
@@ -37,7 +48,7 @@ when another cabinet is connected, and each copy needs its own number:
 
 | variable | meaning |
 |---|---|
-| `MKGP2PC_LINK_MODE=arcade` | link always on and no question after the coin, as on the cabinet |
+| `MKGP2PC_LINK_MODE=solo`, `network`, `ask`, `arcade` | what a coin does, see the table above; `arcade` is link always on and no question, as on the cabinet |
 | `MKGP2PC_PCB_ID=1..4` | cabinet number at start-up, for `MKGP2PC_LINK_MODE=arcade`; a network game chosen after the coin takes its own number. Without it every copy starts as cabinet 1, because the backup memory (where the test menu's PCB ID lives) is not kept between runs |
 | `MKGP2PC_NET_CHOICE=1` or `2` | answers the question after the coin at once (1 alone, 2 network), for scripted runs |
 | `MKGP2PC_BOOT_CHECK=1` | show the arcade program's 60 second screen "PCB ID : n CHECKING..." at start-up; another number is that many seconds. Without it the screen is skipped (see "Start-up without the wait") |
@@ -277,6 +288,14 @@ host) and go on to the class and character selection; a copy that chooses
 the button. Not checked: how the two texts look (the no-graphics build draws
 nothing), the rendering build, Windows, two PCs, three or four copies, a
 second network game after the first one has ended.
+
+`MKGP2PC_LINK_MODE` (`mkgp2pc_linkflow_preset`) answers in place of the
+question for `solo` and `network`; `fn_801B76C8.cpp.patch` then goes the
+same way as after the answer. Checked 2026-11-12 on the same build: two
+copies with `network` take cabinets 1 and 2 at their coins, wait in the
+entry screen and become one group on a button press; a copy without the
+variable, with `solo` plus `MKGP2PC_LINK=0` (what the launcher sets) or with
+an unknown word plays alone without a question; `ask` gives the question.
 
 Known gap: a copy only hears about a network game after choosing NETWORK VS
 itself; the arcade program's invitation in the attract loop (scene 6) does
