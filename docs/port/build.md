@@ -298,7 +298,11 @@ backend has the same fault at its own call.
 
 The `-r2` package is built with `alignas(T)` removed from `TypedIntegerImpl`
 on Windows (a step of the workflow); size and alignment of the class are
-unchanged and it is passed like a plain 64-bit integer. Dawn's other
+unchanged and it is passed like a plain 64-bit integer. Checked by
+disassembling the `-r2` DLL: the D3D12 queue's function (slot 10 of the
+`dawn::native::d3d12::Queue` vtable, 0x1013b150) now takes the serial by
+value (`ret 0x14`) and stores the result in place, with no call. Not yet
+run on Windows. Dawn's other
 explicitly aligned classes passed by value (`VkHandle` in the Vulkan
 backend, `Vector` in `Algebra.h`) were not examined.
 
