@@ -208,6 +208,15 @@ static void exe_read(void) {
     free(str);
     return;
   }
+  /* a section name longer than 8 characters is "/<offset into the strings>" */
+  for (int i = 0; i < s_sectionCount; i++) {
+    if (s_sections[i].name[0] == '/') {
+      unsigned long at = strtoul(s_sections[i].name + 1, NULL, 10);
+      if (at < strSize) {
+        snprintf(s_sections[i].name, sizeof(s_sections[i].name), "%s", str + at);
+      }
+    }
+  }
   /* short names are copied out (they need not end in a zero) */
   char* shortNames = (char*)malloc((size_t)symCount * 9);
   s_syms = (Sym*)malloc((size_t)symCount * sizeof(Sym));

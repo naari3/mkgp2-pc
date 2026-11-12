@@ -138,8 +138,19 @@ written).
   dump|crash|abort|fatal`) under Wine 9: COFF symbols, other threads'
   stacks, the vectored handler, `abort()`, `crash.dmp` written by
   `dbghelp.dll`, and `dump_inspect.py` on the result.
-- Not verified: the game itself on Windows (real `dbghelp.dll`, D3D12
-  threads, the rendering library's fatal path, the size of `crash.dmp`).
+- The Windows executable itself (cross-built here) under Wine 9: it does
+  not get as far as a picture there (Wine's `msvcp140.dll` lacks a function
+  Dawn calls), and that end was caught: log lines with `webgpu_dawn.dll`,
+  `aurora_initialize` and `__wrap_main` on the stack, a complete crash
+  folder, readable with `dump_inspect.py` (87123 symbols).
+- Not verified: on Windows proper (real `dbghelp.dll`, D3D12 threads, an F9
+  dump during play, the rendering library's fatal path, the size of
+  `crash.dmp`).
+
+A fatal message of the rendering library comes from the thread that works
+through the draw commands ("Aurora FIFO processor"), not from the game's
+thread: the first thread in `stacks.txt` is then that worker, and the game's
+thread is further down (look for `BootDispatcher`).
 
 ## Not done
 
