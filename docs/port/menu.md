@@ -44,6 +44,70 @@ folder; Linux: Noto Sans CJK or IPA Gothic; `MKGP2PC_UI_FONT=<file>` names
 another one), English in Dear ImGui's built-in font otherwise.
 `MKGP2PC_UI_ENGLISH=1` asks for English. The port ships no font.
 
+## Settings in the menu (設定)
+
+Added 2026-11-12 at the user's wish: some of the settings program's
+settings can be changed from the menu while the game runs. Checked on 32-bit
+Linux only (Xvfb, real key events: every row changed, the file read back,
+a key captured); not run on Windows.
+
+    設定
+      グラフィック
+      キー入力
+
+The rows are those of the settings program's 表示 and キー pages
+(launcher.md), except three the user wanted left in the settings program:
+making the textures (作成...), starting at full speed, and the coin tally in
+English. The network, card, controller and ISO settings stay there too.
+
+| row (グラフィック) | ini key | takes effect |
+|---|---|---|
+| 画面の比率 4:3 / 16:9 | `wide` (and `scale`, moved to the nearest size on offer) | next start |
+| 画面の大きさ (the settings program's six sizes for the aspect) | `scale` | next start |
+| レース中のUIの位置: 4:3の位置 / 左右のはし (widescreen.md); grey in a 4:3 picture | `wide_hud` | at once |
+| レンダリング: 自動, D3D12, D3D11, Vulkan, OpenGL | `backend` | next start |
+| アンチエイリアス: なし, MSAA 4x, SSAA 2x, both | `aa` | next start |
+| なめらかな影 | `shadow_smooth` | at once |
+| ハイレゾテクスチャ (stays off when there is no folder `hires`) | `hires` | at once |
+| シェーダーを待たない | `async_pipelines` | at once |
+| ウィンドウのリサイズ (unstable on Windows, build.md) | `resizable` | next start |
+
+Left / Right (or Enter) change a row. A value that is not in force yet has a
+`*` behind it and the row's note says "* は次回の起動から変わります". Window
+size, aspect, backend and anti-aliasing are given to the rendering library
+when the window is made; changing the window's size in a running game is
+what crashed on Windows (build.md), so none of them is tried live.
+
+キー入力 lists the 24 actions with their two keys. Enter on an action opens
+its page: キー 1 / キー 2 (Enter, then the new key; Esc leaves it), and
+removing either. A key given to one action is taken from the action that
+had it, as in the settings program. The change holds at once. Esc cannot be
+given to an action here (it leaves the capture), and the `menu` action
+always keeps a key: when its last one is taken away it gets Esc back.
+"すべて初期設定にもどす" puts every action back to the built-in keys.
+
+Where it is kept: the settings program names its file to the game as
+`MKGP2PC_INI` (launcher.md). Each change is written into that file at once
+(`port/gfx/port_settings.cpp`: only the lines concerned are replaced or
+added, the file keeps its UTF-16 encoding and everything else in it). A game
+started without the settings program has no file: live rows still work for
+that run, the rows that need a new start are grey, and a line at the top of
+the page says that nothing is kept.
+
+The pages are lists of `portui::ListMenu` like the menu itself
+(`port/gfx/port_settings_menu.cpp`): a row can show a value at its right, be
+changed with Left / Right, or open another list; Esc goes one list back. A
+list longer than eleven rows scrolls. Another module can add a row to
+グラフィック with `mkgp2pc_settings_add_graphics` (`port/gfx/port_settings.h`).
+
+The game font has about 450 kanji, so some rows are worded differently from
+the settings program (no 解 像 描 窓 許 戻 端); the plain menu
+(`MKGP2PC_MENU=plain`) shows the settings program's wording.
+
+Also fixed here: a controller button pressed while the menu was open read a
+key event that was not there (null pointer). Controller buttons now move
+the menu like the keys of the same actions.
+
 ## One screen back
 
 The selection screens between the coin and the race are children of one of

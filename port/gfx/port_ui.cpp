@@ -5,6 +5,7 @@
 #include <aurora/imgui.h>
 #include <SDL3/SDL.h>
 
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -78,6 +79,23 @@ Item::Item(Text label_, std::function<void()> act_, std::function<bool()> enable
   announce(note.ja);
 }
 
+Item Item::Sub(Text label, std::function<void()> act, std::function<bool()> enabled, Text note,
+               std::function<Text()> value) {
+  Item it(label, std::move(act), std::move(enabled), note);
+  it.stays = true;
+  it.value = std::move(value);
+  return it;
+}
+
+Item Item::Setting(Text label, std::function<Text()> value, std::function<void(int)> adjust,
+                   std::function<bool()> enabled, Text note) {
+  Item it(label, [] {}, std::move(enabled), note);
+  it.value = std::move(value);
+  it.adjust = std::move(adjust);
+  it.stays = true;
+  return it;
+}
+
 ListMenu::ListMenu(Text title, std::vector<Item> items, Text footer)
 : m_title(title), m_footer(footer), m_items(std::move(items)) {
   announce(title.ja);
@@ -91,6 +109,7 @@ bool ListMenu::selectable(int i) const {
 
 void ListMenu::reset() {
   m_cursor = 0;
+  m_top = 0;
   if (!selectable(0)) {
     move(1);
   }
@@ -106,34 +125,73 @@ void ListMenu::move(int dir) {
   }
 }
 
-bool ListMenu::key(Key k) {
+Result ListMenu::key(Key k) {
+  const bool on = selectable(m_cursor);
+  Item* it = on ? &m_items[static_cast<size_t>(m_cursor)] : nullptr;
   switch (k) {
   case Key::Up:
     move(-1);
-    return false;
+    return Result::Stay;
   case Key::Down:
     move(1);
-    return false;
-  case Key::Decide:
-    if (!selectable(m_cursor)) {
-      return false;
+    return Result::Stay;
+  case Key::Left:
+  case Key::Right:
+    if (it != nullptr && it->adjust) {
+      it->adjust(k == Key::Left ? -1 : 1);
     }
-    m_items[static_cast<size_t>(m_cursor)].act();
-    return true;
+    return Result::Stay;
+  case Key::Decide:
+    if (it == nullptr) {
+      return Result::Stay;
+    }
+    if (it->adjust) {
+      it->adjust(1);
+      return Result::Stay;
+    }
+    it->act();
+    return it->stays ? Result::Stay : Result::Close;
   case Key::Cancel:
-    return true;
+    return Result::Back;
   default:
-    return false;
+    return Result::Stay;
   }
 }
 
-int ListMenu::rows(const char** text, int* kind, int max) const {
-  int n = 0;
-  for (int i = 0; i < static_cast<int>(m_items.size()) && n < max; i++, n++) {
+void ListMenu::window(int* first, int* count) const {
+  const int n = static_cast<int>(m_items.size());
+  if (n <= ROWS_SHOWN) {
+    m_top = 0;
+  } else {
+    if (m_cursor < m_top) {
+      m_top = m_cursor;
+      /* a heading above the first choice it stands for comes along */
+      while (m_top > 0 && !m_items[static_cast<size_t>(m_top - 1)].act) {
+        m_top--;
+      }
+    }
+    if (m_cursor >= m_top + ROWS_SHOWN) {
+      m_top = m_cursor - ROWS_SHOWN + 1;
+    }
+    if (m_top > n - ROWS_SHOWN) {
+      m_top = n - ROWS_SHOWN;
+    }
+  }
+  *first = m_top;
+  *count = n - m_top < ROWS_SHOWN ? n - m_top : static_cast<int>(ROWS_SHOWN);
+}
+
+int ListMenu::rows(const char** text, int* kind, const char** value, int max, int* moreAbove, int* moreBelow) const {
+  int first, count, n = 0;
+  window(&first, &count);
+  for (int i = first; i < first + count && n < max; i++, n++) {
     const Item& it = m_items[static_cast<size_t>(i)];
     text[n] = it.label.get_game();
     kind[n] = !it.act ? 2 : (selectable(i) ? 0 : 1);
+    value[n] = it.value ? it.value().get_game() : nullptr;
   }
+  *moreAbove = first > 0;
+  *moreBelow = first + count < static_cast<int>(m_items.size());
   return n;
 }
 
@@ -169,7 +227,23 @@ void ListMenu::draw() const {
     ImGui::TextColored(ImVec4(1.f, .85f, .3f, 1.f), "%s", m_title.get());
     ImGui::Separator();
     const float mark = ImGui::CalcTextSize("> ").x;
-    for (int i = 0; i < static_cast<int>(m_items.size()); i++) {
+    int first, count;
+    window(&first, &count);
+    /* the widest row decides the panel's width, so that scrolling does not change it */
+    float labelW = 0, valueW = 0;
+    for (const Item& it : m_items) {
+      labelW = std::max(labelW, ImGui::CalcTextSize(it.label.get()).x);
+      if (it.value) {
+        valueW = std::max(valueW, ImGui::CalcTextSize(it.value().get()).x + ImGui::CalcTextSize("< >").x);
+      }
+    }
+    if (valueW > 0) {
+      ImGui::Dummy(ImVec2(mark + labelW + pad * 2.f + valueW, 0));
+    }
+    if (first > 0) {
+      ImGui::TextColored(ImVec4(1, 1, 1, .5f), "  ...");
+    }
+    for (int i = first; i < first + count; i++) {
       const Item& it = m_items[static_cast<size_t>(i)];
       if (!it.act) { /* heading */
         ImGui::Spacing();
@@ -190,6 +264,18 @@ void ListMenu::draw() const {
       }
       ImGui::SetCursorPosX(ImGui::GetStyle().WindowPadding.x + mark);
       ImGui::TextColored(on ? ImVec4(1, 1, 1, 1) : ImVec4(1, 1, 1, .35f), "%s", it.label.get());
+      if (it.value) {
+        const char* v = it.value().get();
+        const bool arrows = cur && static_cast<bool>(it.adjust);
+        char text[160];
+        std::snprintf(text, sizeof(text), arrows ? "< %s >" : "%s", v);
+        ImGui::SameLine(ImGui::GetStyle().WindowPadding.x + mark + labelW + pad * 2.f + valueW -
+                        ImGui::CalcTextSize(text).x);
+        ImGui::TextColored(on ? ImVec4(1.f, .92f, .6f, 1.f) : ImVec4(1, 1, 1, .35f), "%s", text);
+      }
+    }
+    if (first + count < static_cast<int>(m_items.size())) {
+      ImGui::TextColored(ImVec4(1, 1, 1, .5f), "  ...");
     }
     const Text* note = selectable(m_cursor) ? &m_items[static_cast<size_t>(m_cursor)].note : nullptr;
     if ((note != nullptr && *note->get() != 0) || *m_footer.get() != 0) {

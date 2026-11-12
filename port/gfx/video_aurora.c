@@ -11,6 +11,8 @@
 #include <dolphin/gx.h>
 #include <dolphin/vi.h>
 
+#include "port_settings.h"
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -480,11 +482,13 @@ static int s_keyMap[KEY_ACTIONS][KEYS_PER_ACTION] = {
     {SDL_SCANCODE_PAGEUP}, {SDL_SCANCODE_PAGEDOWN}, {SDL_SCANCODE_END}, {SDL_SCANCODE_HOME},
     {SDL_SCANCODE_LSHIFT}};
 
+static int s_keyDefaults[KEY_ACTIONS][KEYS_PER_ACTION]; /* the table before MKGP2PC_KEYS */
 void mkgp2pc_hires_init(void); /* gx_shim.cpp */
 void mkgp2pc_hires_toggle(void);
 
 static void key_map_load(void) {
   const char* p = getenv("MKGP2PC_KEYS");
+  memcpy(s_keyDefaults, s_keyMap, sizeof(s_keyMap));
   while (p != NULL && *p != 0) {
     size_t len = strcspn(p, ";");
     const char* eq = memchr(p, '=', len);
@@ -525,6 +529,37 @@ static void key_map_load(void) {
   }
 }
 
+/* ---- the key table for the menu's settings (port_settings.h) ---- */
+
+static struct {
+  bool on;
+  int action, slot;
+} s_capture;
+void (*mkgp2pc_keys_changed)(void);
+
+int mkgp2pc_keys_actions(void) { return KEY_ACTIONS; }
+const char* mkgp2pc_keys_action_name(int action) { return s_actionNames[action]; }
+int mkgp2pc_keys_get(int action, int slot) { return s_keyMap[action][slot]; }
+void mkgp2pc_keys_set(int action, int slot, int scancode) {
+  if (scancode != 0) {
+    for (int a = 0; a < KEY_ACTIONS; a++) {
+      for (int i = 0; i < KEYS_PER_ACTION; i++) {
+        if (s_keyMap[a][i] == scancode) {
+          s_keyMap[a][i] = 0;
+        }
+      }
+    }
+  }
+  s_keyMap[action][slot] = scancode;
+}
+void mkgp2pc_keys_reset(void) { memcpy(s_keyMap, s_keyDefaults, sizeof(s_keyMap)); }
+void mkgp2pc_keys_capture(int action, int slot) {
+  s_capture.on = true;
+  s_capture.action = action;
+  s_capture.slot = slot;
+}
+int mkgp2pc_keys_capturing(void) { return s_capture.on; }
+
 /* e: a key going down or up. NULL: a controller's button for padAction. */
 static void input_event(const SDL_Event* e, int padAction, bool padDown) {
   bool down = e != NULL ? e->type == SDL_EVENT_KEY_DOWN : padDown;
@@ -532,19 +567,45 @@ static void input_event(const SDL_Event* e, int padAction, bool padDown) {
   bool control = false;
   if (mkgp2pc_menu_is_open()) {
     /* The menu has the keyboard: the arrow keys, Enter and Esc always work,
-     * and so do the keys given to accelerator / brake (up / down), item
-     * (decide), menu and back (close). */
+     * and so do the keys and controller buttons given to accelerator /
+     * brake (up / down), the wheel's keys (left / right), item (decide),
+     * menu and back (one level up, or close). */
     int key = 0;
-    if (down) {
-      switch (e->key.scancode) {
-      case SDL_SCANCODE_UP: key = 1; break;
-      case SDL_SCANCODE_DOWN: key = 2; break;
-      case SDL_SCANCODE_RETURN: case SDL_SCANCODE_KP_ENTER: key = 3; break;
-      case SDL_SCANCODE_ESCAPE: key = 4; break;
-      default: break;
+    bool repeat = e != NULL && e->key.repeat;
+    if (s_capture.on) {
+      /* a key for an action is being asked for (設定 > キー入力) */
+      if (e != NULL && press) {
+        if (e->key.scancode != SDL_SCANCODE_ESCAPE) {
+          mkgp2pc_keys_set(s_capture.action, s_capture.slot, (int)e->key.scancode);
+          if (mkgp2pc_keys_changed != NULL) {
+            mkgp2pc_keys_changed();
+          }
+        }
+        s_capture.on = false;
       }
-      static const int same[][2] = {{KEY_ACCEL, 1}, {KEY_BRAKE, 2}, {KEY_ITEM, 3}, {KEY_MENU, 4}, {KEY_BACK, 4}};
-      for (int a = 0; key == 0 && a < 5; a++) {
+      return;
+    }
+    if (down) {
+      static const int same[][2] = {{KEY_ACCEL, 1}, {KEY_BRAKE, 2}, {KEY_ITEM, 3}, {KEY_MENU, 4},
+                                    {KEY_BACK, 4},  {KEY_LEFT, 5},  {KEY_RIGHT, 6}};
+      if (e != NULL) {
+        switch (e->key.scancode) {
+        case SDL_SCANCODE_UP: key = 1; break;
+        case SDL_SCANCODE_DOWN: key = 2; break;
+        case SDL_SCANCODE_RETURN: case SDL_SCANCODE_KP_ENTER: key = 3; break;
+        case SDL_SCANCODE_ESCAPE: key = 4; break;
+        case SDL_SCANCODE_LEFT: key = 5; break;
+        case SDL_SCANCODE_RIGHT: key = 6; break;
+        default: break;
+        }
+      }
+      for (int a = 0; key == 0 && a < 7; a++) {
+        if (e == NULL) {
+          if (same[a][0] == padAction) {
+            key = same[a][1];
+          }
+          continue;
+        }
         for (int i = 0; i < KEYS_PER_ACTION; i++) {
           if (s_keyMap[same[a][0]][i] != 0 && s_keyMap[same[a][0]][i] == (int)e->key.scancode) {
             key = same[a][1];
@@ -552,7 +613,7 @@ static void input_event(const SDL_Event* e, int padAction, bool padDown) {
         }
       }
     }
-    if (key != 0 && (!e->key.repeat || key <= 2)) {
+    if (key != 0 && (!repeat || key <= 2 || key >= 5)) {
       mkgp2pc_menu_key(key);
     }
     return;
@@ -750,20 +811,27 @@ int __real_main(int argc, char** argv);
  * The setting is GX state, sent with each frame. */
 extern uint64_t mkgp2pc_perf_dvd_bytes; /* port/nogfx/dvd_min.c */
 static bool s_drawsWait;                /* this frame's setting, for the frame-time log */
-static void begin_frame_state(void) {
-  enum { WAIT_FRAMES = 120, LOAD_BYTES = 128 << 10 };
-  static int mode = -1; /* 0 never, 1 always, 2 around loading */
-  static uint64_t seenBytes;
-  static int left = WAIT_FRAMES;
-  if (mode < 0) {
+static int s_pipelineMode = -1; /* 0 never, 1 always, 2 around loading */
+static int pipeline_mode(void) {
+  if (s_pipelineMode < 0) {
     const char* text = getenv("MKGP2PC_PIPELINE_WAIT");
-    mode = 2;
+    s_pipelineMode = 2;
     if (getenv("MKGP2PC_ASYNC_PIPELINES") != NULL || (text != NULL && strcmp(text, "never") == 0)) {
-      mode = 0;
+      s_pipelineMode = 0;
     } else if (text != NULL && strcmp(text, "always") == 0) {
-      mode = 1;
+      s_pipelineMode = 1;
     }
   }
+  return s_pipelineMode;
+}
+/* for the menu's setting (port_settings.h) */
+int mkgp2pc_video_pipeline_async(void) { return pipeline_mode() == 0; }
+void mkgp2pc_video_pipeline_async_set(int async) { s_pipelineMode = async ? 0 : 2; }
+static void begin_frame_state(void) {
+  enum { WAIT_FRAMES = 120, LOAD_BYTES = 128 << 10 };
+  int mode = pipeline_mode();
+  static uint64_t seenBytes;
+  static int left = WAIT_FRAMES;
   if (mkgp2pc_perf_dvd_bytes - seenBytes >= LOAD_BYTES) {
     left = WAIT_FRAMES;
   } else if (left > 0) {

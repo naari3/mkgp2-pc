@@ -7,8 +7,11 @@
  *                     shown when a font with those letters could be loaded
  *   portui::ListMenu  a list of choices with a cursor, moved with the keys
  *                     the caller passes on; draws itself as a panel in the
- *                     middle of the window
- * The first user is the navigation menu in port_menu.cpp.
+ *                     middle of the window. A row may show a value at its
+ *                     right that Left / Right change (a setting), or stay
+ *                     open when taken (it opens another list); a list
+ *                     longer than ROWS_SHOWN scrolls.
+ * The users are the menu and its settings pages in port_menu.cpp.
  */
 #ifndef MKGP2PC_PORT_UI_HPP
 #define MKGP2PC_PORT_UI_HPP
@@ -38,14 +41,26 @@ bool japanese();
  * call this for any other. */
 void announce(const char* utf8);
 
-enum class Key { None, Up, Down, Decide, Cancel };
+enum class Key { None, Up, Down, Decide, Cancel, Left, Right };
+/* what a key did to a list */
+enum class Result { Stay, Close, Back };
 
 struct Item {
   Text label;
   std::function<void()> act;          /* empty: a heading, the cursor passes over it */
   std::function<bool()> enabled = {}; /* empty: always */
   Text note = {};                     /* shown under the list while the cursor is on the item */
+  /* A setting: `value` is shown at the right of the row, `adjust` gets -1
+   * for Left and +1 for Right and Decide. Such a row never closes the list. */
+  std::function<Text()> value = {};
+  std::function<void(int)> adjust = {};
+  bool stays = false; /* taking the row leaves the list open (it opens another one) */
   Item(Text label, std::function<void()> act, std::function<bool()> enabled = {}, Text note = {});
+  /* a row that opens something and leaves the list open */
+  static Item Sub(Text label, std::function<void()> act, std::function<bool()> enabled = {}, Text note = {},
+                  std::function<Text()> value = {});
+  static Item Setting(Text label, std::function<Text()> value, std::function<void(int)> adjust,
+                      std::function<bool()> enabled = {}, Text note = {});
 };
 
 class ListMenu {
@@ -53,14 +68,17 @@ public:
   ListMenu(Text title, std::vector<Item> items, Text footer = {});
   /* cursor to the first choice that can be taken */
   void reset();
-  /* returns true when the key closed the menu (Cancel, or a choice was taken) */
-  bool key(Key k);
+  /* Close: a choice was taken that ends the menu. Back: Cancel. */
+  Result key(Key k);
   void draw() const;
   /* For a drawing of another kind (the game's own sprites, port_menu.cpp):
    * what the list shows now. kind: 0 a choice, 1 a choice that cannot be
    * taken, 2 a heading. Returns the number of rows. */
-  int rows(const char** text, int* kind, int max) const;
-  int cursor() const { return m_cursor; }
+  int rows(const char** text, int* kind, const char** value, int max, int* moreAbove, int* moreBelow) const;
+  void set_title(Text title) { m_title = title; }
+  enum { ROWS_SHOWN = 11 }; /* what the game-drawn sheet holds (gameui.c) */
+  /* the cursor's row among the rows that rows() gave */
+  int cursor() const { return m_cursor - m_top; }
   const char* title() const { return m_title.get_game(); }
   const char* footer() const { return m_footer.get_game(); }
   const char* note() const;
@@ -68,10 +86,18 @@ public:
 private:
   bool selectable(int i) const;
   void move(int dir);
+  /* the rows on screen: [first, first + count) */
+  void window(int* first, int* count) const;
   Text m_title, m_footer;
   std::vector<Item> m_items;
   int m_cursor = 0;
+  mutable int m_top = 0;
 };
+
+/* port_menu.cpp: puts a list over the one shown; Cancel in it goes back */
+void open_list(ListMenu& m);
+/* port_settings_menu.cpp: 設定 */
+ListMenu& settings_menu();
 
 } // namespace portui
 

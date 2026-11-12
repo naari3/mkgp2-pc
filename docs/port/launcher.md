@@ -29,6 +29,13 @@ shell do not leak in), and starts `mkgp2-gfx.exe` with
   `gfx.4.log` (two cabinets on one PC, cabinet_link.md),
 - no console window (`CREATE_NO_WINDOW`).
 
+It also sets `MKGP2PC_INI=mkgp2-pc.ini`: the game's menu (設定, menu.md)
+writes the settings changed there into the same file. When the game has
+ended and the file is no longer the one written before the start, the
+settings program reads it again and shows it, so the next start does not
+write the old values back (changes made in the window meanwhile and not
+saved are lost then).
+
 While the game runs the start button is disabled; when it ends the exit code
 is shown and appended to `gfx.log` as `exit code N` (hexadecimal for crash
 codes). `mkgp2-launcher.exe --run` starts the game with the saved settings
