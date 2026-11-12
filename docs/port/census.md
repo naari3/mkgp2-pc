@@ -1580,6 +1580,30 @@ executable.
   Vulkan backend compiled in (`MKGP2PC_BACKEND=vulkan`, launcher field),
   which has no DXC step. Not timed yet.
 
+### The list in the repository (2026-11-12)
+
+- `port/gfx/package/initial_pipeline_cache.db`: 592 GX pipelines (the
+  user's lists from Windows play, the rows saved from a damaged list, a
+  Linux replay, 32 attract-demo runs over every cup). naari3 agreed to
+  having it in the public repository. It holds render-state records only:
+  one table of fixed-size configuration blobs (TEV stages, channels,
+  texgens, vertex layout, blend and depth state) with a hash and the frame
+  number of first use. No texture, model, file name or path is in it
+  (checked: no printable string beyond the table definition).
+- Builds: `build-win32.sh` puts it in the output directory, `wsl-build.sh`
+  in the destination. A list already there is merged with it, never
+  replaced. `build-linux32.sh` copies it next to the executable if none is
+  there.
+- Refreshing it: collect `pipeline_cache.db` files (the user directory,
+  `%APPDATA%\mkgp2-pc` or `~/.local/share/mkgp2-pc`, after play; or
+  `port/tools/pipeline_sweep.sh` for the attract demo over every cup) and
+  run `python3 -I port/tools/pipeline_list.py -o
+  port/gfx/package/initial_pipeline_cache.db
+  port/gfx/package/initial_pipeline_cache.db LIST...`. Lists from any
+  machine and either system mix. After a change of Aurora's pipeline
+  config version the old rows are dropped by the tool and the list has to
+  be collected again.
+
 ### Second Windows run, 593 pipelines ready (2026-11-12, build 72a0266f)
 
 - Start: `shaders: 133 pipelines prepared before the game in 0.2 s`, then
