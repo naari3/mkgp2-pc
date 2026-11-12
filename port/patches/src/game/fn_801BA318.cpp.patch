@@ -1,6 +1,21 @@
 --- a/src/game/fn_801BA318.cpp
 +++ b/src/game/fn_801BA318.cpp
-@@ -111,6 +111,9 @@ clFlowEntry::~clFlowEntry() {
+@@ -96,7 +96,14 @@ clFlowEntry::clFlowEntry() {
+     }
+ }
+ 
++#ifndef __MWERKS__
++extern "C" void mkgp2pc_linkflow_lobby_closed(void);
++#endif
+ clFlowEntry::~clFlowEntry() {
++#ifndef __MWERKS__
++    /* PC port: the hint's sprites are given back. */
++    mkgp2pc_linkflow_lobby_closed();
++#endif
+     fn_801699D8(0, 0);
+     fn_801699D8(1, 0);
+     fn_80169C44();
+@@ -111,6 +118,9 @@ clFlowEntry::~clFlowEntry() {
      SetScreenBrightness(lbl_806D9980);
  }
  
@@ -10,7 +25,7 @@
  int clFlowEntry::Update() {
      RumbleUpdate();
      if (this->clean) card_cleaning_state_machine();
-@@ -169,15 +172,41 @@ int clFlowEntry::Update() {
+@@ -169,15 +179,30 @@ int clFlowEntry::Update() {
          SetSyncTarget(8);
          if (PCBComm_ConfirmHostLobby() == 1) {
              if (g_localPcbRole) { g_gameMode = 2; SetTimerModeEnabled(1); }
@@ -29,27 +44,16 @@
      return -1;
  }
 +#ifndef __MWERKS__
-+/* PC port: a network game's entry screen waits for the button
-+ * (port/platform/triforce/linkflow.c); say so. */
-+extern "C" {
-+int mkgp2pc_linkflow_network(void);
-+void DrawText(void *ctx, int x, int y, int color, float scale, const char *fmt, ...);
-+void DisplayContext_Flush(void *ctx);
-+extern void *lbl_806D1880;
-+}
-+static void PortDrawLobby(int players) {
-+    void *ctx = lbl_806D1880;
-+    if (ctx == 0) return;
-+    DrawText(ctx, 176, 408, 7, 1.0f, "NETWORK VS   PLAYERS : %d", players);
-+    DrawText(ctx, 176, 432, 7, 1.0f, "PRESS BUTTON TO START");
-+    DisplayContext_Flush(ctx);
-+}
++/* PC port: a network game's entry screen waits for the button; the hint
++ * for it is queued with the game's sprites
++ * (port/platform/triforce/linkflow.c, port/platform/ui/gameui.c). */
++extern "C" void mkgp2pc_linkflow_lobby_draw(void);
 +#endif
  void clFlowEntry::Draw() {
      if (sprite) fn_801A0004(sprite);
      if (brightness < 6.0f && fade) fn_801A0004(fade);
      if (card) fn_8016039C(card);
 +#ifndef __MWERKS__
-+    if (mkgp2pc_linkflow_network()) PortDrawLobby(peers);
++    mkgp2pc_linkflow_lobby_draw();
 +#endif
  }

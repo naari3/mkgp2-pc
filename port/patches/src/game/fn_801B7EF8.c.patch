@@ -1,0 +1,53 @@
+--- a/src/game/fn_801B7EF8.c
++++ b/src/game/fn_801B7EF8.c
+@@ -1203,6 +1203,7 @@
+ 
+ #pragma fp_contract off
+ 
++extern "C"int mkgp2pc_nav_scene_hook(int next);
+ extern "C"int MenuScene_Dispatch(MenuOwnerView_p15 *self_p15) {
+ if (self_p15->finished_p15) return 4;
+ if (GetInput_p15()) CGameCoin_ProcessInput_p15(GetInput_p15());
+@@ -1211,6 +1212,8 @@
+ fn_801DABFC_p15(fn_801DAEC0_p15());
+ int next_p15 = -1;
+ if (self_p15->child_p15) next_p15 = self_p15->child_p15->Update_p15();
++/* PC port: one screen back on request (port/platform/nav/nav.c) */
++next_p15 = mkgp2pc_nav_scene_hook(next_p15);
+ if (next_p15 != -1) {
+ GXDrawDone_p15();
+ delete self_p15->child_p15;
+@@ -1842,6 +1845,9 @@
+ Sprite_CreateWithParams_p17(this, a_p17, b_p17, x_p17, y_p17, scale_p17, scale_p17, zero_p17, zero_p17);
+ }
+ inline void CourseSetFlag(char *flag_p17) { *flag_p17 = 1; }
++/* PC port: tells which screen the flow begins with (the numbers are those
++ * MenuScene_Dispatch switches on; port/platform/nav/nav.c) */
++extern "C"void mkgp2pc_nav_scene_begin(int scene);
+ struct CourseInputImpl_p17 {
+ void *vt_p17; unsigned char enabled_p17, flag5_p17, flag6_p17; int fields_p17[8];
+ };
+@@ -1906,17 +1912,20 @@
+ CourseEnsureInput();
+ if (CountPeersWithRole_p17(-1)==1) { SetLocalPcbRole_p17(0); g_gameMode_p17=0; SetTimerModeEnabled_p17(0); }
+ task_p17=new CourseClassTask_p17;
++mkgp2pc_nav_scene_begin(11);
+ } else if (g_gameMode_p17==2) {
+ CourseEnsureInput(); g_gameMode_p17=0;
+ task_p17=new CourseClassTask_p17;
++mkgp2pc_nav_scene_begin(11);
+ } else if (lbl_806D17F2_p17) {
+ CourseEnsureInput();
+-if (fn_801D5A68_p17(g_playerData_p17)) task_p17=new CourseCupTask_p17;
+-else task_p17=new CourseRoundTask_p17;
++if (fn_801D5A68_p17(g_playerData_p17)) { task_p17=new CourseCupTask_p17; mkgp2pc_nav_scene_begin(21); }
++else { task_p17=new CourseRoundTask_p17; mkgp2pc_nav_scene_begin(27); }
+ } else {
+ CourseEnsureInput(); task_p17=new CourseFrameTask_p17;
++mkgp2pc_nav_scene_begin(13);
+ }
+-} else task_p17=new CourseEntryTask_p17;
++} else { task_p17=new CourseEntryTask_p17; mkgp2pc_nav_scene_begin(2); }
+ lbl_806D17F0_p17=0; lbl_806D17F1_p17=0; lbl_806D17F2_p17=0;
+ fn_801B7CD0_p17(0);
+ CourseSetFlag(fn_801DAEC0_p17());
