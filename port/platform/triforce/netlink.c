@@ -1897,8 +1897,9 @@ void mkgp2pc_netlink_tick(void) {
 }
 
 /* Called from GameBoot_Init (port/patches/src/game/GameBoot_Init.cpp.patch)
- * with the cabinet number of the settings just loaded. The backup memory
- * starts empty on every run, which makes every copy cabinet 1;
+ * with the cabinet number of the settings just loaded. A backup memory
+ * that starts empty (first run, or the second copy on one PC with a file of
+ * its own: baseboard.c) makes the copy cabinet 1;
  * MKGP2PC_PCB_ID=1..4 says otherwise. The test menu changes it for the rest
  * of the run as on the cabinet. */
 void mkgp2pc_boot_cabinet(signed char* id) {

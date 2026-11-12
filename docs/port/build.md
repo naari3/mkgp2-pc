@@ -428,6 +428,12 @@ program is started from (`MKGP2PC_CARD_FILE` names another file).
   the card service off, as all builds before this did. Input recordings
   (dumps) made by those builds need it to play back in step.
 - `MKGP2PC_TRACE_CARD=1` logs every command the game sends to the unit.
+- The cabinet's backup memory (time attack records, test menu settings,
+  credits) is kept in `backup_ram.bin` beside the card file;
+  `MKGP2PC_BACKUP_FILE=<path>` names another file, `MKGP2PC_BACKUP=0` starts
+  from an empty memory every time and saves nothing, as all builds before
+  this did (input recordings made by those builds need it to play back in
+  step). [backup_memory.md](backup_memory.md).
 - Format of the 69 bytes and a tool to decode or edit them: upstream
   `docs/wip/notes/card/` (`card_feasibility.md`, `mkgp2card.py`).
 

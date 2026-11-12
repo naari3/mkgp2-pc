@@ -23,11 +23,14 @@ clean-up.
 | [`layout.md`](layout.md) | Directory map, which SDK library comes from where, stub and back end conventions, open questions |
 | [`readiness.md`](readiness.md) | Assessment of how far the decomp is from a port: measured gaps, comparable projects, staged plan (estimates) |
 | [`char_sign.md`](char_sign.md) | Plain `char` is signed in the game's build: the flag per directory, the census of what the wrong sign changed (one line, the camera's end-of-picture test) |
+| [`text_encoding.md`](text_encoding.md) | Japanese string literals are Shift-JIS in the game's build: the build step that converts them (`port/tools/sjis_literals.py`), the 171 literals that changed; char strings handed to the card name text function (the gappy password prompt) |
 | [`widescreen.md`](widescreen.md) | Survey: what a 16:9 display needs (projection, culling, 2D layer, whole-screen effects), options |
+| [`antialiasing.md`](antialiasing.md) | Anti-aliasing options: MSAA 4x and supersampling, what each reaches, what follows for dumps and copies |
 | [`hires_textures.md`](hires_textures.md) | High-resolution 2D textures (fonts, sprites): the switch, how the folder is made from the user's disc image, the filters |
 | [`debug.md`](debug.md) | The game's own debug output, overlay pages and developers' scene list, and the switches that bring them back |
 | [`internet_play.md`](internet_play.md) | Play between distant PCs without opening ports: room name, STUN, hole punching, the rendezvous Worker in `port/server/rendezvous`, what was tested |
 | [`camera.md`](camera.md) | The player camera: how the game reads it, the webcam / still picture / test picture that stand in, `MKGP2PC_CAMERA`, what was tested |
+| [`backup_memory.md`](backup_memory.md) | The cabinet's backup memory (time attack records, test menu settings, credits) kept in `backup_ram.bin`: format, safe writing, two copies on one PC, what was checked |
 | [`launcher.md`](launcher.md) | The settings program `mkgp2-launcher.exe`: what it sets, the ini file, `MKGP2PC_KEYS`, how it is built |
 
 ## What goes where

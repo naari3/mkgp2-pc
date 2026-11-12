@@ -48,6 +48,7 @@ window. Empty fields show their default as grey text.
 | 表示 | aspect 4:3 or 16:9 (4:3 = not set); what 16:9 does is in widescreen.md | `MKGP2PC_ASPECT` |
 | 表示 | window size: height 480 x factor, width from the aspect. 4:3 offers 1 to 6, 16:9 offers 1, 1.5 (1280x720), 2, 2.25 (1920x1080), 3, 4.5. | `MKGP2PC_SCALE` |
 | 表示 | rendering backend (automatic, d3d12, d3d11, vulkan, opengl) | `MKGP2PC_BACKEND` |
+| 表示 | anti-aliasing: none, MSAA 4x, SSAA 2x, both (antialiasing.md) | `MKGP2PC_MSAA`, `MKGP2PC_SSAA` |
 | 表示 | smooth kart shadow (off = `1`) | `MKGP2PC_SHADOW_NEAREST` |
 | 表示 | high-resolution 2D textures from the folder `hires` (hires_textures.md says how the folder is made) | `MKGP2PC_HIRES` |
 | 表示 | 作成...: a window that makes the folder `hires` with `mkgp2-hires.exe` (method, size, progress, stop; hires_textures.md) | (launcher only) |
@@ -55,7 +56,7 @@ window. Empty fields show their default as grey text.
 | 表示 | coin tally popups as on the disc (English) | `MKGP2PC_GOODS_DISC` |
 | 表示 | do not wait for pipelines | `MKGP2PC_ASYNC_PIPELINES` |
 | 表示 | resizable window (crashes are known, see build.md) | `MKGP2PC_RESIZABLE` |
-| 通信 | cabinet link on (off = `0`) | `MKGP2PC_LINK` |
+| 通信 | mode: solo (default; also sets `MKGP2PC_LINK=0`), network, ask, arcade. What each does is in cabinet_link.md | `MKGP2PC_LINK_MODE`, `MKGP2PC_LINK` |
 | 通信 | cabinet number 1-4; 自動 leaves the variable unset | `MKGP2PC_PCB_ID` |
 | 通信 | where the other cabinets are | `MKGP2PC_LINK_PEERS` |
 | 通信 | first port | `MKGP2PC_LINK_PORT` |

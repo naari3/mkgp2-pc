@@ -9,6 +9,7 @@
 #include <aurora/gfx.h>
 #include <SDL3/SDL.h>
 #include <dolphin/gx.h>
+#include <dolphin/vi.h>
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -19,6 +20,10 @@
 int OSDisableInterrupts(void);
 int OSRestoreInterrupts(int);
 void mkgp2pc_mediaboard_tick(void); /* port/platform/triforce/mediaboard.c */
+/* port/platform/triforce/baseboard.c: the backup memory and its file */
+void mkgp2pc_baseboard_flush(void);
+int mkgp2pc_baseboard_save_start(const char* path);
+const char* mkgp2pc_baseboard_file(void);
 void mkgp2pc_script_tick(uint32_t retrace); /* port/nogfx/input_script.c */
 
 void mkgp2pc_jvs_set_switches(const uint8_t* bytes, int count);
@@ -243,17 +248,23 @@ static void dump_text(const char* dir) {
     }
     fclose(f);
   }
+  /* the backup memory as this run found it (a file MKGP2PC_BACKUP_FILE can
+   * name): with input.txt, what a replay needs to start from the same
+   * records and settings */
+  snprintf(path, sizeof(path), "%s/backup_start.bin", dir);
+  mkgp2pc_baseboard_save_start(path);
   snprintf(path, sizeof(path), "%s/state.txt", dir);
   f = fopen(path, "w");
   if (f != NULL) {
     static const char* const names[] = {"MKGP2PC_SCRIPT", "MKGP2PC_SCRIPT_FILE", "MKGP2PC_NOLIMIT", "MKGP2PC_FRAMES",
-                                       "MKGP2PC_CARD", "MKGP2PC_CARD_FILE"};
+                                       "MKGP2PC_CARD", "MKGP2PC_CARD_FILE", "MKGP2PC_BACKUP"};
     fprintf(f, "retrace %u\npaused %d\nframe.png shows retrace %u\n", (unsigned)s_retrace, (int)s_paused,
             (unsigned)s_retrace + 1);
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < 7; i++) {
       const char* v = getenv(names[i]);
       fprintf(f, "%s=%s\n", names[i], v ? v : "");
     }
+    fprintf(f, "backup memory file=%s\n", mkgp2pc_baseboard_file());
     mkgp2pc_shadow_record_write(f);
     /* what the game's debug overlay says on this frame */
     for (int i = 0;; i++) {
@@ -838,6 +849,45 @@ static void wide_frame(void) {
   float k = ((float)size.fb_width / (float)size.fb_height) / (4.0f / 3.0f);
   mkgp2pc_wide_frame(k > 1.001f ? k : 1.0f);
 }
+/* Anti-aliasing (docs/port/antialiasing.md). Two means, both the rendering
+ * library's own, both off unless asked for:
+ *   MKGP2PC_MSAA=4  four samples per pixel at the edges of polygons;
+ *   MKGP2PC_SSAA=F  the whole picture drawn F times as wide and as high as
+ *                   the window (1 < F <= 4, fractions allowed) and brought
+ *                   down to it when shown.
+ * The frame buffer's size is given to the library as a multiple of the
+ * game's own frame buffer height, so the factor is worked out from the
+ * window's real height, again whenever that changes. */
+static double s_ssaa = 1;
+static void ssaa_frame(void) {
+  static uint32_t wantW, wantH;
+  static float scaleSet;
+  static int tries;
+  if (s_ssaa <= 1) {
+    return;
+  }
+  AuroraWindowSize size = aurora_get_window_size();
+  if (size.native_fb_height == 0 || size.fb_height == 0) {
+    return;
+  }
+  uint32_t want = (uint32_t)(size.native_fb_height * s_ssaa + 0.5);
+  if (size.native_fb_height != wantH || size.native_fb_width != wantW) {
+    wantH = size.native_fb_height;
+    wantW = size.native_fb_width;
+    tries = 0;
+  }
+  uint32_t off = size.fb_height > want ? size.fb_height - want : want - size.fb_height;
+  if (off <= 1 || tries >= 4) {
+    return;
+  }
+  /* the game's frame buffer height, seen through the scale in force */
+  double base = scaleSet > 0 ? size.fb_height / (double)scaleSet : 480.0;
+  scaleSet = (float)(want / base);
+  tries++;
+  VISetFrameBufferScale(scaleSet);
+  fprintf(stderr, "anti-aliasing: frame buffer %ux%u for a window of %ux%u (factor %g)\n",
+          (unsigned)(size.native_fb_width * s_ssaa + 0.5), want, size.native_fb_width, size.native_fb_height, s_ssaa);
+}
 static void quit_now(void);
 int __wrap_main(int argc, char** argv) {
   mkgp2pc_diag_install();
@@ -881,6 +931,23 @@ int __wrap_main(int argc, char** argv) {
     else if (strcmp(backend, "opengl") == 0) config.desiredBackend = BACKEND_OPENGL;
     else fprintf(stderr, "MKGP2PC_BACKEND: unknown backend '%s'\n", backend);
   }
+  const char* msaaText = getenv("MKGP2PC_MSAA");
+  if (msaaText != NULL && msaaText[0] != 0 && strcmp(msaaText, "0") != 0 && strcmp(msaaText, "1") != 0) {
+    /* WebGPU knows one and four samples only */
+    if (strcmp(msaaText, "4") != 0) {
+      fprintf(stderr, "MKGP2PC_MSAA: '%s' taken as 4 (the only count there is)\n", msaaText);
+    }
+    config.msaa = 4;
+  }
+  const char* ssaaText = getenv("MKGP2PC_SSAA");
+  if (ssaaText != NULL && ssaaText[0] != 0) {
+    double f = strtod(ssaaText, NULL);
+    if (f >= 1 && f <= 4) {
+      s_ssaa = f;
+    } else {
+      fprintf(stderr, "MKGP2PC_SSAA: '%s' is not a factor from 1 to 4; not used\n", ssaaText);
+    }
+  }
   /* (0, 0) would put the client area in the screen corner and the title
    * bar above the screen: nothing to drag the window by. Negative leaves
    * the place to the system. */
@@ -914,6 +981,14 @@ int __wrap_main(int argc, char** argv) {
     AuroraSetViewportPolicy(AURORA_VIEWPORT_STRETCH);
     fprintf(stderr, "wide picture: %d:%d, window %ux%u\n", aspectW, aspectH, config.windowWidth, config.windowHeight);
   }
+  if (config.msaa > 1 || s_ssaa > 1) {
+    fprintf(stderr, "anti-aliasing: MSAA %s, supersampling %g\n", config.msaa > 1 ? "4x" : "off", s_ssaa);
+  }
+  if (s_ssaa > 1) {
+    /* each window pixel is the mean of the frame buffer pixels under it */
+    aurora_set_resampler(SAMPLER_AREA);
+  }
+  ssaa_frame();
   s_inFrame = aurora_begin_frame();
   begin_frame_state();
   wide_frame();
@@ -948,6 +1023,7 @@ __declspec(dllimport) int __stdcall TerminateProcess(void* process, unsigned int
 #include <unistd.h>
 #endif
 static void quit_now(void) {
+  mkgp2pc_baseboard_flush(); /* the backup memory file is up to date */
   fflush(NULL);
 #ifdef _WIN32
   TerminateProcess(GetCurrentProcess(), 0);
@@ -1272,6 +1348,7 @@ void VIWaitForRetrace(void) {
   if (!s_inFrame) {
     s_inFrame = aurora_begin_frame();
     begin_frame_state();
+    ssaa_frame();
     wide_frame();
   }
   mkgp2pc_skip_draw = s_inFrame && !show_next_frame();

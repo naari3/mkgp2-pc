@@ -6,6 +6,9 @@
     gx_fifo.py <...> --verts                              also the vertices of every draw
     gx_fifo.py <...> --draw 37 --verts                    one draw (numbered from 1) with what led to it
     gx_fifo.py <folder> --prev                            the frame before (crash folders have it)
+    gx_fifo.py <folder> --at 367,262                      the draws whose bounding box on the 640x480 picture
+                                                          holds that point, with blend mode and textures
+                                                          (a 1920x1080 16:9 picture: x / 3, y / 2.25)
 
 The file is what the game's GX calls wrote for the rendering library in one
 frame: the console's command stream (BP, CP and XF register loads, vertex
@@ -163,6 +166,80 @@ class Listing:
         self.verts = 0
         self.lines = []       # since the last draw, for --draw
         self.problems = []
+        self.xf = {}          # XF memory as written this frame (raw words)
+        self.mtx = 0          # matrixIndexA
+        self.tex = {}         # map -> text of the last texture load
+        self.blend = None
+        self.reader = None    # reads the dump's memory (for vertices taken by index)
+
+    def xff(self, addr):
+        return struct.unpack(">f", struct.pack(">I", self.xf.get(addr, 0)))[0]
+
+    def screen_box(self, fmt, count, data):
+        """Where a draw falls on the 640x480 picture according to the matrices
+        and the projection loaded so far: (x0, y0, x1, y1, w0, w1), or None."""
+        st = self.st
+        lay = st.layout(fmt)
+        size = sum(x[2] for x in lay)
+        proj = [self.xff(0x1020 + i) for i in range(6)]
+        ortho = self.xf.get(0x1026, 0) == 1
+        vp = [self.xff(0x101A + i) for i in range(6)]
+        box = None
+        for i in range(count):
+            at = i * size
+            m = (self.mtx & 63) * 4
+            pos = None
+            for a, kind, n in lay:
+                b = data[at:at + n]
+                at += n
+                if a == 0:
+                    m = b[0] * 4
+                elif a == POS:
+                    cnt, typ, shift = st.vat[fmt][POS]
+                    cs, k = st.comp(POS, fmt)
+                    if kind != "direct":
+                        arr = st.arrays.get(POS)
+                        if arr is None or self.reader is None:
+                            return None
+                        stride = st.strides.get(POS, cs * k)
+                        try:
+                            b = self.reader(arr[0] + int.from_bytes(b, "big") * stride, cs * k)
+                        except Exception:
+                            return None
+                        if b is None or len(b) < cs * k:
+                            return None
+                        order = "little" if arr[2] else "big"
+                    else:
+                        order = "big"
+                    pos = []
+                    for j in range(k):
+                        c = b[j * cs:(j + 1) * cs]
+                        if typ == 4:
+                            pos.append(struct.unpack("<f" if order == "little" else ">f", c)[0])
+                        else:
+                            pos.append(int.from_bytes(c, order, signed=typ in (1, 3)) / (1 << shift))
+                    if k == 2:
+                        pos.append(0.0)
+            if pos is None:
+                return None
+            v = [self.xff(m + r * 4) * pos[0] + self.xff(m + r * 4 + 1) * pos[1] + self.xff(m + r * 4 + 2) * pos[2] +
+                 self.xff(m + r * 4 + 3) for r in range(3)]
+            if ortho:
+                cx, cy, w = proj[0] * v[0] + proj[1], proj[2] * v[1] + proj[3], 1.0
+            else:
+                cx, cy, w = proj[0] * v[0] + proj[1] * v[2], proj[2] * v[1] + proj[3] * v[2], -v[2]
+            if w <= 1e-6:
+                x = y = None
+            else:
+                x, y = vp[3] + vp[0] * cx / w - 342, vp[4] + vp[1] * cy / w - 342
+            if box is None:
+                box = [1e30, 1e30, -1e30, -1e30, w, w, False]
+            if x is None:
+                box[6] = True
+            else:
+                box[0], box[1], box[2], box[3] = min(box[0], x), min(box[1], y), max(box[2], x), max(box[3], y)
+            box[4], box[5] = min(box[4], w), max(box[5], w)
+        return box
 
     def ptr(self, v):
         n = self.namer(v) if self.namer else ""
@@ -204,6 +281,7 @@ class Listing:
         name = "cp%02x" % addr
         if addr == 0x30:
             name = "matrixIndexA"
+            self.mtx = v
         elif addr == 0x40:
             name = "matrixIndexB"
         elif addr == 0x50:
@@ -251,6 +329,18 @@ class Listing:
         prim, fmt = cmd & 0xF8, cmd & 7
         self.draws += 1
         self.verts += count
+        if self.a.at:
+            box = None
+            try:
+                box = self.screen_box(fmt, count, data)
+            except Stop:
+                pass
+            px, py = self.a.at
+            if box and box[0] <= px <= box[2] and box[1] <= py <= box[3]:
+                print("#%d %s %d vertices: x %.0f..%.0f y %.0f..%.0f w %.1f..%.1f%s blend %s\n    %s" %
+                      (self.draws, PRIMS.get(prim, "prim%02x" % prim), count, box[0], box[2], box[1], box[3], box[4], box[5],
+                       " (part behind the eye)" if box[6] else "", self.blend,
+                       "; ".join(self.tex[k] for k in sorted(self.tex)) or "no texture loaded this frame"))
         self.emit("draw", "DRAW #%d %s fmt%d %d vertices%s  [%s]" %
                   (self.draws, PRIMS.get(prim, "prim%02x" % prim), fmt, count, how, st.describe(fmt)), draw=not self.a.verts)
         for a, kind, _ in st.layout(fmt):
@@ -314,6 +404,8 @@ class Listing:
             if cmd == 0x61:
                 v = u(4)
                 reg = v >> 24
+                if reg == 0x41:
+                    self.blend = "%06x" % (v & 0xFFFFFF)
                 self.emit("bp", "BP  %-24s %06x" % (BP.get(reg) or "bp%02x" % reg, v & 0xFFFFFF))
             elif op == 0x08:
                 addr = u(1)
@@ -322,6 +414,8 @@ class Listing:
                 head = u(4)
                 count, addr = (head >> 16) + 1, head & 0xFFFF
                 vals = [u(4) for _ in range(count)]
+                for i, v in enumerate(vals):
+                    self.xf[addr + i] = v
                 if addr < 0x1000 or addr in XF_FLOAT:
                     text = " ".join("%g" % struct.unpack(">f", struct.pack(">I", v))[0] for v in vals)
                 else:
@@ -366,6 +460,7 @@ class Listing:
                     self.emit("aurora", "AUR " + name)
                 elif sub == 0x0030:
                     tid, data, w, h, fmt, tlut, flag, oid, ver = u(1), u(8), u(4), u(4), u(4), u(4), u(1), u(4), u(4)
+                    self.tex[tid] = "map%d %s %dx%d %s" % (tid, self.ptr(data), w, h, TEXFMT.get(fmt, "fmt%d" % fmt))
                     self.emit("aurora", "AUR loadTexObj map%d %s %dx%d %s tlut %d object %d version %d" %
                               (tid, self.ptr(data), w, h, TEXFMT.get(fmt, "fmt%d" % fmt), tlut, oid, ver))
                 elif sub == 0x0038:
@@ -429,7 +524,11 @@ def main():
     ap.add_argument("--verts", action="store_true")
     ap.add_argument("--draw", type=int, default=0)
     ap.add_argument("--prev", action="store_true")
+    ap.add_argument("--at", default="", metavar="X,Y")
     a = ap.parse_args()
+    a.at = tuple(float(v) for v in a.at.split(",")) if a.at else None
+    if a.at:
+        a.summary = True
     import signal
     if hasattr(signal, "SIGPIPE"):
         signal.signal(signal.SIGPIPE, signal.SIG_DFL)
@@ -440,12 +539,15 @@ def main():
         if os.path.exists(os.path.join(folder, "memory.txt")):
             sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
             import dump_inspect
-            namer = dump_inspect.Dump(folder).name
+            dump = dump_inspect.Dump(folder)
+            namer = dump.name
     with (gzip.open(path, "rb") if path.endswith(".gz") else open(path, "rb")) as f:
         d = f.read()
     if d[:5] != b"MKGX1":
         sys.exit("%s is not a draw command record" % path)
     out = Listing(a, namer)
+    if namer:
+        out.reader = dump.read
     at, total = 8, 0
     while at + 8 <= len(d):
         kind, size = struct.unpack("<II", d[at:at + 8])
