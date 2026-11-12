@@ -555,17 +555,44 @@ int __real_main(int argc, char** argv);
 /* Aurora compiles a draw's pipeline on a worker thread the first time the
  * draw's state is seen and, by default, drops the draw until that is done:
  * after a scene change the models, each with new state, appeared one after
- * another over the first frames. Blocking draws wait for the pipeline, so
- * the first frame of a scene is complete (it may take longer once; compiled
- * pipelines are kept in the cache file). MKGP2PC_ASYNC_PIPELINES=1 gives the
- * dropping behaviour back. The setting is GX state, sent with each frame. */
+ * another over the first frames. Blocking draws wait for the pipeline
+ * instead, which makes the first frame of a scene complete, and makes a
+ * pipeline first met in the middle of a race a stall of 60 ms and more
+ * (docs/port/census.md section 36). So draws wait only around loading: at
+ * the start and for WAIT_FRAMES frames after the game last read a
+ * substantial amount from the disc (a scene being loaded reads hundreds of
+ * kilobytes and more a frame, a running race next to nothing). At any other
+ * time a draw whose pipeline is not ready is left out for the few frames the
+ * compilation takes, once per pipeline and machine.
+ *   MKGP2PC_PIPELINE_WAIT=always   wait for every pipeline (before 2026-11-12)
+ *   MKGP2PC_PIPELINE_WAIT=never    never wait (Aurora's own behaviour);
+ *                                  MKGP2PC_ASYNC_PIPELINES=1 says the same
+ * The setting is GX state, sent with each frame. */
+extern uint64_t mkgp2pc_perf_dvd_bytes; /* port/nogfx/dvd_min.c */
+static bool s_drawsWait;                /* this frame's setting, for the frame-time log */
 static void begin_frame_state(void) {
-  static int blocking = -1;
-  if (blocking < 0) {
-    blocking = getenv("MKGP2PC_ASYNC_PIPELINES") == NULL;
+  enum { WAIT_FRAMES = 120, LOAD_BYTES = 128 << 10 };
+  static int mode = -1; /* 0 never, 1 always, 2 around loading */
+  static uint64_t seenBytes;
+  static int left = WAIT_FRAMES;
+  if (mode < 0) {
+    const char* text = getenv("MKGP2PC_PIPELINE_WAIT");
+    mode = 2;
+    if (getenv("MKGP2PC_ASYNC_PIPELINES") != NULL || (text != NULL && strcmp(text, "never") == 0)) {
+      mode = 0;
+    } else if (text != NULL && strcmp(text, "always") == 0) {
+      mode = 1;
+    }
   }
+  if (mkgp2pc_perf_dvd_bytes - seenBytes >= LOAD_BYTES) {
+    left = WAIT_FRAMES;
+  } else if (left > 0) {
+    left--;
+  }
+  seenBytes = mkgp2pc_perf_dvd_bytes;
+  s_drawsWait = mode == 1 || (mode == 2 && left > 0);
   if (s_inFrame) {
-    AuroraSetDrawsBlocking(blocking != 0);
+    AuroraSetDrawsBlocking(s_drawsWait);
   }
 }
 /*
@@ -902,6 +929,8 @@ static void pump_events(void) {
  *   disc      reads from the disc image during the frame, on any thread
  *   lock      time this thread waited for the "interrupts off" lock while
  *             the sound or another thread held it
+ *   [loading] draws waited for their pipelines in this frame (the game had
+ *             just read from the disc, begin_frame_state)
  * Scene loads are long frames too and are listed like any other. Frames in
  * which the game was paused or a dump was made are left out.
  */
@@ -924,12 +953,12 @@ static void spike_log(const Uint64 t[7], bool skip) {
     lines++;
     fprintf(stderr,
             "spike: retrace %u frame %.1f ms: game %.1f end %.1f events %.1f sleep %.1f (late %.1f) retrace %.1f "
-            "begin %.1f | pipelines +%u (%u waiting) disc %.1f ms %u KB lock %.1f ms%s\n",
+            "begin %.1f | pipelines +%u (%u waiting) disc %.1f ms %u KB lock %.1f ms%s%s\n",
             (unsigned)s_retrace, MS(t[0], t[6]), MS(t[0], t[1]), MS(t[1], t[2]), MS(t[2], t[3]), slept,
             late > 0.0 ? late : 0.0, MS(t[4], t[5]), MS(t[5], t[6]), (unsigned)(stats->createdPipelines - pipelines),
             (unsigned)stats->queuedPipelines, (double)(mkgp2pc_perf_dvd_ns - dvdNs) / 1e6,
             (unsigned)((mkgp2pc_perf_dvd_bytes - dvdBytes) >> 10), (double)(lockNow - lockNs) / 1e6,
-            s_fast || s_fastHeld ? " [full speed]" : "");
+            s_drawsWait ? " [loading]" : "", s_fast || s_fastHeld ? " [full speed]" : "");
   }
 #undef MS
   pipelines = stats->createdPipelines;

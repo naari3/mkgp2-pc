@@ -1475,3 +1475,18 @@ background pass has reached it.
 Seen in the same log: the `.backup`-less restart cost one full session of
 first-sight stalls (about 45), and while another program used the GPU
 (an upscaler) a compilation took 200 to 330 ms instead of 60 to 100.
+
+### No waiting for pipelines during a race (2026-11-12)
+
+Request from play: whatever else happens, no compilation stalls in a race.
+A list of known pipelines cannot promise that (it only holds what has been
+drawn somewhere before), so the waiting itself is limited to loading:
+`begin_frame_state` in port/gfx/video_aurora.c turns blocking draws on at
+the start and for 120 frames after a frame in which the game read 128 KB or
+more from the disc, and off otherwise. In the Windows logs a scene load
+reads 0.4 to 11 MB in a frame and a running race 0 to 26 KB. The price: a
+pipeline first met in mid-race has its draws left out for the 60 to 300 ms
+its compilation takes, once per machine. Spike lines of frames that waited
+end in `[loading]`. `MKGP2PC_PIPELINE_WAIT=always|never` picks one behaviour
+for everything. Linux check only (no pipeline thread there, so the dropping
+itself was not exercised).
