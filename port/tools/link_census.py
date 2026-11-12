@@ -60,7 +60,9 @@ GFX_REPLACED = ("video_min.c", "gx_min.c")
 GFX_WRAPPED = ("GXInitTexObj", "GXInitTexObjCI", "GXInitTexObjLOD", "GXLoadTexObj",
                "GXInitTlutObj", "GXLoadTlut", "GXSetArray", "GXInvalidateTexAll",
                "GXSetChanAmbColor", "GXSetChanMatColor",
-               "GXSetProjection", "GXLoadPosMtxImm", "GXCallDisplayList", "GXSetTevKColor",
+               "GXSetProjection", "GXLoadPosMtxImm",
+               # wide picture (MKGP2PC_ASPECT, gx_shim.cpp)
+               "GXSetViewport", "GXSetViewportJitter", "GXSetCurrentMtx", "GXSetScissor", "GXGetScissor", "GXGetProjectionv", "GXSetProjectionv", "GXCallDisplayList", "GXSetTevKColor",
                # dropped on frames that are not shown (full speed, gx_shim.cpp)
                "GXBegin", "GXCopyTex", "GXCopyDisp",
                "GXPosition3f32", "GXPosition3u16", "GXPosition3s16", "GXPosition3u8", "GXPosition3s8", "GXPosition2f32", "GXPosition2u16", "GXPosition2s16", "GXPosition2u8", "GXPosition2s8", "GXPosition1x16", "GXPosition1x8",
@@ -70,7 +72,7 @@ GFX_WRAPPED = ("GXInitTexObj", "GXInitTexObjCI", "GXInitTexObjLOD", "GXLoadTexOb
                "sndInit")  # port/gfx/audio_musyx.c
 # Functions of the game itself that the glue wraps the same way (the
 # original stays reachable as __real_<name>).
-GAME_WRAPPED = ("HSD_ShadowSetSize",)  # port/gfx/gx_shim.cpp
+GAME_WRAPPED = ("HSD_ShadowSetSize", "fn_8013879C")  # port/gfx/gx_shim.cpp
 
 
 def asm_name(name):
