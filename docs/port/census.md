@@ -1444,3 +1444,34 @@ some of them, gone in the next.
   (`fn_80182ED0`/`fn_80183538`, the helpers these two use, have no other
   caller); the HSD shape animation reader in pobj.c is still open
   (upstream_requests.md item 36).
+
+### Compiling at the start instead of during play (2026-11-12)
+
+Aurora already does this for every pipeline it knows: the rows of
+`pipeline_cache.db` are queued at the first frame and compiled on the
+pipeline thread in the background, in the order of first use, while the game
+boots. What stalls play is only a pipeline that is not in the list (never
+seen on this machine, or the list was lost) or one the game needs before the
+background pass has reached it.
+
+- The list no longer starts empty after damage: a list that passes the
+  start-up check is copied to `pipeline_cache.db.backup` (`VACUUM INTO`), and
+  a damaged list is replaced by that copy. Only the pipelines first met in
+  the last run are lost.
+- A list for a machine that has never run the game: Aurora merges
+  `initial_pipeline_cache.db` from the executable's folder into the list at
+  every start (`seed_pipeline_cache`; the file must not be in WAL mode, which
+  the `.backup` copy is not). Copying a well-used `pipeline_cache.db.backup`
+  there under that name is all it takes. Not shipped so far.
+- Cost: with the Dawn blobs present the background pass is a load of a few
+  milliseconds per pipeline. Without them (new machine, new driver, blob
+  cache replaced) it is the full 60 to 90 ms each on one thread, about a
+  minute for 800 pipelines, running beside the boot screens without holding
+  the game up.
+- What no list can cover: pipelines nobody has drawn yet, and a list written
+  by another Aurora version whose configuration layout differs (rows carry a
+  version and are skipped).
+
+Seen in the same log: the `.backup`-less restart cost one full session of
+first-sight stalls (about 45), and while another program used the GPU
+(an upscaler) a compilation took 200 to 330 ms instead of 60 to 100.

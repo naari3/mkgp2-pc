@@ -594,8 +594,13 @@ static int cache_check_row(void* state, int count, char** values, char** names) 
 }
 /* s_cacheMarker: a file whose existence tells the next start that Aurora
  * reported a damaged cache during the run (log_callback). */
-static void cache_check_file(const char* dir, const char* name, bool reported) {
-  char path[1024], other[1040];
+/* keepCopy (pipeline_cache.db, the list of pipelines seen so far): a file
+ * that passes the check is copied to <name>.backup, and a damaged one is
+ * replaced by that copy instead of an empty file. With the list back, the
+ * pipelines are compiled in the background at the start, as always, and not
+ * one by one when the game first draws with them. */
+static void cache_check_file(const char* dir, const char* name, bool reported, bool keepCopy) {
+  char path[1024], other[1040], copy[1040];
   sqlite3* db = NULL;
   int state = 0; /* 1: the check said ok */
   char why[200] = "";
@@ -614,6 +619,21 @@ static void cache_check_file(const char* dir, const char* name, bool reported) {
     snprintf(why, sizeof(why), "%s", db != NULL ? sqlite3_errmsg(db) : "cannot open");
     state = 2;
   }
+  snprintf(copy, sizeof(copy), "%s.backup", path);
+  if (state == 1 && keepCopy && strchr(path, '\'') == NULL) {
+    /* VACUUM INTO writes a compact file of its own from the rows; it does
+     * not replace an existing one, so: new file first, then swap. */
+    char sql[2200];
+    snprintf(other, sizeof(other), "%s.backup.new", path);
+    SDL_RemovePath(other);
+    snprintf(sql, sizeof(sql), "VACUUM INTO '%s';", other);
+    if (sqlite3_exec(db, sql, NULL, NULL, NULL) == 0) {
+      SDL_RemovePath(copy);
+      SDL_RenamePath(other, copy);
+    } else {
+      fprintf(stderr, "cache: no backup of %s (%s)\n", name, sqlite3_errmsg(db));
+    }
+  }
   if (db != NULL) {
     sqlite3_close(db);
   }
@@ -630,6 +650,11 @@ static void cache_check_file(const char* dir, const char* name, bool reported) {
   SDL_RemovePath(other);
   snprintf(other, sizeof(other), "%s-shm", path);
   SDL_RemovePath(other);
+  if (moved && keepCopy && SDL_GetPathInfo(copy, NULL) && SDL_CopyFile(copy, path)) {
+    fprintf(stderr, "cache: %s is damaged (%s); set aside as .broken and replaced by the backup of the last good start\n",
+            path, why[0] ? why : "failed the check");
+    return;
+  }
   fprintf(stderr, "cache: %s is damaged (%s); %s\n", path, why[0] ? why : "failed the check",
           moved ? "set aside as .broken, a new one is started (shaders are compiled again once)"
                 : "and could not be moved away: this run has no shader cache");
@@ -645,8 +670,8 @@ static void cache_check(const char* appName) {
   Uint64 start = SDL_GetTicksNS();
   snprintf(s_cacheMarker, sizeof(s_cacheMarker), "%scache_damaged", dir);
   bool reported = SDL_GetPathInfo(s_cacheMarker, NULL);
-  cache_check_file(dir, "dawn_cache.db", reported);
-  cache_check_file(dir, "pipeline_cache.db", reported);
+  cache_check_file(dir, "dawn_cache.db", reported, false);
+  cache_check_file(dir, "pipeline_cache.db", reported, true);
   SDL_RemovePath(s_cacheMarker);
   fprintf(stderr, "cache: %s checked in %.0f ms\n", dir, (double)(SDL_GetTicksNS() - start) / 1e6);
   SDL_free(dir);
