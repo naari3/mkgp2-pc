@@ -100,6 +100,16 @@ for dll in webgpu_dawn.dll dxcompiler.dll dxil.dll SDL3.dll libpng16.dll libzlib
   cp "$found" "$DIST/"
 done
 cp port/gfx/package/run-gfx.cmd port/gfx/package/KEYS.txt "$DIST/"
+# The shader (pipeline) list Aurora merges at every start, so that no shader
+# is compiled in the middle of play (docs/port/census.md section 36). A list
+# already in the output directory is merged in, not replaced: it may hold
+# pipelines this one lacks.
+SEED=initial_pipeline_cache.db
+if [ -f "$DIST/$SEED" ] && python3 -I port/tools/pipeline_list.py -o "$DIST/$SEED.new" "$DIST/$SEED" "port/gfx/package/$SEED"; then
+  mv -f "$DIST/$SEED.new" "$DIST/$SEED"
+elif [ ! -f "$DIST/$SEED" ]; then
+  cp "port/gfx/package/$SEED" "$DIST/"
+fi
 
 step "Settings program (mkgp2-launcher.exe, docs/port/launcher.md)"
 port/launcher/build.sh "$DIST"

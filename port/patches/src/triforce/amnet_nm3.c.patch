@@ -1,0 +1,19 @@
+--- a/src/triforce/amnet_nm3.c
++++ b/src/triforce/amnet_nm3.c
+@@ -253,7 +253,15 @@ void fn_8028CC80(void) {
+ BOOL fn_8028CCAC(u8 id) {
+     NetChan* c = FindChan(id);
+     if (c != NULL) {
+-        return c->rx.flags != 0;
++        /* port: the callers in amsock.c wait for the answer by counting
++         * turns of an empty loop, 0x01000000 of them. Measured on Linux
++         * that is under half a second, which a busy machine can take to
++         * get to the thread that fetches the answer; with the yield it is
++         * about 7 s, and that thread gets the processor meanwhile. */
++        if (c->rx.flags != 0) {
++            return TRUE;
++        }
++        OSYieldThread();
+     }
+     return FALSE;
+ }
