@@ -984,11 +984,17 @@ def main():
             pdef = {l.split()[0] for l in r.stdout.splitlines() if len(l.split()) >= 2 and l.split()[1] != "U"}
             pall = {l.split()[0] for l in r.stdout.splitlines() if len(l.split()) >= 2}
             table = os.path.join(OUT, "port.plain")
+            # data of the game that no source file defines yet (only asm
+            # units own it): the generated stubs define it under the plain
+            # name, so a port file that reads it must use that name too
+            sinfo = symbol_info()
+            def stub_data(n):
+                return n in undefined and n not in defined and n not in weak and sinfo.get(n, ("", 0))[0] == "object"
             with open(table, "w") as f:
                 for n in sorted(pall):
                     if n in defined or n in undefined or n in weak:
                         continue   # spelled with __asm__ in the port source: already the game's name
-                    if n.startswith("_") and (n in pdef or n[1:] in defined or n[1:] in weak):
+                    if n.startswith("_") and (n in pdef or n[1:] in defined or n[1:] in weak or stub_data(n[1:])):
                         f.write(f"{n} {n[1:]}\n")
             for o in port_objs:
                 subprocess.run(["llvm-objcopy", "--redefine-syms=" + table, o], check=True)
