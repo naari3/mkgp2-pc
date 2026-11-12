@@ -614,7 +614,9 @@ def cxx_renames(built):
             if c and not v.startswith(("@", "extern:", "active:")):
                 # ("extern:NAME" and "active:NAME" are instructions to the matching
                 # build about a unit-local object, not a name for the host object)
-                table[unit][c] = v
+                # ("global:NAME" also asks the matching build for global
+                # binding; the name is what follows)
+                table[unit][c] = v[len("global:"):] if v.startswith("global:") else v
             elif not c and re.fullmatch(r"[A-Za-z]\w*", k) and "__" not in k and re.fullmatch(r"(global:)?[A-Za-z]\w*", v):
                 # a C-linkage function or object the unit writes under a
                 # descriptive name (`SceneListInsert` -> `fn_801F4DF0`)
