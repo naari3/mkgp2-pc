@@ -417,8 +417,8 @@ program is started from (`MKGP2PC_CARD_FILE` names another file).
 Copies of the program on one LAN, or on one PC, link up like cabinets do.
 Give each a different cabinet number with `MKGP2PC_PCB_ID=1..4` (on Windows
 `set MKGP2PC_PCB_ID=2` before `run-gfx.cmd`); they find each other by
-themselves. `MKGP2PC_LINK=0` turns the link off. Ports (TCP 29500-29563,
-UDP 29564-29567), the other settings, the protocol and what has been checked
+themselves. `MKGP2PC_LINK=0` turns the link off. Ports (UDP 29564-29568), play
+between two networks (`MKGP2PC_LINK_PEERS`), the other settings, the protocol and what has been checked
 so far: [cabinet_link.md](cabinet_link.md).
 
 ## Pause, frame step and dumps (rendering executable)

@@ -1325,13 +1325,67 @@ int mkgp2pc_netlink_poll(uint16_t command, const uint32_t* arg, uint32_t* result
   return MKGP2PC_NETLINK_DONE;
 }
 
+/* ---- pace of a linked race ----------------------------------------------------
+ *
+ * Every client tells the host with each input how many of the host's frames
+ * it holds unplayed ("queued"). The arcade program's host waits a retrace,
+ * up to four per frame, whenever any client reports two or more
+ * (src/game/VSMode_FrameUpdate.c). Between cabinets on one cable that count
+ * only grows when a client is slower than the host. Over a longer way it
+ * also jumps every time datagrams arrive bunched (jitter, a loss made up by
+ * the next datagram), and the host's waiting then slows the race for
+ * everybody while the count it reacts to is gone again.
+ *
+ * So the host asks here (port/patches/src/game/VSMode_FrameUpdate.c.patch).
+ * A count only tells that the client is behind when it has stayed up without
+ * a break: at 2 or more for two seconds, 3 for two thirds of a second, 4 for
+ * a quarter, 6 for four frames. Then the host waits one retrace and the
+ * counting starts again. What a client holds in between is its reserve
+ * against late frames: it grows by itself when the client runs dry (the
+ * client then waits for two frames, as on the cabinet) and shrinks through
+ * this rule when it is more than the connection needs.
+ *
+ * MKGP2PC_LINK_PACE=0: the arcade program's rule. */
+static uint64_t s_holds;
+
+int mkgp2pc_link_backlog(int kart, int queued) {
+  static const int level[4] = {2, 3, 4, 6}, frames[4] = {120, 40, 15, 4};
+  static int run[MAX_CABINETS][4];
+  static int pace = -1;
+  int behind = 0;
+  if (pace < 0) {
+    const char* e = getenv("MKGP2PC_LINK_PACE");
+    pace = e == NULL || e[0] != '0';
+  }
+  if (!pace || kart < 0 || kart >= MAX_CABINETS) {
+    if (queued >= 2) {
+      s_holds++;
+    }
+    return queued;
+  }
+  for (int t = 0; t < 4; t++) {
+    if (queued < level[t]) {
+      run[kart][t] = 0;
+    } else if (++run[kart][t] >= frames[t]) {
+      behind = 1;
+    }
+  }
+  if (!behind) {
+    return 0;
+  }
+  memset(run[kart], 0, sizeof(run[kart]));
+  s_holds++;
+  return queued;
+}
+
 /* ---- MKGP2PC_LINK_PROBE=1: what a race over the link feels like -------------
  *
  * Once a second, from the game's own variables (src/game/VSMode_FrameUpdate.c,
  * PCBCheckRecv.c): how fast the race runs (seconds of race clock per second),
  * how many retraces passed, and how long this cabinet's pedals and wheel take
  * to come back in the frame the race is run from (the host's frame; on the
- * host its own). The delay is measured whenever the local input changes. */
+ * host its own), and in how many retraces the race clock stood still. The
+ * delay is measured whenever the local input changes. */
 extern float g_raceTimeRemaining;
 extern unsigned char g_isCommHost;
 extern int g_currentSceneState;
@@ -1342,9 +1396,14 @@ void* RingBuffer_GetKartSlot(int kart);
 static void probe_tick(uint64_t now) {
   static uint64_t second, changed, sum;
   static float clockThen, local[3];
-  static int waiting, count, worst, retraces;
+  static int waiting, count, worst, retraces, still;
+  static float clockLast;
   float* mine = (float*)(PCBComm_BuildBroadcastSlot_bss_805A60C4 + 0x2C);
   retraces++;
+  if (g_raceTimeRemaining == clockLast) {
+    still++; /* a retrace in which the race did not move: the host waited, or this client had no frame */
+  }
+  clockLast = g_raceTimeRemaining;
   if (g_currentSceneState == 0x2C && lbl_806CF140 >= 0 && lbl_806CF140 < 4) {
     float* back = (float*)RingBuffer_GetKartSlot(lbl_806CF140);
     if (memcmp(local, mine, sizeof(local)) != 0) {
@@ -1364,13 +1423,15 @@ static void probe_tick(uint64_t now) {
   }
   if (now - second >= 1000) {
     if (second != 0 && g_currentSceneState == 0x2C) {
-      fprintf(stderr, "probe: %s race clock %.2f s/s, %d retraces, input comes back after %d ms (worst %d, %d changes)\n",
+      fprintf(stderr,
+              "probe: %s race clock %.2f s/s, %d retraces, input comes back after %d ms (worst %d, %d changes), "
+              "%d retraces without a step\n",
               g_isCommHost ? "host" : "client", (double)(clockThen - g_raceTimeRemaining) * 1000.0 / (double)(now - second),
-              retraces, count ? (int)(sum / (uint64_t)count) : -1, worst, count);
+              retraces, count ? (int)(sum / (uint64_t)count) : -1, worst, count, still);
     }
     second = now;
     clockThen = g_raceTimeRemaining;
-    retraces = count = worst = 0;
+    retraces = count = worst = still = 0;
     sum = 0;
   }
 }
@@ -1398,9 +1459,10 @@ void mkgp2pc_netlink_tick(void) {
       }
       s_reported = now;
       TRACE("%llu bytes sent, %llu received; %llu datagrams, %llu repeats, %llu withheld, %llu not understood; "
-            "%d connections, round trip up to %d ms",
+            "%d connections, round trip up to %d ms; the host waited %llu times",
             (unsigned long long)s_sent, (unsigned long long)s_received, (unsigned long long)s_datagrams,
-            (unsigned long long)s_repeats, (unsigned long long)s_lost, (unsigned long long)s_dropped, open, rtt);
+            (unsigned long long)s_repeats, (unsigned long long)s_lost, (unsigned long long)s_dropped, open, rtt,
+            (unsigned long long)s_holds);
     }
   }
 }
