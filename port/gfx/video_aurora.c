@@ -1146,12 +1146,77 @@ static void shader_wait(void) {
           (double)(SDL_GetTicksNS() - start) / 1e9);
 }
 
+/* The stall watch. The spike log says how long the game's own part of a
+   frame took but not where; a stall there that is neither pipelines nor the
+   disc leaves no trace. A second thread looks every 20 ms at when the game
+   last left VIWaitForRetrace and, once that is longer ago than
+   MKGP2PC_STALL_MS (150; 0 turns the watch off), writes every thread's stack
+   to dumps/stall_<retrace>/stacks.txt, at most 20 times a run. Only the time
+   between two calls of VIWaitForRetrace is watched, so pauses, dumps and
+   the shader hold at the start do not count. */
+void mkgp2pc_diag_prepare(void);
+void mkgp2pc_diag_stall(const char* dir, const char* why);
+static SDL_AtomicInt s_stallBeat; /* ms tick the game got control at, 0: not watched */
+static SDL_AtomicInt s_stallRetrace;
+static int s_stallMs = -1;
+
+static int SDLCALL stall_thread(void* arg) {
+  int written = 0, reported = 0;
+  (void)arg;
+  mkgp2pc_diag_prepare();
+  while (written < 20) {
+    SDL_Delay(20);
+    int beat = SDL_GetAtomicInt(&s_stallBeat);
+    int now = (int)(SDL_GetTicks() & 0x7fffffff);
+    if (beat == 0 || beat == reported || now - beat < s_stallMs) {
+      continue;
+    }
+    unsigned retrace = (unsigned)SDL_GetAtomicInt(&s_stallRetrace);
+    const char* base = getenv("MKGP2PC_DUMP_DIR");
+    char dir[512], why[128];
+    if (base == NULL || *base == 0) {
+      base = "dumps";
+    }
+    SDL_CreateDirectory(base);
+    snprintf(dir, sizeof(dir), "%s/stall_f%u", base, retrace);
+    SDL_CreateDirectory(dir);
+    snprintf(why, sizeof(why), "the game's thread has not reached the next retrace for %d ms (after retrace %u)",
+             now - beat, retrace);
+    mkgp2pc_diag_stall(dir, why);
+    fprintf(stderr, "stall: after retrace %u the game is stuck for %d ms, stacks in %s\n", retrace, now - beat, dir);
+    reported = beat;
+    written++;
+  }
+  return 0;
+}
+
+static void stall_beat(bool gameRuns) {
+  if (s_stallMs < 0) {
+    const char* v = getenv("MKGP2PC_STALL_MS");
+    s_stallMs = v != NULL ? atoi(v) : 150;
+    if (s_stallMs > 0) {
+      SDL_Thread* th = SDL_CreateThread(stall_thread, "stall watch", NULL);
+      if (th != NULL) {
+        SDL_DetachThread(th);
+      } else {
+        s_stallMs = 0;
+      }
+    }
+  }
+  if (s_stallMs > 0) {
+    int now = (int)(SDL_GetTicks() & 0x7fffffff);
+    SDL_SetAtomicInt(&s_stallRetrace, (int)s_retrace);
+    SDL_SetAtomicInt(&s_stallBeat, gameRuns ? (now != 0 ? now : 1) : 0);
+  }
+}
+
 void VIWaitForRetrace(void) {
   static Uint64 lastReturn;
   Uint64 t[7];
   bool skip = s_paused || s_dumpWanted || s_shotWait != 0;
   t[0] = lastReturn;
   t[1] = SDL_GetTicksNS();
+  stall_beat(false);
   if (s_inFrame && !mkgp2pc_skip_draw) {
     /* One picture at a time: a dump asked for while the last one's picture
      * is still on its way is made on the first frame after it. */
@@ -1212,4 +1277,5 @@ void VIWaitForRetrace(void) {
   mkgp2pc_skip_draw = s_inFrame && !show_next_frame();
   t[6] = lastReturn = SDL_GetTicksNS();
   spike_log(t, skip);
+  stall_beat(true);
 }

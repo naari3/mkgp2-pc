@@ -998,6 +998,21 @@ void mkgp2pc_diag_dump(const char* dir) {
   }
 }
 
+/* The stall watch in video_aurora.c: stacks only, written by its own thread
+   while the game's thread is stuck. `mkgp2pc_diag_prepare` reads the symbols
+   ahead of time so that the first stall is not over before they are in. */
+void mkgp2pc_diag_prepare(void) {
+  exe_need();
+}
+
+void mkgp2pc_diag_stall(const char* dir, const char* why) {
+  Shot here;
+  exe_need();
+  maps_read();
+  shot_here(&here);
+  write_stacks(dir, why, &here);
+}
+
 /* ---- dying --------------------------------------------------------------- */
 static void crash_dir(char* dir, size_t size) {
   const char* base = getenv("MKGP2PC_DUMP_DIR");
