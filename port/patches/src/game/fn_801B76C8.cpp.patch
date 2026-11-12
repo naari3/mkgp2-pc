@@ -1,0 +1,75 @@
+--- a/src/game/fn_801B76C8.cpp
++++ b/src/game/fn_801B76C8.cpp
+@@ -31,6 +31,37 @@ struct EntryWait {
+     int next;
+ };
+ 
++#ifndef __MWERKS__
++/* PC port: network versus on demand (port/platform/triforce/linkflow.c). */
++extern "C" {
++int mkgp2pc_linkflow_on_demand(void);
++int mkgp2pc_linkflow_choosing(void);
++void mkgp2pc_linkflow_ask(void);
++int mkgp2pc_linkflow_choose(int left, int right, int decide);
++int mkgp2pc_linkflow_begin(int taken);
++int mkgp2pc_netlink_address_ok(void);
++int PcbIdToIpAndModify(int id);
++int PcbComm_Shutdown(void);
++int PCBComm_Init(void);
++extern signed char lbl_80598A60[];
++}
++/* The link is switched on, a free cabinet number goes where the test menu
++ * keeps the PCB ID, and the game's link objects start again as they do
++ * around the test menu (ServiceMenu). 0: no number was free. */
++static int PortStartNetwork(void) {
++    int id = mkgp2pc_linkflow_begin(0);
++    while (id != 0) {
++        lbl_80598A60[0x21] = (signed char)id;
++        PcbIdToIpAndModify(0);
++        if (mkgp2pc_netlink_address_ok()) break;
++        id = mkgp2pc_linkflow_begin(id);
++    }
++    if (id == 0) return 0;
++    PcbComm_Shutdown();
++    PCBComm_Init();
++    return 1;
++}
++#endif
+ extern "C" int fn_801B76C8(EntryWait *self) {
+     unsigned char ready;
+     InputPlayer *player;
+@@ -44,6 +75,21 @@ extern "C" int fn_801B76C8(EntryWait *self) {
+         ready = 1;
+     }
+     player = InputMgr_GetPlayer(GetInputManager(), 0);
++#ifndef __MWERKS__
++    if (mkgp2pc_linkflow_choosing()) {
++        int choice = mkgp2pc_linkflow_choose(player->IsPressed(0x10), player->IsPressed(0x20), player->IsPressed(0x2100));
++        if (choice == 2 && PortStartNetwork()) {
++            SetSyncTarget(7);
++            SetLocalPcbRole(1);
++            self->next = 7;
++        } else if (choice != 0) {
++            g_gameMode = 0;
++            SetTimerModeEnabled(0);
++            self->next = 9;
++        }
++        return self->next;
++    }
++#endif
+     confirmed = 0;
+     if (lbl_806D117C == 1) {
+         if (player->IsHeld(0x2100) && CreditMgr_TryConfirmPlay(0)) {
+@@ -54,6 +100,12 @@ extern "C" int fn_801B76C8(EntryWait *self) {
+     }
+     if (confirmed) {
+         lbl_806D12B0 = 1;
++#ifndef __MWERKS__
++        if (mkgp2pc_linkflow_on_demand()) {
++            mkgp2pc_linkflow_ask();
++            return self->next;
++        }
++#endif
+         if (player->IsPressed(0x400) || PcbSync_CountJoinedPcbsAdvancedKarts() == 1) {
+             g_gameMode = 0;
+             SetTimerModeEnabled(0);
