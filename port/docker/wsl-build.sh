@@ -45,6 +45,13 @@ fi
 
 if [ -n "$DEST" ]; then
   mkdir -p "$DEST"
+  # the shader list: one already there is merged in, never lost
+  SEED=initial_pipeline_cache.db
+  if [ -f "$DEST/$SEED" ]; then
+    python3 -I port/tools/pipeline_list.py -o "build/$SEED.new" "$DEST/$SEED" "build/pc-gfx-win/dist/$SEED" \
+      && mv -f "build/$SEED.new" "build/pc-gfx-win/dist/$SEED" \
+      || cp "$DEST/$SEED" "build/pc-gfx-win/dist/$SEED"
+  fi
   cp build/pc-gfx-win/dist/* "$DEST/"
   echo "copied to $DEST"
 fi

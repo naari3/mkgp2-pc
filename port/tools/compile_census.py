@@ -30,8 +30,31 @@ BASE = [
     "-Iinclude", "-Iinclude/libc", "-Isrc", "-Isrc/game", "-Isrc/zlib", "-I.",
     "-DVERSION_GNLJ82", "-DNDEBUG=1", "-DBUILD_VERSION=0",
     "-DNON_MATCHING",    # take the C side of functions that are asm in the matching build
-    "-funsigned-char",   # PowerPC EABI char is unsigned
 ]
+
+
+_SDK_UNSIGNED_CHAR = ("ai", "ar", "base", "db", "dsp", "exi", "gx", "os", "pad", "si", "vi")
+
+
+def char_flag(path):
+    """Sign of plain `char`, as the matching build has it for this file.
+
+    MWCC's own default is SIGNED (`-char signed; default` in its help), and
+    configure.py passes no -char option for the game's own code, so plain
+    char is signed in src/game, sound, ui, util, resource, init, sysdolphin,
+    musyx, thp and zlib. Only the Triforce library and most of the Dolphin
+    SDK are built with `-char unsigned`. Until 2026-11-12 every file here
+    was compiled with -funsigned-char, which turned each negative value kept
+    in a plain char into 128..255 (docs/port/char_sign.md;
+    port/tools/char_sign_census.py checks this table against configure.py).
+    """
+    p = path.replace(os.sep, "/")
+    if p.startswith("src/triforce/"):
+        return "-funsigned-char"
+    if p.startswith("src/dolphin/") and p.split("/")[2] in _SDK_UNSIGNED_CHAR:
+        return "-funsigned-char"
+    return "-fsigned-char"
+
 # 32-bit little-endian, the first PC target (docs/port/readiness.md).
 TARGET = os.environ.get("MKGP2PC_CENSUS_TARGET", "i686-pc-linux-gnu")
 # Same, but with size_t = unsigned long as on CodeWarrior. Used to look past
@@ -82,8 +105,8 @@ HSD_OWN_HEADERS = ("util.c", "id.c")  # these two use the game's include set
 def base_flags(path):
     p = path.replace(os.sep, "/")
     if p.startswith("src/sysdolphin/") and not p.endswith(HSD_OWN_HEADERS):
-        return [f for f in BASE if not f.startswith("-I") or f == "-Iport/compat/include"] + HSD_INCLUDES
-    return BASE
+        return [f for f in BASE if not f.startswith("-I") or f == "-Iport/compat/include"] + HSD_INCLUDES + [char_flag(path)]
+    return BASE + [char_flag(path)]
 
 
 def check(path, use_compat, target):

@@ -16,3 +16,4 @@ docs/sweeps/**/*.jsonl merge=union
 tools/patterns/hits.jsonl merge=union
 tools/patterns/nearmiss_history.jsonl merge=union
 docs/agents/to_*.md merge=union
+*.db   binary

@@ -1,0 +1,38 @@
+--- a/src/game/fn_801DB800.c
++++ b/src/game/fn_801DB800.c
+@@ -2,11 +2,27 @@
+ 
+ extern TableEntry_8049BC30 lbl_8049BC30[];
+ 
+-int fn_801DB800(void *self, int idx) { return lbl_8049BC30[idx].f1C; }
+-int fn_801DB818(void *self, int idx) { return lbl_8049BC30[idx].f18; }
+-int fn_801DB830(void *self, int idx) { return lbl_8049BC30[idx].f14; }
+-int fn_801DB848(void *self, int idx) { return lbl_8049BC30[idx].f10; }
+-float fn_801DB860(void *self, int idx) { return lbl_8049BC30[idx].fC; }
+-int fn_801DB878(void *self, int idx) { return lbl_8049BC30[idx].f8; }
+-int fn_801DB890(void *self, int idx) { return lbl_8049BC30[idx].f0; }
+-int fn_801DB8A4(void *self, int idx) { return lbl_8049BC30[idx].f4; }
++/* port: the table has 159 entries and the callers let item numbers up to
++ * 0x114 through; an item the normal game never puts on this path (the
++ * developers' race set-up page offers them all) read the data behind the
++ * table as a steering action number.  Such an item gets entry 0 (no
++ * reaction) and a line in the log. */
++extern void OSPanic(const char *file, int line, const char *msg, ...);
++static int mkgp2pc_entry(int idx)
++{
++    if (idx < 0 || idx >= 159) {
++        OSPanic(__FILE__, __LINE__, "port: item %d has no entry in the hit reaction table (159 entries), treated as 0", idx);
++        return 0;
++    }
++    return idx;
++}
++#define lbl_8049BC30_AT(i) lbl_8049BC30[mkgp2pc_entry(i)]
++
++int fn_801DB800(void *self, int idx) { return lbl_8049BC30_AT(idx).f1C; }
++int fn_801DB818(void *self, int idx) { return lbl_8049BC30_AT(idx).f18; }
++int fn_801DB830(void *self, int idx) { return lbl_8049BC30_AT(idx).f14; }
++int fn_801DB848(void *self, int idx) { return lbl_8049BC30_AT(idx).f10; }
++float fn_801DB860(void *self, int idx) { return lbl_8049BC30_AT(idx).fC; }
++int fn_801DB878(void *self, int idx) { return lbl_8049BC30_AT(idx).f8; }
++int fn_801DB890(void *self, int idx) { return lbl_8049BC30_AT(idx).f0; }
++int fn_801DB8A4(void *self, int idx) { return lbl_8049BC30_AT(idx).f4; }

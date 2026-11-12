@@ -42,17 +42,19 @@ window. Empty fields show their default as grey text.
 | 基本 | ISO file | `MKGP2_ISO` |
 | 基本 | use the card unit (off = `0`) | `MKGP2PC_CARD` |
 | 基本 | card file (empty = `card.bin` in the folder) | `MKGP2PC_CARD_FILE` |
+| 基本 | skip the device check and the NOTICE at start-up (see below) | `MKGP2PC_BOOT_SKIP` |
 | 基本 | close this window after starting | (launcher only) |
 | 表示 | aspect 4:3 or 16:9 (4:3 = not set); what 16:9 does is in widescreen.md | `MKGP2PC_ASPECT` |
 | 表示 | window size: height 480 x factor, width from the aspect. 4:3 offers 1 to 6, 16:9 offers 1, 1.5 (1280x720), 2, 2.25 (1920x1080), 3, 4.5. | `MKGP2PC_SCALE` |
 | 表示 | rendering backend (automatic, d3d12, d3d11, vulkan, opengl) | `MKGP2PC_BACKEND` |
 | 表示 | smooth kart shadow (off = `1`) | `MKGP2PC_SHADOW_NEAREST` |
 | 表示 | high-resolution 2D textures from the folder `hires` (hires_textures.md says how the folder is made) | `MKGP2PC_HIRES` |
+| 表示 | 作成...: a window that makes the folder `hires` with `mkgp2-hires.exe` (method, size, progress, stop; hires_textures.md) | (launcher only) |
 | 表示 | start at full speed | `MKGP2PC_FAST` |
 | 表示 | coin tally popups as on the disc (English) | `MKGP2PC_GOODS_DISC` |
 | 表示 | do not wait for pipelines | `MKGP2PC_ASYNC_PIPELINES` |
 | 表示 | resizable window (crashes are known, see build.md) | `MKGP2PC_RESIZABLE` |
-| 通信 | cabinet link on (off = `0`) | `MKGP2PC_LINK` |
+| 通信 | mode: solo (default; also sets `MKGP2PC_LINK=0`), network, ask, arcade. network and ask need the game side of PR 8 and are marked 未対応 until it is on main; before it the game treats them like arcade (link always on) | `MKGP2PC_LINK_MODE`, `MKGP2PC_LINK` |
 | 通信 | cabinet number 1-4; 自動 leaves the variable unset | `MKGP2PC_PCB_ID` |
 | 通信 | where the other cabinets are | `MKGP2PC_LINK_PEERS` |
 | 通信 | first port | `MKGP2PC_LINK_PORT` |
@@ -64,6 +66,28 @@ Variables for investigation (`MKGP2PC_TRACE_*`, `MKGP2PC_SCRIPT`,
 `MKGP2PC_FRAMES`, ...) have no control of their own; they go into the free
 lines of the last page.
 
+## Start-up screens: `MKGP2PC_BOOT_SKIP`
+
+Read by `port/platform/runtime/boot_skip.c`, used from
+`port/patches/src/game/BootDispatcher.cpp.patch`. Off by default: the game
+starts as the cabinet does.
+
+- Device check (card reader, printer, camera): it still runs, since it also
+  brings the card unit up, but without the frame limit and with only about
+  60 of its frames a second drawn, like full speed (F10). It is over as fast
+  as the machine does its frames.
+- NOTICE (ten seconds of text): left out, the way the game itself leaves it
+  out when byte 0x2A of its settings record is set.
+
+The board check between the two (60 seconds unless `MKGP2PC_BOOT_CHECK`
+handling of the cabinet link shortens it, cabinet_link.md) lies inside the
+fast stretch too. The log says `boot: start-up screens begin` and `... end` (without a
+retrace number: a port object that calls into the video layer does not link
+on Windows). Measured 2026-11-12 with the no-graphics Linux build: the screens end
+at retrace 4653 without the setting and 4054 with it (the 599 frames of the
+NOTICE); the fast stretch itself needs the rendering build and has not been
+run yet.
+
 ## Keys: `MKGP2PC_KEYS`
 
 Read by `key_map_load` in `port/gfx/video_aurora.c`:
@@ -72,7 +96,7 @@ Read by `key_map_load` in `port/gfx/video_aurora.c`:
 
 `action=key[,key...]` separated by `;`, up to four keys per action. Actions
 not named keep their default keys; nothing after `=` leaves an action without
-a key. Actions: `left right accel brake item coin card test service pause
+a key. Actions: `left right accel brake item cancel coin card test service pause
 step fast fasthold dump hires debug debugpage devup devdown devstart devsub`
 (from `debug` on: the game's own debug output and the buttons of the
 developers' scenes, debug.md). A key is an SDL scancode name (`A`, `Left`, `F9`,
