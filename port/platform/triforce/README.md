@@ -10,7 +10,7 @@ in `../include/mkgp2pc/platform.h`:
 |---|---|---|
 | JVS I/O board (wheel, pedals, item button, coin, test/service) | `amjvs*`, `jvsio*`, `jvsboot` | SDL3 gamepad / wheel / keyboard |
 | Coin and credit bookkeeping | `amcoin*` | in-memory, free play by default |
-| Backup RAM (settings, bookkeeping) | `ambackup*` | a file in the user directory |
+| Backup RAM (settings, bookkeeping, records) | `ambackup*` | done: `ambackup` kept as it is, `baseboard.c` replaces `amexi.c` and keeps the memory in `backup_ram.bin` (docs/port/backup_memory.md) |
 | Magnetic card unit (69-byte track) | `amuart*` and the card code in `src/game` | done: `card_reader.c`, the unit's serial protocol; one file per card (docs/port/build.md "Magnetic card") |
 | Media board (network, boot, DIMM) | `amnet*`, `amsock`, `acsocket*`, `amboot`, `dvdlow*`, `dvdcmd` | done: `mediaboard.c` (mailboxes, replaces `dvdcmd.c`) and `netlink.c` (socket commands carried in UDP datagrams, cabinet link; docs/port/cabinet_link.md) |
 | Board system services | `amsys`, `amsrv*`, `amexi`, `dikey`, `random*` | small host implementations |

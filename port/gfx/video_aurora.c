@@ -20,6 +20,10 @@
 int OSDisableInterrupts(void);
 int OSRestoreInterrupts(int);
 void mkgp2pc_mediaboard_tick(void); /* port/platform/triforce/mediaboard.c */
+/* port/platform/triforce/baseboard.c: the backup memory and its file */
+void mkgp2pc_baseboard_flush(void);
+int mkgp2pc_baseboard_save_start(const char* path);
+const char* mkgp2pc_baseboard_file(void);
 void mkgp2pc_script_tick(uint32_t retrace); /* port/nogfx/input_script.c */
 
 void mkgp2pc_jvs_set_switches(const uint8_t* bytes, int count);
@@ -244,17 +248,23 @@ static void dump_text(const char* dir) {
     }
     fclose(f);
   }
+  /* the backup memory as this run found it (a file MKGP2PC_BACKUP_FILE can
+   * name): with input.txt, what a replay needs to start from the same
+   * records and settings */
+  snprintf(path, sizeof(path), "%s/backup_start.bin", dir);
+  mkgp2pc_baseboard_save_start(path);
   snprintf(path, sizeof(path), "%s/state.txt", dir);
   f = fopen(path, "w");
   if (f != NULL) {
     static const char* const names[] = {"MKGP2PC_SCRIPT", "MKGP2PC_SCRIPT_FILE", "MKGP2PC_NOLIMIT", "MKGP2PC_FRAMES",
-                                       "MKGP2PC_CARD", "MKGP2PC_CARD_FILE"};
+                                       "MKGP2PC_CARD", "MKGP2PC_CARD_FILE", "MKGP2PC_BACKUP"};
     fprintf(f, "retrace %u\npaused %d\nframe.png shows retrace %u\n", (unsigned)s_retrace, (int)s_paused,
             (unsigned)s_retrace + 1);
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < 7; i++) {
       const char* v = getenv(names[i]);
       fprintf(f, "%s=%s\n", names[i], v ? v : "");
     }
+    fprintf(f, "backup memory file=%s\n", mkgp2pc_baseboard_file());
     mkgp2pc_shadow_record_write(f);
     /* what the game's debug overlay says on this frame */
     for (int i = 0;; i++) {
@@ -1013,6 +1023,7 @@ __declspec(dllimport) int __stdcall TerminateProcess(void* process, unsigned int
 #include <unistd.h>
 #endif
 static void quit_now(void) {
+  mkgp2pc_baseboard_flush(); /* the backup memory file is up to date */
   fflush(NULL);
 #ifdef _WIN32
   TerminateProcess(GetCurrentProcess(), 0);

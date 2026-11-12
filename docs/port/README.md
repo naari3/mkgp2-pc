@@ -28,6 +28,7 @@ clean-up.
 | [`hires_textures.md`](hires_textures.md) | High-resolution 2D textures (fonts, sprites): the switch, how the folder is made from the user's disc image, the filters |
 | [`debug.md`](debug.md) | The game's own debug output, overlay pages and developers' scene list, and the switches that bring them back |
 | [`internet_play.md`](internet_play.md) | Play between distant PCs without opening ports: room name, STUN, hole punching, the rendezvous Worker in `port/server/rendezvous`, what was tested |
+| [`backup_memory.md`](backup_memory.md) | The cabinet's backup memory (time attack records, test menu settings, credits) kept in `backup_ram.bin`: format, safe writing, two copies on one PC, what was checked |
 | [`launcher.md`](launcher.md) | The settings program `mkgp2-launcher.exe`: what it sets, the ini file, `MKGP2PC_KEYS`, how it is built |
 
 ## What goes where

@@ -36,6 +36,14 @@ int mkgp2pc_netlink_address_ok(void);       /* 0: the cabinet number just set is
 /* Baseboard (baseboard.c): runs the callback the game registered for an EXI
  * channel, as the interrupt would. */
 void mkgp2pc_baseboard_raise_exi(int channel);
+/* The baseboard's backup memory is kept in a file (docs/port/backup_memory.md).
+ * flush: the file is brought up to date before this returns; call it on the
+ * ways out of the process. save_start: writes the memory as this run found
+ * it to `path`, in the same format (for dumps); 1 when written. file: the
+ * file's name, "" when the memory is not saved. */
+void mkgp2pc_baseboard_flush(void);
+int mkgp2pc_baseboard_save_start(const char* path);
+const char* mkgp2pc_baseboard_file(void);
 
 /* Devices on the baseboard's two serial ports (jvs_si.c forwards the
  * traffic). Port 0 is the steering drive board (drive_board.c), port 1 the
