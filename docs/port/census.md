@@ -1071,3 +1071,50 @@ radii, two menu sprites' x position, a scale in Scene_801706C8, an icon depth,
 the flame particle speed floor, the star effect's yaw step, and about 100
 last-digit differences. Verified on Linux only. When something is the wrong
 size, position or speed, suspect a source constant before the renderer.
+
+## 33. Crash loading the Mario cup courses (2026-11-12)
+
+Report from play on Windows (6f8f471): every Mario cup course crashed while
+loading, reading address 0x6e6e7540 in `fn_8017BC24`.
+
+- `fn_8017BC24` appends a course decoration model (`clModel`, built in
+  `clModelGroup`'s constructor, `src/game/mapobject/fn_8017B75C.cpp`) to the
+  end of a group's list. It is `clModel::Append`, but the source has it as a
+  C function over a private struct `{ next }`, which is MWCC's layout:
+  `clModel` declares its data members before its first virtual function, so
+  MWCC has `next` at +0 and the vtable pointer at +0x1C. The host compiler
+  puts the vtable pointer at +0 and `next` at +4 (the class is in the table
+  of [cxx_classes.md](cxx_classes.md)). The function therefore followed the
+  vtable pointer as `next`: into `clModelM`'s vtable, through two more
+  objects, to bytes that are not an address.
+- It only runs when a group gets a second model. Every Mario cup course has
+  such a group (`MRA_poihana.dat`, nine models; `MRA_monte.dat`,
+  `MRA_kinopio.dat`). Other cups' tables have such groups too (not listed
+  here); a cup whose groups all hold one model loads.
+  Tables: `lbl_80371F28 + 0x6B8` and on, chosen by cup, round length and
+  course in `clModelMgr`'s constructor (`fn_8017B1C0.cpp`).
+- Two more functions read the same objects through private structs:
+  `fn_8017ACBC` (`clModel::Update`, a vtable slot) and `fn_8017AB28`
+  (`clModel::Draw`). Without the correction they read `def` one word off;
+  every cup with decoration models goes through them.
+- Correction: three port patches (`port/patches/src/game/mapobject/`) give
+  those private structs a leading pointer member. Derived classes
+  (`clModelP`, `clModelPR`, `clModelM`) need nothing: their own members start
+  at +0x20 under both compilers. The upstream form would be the three
+  functions written as members of `clModel`.
+- Reproduced and checked on Linux without play: `port/tools/force_cup.gdb`
+  makes the attract mode's demo race load any cup's course. Before: the same
+  crash with the same address. After: Mario cup short and long, courses 0, 1
+  and 2 load and run their update and draw calls with the right `def`
+  tables. Not checked on Windows.
+- Other classes in the same table of cxx_classes.md can fail the same way
+  wherever a C function reads their objects through a private struct.
+
+The owner's patch repository https://github.com/naari3/mkgp2-patch (Kamek
+patches for the original program, not part of this project) has material
+for reaching courses directly: `features/round_select/round_select.cpp`
+(cup and round substitution around `clFlowRound_Init` 0x801CAF34 and
+`SetCourseParams` 0x8009CBFC), `features/cup_page3/` (the per-cup course
+tables it hooks, listed in `patch_map.md`), `features/debug_overlay/`,
+`features/race_restart/`, and `tasks/refactor_fun_800.md` (function names,
+including the debug menu `SeqMenuScene_*` at 0x8002F9B4..0x8002FC80).

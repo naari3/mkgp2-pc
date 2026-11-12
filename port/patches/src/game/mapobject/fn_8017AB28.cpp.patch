@@ -1,0 +1,25 @@
+--- a/src/game/mapobject/fn_8017AB28.cpp	2026-11-12 05:15:16.362199103 +0000
++++ b/src/game/mapobject/fn_8017AB28.cpp	2026-11-12 05:15:16.377207313 +0000
+@@ -12,7 +12,21 @@
+     unsigned int flags;
+ };
+ 
+-#include "game/types/AnimObj.h"
++/* PC port: this is clModel::Draw, called on clModel objects built by C++
++ * code. The host compiler puts the vtable pointer first (MWCC: at +0x1C,
++ * after the data members), so the members up to `offset` are one pointer
++ * further in; what follows the vtable pointer stays where it was. */
++#define GAME_TYPES_ANIMOBJ_H
++typedef struct AnimObj AnimObj;
++struct AnimObj {
++    void *host_vptr;
++    void *next;
++    struct AnimDef *def;
++    struct HSD_JObj *jobj;
++    float frame;
++    Vec3f offset;
++    float y;
++};
+ 
+ extern "C" {
+ extern char lbl_806D8EA8[7];
