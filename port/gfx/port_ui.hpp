@@ -76,7 +76,7 @@ public:
    * taken, 2 a heading. Returns the number of rows. */
   int rows(const char** text, int* kind, const char** value, int max, int* moreAbove, int* moreBelow) const;
   void set_title(Text title) { m_title = title; }
-  enum { ROWS_SHOWN = 10 };
+  enum { ROWS_SHOWN = 11 }; /* what the game-drawn sheet holds (gameui.c) */
   /* the cursor's row among the rows that rows() gave */
   int cursor() const { return m_cursor - m_top; }
   const char* title() const { return m_title.get_game(); }

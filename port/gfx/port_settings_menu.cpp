@@ -27,7 +27,7 @@ using portui::ListMenu;
 using portui::Text;
 
 const Text kOn{"On", "オン"}, kOff{"Off", "オフ"};
-const Text kNextStart{"From the next start", "次回の起動から変わります"};
+const Text kNextStart{"* from the next start", "* は次回の起動から変わります"};
 const Text kNoFile{"Not started from the settings program: changes are not kept",
                    "ランチャーから起動していないので保存されません"};
 const Text kFooter{"Up/Down: choose   Left/Right: change   Esc: back", "上下: 選択   左右: 変更   Esc: 戻る",
@@ -51,7 +51,7 @@ Start g_run, g_next;
 const char* const kBackendIds[] = {"", "d3d12", "d3d11", "vulkan", "opengl"};
 const Text kBackends[] = {{"Automatic", "自動"}, {"Direct3D 12", "Direct3D 12"}, {"Direct3D 11", "Direct3D 11"},
                           {"Vulkan", "Vulkan"}, {"OpenGL", "OpenGL"}};
-const Text kAa[] = {{"None", "なし"}, {"MSAA 4x", "MSAA 4x"}, {"SSAA 2x", "SSAA 2x"}, {"MSAA 4x + SSAA 2x", "MSAA 4x + SSAA 2x"}};
+const Text kAa[] = {{"None", "なし"}, {"MSAA 4x", "MSAA 4x"}, {"SSAA 2x", "SSAA 2x"}, {"MSAA + SSAA", "MSAA+SSAA"}};
 /* the sizes the settings program offers (launcher.c) */
 const int kScales43[] = {100, 200, 300, 400, 500, 600};
 const int kScales169[] = {100, 150, 200, 225, 300, 450};
@@ -101,9 +101,9 @@ Text shown(int row, const Text& t, bool changed) {
   if (!changed) {
     return t;
   }
-  std::snprintf(en[row], sizeof(en[row]), "%s (next start)", t.en);
-  std::snprintf(ja[row], sizeof(ja[row]), "%s (次回から)", t.ja);
-  std::snprintf(game[row], sizeof(game[row]), "%s (次回から)", t.game != nullptr ? t.game : t.ja);
+  std::snprintf(en[row], sizeof(en[row]), "%s *", t.en);
+  std::snprintf(ja[row], sizeof(ja[row]), "%s *", t.ja);
+  std::snprintf(game[row], sizeof(game[row]), "%s*", t.game != nullptr ? t.game : t.ja);
   return Text{en[row], ja[row], game[row]};
 }
 
@@ -125,8 +125,8 @@ void save_scale() {
 
 bool can_save() { return mkgp2pc_settings_can_save() != 0; }
 
-Item restart_row(Text label, std::function<Text()> value, std::function<void(int)> adjust) {
-  return Item::Setting(label, std::move(value), std::move(adjust), can_save, kNextStart);
+Item restart_row(Text label, std::function<Text()> value, std::function<void(int)> adjust, Text note = kNextStart) {
+  return Item::Setting(label, std::move(value), std::move(adjust), can_save, note);
 }
 
 Item live_row(Text label, int (*get)(), void (*set)(int), const char* key, Text note = {}) {
@@ -184,7 +184,7 @@ ListMenu& graphics() {
         save_scale();
       }));
   rows.push_back(restart_row(
-      Text{"Window size", "窓の大きさ", "ウィンドウの大きさ"},
+      Text{"Window size", "窓の大きさ", "画面の大きさ"},
       [] { return shown(1, size_text(g_next.wide, g_next.scale), g_next.scale != g_run.scale || g_next.wide != g_run.wide); },
       [](int dir) {
         const int* list = scales(g_next.wide);
@@ -198,7 +198,7 @@ ListMenu& graphics() {
         save_scale();
       }));
   rows.push_back(restart_row(
-      Text{"Renderer", "描画方式", "レンダリング方式"}, [] { return shown(2, kBackends[g_next.backend], g_next.backend != g_run.backend); },
+      Text{"Renderer", "描画方式", "レンダリング"}, [] { return shown(2, kBackends[g_next.backend], g_next.backend != g_run.backend); },
       [](int dir) {
         g_next.backend = cycle(g_next.backend, dir, 5);
         mkgp2pc_settings_save("backend", kBackendIds[g_next.backend]);
@@ -209,21 +209,23 @@ ListMenu& graphics() {
         g_next.aa = cycle(g_next.aa, dir, 4);
         mkgp2pc_settings_save_int("aa", g_next.aa);
       }));
-  rows.push_back(live_row(Text{"Smooth kart shadow", "影をなめらかにする"}, mkgp2pc_shadow_smooth, mkgp2pc_shadow_smooth_set,
+  rows.push_back(live_row(Text{"Smooth kart shadow", "影をなめらかにする", "なめらかな影"}, mkgp2pc_shadow_smooth, mkgp2pc_shadow_smooth_set,
                           "shadow_smooth"));
-  rows.push_back(live_row(Text{"High-resolution textures", "高解像度のテクスチャ", "高かいぞうどのテクスチャ"}, mkgp2pc_hires_on,
+  rows.push_back(live_row(Text{"High-resolution textures", "高解像度のテクスチャ", "ハイレゾテクスチャ"}, mkgp2pc_hires_on,
                           mkgp2pc_hires_set, "hires",
                           Text{"Needs the folder hires, made in the settings program", "hires フォルダが必要です (ランチャーで作成)",
                                "hires フォルダがないとオンになりません"}));
-  rows.push_back(live_row(Text{"Do not wait for pipelines", "描画の準備を待たない", "レンダリングの準備を待たない"},
+  rows.push_back(live_row(Text{"Do not wait for pipelines", "描画の準備を待たない", "シェーダーを待たない"},
                           mkgp2pc_video_pipeline_async, mkgp2pc_video_pipeline_async_set, "async_pipelines"));
   rows.push_back(restart_row(
-      Text{"Resizable window (unstable)", "窓のサイズ変更を許可 (不安定)", "ウィンドウのサイズ変更 (ふあんてい)"},
+      Text{"Resizable window (unstable)", "窓のサイズ変更を許可 (不安定)", "ウィンドウのサイズ変更"},
       [] { return shown(4, g_next.resizable ? kOn : kOff, g_next.resizable != g_run.resizable); },
       [](int) {
         g_next.resizable = !g_next.resizable;
         mkgp2pc_settings_save_int("resizable", g_next.resizable);
-      }));
+      },
+      Text{"Unstable on Windows. * from the next start", "Windows では不安定です。* は次回の起動から",
+           "ふあんていです。* は次回の起動から変わります"}));
   const Mkgp2pcSettingRow* const* extra;
   const int n = mkgp2pc_settings_graphics_rows(&extra);
   for (int i = 0; i < n; i++) {
@@ -246,7 +248,7 @@ const ActionLabel kActions[] = {
     {"accel", {"Accelerator", "アクセル"}},
     {"brake", {"Brake", "ブレーキ"}},
     {"item", {"Item", "アイテム"}},
-    {"cancel", {"Cancel (Mario button)", "キャンセル (マリオボタン)"}},
+    {"cancel", {"Cancel (Mario button)", "キャンセル (マリオボタン)", "キャンセル"}},
     {"coin", {"Coin", "コイン"}},
     {"card", {"Insert card", "カード挿入", "カードを入れる"}},
     {"test", {"Test", "テスト"}},
@@ -254,12 +256,12 @@ const ActionLabel kActions[] = {
     {"pause", {"Pause", "一時停止", "ポーズ"}},
     {"step", {"Frame step", "コマ送り", "コマおくり"}},
     {"fast", {"Full speed (toggle)", "全速 (切り替え)"}},
-    {"fasthold", {"Full speed (hold)", "全速 (押下中)", "全速 (押している間)"}},
+    {"fasthold", {"Full speed (hold)", "全速 (押下中)", "全速 (押す間)"}},
     {"dump", {"Dump", "ダンプ"}},
-    {"hires", {"High resolution (toggle)", "高解像度 (切り替え)", "高かいぞうど (切り替え)"}},
+    {"hires", {"High resolution (toggle)", "高解像度 (切り替え)", "ハイレゾ切り替え"}},
     {"menu", {"Menu", "メニュー"}},
     {"back", {"Back one screen", "一つ前の画面に戻る", "1つ前の画面にもどる"}},
-    {"debug", {"Debug output (toggle)", "デバッグ表示 (切り替え)", "デバッグ (切り替え)"}},
+    {"debug", {"Debug output (toggle)", "デバッグ表示 (切り替え)", "デバッグ切り替え"}},
     {"debugpage", {"Debug output page", "デバッグ表示のページ送り", "デバッグのページ"}},
     {"devup", {"Developer: up", "開発用 上"}},
     {"devdown", {"Developer: down", "開発用 下"}},
@@ -286,25 +288,25 @@ const char* key_name(int scancode, bool japanese) {
   }
   if (japanese) {
     switch (scancode) {
-    case SDL_SCANCODE_UP: return "カーソル上";
-    case SDL_SCANCODE_DOWN: return "カーソル下";
-    case SDL_SCANCODE_LEFT: return "カーソル左";
-    case SDL_SCANCODE_RIGHT: return "カーソル右";
+    case SDL_SCANCODE_UP: return "上";
+    case SDL_SCANCODE_DOWN: return "下";
+    case SDL_SCANCODE_LEFT: return "左";
+    case SDL_SCANCODE_RIGHT: return "右";
     case SDL_SCANCODE_SPACE: return "スペース";
     case SDL_SCANCODE_RETURN: return "Enter";
-    case SDL_SCANCODE_LSHIFT: return "左 Shift";
-    case SDL_SCANCODE_RSHIFT: return "右 Shift";
-    case SDL_SCANCODE_LCTRL: return "左 Ctrl";
-    case SDL_SCANCODE_RCTRL: return "右 Ctrl";
-    case SDL_SCANCODE_LALT: return "左 Alt";
-    case SDL_SCANCODE_RALT: return "右 Alt";
+    case SDL_SCANCODE_LSHIFT: return "左Shift";
+    case SDL_SCANCODE_RSHIFT: return "右Shift";
+    case SDL_SCANCODE_LCTRL: return "左Ctrl";
+    case SDL_SCANCODE_RCTRL: return "右Ctrl";
+    case SDL_SCANCODE_LALT: return "左Alt";
+    case SDL_SCANCODE_RALT: return "右Alt";
     default: break;
     }
   }
   const char* name = SDL_GetScancodeName(static_cast<SDL_Scancode>(scancode));
   if (name == nullptr || *name == 0) {
     static char number[2][24];
-    std::snprintf(number[japanese], sizeof(number[0]), japanese ? "キー番号 %d" : "key %d", scancode);
+    std::snprintf(number[japanese], sizeof(number[0]), japanese ? "キー %d" : "key %d", scancode);
     return number[japanese];
   }
   return name;
@@ -457,7 +459,7 @@ struct Announce {
     }
     portui::announce("画面の比率窓の大きさ描画方式アンチエイリアス影をなめらかにする高解像度のテクスチャ描画の準備を待たない"
                      "窓のサイズ変更を許可 (不安定)hires フォルダが必要です (ランチャーで作成)グラフィックキー入力"
-                     "キーを初期化キーを押してくださいなしカーソル上下左右スペース番号 (次回から)");
+                     "Windows では不安定です。* は次回の起動からキーを初期化キーを押してくださいなし上下左右スペースは次回の起動から変わります");
     read_start();
   }
 } g_announce;

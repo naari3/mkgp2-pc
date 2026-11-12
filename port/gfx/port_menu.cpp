@@ -76,7 +76,6 @@ portui::ListMenu& menu() {
                Text{"The game's own list; some scenes may not work. F2: move, Space: choose",
                     "ゲーム内蔵の一覧です。動かないシーンもあります。F2: 移動、Space: 決定",
                     "動かないシーンもあります。F2: 移動、Space: 決定"}},
-          Item{Text{"", ""}, {}},
           Item::Sub(Text{"Settings", "設定"}, [] { portui::open_list(portui::settings_menu()); }, {},
                     Text{"Graphics and keys", "グラフィック、キー入力"}),
           Item{Text{"Quit the game", "ゲームを終了する"}, [] { mkgp2pc_video_quit(); }},
