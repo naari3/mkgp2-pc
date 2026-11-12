@@ -27,6 +27,7 @@ it has to be allowed on private networks.
 | variable | meaning |
 |---|---|
 | `MKGP2PC_PCB_ID=1..4` | cabinet number at start-up. Without it every copy is cabinet 1, because the backup memory (where the test menu's PCB ID lives) is not kept between runs. The test menu (F1) still changes it for the rest of the run |
+| `MKGP2PC_BOOT_CHECK=1` | show the arcade program's 60 second screen "PCB ID : n CHECKING..." at start-up; another number is that many seconds. Without it the screen is skipped (see "Start-up without the wait") |
 | `MKGP2PC_LINK=0` | link off: every socket command fails, as before 2026-11-11 |
 | `MKGP2PC_LINK_PEERS=2=192.168.1.20,3=pc3` | where the other cabinets are, by hand (no announcements are used then); for networks that drop broadcasts |
 | `MKGP2PC_LINK_PORT=29500` | first of the 68 ports used (see below); the same on all copies |
@@ -140,6 +141,38 @@ address faked some other way and every message converted.
 
 Dolphin (GPL, facts only, no code used) supports the same link for the
 original program by redirecting the fixed addresses to configured ones.
+
+## Start-up without the wait
+
+The arcade program shows "PCB ID : n CHECKING..." for up to 60 seconds after
+the card reader check (`BootDispatcher.cpp`: `PCBComm_Init`,
+`BootPCBCheck_Init`, then `BootPCBCheck_Poll` each frame). The screen ends
+early only when all four boards are connected both ways, or with two buttons
+held (input bits 0x2000 and 0x400); with fewer than four cabinets it always
+takes the full time.
+
+The screen only displays. Nothing later reads a result of it:
+
+- `PCBComm_Process(1, 1)` runs on every frame of the main loop and keeps
+  trying, accepting and polling the connections; the per-cabinet flags the
+  game asks about (`polled`, `receiving` in `PCBCheckProcess.c`) are
+  refreshed there every tick.
+- A cabinet that starts later is taken in at any time: its connection is
+  accepted, and the accept revives the outgoing connection that had given up
+  (`PcbConn_RecycleIfOver`).
+- Whether a coin leads to a linked game is decided when the coin is
+  confirmed (`fn_801B76C8.cpp`): with no connected cabinet the game goes
+  straight on alone, otherwise to the entry screen (`clFlowEntry`, 15
+  seconds, shared countdown), where two or more cabinets become a versus
+  group.
+
+So the port skips the screen: `port/patches/src/game/PCBCheckRecv.c.patch`
+asks `mkgp2pc_boot_check_frames()` (`port/platform/triforce/linkflow.c`) for
+its length, which is 0 unless `MKGP2PC_BOOT_CHECK` is set. Checked on Linux
+with the no-graphics build at 60 retraces a second: the cabinet's scene
+number is 54 with the timer counting down when the variable is 1, and without
+it the game is in the notice (55) and then the attract scenes while the link
+is up (`g_pcbCommEnabled` 1).
 
 ## How a race is kept in step
 
