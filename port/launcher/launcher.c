@@ -59,6 +59,10 @@ static const KeyAction kActions[] = {
     {L"hires", L"高解像度 (切り替え)", {65, 0}},
     {L"debug", L"デバッグ表示 (切り替え)", {60, 0}},
     {L"debugpage", L"デバッグ表示のページ送り", {61, 0}},
+    {L"devup", L"開発用 上", {75, 0}},
+    {L"devdown", L"開発用 下", {78, 0}},
+    {L"devstart", L"開発用 決定/戻る", {77, 0}},
+    {L"devsub", L"開発用 サブ", {74, 0}},
 };
 #define ACTIONS LEN(kActions)
 
