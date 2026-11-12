@@ -868,7 +868,8 @@ static const struct { const char* id; const wchar_t* text; } kHiresStages[] = {
     {"read", L"読み込み"},        {"fonts", L"フォント"},          {"sprites", L"スプライト"},
     {"export", L"書き出し"},      {"download", L"ダウンロード"},   {"enlarge-rgb", L"AI 拡大 (色)"},
     {"enlarge-alpha", L"AI 拡大 (透明度)"}, {"import", L"取り込み"}, {"models", L"3D のテクスチャ"},
-    {"import-models", L"取り込み (3D)"},
+    {"import-models", L"取り込み (3D)"}, {"enlarge-models-rgb", L"AI 拡大 (3D、色)"},
+    {"enlarge-models-alpha", L"AI 拡大 (3D、透明度)"},
 };
 
 static void hires_text(void) {
@@ -966,8 +967,9 @@ static void hires_start(void) {
     return;
   }
   if (method < 0 || method > 2) method = 0;
+  int models3d = IsDlgButtonChecked(g_hr, HR_MODELS) == BST_CHECKED;
   int n = swprintf(cmd, LEN(cmd), L"\"%ls\" --iso \"%ls\" --out \"%ls\" --scale %d%ls", exe, iso, out, scale,
-                   IsDlgButtonChecked(g_hr, HR_MODELS) == BST_CHECKED ? L" --models" : L"");
+                   models3d ? L" --models" : L"");
   if (method != 0) {
     if (GetFileAttributesW(tool) == INVALID_FILE_ATTRIBUTES) {
       /* the one place with a sentence: fetching a program needs a yes */
@@ -980,7 +982,9 @@ static void hires_start(void) {
                tool);
       if (MessageBoxW(g_hr, ask, L"高解像度テクスチャの作成", MB_OKCANCEL | MB_ICONQUESTION) != IDOK) return;
     }
-    swprintf(cmd + n, LEN(cmd) - n, L" --ai %ls --work \"%ls\" --download", models[method], work);
+    /* the 3D models' textures are rendered and painted pictures: always the general model */
+    swprintf(cmd + n, LEN(cmd) - n, L" --ai %ls%ls --work \"%ls\" --download", models[method],
+             models3d ? L" --ai-models realesrgan-x4plus" : L"", work);
   }
 
   SECURITY_ATTRIBUTES sa = {sizeof(sa), NULL, TRUE};
