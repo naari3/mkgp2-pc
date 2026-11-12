@@ -84,11 +84,12 @@ int isJapanese(void);
 /* ---- state -------------------------------------------------------------- */
 
 #define MAX_RES 160
-#define MAX_LABELS 32
+#define MAX_LABELS 96
 #define LABEL_TEXT 128
 
 typedef struct Label {
   int used;
+  unsigned stamp; /* when it was last asked for (s_labelClock) */
   int font;
   char utf8[LABEL_TEXT];
   int count;
@@ -422,22 +423,47 @@ static float advance_of(int font, int glyph) {
   return narrow;
 }
 
+/* A screen whose texts change (the menu's settings pages: values, key
+ * names) asks for more different texts over time than there are labels.
+ * When none is free the one not asked for the longest is given up; a frame
+ * shows far fewer texts than there are labels, so it is never one of the
+ * frame being queued. The 64 pixel texts hold sprite resources until the
+ * screen ends and are not given up. */
+static unsigned s_labelClock;
 static Label* label_for(int font, const char* utf8) {
   int i;
   Label* l = NULL;
+  Label* oldest = NULL;
   const unsigned char* p;
   for (i = 0; i < MAX_LABELS; i++) {
     if (s_labels[i].used && s_labels[i].font == font && strcmp(s_labels[i].utf8, utf8) == 0) {
+      s_labels[i].stamp = ++s_labelClock;
       return &s_labels[i];
     }
     if (!s_labels[i].used && l == NULL) {
       l = &s_labels[i];
     }
+    if (s_labels[i].used && s_labels[i].font != GAMEUI_FONT_64 &&
+        (oldest == NULL || (int)(s_labels[i].stamp - oldest->stamp) < 0)) {
+      oldest = &s_labels[i];
+    }
   }
-  if (l == NULL || strlen(utf8) >= LABEL_TEXT) {
+  if (strlen(utf8) >= LABEL_TEXT) {
+    return NULL;
+  }
+  if (l == NULL && oldest != NULL) {
+    if (oldest->font == GAMEUI_FONT_24) {
+      fn_801F9518(&oldest->text);
+    } else {
+      fn_801F95A0(&oldest->text);
+    }
+    l = oldest;
+  }
+  if (l == NULL) {
     return NULL;
   }
   l->used = 1;
+  l->stamp = ++s_labelClock;
   l->font = font;
   strcpy(l->utf8, utf8);
   l->count = 0;
