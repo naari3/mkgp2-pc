@@ -351,19 +351,23 @@ void mkgp2pc_gameui_sheet(float x, float y, float width, float height) {
  * the game's text fonts are white with a black outline and read poorly on
  * it. */
 void mkgp2pc_gameui_white_sheet(float x, float y, float width, float height) {
-  mkgp2pc_gameui_sprite(0x72F, x + 8.0f, y + 8.0f, (width + 16.0f) / 272.0f, (height + 8.0f) / 304.0f, 0xFFFFFFC0);
-  mkgp2pc_gameui_frame(0x72E, 248.0f, 304.0f, 24.0f, 0, x, y, width, height, 0xFFFFFFFF);
+  /* half see-through: the stopped game shows through the window */
+  mkgp2pc_gameui_sprite(0x72F, x + 8.0f, y + 8.0f, (width + 16.0f) / 272.0f, (height + 8.0f) / 304.0f, 0xFFFFFF60);
+  mkgp2pc_gameui_frame(0x72E, 248.0f, 304.0f, 24.0f, 0, x, y, width, height, 0xFFFFFFA8);
 }
 
 /* The cursor of the game's windows: the glow behind the chosen line and
  * the striped arrow pointing at it from the left. */
-void mkgp2pc_gameui_cursor(float x, float y, float width, float height, int t) {
+static void cursor_glow(float x, float y, float width, float height, int t, unsigned int rgb) {
   int k = t % 40;
   float beat = (float)(k < 20 ? k : 40 - k) / 20.0f;
-  /* the game's glow is white; in blue it carries the white text */
   mkgp2pc_gameui_sprite(0x8CE, x, y, width / 100.0f * 1.25f, height / 76.0f * 1.5f,
-                        0x2878FF00 | (unsigned int)(0xC0 + 0x3F * beat));
+                        (rgb & 0xFFFFFF00) | (unsigned int)(0xC0 + 0x3F * beat));
   mkgp2pc_gameui_sprite(0x8CD, x - width * 0.5f - 6.0f + 4.0f * beat, y, 0.3f, 0.3f, 0xFFFFFFFF);
+}
+void mkgp2pc_gameui_cursor(float x, float y, float width, float height, int t) {
+  /* the game's glow is white; in blue it carries the white text */
+  cursor_glow(x, y, width, height, t, 0x2878FF00);
 }
 
 /* ---- text --------------------------------------------------------------- */
@@ -618,6 +622,17 @@ void mkgp2pc_gameui_hint_button(float x, float y, int t, const char* caption) {
 
 /* ---- a ready-made screen: choose one of a few things -------------------- */
 
+/* The look of the port's windows. */
+typedef struct Style {
+  int white;                     /* the white window instead of the dark sheet */
+  unsigned int title, row, rowOn, rowOff, head, line, note, foot, glow;
+  float onScale;
+} Style;
+/* White window, white text with its outline, title and headings in the
+ * light blue of the game's labels, the chosen row yellow on an orange glow. */
+static const Style kStyle = {1,          0x40C8FFFF, 0xFFFFFFFF, 0xFFE820FF, 0xA8B4C8D0, 0x40C8FFFF,
+                             0x38A0FF70, 0xFFFFFFFF, 0xFFFFFFC0, 0xFF900000, 1.12f};
+
 /* The window's way in, after the game's message window (MsgPopup): from
  * small past full size and back, 15 frames. */
 static float open_scale(int age) {
@@ -650,22 +665,23 @@ void mkgp2pc_gameui_choice(const char* title, const char* const* items, int coun
     pitch = 520.0f / (float)count;
   }
   mkgp2pc_gameui_dim(dim);
-  mkgp2pc_gameui_sheet(cx, cy, (pitch * (float)count + 72.0f) * s, 168.0f * s);
+  mkgp2pc_gameui_white_sheet(cx, cy, (pitch * (float)count + 72.0f) * s, 168.0f * s);
   if (age < 12) {
     return; /* the texts come when the window has its size */
   }
   s = 1.0f;
   if (title != NULL && title[0]) {
-    mkgp2pc_gameui_text(GAMEUI_FONT_24, GAMEUI_CENTER, cx, cy - 46.0f, 1.0f, 0x70D8FFFF, title);
+    mkgp2pc_gameui_text(GAMEUI_FONT_24, GAMEUI_CENTER, cx, cy - 46.0f, 1.25f, kStyle.title, title);
   }
-  mkgp2pc_gameui_fill(cx, cy - 24.0f, pitch * (float)count + 24.0f, 2.0f, 0x70D8FF80);
+  mkgp2pc_gameui_fill(cx, cy - 24.0f, pitch * (float)count + 24.0f, 2.0f, kStyle.line);
   for (i = 0; i < count; i++) {
     float x = cx + ((float)i - (float)(count - 1) * 0.5f) * pitch * s;
     float y = cy + 26.0f * s;
     if (i == cursor) {
-      mkgp2pc_gameui_cursor(x, y, pitch - 44.0f, 34.0f, age);
+      cursor_glow(x, y, pitch - 44.0f, 34.0f, age, kStyle.glow);
     }
-    mkgp2pc_gameui_text(GAMEUI_FONT_24, GAMEUI_CENTER, x, y, 1.0f, 0xFFFFFFFF, items[i]);
+    mkgp2pc_gameui_text(GAMEUI_FONT_24, GAMEUI_CENTER, x, y, i == cursor ? kStyle.onScale : 1.0f,
+                        i == cursor ? kStyle.rowOn : kStyle.row, items[i]);
   }
   if (age >= 15) {
     mkgp2pc_gameui_hint_select(224.0f, 452.0f, age - 15);
@@ -680,20 +696,23 @@ void mkgp2pc_gameui_choice(const char* title, const char* const* items, int coun
  * stands at the right of the row (a setting's value); such a list has its
  * labels at the left. more_above / more_below: marks that the list goes on.
  * The note and the footer are small lines under the list. */
-#define INK 0xFFFFFFFF
-#define INK_OFF 0xFFFFFF48
-#define INK_HEAD 0x70D8FFFF
 void mkgp2pc_gameui_list(const char* title, const char* const* rows, const int* kinds, const char* const* values,
                          int count, int cursor, int more_above, int more_below, const char* note,
                          const char* footer, int age) {
   const float cx = 320.0f, cy = 240.0f;
   const float rowH = 30.0f, headH = 24.0f, gapH = 10.0f;
   unsigned int dim = age < 10 ? (unsigned int)(0x7F * age / 10) : 0x7F;
-  float listH = 0.0f, widest = 0.0f, widestValue = 0.0f, inner, sheetW, sheetH, y, grow;
+  float listH = 0.0f, widest = 0.0f, widestHead = 0.0f, widestValue = 0.0f, inner, sheetW, sheetH, y, grow;
   int i, split = 0;
+  const Style* st = &kStyle;
   for (i = 0; i < count; i++) {
     float w = mkgp2pc_gameui_text_width(kinds[i] == 2 ? GAMEUI_FONT_16 : GAMEUI_FONT_24, 1.0f, rows[i]);
-    if (w > widest) {
+    if (kinds[i] == 2) {
+      /* a heading spans the row; it does not push the values out */
+      if (w > widestHead) {
+        widestHead = w;
+      }
+    } else if (w > widest) {
       widest = w;
     }
     if (values != NULL && values[i] != NULL) {
@@ -705,35 +724,46 @@ void mkgp2pc_gameui_list(const char* title, const char* const* rows, const int* 
     }
     listH += kinds[i] != 2 ? rowH : (rows[i][0] ? headH : gapH);
   }
-  inner = widest + (split ? widestValue + 48.0f : 0.0f) + 24.0f;
+  inner = widest + (split ? widestValue + 48.0f : 0.0f);
+  if (inner < widestHead) {
+    inner = widestHead;
+  }
+  inner += 24.0f;
   if (inner < 300.0f) {
     inner = 300.0f;
+  }
+  if (inner > 528.0f) {
+    inner = 528.0f; /* the window stays inside the 4:3 picture */
   }
   sheetW = inner + 96.0f;
   sheetH = listH + 134.0f;
   /* the window comes up as the game's do: small, a little too large, right */
   grow = age < 8 ? 0.5f + 0.55f * (float)age / 8.0f : (age < 12 ? 1.05f - 0.05f * (float)(age - 8) / 4.0f : 1.0f);
   mkgp2pc_gameui_dim(dim);
-  mkgp2pc_gameui_sheet(cx, cy, sheetW * grow, sheetH * grow);
+  if (st->white) {
+    mkgp2pc_gameui_white_sheet(cx, cy, sheetW * grow, sheetH * grow);
+  } else {
+    mkgp2pc_gameui_sheet(cx, cy, sheetW * grow, sheetH * grow);
+  }
   if (age < 12) {
     return; /* the texts come when the window has its size */
   }
   y = cy - sheetH * 0.5f + 40.0f;
   if (title != NULL && title[0]) {
-    mkgp2pc_gameui_text(GAMEUI_FONT_24, GAMEUI_CENTER, cx, y, 1.0f, INK_HEAD, title);
+    mkgp2pc_gameui_text(GAMEUI_FONT_24, GAMEUI_CENTER, cx, y, st->white ? 1.25f : 1.0f, st->title, title);
   }
-  mkgp2pc_gameui_fill(cx, y + 20.0f, inner + 24.0f, 2.0f, 0x70D8FF80);
+  mkgp2pc_gameui_fill(cx, y + 20.0f, inner + 24.0f, 2.0f, st->line);
   y += 32.0f;
   if (more_above) {
     mkgp2pc_gameui_sprite(0x8CD, cx, y - 5.0f, 0.16f, 0.16f, 0xFFFFFFFF);
   }
   for (i = 0; i < count; i++) {
-    float mid;
+    float mid, sc;
     unsigned int ink;
     if (kinds[i] == 2) {
       if (rows[i][0]) {
         mkgp2pc_gameui_text(GAMEUI_FONT_16, GAMEUI_LEFT, cx - inner * 0.5f + 8.0f, y + headH * 0.5f + 3.0f, 1.0f,
-                            INK_HEAD, rows[i]);
+                            st->head, rows[i]);
         y += headH;
       } else {
         y += gapH;
@@ -741,17 +771,21 @@ void mkgp2pc_gameui_list(const char* title, const char* const* rows, const int* 
       continue;
     }
     mid = y + rowH * 0.5f;
-    ink = kinds[i] == 0 ? INK : INK_OFF;
+    ink = kinds[i] == 0 ? st->row : st->rowOff;
     if (i == cursor && kinds[i] == 0) {
-      mkgp2pc_gameui_cursor(cx, mid, inner + 20.0f, rowH, age);
+      cursor_glow(cx, mid, inner + 20.0f, rowH, age, st->glow);
+      ink = st->rowOn;
+      sc = st->onScale;
+    } else {
+      sc = 1.0f;
     }
     if (split) {
-      mkgp2pc_gameui_text(GAMEUI_FONT_24, GAMEUI_LEFT, cx - inner * 0.5f + 20.0f, mid, 1.0f, ink, rows[i]);
+      mkgp2pc_gameui_text(GAMEUI_FONT_24, GAMEUI_LEFT, cx - inner * 0.5f + 20.0f, mid, sc, ink, rows[i]);
       if (values[i] != NULL) {
-        mkgp2pc_gameui_text(GAMEUI_FONT_24, GAMEUI_RIGHT, cx + inner * 0.5f - 12.0f, mid, 1.0f, ink, values[i]);
+        mkgp2pc_gameui_text(GAMEUI_FONT_24, GAMEUI_RIGHT, cx + inner * 0.5f - 12.0f, mid, sc, ink, values[i]);
       }
     } else {
-      mkgp2pc_gameui_text(GAMEUI_FONT_24, GAMEUI_CENTER, cx, mid, 1.0f, ink, rows[i]);
+      mkgp2pc_gameui_text(GAMEUI_FONT_24, GAMEUI_CENTER, cx, mid, sc, ink, rows[i]);
     }
     y += rowH;
   }
@@ -759,12 +793,12 @@ void mkgp2pc_gameui_list(const char* title, const char* const* rows, const int* 
     mkgp2pc_gameui_sprite(0x8CD, cx, y + 5.0f, 0.16f, 0.16f, 0xFFFFFFFF);
   }
   y = cy + sheetH * 0.5f - 50.0f;
-  mkgp2pc_gameui_fill(cx, y - 14.0f, inner + 24.0f, 2.0f, 0x70D8FF80);
+  mkgp2pc_gameui_fill(cx, y - 14.0f, inner + 24.0f, 2.0f, st->line);
   if (note != NULL && note[0]) {
-    mkgp2pc_gameui_text(GAMEUI_FONT_16, GAMEUI_CENTER, cx, y, 1.0f, INK, note);
+    mkgp2pc_gameui_text(GAMEUI_FONT_16, GAMEUI_CENTER, cx, y, 1.0f, st->note, note);
   }
   if (footer != NULL && footer[0]) {
-    mkgp2pc_gameui_text(GAMEUI_FONT_16, GAMEUI_CENTER, cx, y + 21.0f, 1.0f, 0xFFFFFFC0, footer);
+    mkgp2pc_gameui_text(GAMEUI_FONT_16, GAMEUI_CENTER, cx, y + 21.0f, 1.0f, st->foot, footer);
   }
 }
 
