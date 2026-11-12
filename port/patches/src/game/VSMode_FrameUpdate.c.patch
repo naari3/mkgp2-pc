@@ -1,6 +1,6 @@
 --- a/src/game/VSMode_FrameUpdate.c
 +++ b/src/game/VSMode_FrameUpdate.c
-@@ -294,6 +294,12 @@
+@@ -294,6 +294,13 @@
  void CoinJumpFlasher_Toggle(void *car);
  char *RingBuffer_GetKartSlot(int kart);
  void VIWaitForRetrace(void);
@@ -9,11 +9,12 @@
 +int mkgp2pc_link_backlog(int kart, int queued);
 +int mkgp2pc_link_kart(int kart, int own, int host, char *slot, const float *matrix);
 +void mkgp2pc_link_kart_done(const float *matrix, float value);
++int mkgp2pc_link_start_due(int host, const char *ownSlot);
 +#endif
  void Frame_UpdatePerFrameState(void);
  void Timer_Decrement(void);
  void PCBComm_Process(int a, int b);
-@@ -493,9 +499,24 @@
+@@ -493,9 +500,24 @@
                  if (g_carObjects[i] != 0) {
                      char *slot = RingBuffer_GetKartSlot(i);
                      held[i] |= *(unsigned int *)(slot + 0xc);
@@ -38,7 +39,24 @@
                  }
              }
              if (lag < 2) {
-@@ -660,6 +681,16 @@
+@@ -543,7 +565,16 @@
+             s[2] = (s[2] & ~0x80) | 0x80;
+         }
+     }
++#ifndef __MWERKS__
++    /* PC port: the start signal reaches the cabinets at different times and
++     * their karts' positions take different times back to the host. Each
++     * cabinet holds its countdown a little longer, so that on the host all
++     * karts leave together ("The start" in netlink.c). */
++    if (VSMode_FrameUpdate_bss_806D1319 && ((SyncSlot_GetRecv()[2] >> 7) & 1) == 1 &&
++        mkgp2pc_link_start_due(g_isCommHost == 1, RingBuffer_GetKartSlot(lbl_806CF140))) {
++#else
+     if (VSMode_FrameUpdate_bss_806D1319 && ((SyncSlot_GetRecv()[2] >> 7) & 1) == 1) {
++#endif
+         if (VS_PTR(self, 0x4) != 0) {
+             LakituStart_SetCountdownHoldFrames(VS_PTR(self, 0x4), -1);
+         }
+@@ -660,6 +691,16 @@
          if (car == 0) {
              continue;
          }
@@ -55,7 +73,7 @@
          if (VSMode_FrameUpdate_bss_806D1310 > 0) {
              /* first frames after the start sync: no input */
              VSMode_FrameUpdate_bss_806D1310--;
-@@ -708,13 +739,23 @@
+@@ -708,13 +749,23 @@
          }
  
          if (g_isCommHost == 1) {
@@ -80,7 +98,7 @@
              CarObject_SetPosition(car, slot + 0x10);
              KartItem_SetCarObjectField1c8Float(car, VS_F32(slot, 0x1c));
          }
-@@ -725,6 +766,11 @@
+@@ -725,6 +776,11 @@
              CarObject_ApplyInput_AI(car, started, accel, accel, steer, brake);
          }
          CarObject_FrameUpdate(car, h);
