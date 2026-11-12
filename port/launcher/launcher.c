@@ -47,6 +47,7 @@ static const KeyAction kActions[] = {
     {L"accel", L"アクセル", {82, 29}},
     {L"brake", L"ブレーキ", {81, 27}},
     {L"item", L"アイテム", {44, 40}},
+    {L"cancel", L"キャンセル (マリオボタン)", {42, 225}},
     {L"coin", L"コイン", {34, 6}},
     {L"card", L"カード挿入", {12, 0}},
     {L"test", L"テスト", {58, 0}},

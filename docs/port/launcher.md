@@ -96,7 +96,7 @@ Read by `key_map_load` in `port/gfx/video_aurora.c`:
 
 `action=key[,key...]` separated by `;`, up to four keys per action. Actions
 not named keep their default keys; nothing after `=` leaves an action without
-a key. Actions: `left right accel brake item coin card test service pause
+a key. Actions: `left right accel brake item cancel coin card test service pause
 step fast fasthold dump hires debug debugpage devup devdown devstart devsub`
 (from `debug` on: the game's own debug output and the buttons of the
 developers' scenes, debug.md). A key is an SDL scancode name (`A`, `Left`, `F9`,
