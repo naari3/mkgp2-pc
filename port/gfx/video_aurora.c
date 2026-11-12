@@ -615,6 +615,15 @@ static void input_event(const SDL_Event* e, int padAction, bool padDown) {
     }
     if (key != 0 && (!repeat || key <= 2 || key >= 5)) {
       mkgp2pc_menu_key(key);
+      if (s_paused && !mkgp2pc_menu_is_open()) {
+        /* The menu can be opened while the game is paused (the pause key),
+         * and nothing on the screen tells the two apart: "back to the game"
+         * that leaves the game standing looks like a choice that did
+         * nothing, and a choice that changes the flow would wait for the
+         * pause key too. Leaving the menu ends the pause. */
+        s_paused = false;
+        fprintf(stderr, "resumed at retrace %u (menu closed)\n", (unsigned)s_retrace);
+      }
     }
     return;
   }
