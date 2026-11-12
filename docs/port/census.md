@@ -1057,6 +1057,10 @@ one Linux machine connect both ways and follow each other's state. Protocol,
 settings and the limits of what was checked: [cabinet_link.md](cabinet_link.md).
 Before this, every socket command was answered "error" and, separately,
 `acConnect` was a stub (its unit did not compile, upstream request 46).
+Since 2026-11-12 the connections travel in UDP datagrams and the host's
+waiting rule in a linked race is the port's own
+(`port/patches/src/game/VSMode_FrameUpdate.c.patch`), both for play over
+connections with delay, jitter and loss; measurements in cabinet_link.md.
 
 ### Special kart tyres (upstream request 49, 2026-11-11)
 

@@ -1,16 +1,19 @@
-# Cabinet link (LAN play between cabinets)
+# Cabinet link (play between cabinets)
 
 Up to four cabinets on one LAN play together. This page says how the arcade
 program does it (read from the decompiled sources, file names given) and how
 the PC port carries it. Port code: `port/platform/triforce/netlink.c`
 (sockets), `port/platform/triforce/mediaboard.c` (the board's mailboxes).
 
-State 2026-11-11: two copies of the no-graphics build on one Linux machine
-find each other, connect both ways, form one group when both take a coin,
-pass the course selection and run a versus race together (scene 0x2C, race
-clock running on both). Not checked: pictures (the rendering build),
-Windows (the executable links, nothing more), two different PCs, a race
-played by people.
+State 2026-11-12: two and three copies of the no-graphics build on one Linux
+machine find each other, connect, form one group when they take a coin, pass
+the course selection and run a versus race together (scene 0x2C, race clock
+running on all), also with delay, jitter and loss added between them (table
+below). Since 2026-11-12 everything travels in UDP datagrams and the host's
+waiting rule is the port's own, both with play over the internet in mind.
+Not checked: pictures (the rendering build), Windows (the file compiles,
+nothing more), two different PCs, a real internet connection, a race played
+by people.
 
 ## Using it
 
@@ -28,12 +31,26 @@ it has to be allowed on private networks.
 |---|---|
 | `MKGP2PC_PCB_ID=1..4` | cabinet number at start-up. Without it every copy is cabinet 1, because the backup memory (where the test menu's PCB ID lives) is not kept between runs. The test menu (F1) still changes it for the rest of the run |
 | `MKGP2PC_LINK=0` | link off: every socket command fails, as before 2026-11-11 |
-| `MKGP2PC_LINK_PEERS=2=192.168.1.20,3=pc3` | where the other cabinets are, by hand (no announcements are used then); for networks that drop broadcasts |
-| `MKGP2PC_LINK_PORT=29500` | first of the 68 ports used (see below); the same on all copies |
-| `MKGP2PC_TRACE_LINK=1` | log connects, accepts and byte counts; `2` logs every command |
+| `MKGP2PC_LINK_PEERS=2=192.168.1.20,3=pc3:29566` | where the other cabinets are, by hand: host name or address, optionally `:port`. For networks that drop broadcasts and for play over the internet. The cabinets not named are still found by their announcements |
+| `MKGP2PC_LINK_PORT=29500` | base of the port numbers (see below); the same on all copies |
+| `MKGP2PC_LINK_PACE=0` | the arcade program's own rule for when the host waits for a client (see "How a race is kept in step") |
+| `MKGP2PC_TRACE_LINK=1` | log connections and, every five seconds, the traffic; `2` logs every command |
 
-Ports, with the default base 29500: TCP 29500 + 16 x (cabinet - 1) + 0..8
-for the game's listener, UDP 29564 + (cabinet - 1) for the announcements.
+Ports, with the default base 29500: UDP 29564 + (cabinet - 1) for
+everything a cabinet sends and receives, and UDP 29568, where every copy
+listens for announcements. No TCP.
+
+### Between two networks (not tried on a real connection yet)
+
+Each side forwards its cabinet's UDP port (29564 for cabinet 1, 29565 for
+cabinet 2, ...) to the PC and names the other side:
+
+    MKGP2PC_PCB_ID=1 MKGP2PC_LINK_PEERS=2=other.example.org
+    MKGP2PC_PCB_ID=2 MKGP2PC_LINK_PEERS=1=first.example.org
+
+One side naming the other is enough when only that other side can forward a
+port: a cabinet answers to where a datagram came from. The datagrams are
+neither encrypted nor signed; whoever can send to the port can take part.
 
 ## What the arcade program does
 
@@ -105,38 +122,57 @@ kind with a length byte: `u8 16, u8 2, u16 port, 4 address bytes, 8 zero`.
 ## What the port does
 
 The decompiled libraries run unchanged; `mediaboard.c` receives the command
-packets and `netlink.c` executes them on host sockets (BSD sockets, Winsock
-on Windows), without threads: accept and connect are asked about again on
-every retrace (`mkgp2pc_mediaboard_tick`), everything else is answered at
-once. Answers leave one at a time, as the game clears the answer mailbox.
+packets and `netlink.c` executes them, without threads: accept and connect
+are asked about again on every retrace (`mkgp2pc_mediaboard_tick`),
+everything else is answered at once. Answers leave one at a time, as the
+game clears the answer mailbox.
 
 A PC has neither the 192.168.29.x addresses nor one address per cabinet, and
 the game identifies a peer by source address. So:
 
-- Game address 192.168.29.(150+k), port 5000+c is real TCP port
-  base + 16k + c on the host where cabinet k+1 runs. Several cabinets on one
-  PC do not collide.
-- Each cabinet sends a 12-byte UDP datagram (`MKGP2PC1` and its game
-  address) once a second to the broadcast address and to 127.0.0.1, to the
-  announcement ports of the other three. A cabinet heard on this PC is
-  reached through 127.0.0.1.
-- A connection starts with 8 bytes from the connecting side: `MKL1` and its
-  game address. The accepting side reports that address to the game.
+- Each cabinet has one real UDP port, base + 64 + k for cabinet k+1.
+  Several cabinets on one PC do not collide. Everything between two
+  cabinets travels between those two ports.
+- Each cabinet sends a 12-byte datagram (`MKGP2PC1` and its game address)
+  once a second to the broadcast address and to 127.0.0.1, to the ports of
+  the other three, to the common port base + 68, and to the cabinets named
+  in `MKGP2PC_LINK_PEERS`. A cabinet heard on this PC is reached through
+  127.0.0.1. The address and port an announcement came from are where that
+  cabinet is.
+- The game's TCP connections are streams inside datagrams (until 2026-11-12
+  they were real TCP connections). The game still gets its bytes complete
+  and in order. What changes is what a lost datagram costs: TCP holds
+  everything behind it back until the retransmission, 200 ms or more; here
+  every datagram with new bytes repeats the unconfirmed bytes before them
+  (up to 1200 bytes a datagram, about five frames of a race), so the next
+  frame's datagram, 17 ms later, makes the loss good. Only when that cannot
+  work is the oldest open piece sent again, on a hint from the receiver or
+  after 1.5 round trips. The header (32 bytes: connection number, game
+  address of the sender, offsets of both streams, two clocks for the round
+  trip time) is laid out in `netlink.c` under "connections".
+- A connection is named by the cabinet that opened it and a number; the
+  accepting side reports the opener's game address to the game.
 - A cabinet that has not been heard from is like an address nobody answers
-  at: the connect fails after the game's 6 s. A known cabinet whose port is
-  closed refuses at once, so the walk down from port 5008 to 5000 takes a
-  moment.
+  at: the connect fails after the game's 6 s. A known cabinet that is not
+  listening on the port refuses at once, so the walk down from port 5008 to
+  5000 takes a moment. Any other address (the camera, 192.168.29.104-107)
+  is never answered.
+- For the game flow, `netlink.c` also offers a switch at run time
+  (`mkgp2pc_netlink_set_active`), the cabinet numbers heard
+  (`mkgp2pc_netlink_heard_mask`, also while the link is off or the copy has
+  no number yet) and whether the number just set was free on this PC
+  (`mkgp2pc_netlink_address_ok`).
 - Byte order: the game stores command arguments byte-swapped for the board
   (real swaps on every host), so the port swaps them back. The descriptor
   sets of select are words the game swaps itself; the port reads them the
   same way. The port in a socket address is a plain 16-bit number in the
   game's memory.
 
-Because of the greeting bytes and because the game's messages are structs in
-host byte order (bit-fields included), this links PC builds with each other.
-It is not the wire format of the arcade board: a real cabinet or an emulator
-running the original program would need the greeting dropped, the source
-address faked some other way and every message converted.
+Because of all that and because the game's messages are structs in host byte
+order (bit-fields included), this links PC builds with each other. It is not
+the wire format of the arcade board: a real cabinet or an emulator running
+the original program speaks TCP between fixed addresses and would need every
+message converted.
 
 Dolphin (GPL, facts only, no code used) supports the same link for the
 original program by redirecting the fixed addresses to configured ones.
@@ -168,7 +204,8 @@ Read from `src/game/VSMode_FrameUpdate.c` (`VSMode_FrameUpdate`) and
   and waits when its ring is empty, and then until two frames have come.
 - Flow control: when a client reports `queued` of 2 or more, the host waits
   one retrace before its next step, up to 4 retraces per step. While it
-  waits it keeps sending.
+  waits it keeps sending. The port replaces this rule, see "The host's
+  waiting rule" below.
 - Time limits: 180 polls without data close a connection; a connected
   outgoing link with no incoming one for 180 ticks is reset; the socket
   limits are 80 s.
@@ -176,7 +213,60 @@ Read from `src/game/VSMode_FrameUpdate.c` (`VSMode_FrameUpdate`) and
 So a client sees its own kart move only after its input has gone to the host
 and come back in a frame, and the host's player has no such wait.
 
-### Measured with delay added (2026-11-11)
+### The host's waiting rule in the port (2026-11-12)
+
+Between cabinets on one cable `queued` only grows when a client runs slower
+than the host. Over a longer way it also jumps whenever frames arrive
+bunched: with jitter, or when a lost datagram is made good by the next one.
+The arcade rule then makes the host wait for a backlog that is gone before
+the wait is over, the client runs dry, waits for two frames, reports two,
+and so on; the first measurement below shows the race at 0.7 to 0.8 of real
+time from that alone.
+
+`port/patches/src/game/VSMode_FrameUpdate.c.patch` lets the host ask the
+port (`mkgp2pc_link_backlog` in `netlink.c`) what a report means. A client
+counts as behind only when its `queued` has stayed up without a break: at 2
+or more for two seconds, 3 for two thirds of a second, 4 for a quarter, 6
+for four frames. Then the host waits one retrace and the counting starts
+again. What a client holds in between is its reserve against late frames.
+It grows by itself, because a client that runs dry waits until two frames
+have come (the arcade program's own rule, unchanged), and it shrinks through
+the rule above when it is more than the connection needs. A client that
+really is slower still slows the host, a few frames later than on the
+cabinet. `MKGP2PC_LINK_PACE=0` gives the arcade rule back.
+
+### Measured again with UDP and the port's waiting rule (2026-11-12)
+
+Same set-up as the first measurement below (two copies, no graphics, 60
+retraces a second, scripted input, 110 to 150 s a row), but the delay,
+jitter and loss now act on single datagrams: jitter lets them overtake each
+other and a lost one is really gone. "Stood still" counts the retraces in
+which the race clock did not move on that copy.
+
+| one way delay, jitter, loss | race speed, mean (worst second) | input delay, host | input delay, client (mean / worst) | stood still, per second (worst second) |
+|---|---|---|---|---|
+| 0 ms | 1.00 (1.00) | 17 ms | 81 / 84 ms | 0 |
+| 20 ms, 0..10 ms | 1.00 (0.98) | 17 ms | 134 / 151 ms | 0.1 (1) |
+| 20 ms, 2 % | 1.00 (0.98) | 16 ms | 136 / 151 ms | not counted |
+| 50 ms, 0..20 ms, 5 % | 0.99 (0.87) | 17 ms | 230 / 318 ms | 0.6 (8) |
+| 100 ms, 0..30 ms, 10 % | 0.99 (0.75) | 17 ms | 348 / 434 ms | 0.7 (15) |
+
+With UDP alone and the arcade rule (`MKGP2PC_LINK_PACE=0`): steady delays of
+0, 20, 30, 50 and 100 ms ran at 0.98 to 1.00, also with both copies started
+at the same instant (the 0.72 of the first table is gone); 20 ms with
+0..10 ms jitter 0.82, 20 ms with 2 % loss 0.88, 50 ms with 0..20 ms and 5 %
+0.71. So the transport removes the stalls behind a lost segment and the
+waiting rule removes the slow race.
+
+Three copies with 20 ms, 0..5 ms jitter and 1 % loss: 1.00 on all three,
+133 ms input delay on both clients.
+
+What is left is the input delay of a client: about 80 ms plus twice the way,
+plus its reserve of frames. The host's player still has one frame. That is
+what a client moving its own kart ahead of the host's answer would remove
+(not done yet).
+
+### Measured with delay added, TCP and the arcade waiting rule (2026-11-11)
 
 Two copies of the no-graphics build on one Linux machine, both at 60
 retraces a second (`MKGP2PC_HZ=60`), the same scripted input on both (coin,
@@ -226,10 +316,10 @@ Options of the port for such measurements:
 
 | variable | meaning |
 |---|---|
-| `MKGP2PC_LINK_DELAY=<ms>` | every send leaves that much later |
-| `MKGP2PC_LINK_JITTER=<ms>` | plus a random 0..ms, order kept |
-| `MKGP2PC_LINK_LOSS=<percent>` | that share of the sends waits 200 ms (or twice the delay), and everything behind it |
-| `MKGP2PC_LINK_PROBE=1` | the once-a-second line described above |
+| `MKGP2PC_LINK_DELAY=<ms>` | every datagram leaves that much later (2026-11-11: every send) |
+| `MKGP2PC_LINK_JITTER=<ms>` | plus a random 0..ms each, so they may overtake one another (2026-11-11: order kept) |
+| `MKGP2PC_LINK_LOSS=<percent>` | that share of the datagrams is not sent (2026-11-11: that share of the sends waited 200 ms or twice the delay, and everything behind it) |
+| `MKGP2PC_LINK_PROBE=1` | the once-a-second line described above, since 2026-11-12 with the retraces in which the race clock stood still |
 | `MKGP2PC_HZ=60` | no-graphics build only: real time instead of fast-forward; the delayed sends are released every millisecond there, once a frame in the rendering build |
 
 ## Found on the way
@@ -255,8 +345,8 @@ Options of the port for such measurements:
     MKGP2_ISO=... MKGP2PC_PCB_ID=2 MKGP2PC_TRACE_LINK=1 build/pc-census/mkgp2-nogfx   # in another
 
 Both log "cabinet N is at 127.0.0.1", the walk down the ports, "connect:
-connected" and "accept ... from 192.168.29.15x", then byte counts that grow
-on both sides. With a debugger, the link slots (`PCBCheckRecv_bss_805A6154`,
+connected" and "accept ... from cabinet N", then byte counts that grow on
+both sides. With a debugger, the link slots (`PCBCheckRecv_bss_805A6154`,
 0xA3C bytes each, the first bytes are the other cabinet's state message)
 hold the other copy's state in both processes, and follow it when a scripted
 coin and button presses move one copy through its menus.
