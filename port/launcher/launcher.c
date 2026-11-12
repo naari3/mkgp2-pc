@@ -361,6 +361,9 @@ static void env_text(const wchar_t* name, const wchar_t* value) {
 
 static void apply_environment(const Settings* s) {
   wchar_t text[1024];
+  /* The game writes the settings changed in its menu (設定) into this file;
+   * the name is enough, the game runs in this program's folder. */
+  env_text(L"MKGP2PC_INI", INI_NAME);
   env_text(L"MKGP2_ISO", s->iso);
   env_text(L"MKGP2PC_CARD", s->card ? NULL : L"0");
   env_text(L"MKGP2PC_CARD_FILE", s->cardFile);
@@ -1724,11 +1727,27 @@ static void hires_window(void) {
 
 /* ---- main window -------------------------------------------------------- */
 
+/* The game's menu changes the settings file while the game runs (設定 in the
+ * Esc menu). When the game has ended and the file is not the one this
+ * program wrote before the start, it is read again, so that the window
+ * shows those changes and the next start does not write the old values
+ * back. What was changed in this window meanwhile and not saved is lost
+ * then. */
+static FILETIME g_iniTime;
+static FILETIME ini_time(void) {
+  WIN32_FILE_ATTRIBUTE_DATA data;
+  ZeroMemory(&data, sizeof(data));
+  GetFileAttributesExW(g_ini, GetFileExInfoStandard, &data);
+  return data.ftLastWriteTime;
+}
+
 static void game_started(void) {
+  g_iniTime = ini_time();
   EnableWindow(GetDlgItem(g_wnd, ID_START), FALSE);
   set_status(L"実行中");
   SetTimer(g_wnd, TIMER_GAME, 500, NULL);
 }
+
 
 static void game_poll(void) {
   DWORD code = 0;
@@ -1743,6 +1762,11 @@ static void game_poll(void) {
     swprintf(text, LEN(text), L"異常終了 (0x%08lX)", (unsigned long)code);
   } else {
     swprintf(text, LEN(text), L"終了 (コード %lu)", (unsigned long)code);
+  }
+  FILETIME now = ini_time();
+  if (CompareFileTime(&now, &g_iniTime) != 0) {
+    load_settings(&g_set);
+    settings_to_window();
   }
   set_status(text);
   EnableWindow(GetDlgItem(g_wnd, ID_START), TRUE);
