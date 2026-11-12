@@ -36,7 +36,7 @@ typedef void (*RetraceCallback)(uint32_t retraceCount);
  *   up or Z        accelerator pedal
  *   down or X      brake pedal
  *   space, enter   item button (also "decide" in the menus)
- *   backspace, left shift   cancel button ("Mario button")
+ *   left shift     cancel button ("Mario button")
  *   5 or C         coin
  *   I              put the card (card.bin) into the card unit
  *   F1 / F2        test / service button of the cabinet
@@ -400,7 +400,7 @@ static int s_keyMap[KEY_ACTIONS][KEYS_PER_ACTION] = {
     {SDL_SCANCODE_TAB}, {SDL_SCANCODE_F9}, {SDL_SCANCODE_F8},
     {SDL_SCANCODE_F3}, {SDL_SCANCODE_F4},
     {SDL_SCANCODE_PAGEUP}, {SDL_SCANCODE_PAGEDOWN}, {SDL_SCANCODE_END}, {SDL_SCANCODE_HOME},
-    {SDL_SCANCODE_BACKSPACE, SDL_SCANCODE_LSHIFT}};
+    {SDL_SCANCODE_LSHIFT}};
 
 void mkgp2pc_hires_init(void); /* gx_shim.cpp */
 void mkgp2pc_hires_toggle(void);
