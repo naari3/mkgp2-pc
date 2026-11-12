@@ -21,6 +21,12 @@ Inside the menu: up / down (the arrow keys, or the keys of accelerator and
 brake) move the cursor, `Enter` (or the item key) takes the choice, `Esc`
 (or the menu or back key) closes it.
 
+The menu can also be opened while the game is paused with the pause key
+(`P`); it is then drawn the plain way. Leaving the menu with any choice or
+key ends that pause too (2026-11-12, after the user chose ゲームに戻る on a
+paused game and nothing moved; the log says "resumed at retrace N (menu
+closed)").
+
 | Choice | Does |
 |---|---|
 | ゲームに戻る / Resume | closes the menu |
