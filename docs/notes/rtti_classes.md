@@ -358,3 +358,33 @@ clEnemyFace/clEFace3D converted in EnemyFace_exact2.cpp + EnemyFace_nm4.cpp: fou
 Source: Codex worker r7_c47_20261111 (gpt-6.1-sol/medium) + coordinator acceptance (independent main build, DOL SHA-1 OK, actual main.elf ranges). Native gain: 0 fn / 0 B.
 
 clMnCardRenew: if carving all ancestor names would leave an 8-aligned autodata tail at 803EF454, the existing extern: string rename mechanism can leave the ancestor names in autodata and carve only the derived name (803EF408..418). Tail 803EF418 is 8 aligned; compiler still emits all RTTI records/base lists and the derived vtable. DATA_ALIGN4_TUS only pins .data and does not fix a .rodata tail. All sections, ten functions and full DOL SHA-1 exact.
+
+## r8_c9_20261112
+Source: Codex worker r8_c9_20261112 (gpt-6.1-sol/medium) + coordinator acceptance (independent main build, DOL SHA-1 OK, actual main.elf ranges). Native gain: 0 fn / 0 B.
+
+clCGameDK can convert independently of CoinBase/DKCoin in the same code TU: keep nondeferred address-order definitions and the old Coin aliases, and own only .data 8048E318..34C / .sdata 806CF548..560. Approved uncalled PrintTypeNames pools the DK/JobRunner names at the original position; compiler RTTI reuses the literal strings. Exact pool symbol boundaries remove pseudo-relocation mismatches. All seven methods/EH/data and full source-linked DOL verified. Existing mechanisms, not a compiler-source rule.
+
+## r8_c14_20261112
+Source: Codex worker r8_c14_20261112 (gpt-6.1-sol/medium) + coordinator acceptance (independent main build, DOL SHA-1 OK, actual main.elf ranges). Native gain: 0 fn / 0 B.
+
+clCSSceneNextRace converted using existing mechanisms: own name pool at 80369684 needs #align4 .rodata in its bridge, while autodata tail 803696AC independently needs align4.txt. Own six sections and six functions 100%, exact linked addresses and full DOL SHA-1 verified. This is an object/link observation; no new compiler-source rule.
+
+## r8_c11_20261112
+Source: Codex worker r8_c11_20261112 (gpt-6.1-sol/medium) + coordinator acceptance (independent main build, DOL SHA-1 OK, actual main.elf ranges). Native gain: 0 fn / 0 B.
+
+r8_c11: clCSPartsPlatform converts in PodiumPose.c without merging the surrounding CSParts units. As already observed for r7_c13, base-list-first is not proof of deferred mode when the canonical base vtable is external: nondeferred ordinary source order preserves the existing eager PoseChar asm ctor. An approved marked uncalled diagnostic member pools RTTI names before ceremony/trpy/flower filenames. Split the existing 80360B81 padding+pointer-table symbol at 80360B84 and the resource filename pool at 80360C44/54/64; this removes synthetic R_PPC_NONE objdiff mismatches. Six sections, ten retained functions, clang and full source-linked SHA-1 exact. This is an application of existing rules and object/link evidence, not a new compiler-source trace.
+
+## r8_c16_20261112
+Source: Codex worker r8_c16_20261112 (gpt-6.1-sol/medium) + coordinator acceptance (independent main build, DOL SHA-1 OK, actual main.elf ranges). Native gain: 0 fn / 0 B.
+
+r8_c16 observation: clKPCharaData_MKoopa and NokoPata can convert independently of their base table by leaving CoursePropCtor.cpp separate (RTTI off), merging append+MKoopa Update, and retaining NokoPata Update separately. Existing extern: bridges reuse the original base RTTI/name. DATA_ALIGN4_TUS dropped .comment and kept +32-byte duplicate pools; existing #align4 on .rodata,.data preserves symbol chunk information and gives an exact full DOL. This is an object/link observation, not a compiler-source rule.
+
+## r8_c17_20261112
+Source: Codex worker r8_c17_20261112 (gpt-6.1-sol/medium) + coordinator acceptance (independent main build, DOL SHA-1 OK, actual main.elf ranges). Native gain: 0 fn / 0 B.
+
+clMiyazaki uses the approved uncalled diagnostic member to emit its trailing labels. A TU already in DATA_ALIGN4_TUS must move to DATA_ALIGN4_WEAK_TUS when it needs MWLD dead stripping: the ordinary alignment hook removes .comment and therefore retains the otherwise unused diagnostic and EH. The keep-comment hook restored the original DOL. This follows the existing hooks, not a newly traced compiler rule.
+
+## r8_c28_20261112
+Source: Codex worker r8_c28_20261112 (gpt-6.1-sol/medium) + coordinator acceptance (independent main build, DOL SHA-1 OK, actual main.elf ranges). Native gain: 0 fn / 0 B.
+
+clRsCardT1 converts without merging the nondeferred setup and deferred transition TUs: declare Finish first so its existing definition in SceneRoleTransitions selects the vtable key owner, ahead of the continue-family data. Canonical shared class/header, existing extern ancestor bridges and DATA_ALIGN4_WEAK_TUS preserve 35 primary functions, owned sections, exact linked addresses and full DOL SHA-1. Existing-mechanism object/link observation, not a new compiler-source rule.
