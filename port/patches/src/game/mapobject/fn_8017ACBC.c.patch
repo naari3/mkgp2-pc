@@ -1,0 +1,13 @@
+--- a/src/game/mapobject/fn_8017ACBC.c	2026-11-12 05:14:56.924418941 +0000
++++ b/src/game/mapobject/fn_8017ACBC.c	2026-11-12 05:14:56.944685155 +0000
+@@ -5,6 +5,10 @@
+ } Def;
+ 
+ typedef struct AnimObj {
++    /* PC port: this is clModel::Update, called on clModel objects built by
++     * C++ code; the host compiler puts the vtable pointer first (MWCC: after
++     * the data members), so every member is one pointer further in. */
++    void *host_vptr;
+     void *next;
+     Def *def;
+     void *jobj;

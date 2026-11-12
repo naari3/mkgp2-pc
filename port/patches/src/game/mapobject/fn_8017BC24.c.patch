@@ -1,0 +1,11 @@
+--- a/src/game/mapobject/fn_8017BC24.c	2026-11-12 05:14:56.924388518 +0000
++++ b/src/game/mapobject/fn_8017BC24.c	2026-11-12 05:14:56.944511979 +0000
+@@ -1,4 +1,8 @@
+ typedef struct LNode {
++    /* PC port: the nodes are clModel objects built by C++ code. MWCC puts
++     * the vtable pointer after clModel's data members (+0x1C), the host
++     * compiler puts it first, so `next` is one pointer further in. */
++    void *host_vptr;
+     struct LNode *next;
+ } LNode;
+ 
