@@ -47,6 +47,7 @@ window. Empty fields show their default as grey text.
 | 表示 | aspect 4:3 or 16:9 (4:3 = not set); what 16:9 does is in widescreen.md | `MKGP2PC_ASPECT` |
 | 表示 | window size: height 480 x factor, width from the aspect. 4:3 offers 1 to 6, 16:9 offers 1, 1.5 (1280x720), 2, 2.25 (1920x1080), 3, 4.5. | `MKGP2PC_SCALE` |
 | 表示 | rendering backend (automatic, d3d12, d3d11, vulkan, opengl) | `MKGP2PC_BACKEND` |
+| 表示 | anti-aliasing: none, MSAA 4x, SSAA 2x, both (antialiasing.md) | `MKGP2PC_MSAA`, `MKGP2PC_SSAA` |
 | 表示 | smooth kart shadow (off = `1`) | `MKGP2PC_SHADOW_NEAREST` |
 | 表示 | high-resolution 2D textures from the folder `hires` (hires_textures.md says how the folder is made) | `MKGP2PC_HIRES` |
 | 表示 | 作成...: a window that makes the folder `hires` with `mkgp2-hires.exe` (method, size, progress, stop; hires_textures.md) | (launcher only) |
