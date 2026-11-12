@@ -34,8 +34,6 @@
 
 static void* s_arenaLo = (void*)ARENA_LO;
 static void* s_arenaHi = (void*)ARENA_HI;
-static void* s_saveStart;
-static void* s_saveEnd;
 
 #ifdef _WIN32
 /* The executable is linked large-address-aware, so a 32-bit process on
@@ -94,14 +92,7 @@ void* OSGetArenaHi(void) { return s_arenaHi; }
 void OSSetArenaLo(void* p) { s_arenaLo = p; }
 void OSSetArenaHi(void* p) { s_arenaHi = p; }
 
-void OSGetSavedRegion(void** start, void** end) {
-  *start = s_saveStart;
-  *end = s_saveEnd;
-}
-void OSSetSaveRegion(void* start, void* end) {
-  s_saveStart = start;
-  s_saveEnd = end;
-}
+/* OSGetSavedRegion, OSSetSaveRegion: port/platform/runtime/reset.c */
 
 uint32_t PPCMfhid0(void) { return 0; }
 void PPCMthid0(uint32_t v) { (void)v; }

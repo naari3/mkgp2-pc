@@ -605,6 +605,7 @@ static void wide_frame(void) {
   mkgp2pc_wide_frame(k > 1.001f ? k : 1.0f);
 }
 void mkgp2pc_crash_log_install(void); /* shot_win32.c */
+static void quit_now(void);
 int __wrap_main(int argc, char** argv) {
   mkgp2pc_crash_log_install();
   AuroraConfig config;
@@ -681,7 +682,15 @@ int __wrap_main(int argc, char** argv) {
   s_inFrame = aurora_begin_frame();
   begin_frame_state();
   wide_frame();
-  return __real_main(argc, argv);
+  __real_main(argc, argv);
+  /* The game's main returned (it does not while OSResetSystem restarts the
+   * program). Returning from here would run the static destructors, and
+   * Aurora's end in an access violation on Windows: its staging buffers'
+   * map callbacks lock a mutex that was destroyed before them (crash record
+   * 2026-11-12 after the test button, docs/port/census.md section 37). */
+  fprintf(stderr, "main returned; leaving\n");
+  quit_now();
+  return 0;
 }
 
 void mkgp2pc_audio_frame(void); /* audio_musyx.c */
