@@ -31,7 +31,10 @@ if [ ! -d "$DIR/.git" ]; then
 fi
 cd "$DIR"
 git fetch -q origin
-if [ -n "$WIN_REPO" ]; then
+# The Windows clone is only needed for a branch that exists there alone
+# (-Ref win/...). Fetching it for nothing fails when that clone is a git
+# worktree: its .git file holds a Windows path that WSL cannot follow.
+if [ -n "$WIN_REPO" ] && [ "${REF#win/}" != "$REF" ]; then
   git remote get-url win >/dev/null 2>&1 || git remote add win "$WIN_REPO"
   git remote set-url win "$WIN_REPO"
   git fetch -q win '+refs/heads/*:refs/remotes/win/*'
