@@ -56,6 +56,7 @@ static const KeyAction kActions[] = {
     {L"fast", L"全速 (切り替え)", {67, 0}},
     {L"fasthold", L"全速 (押下中)", {43, 0}},
     {L"dump", L"ダンプ", {66, 0}},
+    {L"hires", L"高解像度 (切り替え)", {65, 0}},
 };
 #define ACTIONS LEN(kActions)
 
@@ -72,6 +73,7 @@ typedef struct {
   int fast;
   int asyncPipelines;
   int goodsDisc;
+  int hires;
   int link;
   int pcbId; /* 1..4 */
   wchar_t peers[256];
@@ -136,6 +138,7 @@ static void load_settings(Settings* s) {
   s->fast = ini_int(L"fast", 0) != 0;
   s->asyncPipelines = ini_int(L"async_pipelines", 0) != 0;
   s->goodsDisc = ini_int(L"goods_disc", 0) != 0;
+  s->hires = ini_int(L"hires", 0) != 0;
   s->link = ini_int(L"link", 1) != 0;
   s->pcbId = clampi(ini_int(L"pcb_id", 1), 1, 4, 1);
   ini_str(L"peers", s->peers, LEN(s->peers));
@@ -197,6 +200,7 @@ static int save_settings(const Settings* s) {
   put_int(L"fast", s->fast);
   put_int(L"async_pipelines", s->asyncPipelines);
   put_int(L"goods_disc", s->goodsDisc);
+  put_int(L"hires", s->hires);
   put_int(L"link", s->link);
   put_int(L"pcb_id", s->pcbId);
   put_str(L"peers", s->peers);
@@ -296,6 +300,7 @@ static void apply_environment(const Settings* s) {
   env_flag(L"MKGP2PC_FAST", s->fast);
   env_flag(L"MKGP2PC_ASYNC_PIPELINES", s->asyncPipelines);
   env_flag(L"MKGP2PC_GOODS_DISC", s->goodsDisc);
+  env_flag(L"MKGP2PC_HIRES", s->hires);
   env_text(L"MKGP2PC_LINK", s->link ? NULL : L"0");
   swprintf(text, LEN(text), L"%d", s->pcbId);
   env_text(L"MKGP2PC_PCB_ID", text);
@@ -413,7 +418,7 @@ static void log_exit_code(DWORD code) {
 enum {
   ID_TAB = 100, ID_SAVE, ID_START, ID_STATUS,
   ID_ISO, ID_ISO_BROWSE, ID_CARD, ID_CARD_FILE, ID_CARD_BROWSE, ID_CLOSE_ON_START,
-  ID_ASPECT, ID_SCALE, ID_BACKEND, ID_RESIZABLE, ID_SHADOW, ID_FAST, ID_ASYNC, ID_GOODS,
+  ID_ASPECT, ID_SCALE, ID_BACKEND, ID_RESIZABLE, ID_SHADOW, ID_FAST, ID_ASYNC, ID_GOODS, ID_HIRES,
   ID_LINK, ID_PCB, ID_PEERS, ID_PORT,
   ID_KEYS, ID_KEY_SET1, ID_KEY_SET2, ID_KEY_CLEAR1, ID_KEY_CLEAR2, ID_KEY_RESET,
   ID_EXTRA, ID_OPEN_LOG, ID_OPEN_FOLDER,
@@ -566,6 +571,8 @@ static void create_controls(void) {
   y += 40;
   check(1, L"影をなめらかにする", X, y, W, ID_SHADOW);
   y += 28;
+  check(1, L"高解像度の 2D テクスチャ (未対応)", X, y, W, ID_HIRES);
+  y += 28;
   check(1, L"全速で開始", X, y, W, ID_FAST);
   y += 28;
   check(1, L"コイン集計を英語で表示", X, y, W, ID_GOODS);
@@ -656,6 +663,7 @@ static void settings_to_window(void) {
   CheckDlgButton(g_wnd, ID_FAST, g_set.fast);
   CheckDlgButton(g_wnd, ID_ASYNC, g_set.asyncPipelines);
   CheckDlgButton(g_wnd, ID_GOODS, g_set.goodsDisc);
+  CheckDlgButton(g_wnd, ID_HIRES, g_set.hires);
   CheckDlgButton(g_wnd, ID_LINK, g_set.link);
   SendDlgItemMessageW(g_wnd, ID_PCB, CB_SETCURSEL, (WPARAM)(g_set.pcbId - 1), 0);
   SetDlgItemTextW(g_wnd, ID_PEERS, g_set.peers);
@@ -678,6 +686,7 @@ static void window_to_settings(void) {
   g_set.fast = checked(ID_FAST);
   g_set.asyncPipelines = checked(ID_ASYNC);
   g_set.goodsDisc = checked(ID_GOODS);
+  g_set.hires = checked(ID_HIRES);
   g_set.link = checked(ID_LINK);
   g_set.pcbId = (int)SendDlgItemMessageW(g_wnd, ID_PCB, CB_GETCURSEL, 0, 0) + 1;
   GetDlgItemTextW(g_wnd, ID_PEERS, g_set.peers, LEN(g_set.peers));

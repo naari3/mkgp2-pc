@@ -47,6 +47,7 @@ window. Empty fields show their default as grey text.
 | 表示 | window size: height 480 x factor, width from the aspect. 4:3 offers 1 to 6, 16:9 offers 1, 1.5 (1280x720), 2, 2.25 (1920x1080), 3, 4.5. Fractions need the game build that has `MKGP2PC_ASPECT`; older ones read the whole part | `MKGP2PC_SCALE` |
 | 表示 | rendering backend (automatic, d3d12, d3d11, vulkan, opengl) | `MKGP2PC_BACKEND` |
 | 表示 | smooth kart shadow (off = `1`) | `MKGP2PC_SHADOW_NEAREST` |
+| 表示 | high-resolution 2D textures from the folder `hires` (game side on its way, hires_textures.md; marked 未対応 until it lands) | `MKGP2PC_HIRES` |
 | 表示 | start at full speed | `MKGP2PC_FAST` |
 | 表示 | coin tally popups as on the disc (English) | `MKGP2PC_GOODS_DISC` |
 | 表示 | do not wait for pipelines | `MKGP2PC_ASYNC_PIPELINES` |
@@ -71,7 +72,9 @@ Read by `key_map_load` in `port/gfx/video_aurora.c`:
 `action=key[,key...]` separated by `;`, up to four keys per action. Actions
 not named keep their default keys; nothing after `=` leaves an action without
 a key. Actions: `left right accel brake item coin card test service pause
-step fast fasthold dump`. A key is an SDL scancode name (`A`, `Left`, `F9`,
+step fast fasthold dump`, and `hires` (default F8) once the high-resolution
+textures are in the game; a game that does not know an action logs
+`unknown entry` and goes on. A key is an SDL scancode name (`A`, `Left`, `F9`,
 `Keypad 5`) or the scancode number, which is the USB keyboard usage (4 = A).
 A single character is always a name (`5` is the key 5), so numbers are
 written with two digits (`04`). Scancodes name physical keys: the layout does
