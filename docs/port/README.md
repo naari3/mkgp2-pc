@@ -17,6 +17,7 @@ clean-up.
 | Document | Content |
 |---|---|
 | [`build.md`](build.md) | How to build, run and test the PC executable; updating Aurora |
+| [`dumps.md`](dumps.md) | What an F9 dump and a crash folder hold (memory, stacks of all threads, minidump), how to read them with `port/tools/dump_inspect.py` |
 | [`census.md`](census.md) | Measured: how much of the source a host compiler accepts, and what a link would need |
 | [`64bit.md`](64bit.md) | Assessment: what assumes 4-byte pointers, counted, and the ways to a 64-bit build |
 | [`layout.md`](layout.md) | Directory map, which SDK library comes from where, stub and back end conventions, open questions |
