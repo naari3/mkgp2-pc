@@ -1100,6 +1100,14 @@ static void shader_wait(void) {
   }
   uint32_t first = stats->queuedPipelines;
   if (off || first == 0) {
+    static bool said;
+    if (!off && !said) {
+      /* Say so, or a log without a "shaders:" line cannot be told from a
+         start where the wait never ran. */
+      fprintf(stderr, "shaders: nothing to prepare at retrace %u (%u pipelines ready)\n",
+              s_retrace, stats->createdPipelines);
+    }
+    said = true;
     return;
   }
   Uint64 start = SDL_GetTicksNS(), moved = start, titled = 0;
