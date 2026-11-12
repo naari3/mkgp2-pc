@@ -38,6 +38,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <mkgp2pc/camera.h>
 #include <mkgp2pc/triforce.h>
 
 void VBlankEnable_Set(unsigned char enable); /* src/game/VBlank.c */
@@ -192,11 +193,12 @@ static void command(uint8_t cmd, const uint8_t* data, int n) {
   switch (cmd) {
   case 0x10: /* initialise */
     /* The game sends this from its power-on checks, before the camera
-     * check. There is no camera here (it is a network camera on the
-     * cabinet), and the check would stop with an error screen until the
-     * operator presses the test button and the game turns the camera
-     * off. Do that last step now, with the game's own switch. */
-    if (!s_cameraOff) {
+     * check. Without a picture source (MKGP2PC_CAMERA,
+     * port/platform/camera/camera.c) there is no camera here, and the
+     * check would stop with an error screen until the operator presses
+     * the test button and the game turns the camera off. Do that last
+     * step now, with the game's own switch. */
+    if (!s_cameraOff && !mkgp2pc_camera_enabled()) {
       s_cameraOff = 1;
       VBlankEnable_Set(0);
     }

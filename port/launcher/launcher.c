@@ -19,10 +19,14 @@
 #define _UNICODE
 #endif
 #define WIN32_LEAN_AND_MEAN
+#define COBJMACROS
 #include <windows.h>
 #include <commctrl.h>
 #include <commdlg.h>
+#include <objbase.h>
 #include <shellapi.h>
+#include <mfidl.h>
+#include <mfobjects.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -79,6 +83,7 @@ typedef struct {
   wchar_t cardFile[MAX_PATH];
   int closeOnStart;
   int bootSkip;
+  wchar_t camera[256]; /* MKGP2PC_CAMERA: "" none, otherwise a device's name */
   int wide;            /* 16:9 instead of 4:3 */
   int scale;           /* window height in hundredths of 480 lines: 150 = 720 */
   wchar_t backend[16]; /* "" = the library's own choice */
@@ -155,6 +160,7 @@ static void load_settings(Settings* s) {
   ini_str(L"card_file", s->cardFile, LEN(s->cardFile));
   s->closeOnStart = ini_int(L"close_on_start", 0) != 0;
   s->bootSkip = ini_int(L"boot_skip", 0) != 0;
+  ini_str(L"camera", s->camera, LEN(s->camera));
   s->wide = ini_int(L"wide", 0) != 0;
   {
     wchar_t text[16] = L"1";
@@ -234,6 +240,7 @@ static int save_settings(const Settings* s) {
   put_str(L"card_file", s->cardFile);
   put_int(L"close_on_start", s->closeOnStart);
   put_int(L"boot_skip", s->bootSkip);
+  put_str(L"camera", s->camera);
   put_int(L"wide", s->wide);
   {
     wchar_t text[16];
@@ -349,6 +356,7 @@ static void apply_environment(const Settings* s) {
   env_text(L"MKGP2PC_CARD", s->card ? NULL : L"0");
   env_text(L"MKGP2PC_CARD_FILE", s->cardFile);
   env_flag(L"MKGP2PC_BOOT_SKIP", s->bootSkip);
+  env_text(L"MKGP2PC_CAMERA", s->camera);
   swprintf(text, LEN(text), L"%g", s->scale / 100.0);
   env_text(L"MKGP2PC_SCALE", s->scale != 100 ? text : NULL);
   env_text(L"MKGP2PC_ASPECT", s->wide ? L"16:9" : NULL);
@@ -500,7 +508,7 @@ static void log_exit_code(DWORD code) {
 
 enum {
   ID_TAB = 100, ID_SAVE, ID_START, ID_STATUS,
-  ID_ISO, ID_ISO_BROWSE, ID_CARD, ID_CARD_FILE, ID_CARD_BROWSE, ID_CLOSE_ON_START, ID_BOOT_SKIP,
+  ID_ISO, ID_ISO_BROWSE, ID_CARD, ID_CARD_FILE, ID_CARD_BROWSE, ID_CLOSE_ON_START, ID_BOOT_SKIP, ID_CAMERA,
   ID_ASPECT, ID_SCALE, ID_BACKEND, ID_RESIZABLE, ID_SHADOW, ID_FAST, ID_ASYNC, ID_GOODS, ID_HIRES, ID_HIRES_MAKE, ID_AA,
   ID_LINK, ID_PCB, ID_PEERS, ID_PORT, ID_ROOM, ID_SERVER,
   ID_KEYS, ID_KEY_SET1, ID_KEY_SET2, ID_KEY_CLEAR1, ID_KEY_CLEAR2, ID_KEY_RESET,
@@ -647,6 +655,9 @@ static void create_controls(void) {
   check(0, L"デバイスチェックと NOTICE を飛ばす", X, y, W, ID_BOOT_SKIP);
   y += 28;
   check(0, L"起動後に閉じる", X, y, W, ID_CLOSE_ON_START);
+  y += 34;
+  label(0, L"カメラ", X, y + 3, 110, 18);
+  combo(0, X + 116, y, 300, ID_CAMERA);
 
   /* 表示 */
   y = 48;
@@ -803,12 +814,88 @@ static void create_controls(void) {
   SetWindowPos(g_tab, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 }
 
+/* ---- the camera list ----------------------------------------------------------
+ *
+ * The first entry is "no camera", then the video capture devices by name.
+ * The game takes the name (MKGP2PC_CAMERA, port/platform/camera/camera_mf.c).
+ * A saved value that is no device connected now (an unplugged camera,
+ * "test", "file:...") stays in the list. Media Foundation is loaded only
+ * when the list is opened and only if it is there. */
+#define CAMERA_NONE L"なし"
+
+static const GUID kMfSourceType = {0xc60ac5fe, 0x252a, 0x478f, {0xa0, 0xef, 0xbc, 0x8f, 0xa5, 0xf7, 0xca, 0xd3}};
+static const GUID kMfSourceTypeVideo = {0x8ac3587a, 0x4ae7, 0x42d8, {0x99, 0xe0, 0x0a, 0x60, 0x13, 0xee, 0xf9, 0x0f}};
+static const GUID kMfFriendlyName = {0x60d0e559, 0x52f8, 0x4fa2, {0xbb, 0xce, 0xac, 0xdb, 0x34, 0xa8, 0xec, 0x01}};
+
+static void camera_devices(HWND list) {
+  HMODULE ole = LoadLibraryW(L"ole32.dll"), plat = LoadLibraryW(L"mfplat.dll"), mf = LoadLibraryW(L"mf.dll");
+  HRESULT(WINAPI * coInit)(LPVOID, DWORD);
+  void(WINAPI * coFree)(LPVOID);
+  HRESULT(WINAPI * startup)(ULONG, DWORD);
+  HRESULT(WINAPI * shutdown)(void);
+  HRESULT(WINAPI * createAttributes)(IMFAttributes**, UINT32);
+  HRESULT(WINAPI * enumDevices)(IMFAttributes*, IMFActivate***, UINT32*);
+  IMFAttributes* attributes = NULL;
+  IMFActivate** devices = NULL;
+  UINT32 count = 0;
+  if (ole == NULL || plat == NULL || mf == NULL) return;
+  coInit = (void*)GetProcAddress(ole, "CoInitializeEx");
+  coFree = (void*)GetProcAddress(ole, "CoTaskMemFree");
+  startup = (void*)GetProcAddress(plat, "MFStartup");
+  shutdown = (void*)GetProcAddress(plat, "MFShutdown");
+  createAttributes = (void*)GetProcAddress(plat, "MFCreateAttributes");
+  enumDevices = (void*)GetProcAddress(mf, "MFEnumDeviceSources");
+  if (!coInit || !coFree || !startup || !shutdown || !createAttributes || !enumDevices) return;
+  coInit(NULL, COINIT_APARTMENTTHREADED); /* stays for the life of the program */
+  if (FAILED(startup(0x00020070, 1 /* MFSTARTUP_LITE */))) return;
+  if (SUCCEEDED(createAttributes(&attributes, 1)) && SUCCEEDED(IMFAttributes_SetGUID(attributes, &kMfSourceType, &kMfSourceTypeVideo)) &&
+      SUCCEEDED(enumDevices(attributes, &devices, &count))) {
+    for (UINT32 i = 0; i < count; i++) {
+      wchar_t* name = NULL;
+      UINT32 length = 0;
+      if (SUCCEEDED(IMFActivate_GetAllocatedString(devices[i], &kMfFriendlyName, &name, &length)) && name != NULL) {
+        if (name[0] != 0 && SendMessageW(list, CB_FINDSTRINGEXACT, (WPARAM)-1, (LPARAM)name) == CB_ERR) {
+          SendMessageW(list, CB_ADDSTRING, 0, (LPARAM)name);
+        }
+        coFree(name);
+      }
+      IMFActivate_Release(devices[i]);
+    }
+    coFree(devices);
+  }
+  if (attributes != NULL) IMFAttributes_Release(attributes);
+  shutdown();
+}
+
+static void camera_fill(const wchar_t* current, int lookUp) {
+  HWND list = GetDlgItem(g_wnd, ID_CAMERA);
+  LRESULT at = 0;
+  SendMessageW(list, CB_RESETCONTENT, 0, 0);
+  SendMessageW(list, CB_ADDSTRING, 0, (LPARAM)CAMERA_NONE);
+  if (lookUp) camera_devices(list);
+  if (current[0] != 0) {
+    at = SendMessageW(list, CB_FINDSTRINGEXACT, (WPARAM)-1, (LPARAM)current);
+    if (at == CB_ERR) at = SendMessageW(list, CB_ADDSTRING, 0, (LPARAM)current);
+  }
+  SendMessageW(list, CB_SETCURSEL, (WPARAM)at, 0);
+}
+
+static void camera_selected(wchar_t* out, int size) {
+  HWND list = GetDlgItem(g_wnd, ID_CAMERA);
+  LRESULT at = SendMessageW(list, CB_GETCURSEL, 0, 0);
+  out[0] = 0;
+  if (at > 0 && SendMessageW(list, CB_GETLBTEXTLEN, (WPARAM)at, 0) < size) {
+    SendMessageW(list, CB_GETLBTEXT, (WPARAM)at, (LPARAM)out);
+  }
+}
+
 static void settings_to_window(void) {
   SetDlgItemTextW(g_wnd, ID_ISO, g_set.iso);
   CheckDlgButton(g_wnd, ID_CARD, g_set.card);
   SetDlgItemTextW(g_wnd, ID_CARD_FILE, g_set.cardFile);
   CheckDlgButton(g_wnd, ID_CLOSE_ON_START, g_set.closeOnStart);
   CheckDlgButton(g_wnd, ID_BOOT_SKIP, g_set.bootSkip);
+  camera_fill(g_set.camera, 0);
   SendDlgItemMessageW(g_wnd, ID_ASPECT, CB_SETCURSEL, (WPARAM)g_set.wide, 0);
   scale_fill(g_set.wide, g_set.scale);
   int backend = 0;
@@ -844,6 +931,7 @@ static void window_to_settings(void) {
   GetDlgItemTextW(g_wnd, ID_CARD_FILE, g_set.cardFile, LEN(g_set.cardFile));
   g_set.closeOnStart = checked(ID_CLOSE_ON_START);
   g_set.bootSkip = checked(ID_BOOT_SKIP);
+  camera_selected(g_set.camera, LEN(g_set.camera));
   g_set.scale = scale_selected();
   g_set.wide = SendDlgItemMessageW(g_wnd, ID_ASPECT, CB_GETCURSEL, 0, 0) == 1;
   int backend = (int)SendDlgItemMessageW(g_wnd, ID_BACKEND, CB_GETCURSEL, 0, 0);
@@ -1671,6 +1759,14 @@ static LRESULT CALLBACK main_proc(HWND wnd, UINT msg, WPARAM wp, LPARAM lp) {
       }
       break;
     case ID_HIRES_MAKE: hires_window(); break;
+    case ID_CAMERA:
+      if (HIWORD(wp) == CBN_DROPDOWN) {
+        /* the cameras connected now; looked up here, not at start-up */
+        wchar_t now[256];
+        camera_selected(now, LEN(now));
+        camera_fill(now, 1);
+      }
+      break;
     case ID_SAVE: save_from_window(); break;
     case ID_START:
       if (g_game == NULL && save_from_window()) {

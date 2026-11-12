@@ -1,0 +1,13 @@
+--- a/src/game/DrawNamCamImage.c
++++ b/src/game/DrawNamCamImage.c
+@@ -49,6 +49,10 @@
+     GXSetBlendMode(1, 4, 5, 0);
+     PSMTXScale(model, lbl_806D2F88, lbl_806D2F88, lbl_806D2F88);
+     GXLoadPosMtxImm(model, 0);
++    /* The quad is transformed by matrix 0, which the function loads but
++     * does not select. On the PC another matrix is current here and the
++     * quad lands off the image (docs/port/camera.md). */
++    GXSetCurrentMtx(0);
+     GXBegin(0x80, 0, 4);
+     {
+         float z, negX, negY;

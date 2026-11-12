@@ -139,6 +139,8 @@ static bool smooth_copies() {
 }
 
 bool mkgp2pc_board_texture;
+extern const void* mkgp2pc_camera_texture;
+extern uint32_t mkgp2pc_camera_texture_serial;
 void __wrap_GXLoadTexObj(GameTexObj* o, u32 id) {
   if (id == 0) {
     mkgp2pc_board_texture = o->width == 64 && o->height == 64 && o->format == 5;
@@ -163,6 +165,17 @@ void __wrap_GXLoadTexObj(GameTexObj* o, u32 id) {
     it = sTextures.emplace(key, real).first;
   }
   GXTexObj* real = &it->second;
+  {
+    /* The camera writes a new picture into the same memory
+     * (port/platform/camera/camera.c). */
+    static uint32_t cameraSerial;
+    if (o->data == mkgp2pc_camera_texture && cameraSerial != mkgp2pc_camera_texture_serial) {
+      cameraSerial = mkgp2pc_camera_texture_serial;
+      for (auto& [k, cached] : sTextures) {
+        if (std::get<0>(k) == o->data) GXInitTexObjData(&cached, o->data);
+      }
+    }
+  }
   GXInitTexObjWrapMode(real, static_cast<GXTexWrapMode>(o->wrapS), static_cast<GXTexWrapMode>(o->wrapT));
   if (o->flags & kLod) {
     u32 magFilt = o->magFilt;
