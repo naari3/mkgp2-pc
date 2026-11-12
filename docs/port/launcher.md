@@ -53,9 +53,10 @@ window. Empty fields show their default as grey text.
 | 表示 | do not wait for pipelines | `MKGP2PC_ASYNC_PIPELINES` |
 | 表示 | resizable window (crashes are known, see build.md) | `MKGP2PC_RESIZABLE` |
 | 通信 | cabinet link on (off = `0`) | `MKGP2PC_LINK` |
-| 通信 | cabinet number 1-4 | `MKGP2PC_PCB_ID` |
+| 通信 | cabinet number 1-4; 自動 leaves the variable unset | `MKGP2PC_PCB_ID` |
 | 通信 | where the other cabinets are | `MKGP2PC_LINK_PEERS` |
 | 通信 | first port | `MKGP2PC_LINK_PORT` |
+| 通信 | room name and rendezvous server for play between distant PCs (internet_play.md) | `MKGP2PC_LINK_ROOM`, `MKGP2PC_LINK_SERVER` |
 | キー | two keys per action | `MKGP2PC_KEYS` |
 | その他 | free lines `NAME=VALUE` (applied last, so they win) | any |
 
@@ -72,9 +73,10 @@ Read by `key_map_load` in `port/gfx/video_aurora.c`:
 `action=key[,key...]` separated by `;`, up to four keys per action. Actions
 not named keep their default keys; nothing after `=` leaves an action without
 a key. Actions: `left right accel brake item coin card test service pause
-step fast fasthold dump hires menu back debug debugpage` (`menu`, `back`: the
-port's menu and one selection screen back, menu.md; the last two: the game's
-own debug output, debug.md). A key is an SDL scancode name (`A`, `Left`, `F9`,
+step fast fasthold dump hires menu back debug debugpage devup devdown devstart
+devsub` (`menu`, `back`: the port's menu and one selection screen back, menu.md;
+from `debug` on: the game's own debug output and the buttons of the
+developers' scenes, debug.md). A key is an SDL scancode name (`A`, `Left`, `F9`,
 `Keypad 5`) or the scancode number, which is the USB keyboard usage (4 = A).
 A single character is always a name (`5` is the key 5), so numbers are
 written with two digits (`04`). Scancodes name physical keys: the layout does

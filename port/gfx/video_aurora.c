@@ -50,6 +50,8 @@ typedef void (*RetraceCallback)(uint32_t retraceCount);
  * script (MKGP2PC_SCRIPT) may drive them.
  */
 static bool s_keyLeft, s_keyRight, s_keyAccel, s_keyBrake, s_keyItem, s_keyTest, s_keyService;
+/* buttons the cabinet does not have: the developers' scenes read them (docs/port/debug.md) */
+static bool s_keyDevUp, s_keyDevDown, s_keyDevStart, s_keyDevSub;
 static bool s_keyboardUsed;
 static int s_wheel; /* -0x7FFF .. 0x7FFF */
 
@@ -390,20 +392,23 @@ enum {
   KEY_LEFT, KEY_RIGHT, KEY_ACCEL, KEY_BRAKE, KEY_ITEM, KEY_TEST, KEY_SERVICE,
   KEY_COIN, KEY_CARD, KEY_PAUSE, KEY_STEP, KEY_FAST, KEY_FASTHOLD, KEY_DUMP,
   KEY_MENU, KEY_BACK, KEY_HIRES, KEY_DEBUG, KEY_DEBUGPAGE,
+  KEY_DEVUP, KEY_DEVDOWN, KEY_DEVSTART, KEY_DEVSUB,
   KEY_ACTIONS
 };
 #define KEYS_PER_ACTION 4
 static const char* const s_actionNames[KEY_ACTIONS] = {
     "left", "right", "accel", "brake", "item", "test", "service",
     "coin", "card", "pause", "step", "fast", "fasthold", "dump", "menu", "back", "hires",
-    "debug", "debugpage"};
+    "debug", "debugpage",
+    "devup", "devdown", "devstart", "devsub"};
 static int s_keyMap[KEY_ACTIONS][KEYS_PER_ACTION] = {
     {SDL_SCANCODE_LEFT}, {SDL_SCANCODE_RIGHT}, {SDL_SCANCODE_UP, SDL_SCANCODE_Z},
     {SDL_SCANCODE_DOWN, SDL_SCANCODE_X}, {SDL_SCANCODE_SPACE, SDL_SCANCODE_RETURN},
     {SDL_SCANCODE_F1}, {SDL_SCANCODE_F2}, {SDL_SCANCODE_5, SDL_SCANCODE_C},
     {SDL_SCANCODE_I}, {SDL_SCANCODE_P}, {SDL_SCANCODE_O}, {SDL_SCANCODE_F10},
     {SDL_SCANCODE_TAB}, {SDL_SCANCODE_F9}, {SDL_SCANCODE_ESCAPE}, {SDL_SCANCODE_BACKSPACE},
-    {SDL_SCANCODE_F8}, {SDL_SCANCODE_F3}, {SDL_SCANCODE_F4}};
+    {SDL_SCANCODE_F8}, {SDL_SCANCODE_F3}, {SDL_SCANCODE_F4},
+    {SDL_SCANCODE_PAGEUP}, {SDL_SCANCODE_PAGEDOWN}, {SDL_SCANCODE_END}, {SDL_SCANCODE_HOME}};
 
 void mkgp2pc_hires_init(void); /* gx_shim.cpp */
 void mkgp2pc_hires_toggle(void);
@@ -495,6 +500,10 @@ static void key_event(const SDL_Event* e) {
     case KEY_ACCEL: s_keyAccel = down; control = true; break;
     case KEY_BRAKE: s_keyBrake = down; control = true; break;
     case KEY_ITEM: s_keyItem = down; control = true; break;
+    case KEY_DEVUP: s_keyDevUp = down; control = true; break;
+    case KEY_DEVDOWN: s_keyDevDown = down; control = true; break;
+    case KEY_DEVSTART: s_keyDevStart = down; control = true; break;
+    case KEY_DEVSUB: s_keyDevSub = down; control = true; break;
     case KEY_TEST: s_keyTest = down; control = true; break;
     case KEY_SERVICE: s_keyService = down; control = true; break;
     case KEY_COIN:
@@ -585,7 +594,17 @@ static void keyboard_tick(void) {
   rec_analog(0, (uint16_t)(0x8000 + s_wheel));
   rec_analog(1, s_keyAccel ? 0xFFFF : 0);
   rec_analog(2, s_keyBrake ? 0xFFFF : 0);
-  rec_switch((uint8_t)(s_keyItem ? 0x20 : 0));
+  /* Second switch byte of player 1. The cabinet wires only the item button
+   * (0x20). The game's table kRawGameMap_Raw0 also knows 0x80, 0x40, 0x10
+   * and 0x02, which the developers' scenes use as up, down, a second button
+   * and start / leave; they are passed on only while debugging is on, so
+   * that a stray key cannot do anything in a normal game. */
+  uint8_t dev = 0;
+  if (mkgp2pc_debug_on()) {
+    dev = (uint8_t)((s_keyDevUp ? 0x80 : 0) | (s_keyDevDown ? 0x40 : 0) | (s_keyDevSub ? 0x10 : 0) |
+                    (s_keyDevStart ? 0x02 : 0));
+  }
+  rec_switch((uint8_t)((s_keyItem ? 0x20 : 0) | dev));
   /* 0x01: the DIP switch that skips the card reader, printer and camera */
   rec_operator((uint8_t)((mkgp2pc_card_enabled() ? 0 : 0x01) | (s_keyTest ? 0x40 : 0) | (s_keyService ? 0x80 : 0)));
 }
@@ -623,17 +642,44 @@ int __real_main(int argc, char** argv);
 /* Aurora compiles a draw's pipeline on a worker thread the first time the
  * draw's state is seen and, by default, drops the draw until that is done:
  * after a scene change the models, each with new state, appeared one after
- * another over the first frames. Blocking draws wait for the pipeline, so
- * the first frame of a scene is complete (it may take longer once; compiled
- * pipelines are kept in the cache file). MKGP2PC_ASYNC_PIPELINES=1 gives the
- * dropping behaviour back. The setting is GX state, sent with each frame. */
+ * another over the first frames. Blocking draws wait for the pipeline
+ * instead, which makes the first frame of a scene complete, and makes a
+ * pipeline first met in the middle of a race a stall of 60 ms and more
+ * (docs/port/census.md section 36). So draws wait only around loading: at
+ * the start and for WAIT_FRAMES frames after the game last read a
+ * substantial amount from the disc (a scene being loaded reads hundreds of
+ * kilobytes and more a frame, a running race next to nothing). At any other
+ * time a draw whose pipeline is not ready is left out for the few frames the
+ * compilation takes, once per pipeline and machine.
+ *   MKGP2PC_PIPELINE_WAIT=always   wait for every pipeline (before 2026-11-12)
+ *   MKGP2PC_PIPELINE_WAIT=never    never wait (Aurora's own behaviour);
+ *                                  MKGP2PC_ASYNC_PIPELINES=1 says the same
+ * The setting is GX state, sent with each frame. */
+extern uint64_t mkgp2pc_perf_dvd_bytes; /* port/nogfx/dvd_min.c */
+static bool s_drawsWait;                /* this frame's setting, for the frame-time log */
 static void begin_frame_state(void) {
-  static int blocking = -1;
-  if (blocking < 0) {
-    blocking = getenv("MKGP2PC_ASYNC_PIPELINES") == NULL;
+  enum { WAIT_FRAMES = 120, LOAD_BYTES = 128 << 10 };
+  static int mode = -1; /* 0 never, 1 always, 2 around loading */
+  static uint64_t seenBytes;
+  static int left = WAIT_FRAMES;
+  if (mode < 0) {
+    const char* text = getenv("MKGP2PC_PIPELINE_WAIT");
+    mode = 2;
+    if (getenv("MKGP2PC_ASYNC_PIPELINES") != NULL || (text != NULL && strcmp(text, "never") == 0)) {
+      mode = 0;
+    } else if (text != NULL && strcmp(text, "always") == 0) {
+      mode = 1;
+    }
   }
+  if (mkgp2pc_perf_dvd_bytes - seenBytes >= LOAD_BYTES) {
+    left = WAIT_FRAMES;
+  } else if (left > 0) {
+    left--;
+  }
+  seenBytes = mkgp2pc_perf_dvd_bytes;
+  s_drawsWait = mode == 1 || (mode == 2 && left > 0);
   if (s_inFrame) {
-    AuroraSetDrawsBlocking(blocking != 0);
+    AuroraSetDrawsBlocking(s_drawsWait);
   }
 }
 /*
@@ -662,8 +708,13 @@ static int cache_check_row(void* state, int count, char** values, char** names) 
 }
 /* s_cacheMarker: a file whose existence tells the next start that Aurora
  * reported a damaged cache during the run (log_callback). */
-static void cache_check_file(const char* dir, const char* name, bool reported) {
-  char path[1024], other[1040];
+/* keepCopy (pipeline_cache.db, the list of pipelines seen so far): a file
+ * that passes the check is copied to <name>.backup, and a damaged one is
+ * replaced by that copy instead of an empty file. With the list back, the
+ * pipelines are compiled in the background at the start, as always, and not
+ * one by one when the game first draws with them. */
+static void cache_check_file(const char* dir, const char* name, bool reported, bool keepCopy) {
+  char path[1024], other[1040], copy[1040];
   sqlite3* db = NULL;
   int state = 0; /* 1: the check said ok */
   char why[200] = "";
@@ -682,6 +733,21 @@ static void cache_check_file(const char* dir, const char* name, bool reported) {
     snprintf(why, sizeof(why), "%s", db != NULL ? sqlite3_errmsg(db) : "cannot open");
     state = 2;
   }
+  snprintf(copy, sizeof(copy), "%s.backup", path);
+  if (state == 1 && keepCopy && strchr(path, '\'') == NULL) {
+    /* VACUUM INTO writes a compact file of its own from the rows; it does
+     * not replace an existing one, so: new file first, then swap. */
+    char sql[2200];
+    snprintf(other, sizeof(other), "%s.backup.new", path);
+    SDL_RemovePath(other);
+    snprintf(sql, sizeof(sql), "VACUUM INTO '%s';", other);
+    if (sqlite3_exec(db, sql, NULL, NULL, NULL) == 0) {
+      SDL_RemovePath(copy);
+      SDL_RenamePath(other, copy);
+    } else {
+      fprintf(stderr, "cache: no backup of %s (%s)\n", name, sqlite3_errmsg(db));
+    }
+  }
   if (db != NULL) {
     sqlite3_close(db);
   }
@@ -698,6 +764,11 @@ static void cache_check_file(const char* dir, const char* name, bool reported) {
   SDL_RemovePath(other);
   snprintf(other, sizeof(other), "%s-shm", path);
   SDL_RemovePath(other);
+  if (moved && keepCopy && SDL_GetPathInfo(copy, NULL) && SDL_CopyFile(copy, path)) {
+    fprintf(stderr, "cache: %s is damaged (%s); set aside as .broken and replaced by the backup of the last good start\n",
+            path, why[0] ? why : "failed the check");
+    return;
+  }
   fprintf(stderr, "cache: %s is damaged (%s); %s\n", path, why[0] ? why : "failed the check",
           moved ? "set aside as .broken, a new one is started (shaders are compiled again once)"
                 : "and could not be moved away: this run has no shader cache");
@@ -713,8 +784,8 @@ static void cache_check(const char* appName) {
   Uint64 start = SDL_GetTicksNS();
   snprintf(s_cacheMarker, sizeof(s_cacheMarker), "%scache_damaged", dir);
   bool reported = SDL_GetPathInfo(s_cacheMarker, NULL);
-  cache_check_file(dir, "dawn_cache.db", reported);
-  cache_check_file(dir, "pipeline_cache.db", reported);
+  cache_check_file(dir, "dawn_cache.db", reported, false);
+  cache_check_file(dir, "pipeline_cache.db", reported, true);
   SDL_RemovePath(s_cacheMarker);
   fprintf(stderr, "cache: %s checked in %.0f ms\n", dir, (double)(SDL_GetTicksNS() - start) / 1e6);
   SDL_free(dir);
@@ -958,6 +1029,8 @@ static void pump_events(void) {
  *   disc      reads from the disc image during the frame, on any thread
  *   lock      time this thread waited for the "interrupts off" lock while
  *             the sound or another thread held it
+ *   [loading] draws waited for their pipelines in this frame (the game had
+ *             just read from the disc, begin_frame_state)
  * Scene loads are long frames too and are listed like any other. Frames in
  * which the game was paused or a dump was made are left out.
  */
@@ -980,12 +1053,12 @@ static void spike_log(const Uint64 t[7], bool skip) {
     lines++;
     fprintf(stderr,
             "spike: retrace %u frame %.1f ms: game %.1f end %.1f events %.1f sleep %.1f (late %.1f) retrace %.1f "
-            "begin %.1f | pipelines +%u (%u waiting) disc %.1f ms %u KB lock %.1f ms%s\n",
+            "begin %.1f | pipelines +%u (%u waiting) disc %.1f ms %u KB lock %.1f ms%s%s\n",
             (unsigned)s_retrace, MS(t[0], t[6]), MS(t[0], t[1]), MS(t[1], t[2]), MS(t[2], t[3]), slept,
             late > 0.0 ? late : 0.0, MS(t[4], t[5]), MS(t[5], t[6]), (unsigned)(stats->createdPipelines - pipelines),
             (unsigned)stats->queuedPipelines, (double)(mkgp2pc_perf_dvd_ns - dvdNs) / 1e6,
             (unsigned)((mkgp2pc_perf_dvd_bytes - dvdBytes) >> 10), (double)(lockNow - lockNs) / 1e6,
-            s_fast || s_fastHeld ? " [full speed]" : "");
+            s_drawsWait ? " [loading]" : "", s_fast || s_fastHeld ? " [full speed]" : "");
   }
 #undef MS
   pipelines = stats->createdPipelines;
