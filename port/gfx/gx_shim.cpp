@@ -1496,7 +1496,55 @@ static void wide_census_frame() {
     }
   }
 }
+/*
+ * Where the race HUD sits in a wide picture (MKGP2PC_WIDE_HUD=edge, or the
+ * settings page of the port menu through mkgp2pc_wide_hud_set): in its 4:3
+ * place (the default) or moved out to the left and right edges of the
+ * screen. The HUD is what the game draws inside fn_80253448 (the HUD
+ * manager's draw, all layers) and ItemSelect_DrawUIHelperIfActive (the
+ * item box); both are wrapped and counted in sHudDepth. Other 2D of a race
+ * (marks that follow karts, effects) is drawn elsewhere and stays put.
+ * Inside, a primitive is moved by where its centre is: fully out when it
+ * is in the outer part of the picture, not at all in the middle (count-
+ * down, messages), a ramp in between so that something crossing the
+ * screen does not jump.
+ */
 extern "C" {
+void __real_fn_80253448(void* hud, u32 layers);
+void __real_ItemSelect_DrawUIHelperIfActive(void* select);
+}
+namespace {
+int sHudDepth;
+int sHudEdge = -1;
+float hud_shift(float lo, float hi) {
+  const float c = 0.5f * (lo + hi);
+  const float a = std::fabs(c);
+  const float in = 100.0f / 640.0f, out = 220.0f / 640.0f; /* 2 = 640 pixels: 50 and 110 pixels from the centre */
+  float t = (a - in) / (out - in);
+  t = t < 0.0f ? 0.0f : t > 1.0f ? 1.0f : t;
+  return (c < 0.0f ? -t : t) * (mkgp2pc_wide_k - 1.0f);
+}
+} // namespace
+extern "C" {
+int mkgp2pc_wide_hud_get(void) {
+  if (sHudEdge < 0) {
+    const char* e = getenv("MKGP2PC_WIDE_HUD");
+    sHudEdge = e != nullptr && strcmp(e, "edge") == 0;
+  }
+  return sHudEdge;
+}
+void mkgp2pc_wide_hud_set(int edge) { sHudEdge = edge != 0; }
+void __wrap_fn_80253448(void* hud, u32 layers) {
+  sHudDepth++;
+  __real_fn_80253448(hud, layers);
+  sHudDepth--;
+}
+void __wrap_ItemSelect_DrawUIHelperIfActive(void* select) {
+  sHudDepth++;
+  __real_ItemSelect_DrawUIHelperIfActive(select);
+  sHudDepth--;
+}
+static bool hud_edge() { return sHudDepth > 0 && mkgp2pc_wide_hud_get() != 0; }
 void mkgp2pc_wide_end(void);
 static u32 wide_vertex_size(GXVtxFmt fmt);
 static bool wide_start(GXPrimitive type, GXVtxFmt vtxfmt, u16 nverts);
@@ -1651,10 +1699,36 @@ static bool wide_trace() {
   if (v < 0) v = getenv("MKGP2PC_TRACE_WIDE") != nullptr;
   return v != 0;
 }
+#if defined(__linux__)
+#include <execinfo.h>
+#endif
+/* MKGP2PC_WIDE_STACK=<retrace>: the call stack of every 2D primitive begun
+ * in that frame (addresses for nm -n), to find which code draws what. */
+static void wide_stack(u16 nverts) {
+#if defined(__linux__)
+  static long at = -2;
+  if (at == -2) {
+    const char* e = getenv("MKGP2PC_WIDE_STACK");
+    at = e != nullptr ? atol(e) : -1;
+  }
+  if (at >= 0 && static_cast<long>(mkgp2pc_wide_retrace) == at) {
+    void* frames[12];
+    const int n = backtrace(frames, 12);
+    fprintf(stderr, "wide: stack n %d:", nverts);
+    for (int i = 2; i < n; i++) {
+      fprintf(stderr, " %lx", static_cast<unsigned long>(reinterpret_cast<uintptr_t>(frames[i])));
+    }
+    fprintf(stderr, "\n");
+  }
+#else
+  (void)nverts;
+#endif
+}
 bool mkgp2pc_wide_begin(GXPrimitive type, GXVtxFmt vtxfmt, u16 nverts) {
   if (!wide_on()) {
     return false;
   }
+  wide_stack(nverts);
   if (mkgp2pc_wide_capture) {
     mkgp2pc_wide_end(); /* an unfinished primitive: sent as it is */
   }
@@ -1880,7 +1954,11 @@ void mkgp2pc_wide_end(void) {
    * would come apart, so a primitive that has been in the same place for
    * kStillFrames frames keeps its place and is clipped at the 4:3 edge. */
   float shift = 0.0f;
-  if (outHi > outLo && (outHi > 1.0f || outLo < -1.0f)) {
+  if (hud_edge()) {
+    if (outHi >= outLo) {
+      shift = hud_shift(outLo, outHi);
+    }
+  } else if (outHi > outLo && (outHi > 1.0f || outLo < -1.0f)) {
     const float w = outHi - outLo;
     float over = (outHi > 1.0f ? outHi - 1.0f : 0.0f) - (outLo < -1.0f ? -1.0f - outLo : 0.0f);
     over = over > w ? w : over < -w ? -w : over;
@@ -2018,6 +2096,14 @@ bool wide_list_before(const void* list, u32 nbytes) {
     } else {
       fprintf(stderr, "wide: list %u bytes not read, retrace %u\n", nbytes, mkgp2pc_wide_retrace);
     }
+  }
+  if (ok && hi - lo < 1.96f && hud_edge()) {
+    const float shift = hud_shift(lo, hi);
+    if (shift == 0.0f) {
+      return false;
+    }
+    send_projection(true, shift, false);
+    return true;
   }
   if (!ok || hi - lo < 1.96f) {
     return false;
