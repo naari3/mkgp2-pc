@@ -27,6 +27,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import compile_census as cc  # noqa: E402
 import source_patches  # noqa: E402
+import sjis_literals  # noqa: E402
 import mwcc_cxx_abi
 import mwcc_byvalue
 import mwcc_data_layout  # noqa: E402
@@ -306,6 +307,14 @@ def compile_one(path, target):
     if source_patches.patched_source(path, patched):
         src_abs = c_in = patched
         cmd += ["-I", os.path.dirname(os.path.join(ROOT, path))]
+    # Shift-JIS literals (port/tools/sjis_literals.py): the matching build
+    # converts each file to Shift-JIS before MWCC sees it; here the text of
+    # the literals is converted, after the patches, into one more copy
+    sjis = obj[:-2] + ".sjis" + os.path.splitext(path)[1]
+    if sjis_literals.converted_source(path, src_abs, sjis):
+        if c_in == path:
+            cmd += ["-I", os.path.dirname(os.path.join(ROOT, path))]
+        src_abs = c_in = sjis
     src_in = c_in
     if path.endswith(".cpp"):
         keep = sorted(set(re.findall(r'^extern "C" inline [\w \*]+?\b(\w+)\(', open(os.path.join(ROOT, path), encoding="utf-8", errors="replace").read(), re.M)))
@@ -829,6 +838,13 @@ def main():
         WIN, target = True, WIN_TARGET
         OUT = os.path.join(ROOT, "build", "pc-gfx-win" if GFX else "pc-census-win")
     os.makedirs(OUT, exist_ok=True)
+
+    # only the units themselves are converted; text in a header would stay
+    # UTF-8 without anyone noticing
+    stray = sjis_literals.included_literals()
+    if stray:
+        raise SystemExit("text outside ASCII in the literals of an included file; port/tools/sjis_literals.py "
+                         "converts units only (docs/port/text_encoding.md):\n  " + "\n  ".join(stray))
 
     files = []
     for d in args.dirs:

@@ -49,6 +49,8 @@
 #include <unistd.h>
 #endif
 
+void mkgp2pc_baseboard_flush(void); /* ../triforce/baseboard.c: the backup memory file */
+
 #define REGION_MAX 0x1000u
 #define RESET_EXIT_CODE 0x52535431u /* "RST1" */
 
@@ -195,6 +197,7 @@ static void restart(void) {
   uint32_t size = next_size();
   if (s_share == NULL) {
     fprintf(stderr, "reset: nothing supervises this process (MKGP2PC_NO_SUPERVISOR?); leaving\n");
+    mkgp2pc_baseboard_flush();
     fflush(NULL);
     TerminateProcess(GetCurrentProcess(), 0);
     _exit(0);
@@ -202,6 +205,7 @@ static void restart(void) {
   memcpy(s_share->bytes, s_nextStart, size);
   s_share->size = size;
   fprintf(stderr, "reset: starting again, %u bytes saved\n", (unsigned)size);
+  mkgp2pc_baseboard_flush();
   fflush(NULL);
   TerminateProcess(GetCurrentProcess(), RESET_EXIT_CODE);
   _exit(0);
@@ -258,6 +262,7 @@ static void restart(void) {
   }
   argv[argc] = NULL;
   fprintf(stderr, "reset: starting again, %u bytes saved\n", (unsigned)size);
+  mkgp2pc_baseboard_flush();
   fflush(NULL);
   execv("/proc/self/exe", argv);
   perror("reset: execv");

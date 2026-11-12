@@ -564,6 +564,23 @@ Options of the port for such measurements:
   `new`. The unit was listed as "NOT BUILT" and the generated stub returned
   0, so every connect "succeeded" without a command reaching the board.
   Upstream request 46 (parameter renamed, mkgp2-decomp 225c9b5).
+- A crash in the board library's send thread (2026-11-12, seen once at
+  boot on a busy Linux machine with `MKGP2PC_LINK=0`; NULL in
+  `fn_8028C1B8`). amsys hands every request packet to a send thread through
+  a message queue. That thread has priority 8 against the main thread's 16,
+  so on the console the packet is out before `OSSendMessage` returns. The
+  port's threads have no priorities (`port/nogfx/os_thread.c`): the main
+  thread goes on, waits for the answer by counting 0x01000000 turns of an
+  empty loop (0.47 s measured here), gives up, frees the channel, and the
+  send thread then finds a channel without a device. With 0.4 s of sleep
+  put in front of the send thread's work the crash comes every time, at the
+  same instruction. Two port patches: `src/triforce/amsys.c.patch` leaves
+  the send hook out, so amnet sends in the calling thread (its own path for
+  "no hook", and the console's order of events);
+  `src/triforce/amnet_nm3.c.patch` yields the processor on each turn of the
+  wait, which makes the wait about 7 s and lets the receiving thread run.
+  Checked on Linux only: no-link boot, and two linked copies behave as
+  before (same connections and traffic).
 
 ## How it was checked (Linux, no-graphics build)
 
