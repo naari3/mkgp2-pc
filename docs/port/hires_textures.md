@@ -3,7 +3,7 @@
 An option of the PC port: the game's 2D pictures (text fonts, sprites, HUD,
 menu art) are shown from enlarged copies instead of the textures on the
 disc. Off by default; the original look stays what the port shows unless
-asked. 3D model textures are not touched.
+asked. 3D model textures only on request (see below).
 
 State 2026-11-12 (second version, after the user rejected the first: see
 the generator section): written and tried on 32-bit Linux only (software GL under
@@ -199,8 +199,9 @@ Tried on Linux (replay into a race on Yoshi Park, window 1280x960): the game
 runs and nothing is misplaced. **With the built-in filter the 3D picture is
 practically the same as the original**: most of these textures are CMPR
 (block compressed, rendered or painted pictures), where the filter is held
-back on purpose, and they are seen through perspective and motion. Whether
-a neural enlarger gives more here is untried. Memory of the 32-bit game
+back on purpose, and they are seen through perspective and motion. The
+user expected these to go through the neural enlarger (2026-11-12, "AI
+拡大してないの？"), see `--ai-models` below. Memory of the 32-bit game
 with a whole course's textures doubled has not been measured on Windows.
 
 ### An outside enlarger for the sprites
@@ -247,6 +248,22 @@ in all, of which 429 s enlarging (colour 2,694 pictures, alpha 1,286);
 odd places (halftone dots in logo backgrounds vanish, soft translucent
 edges turn wavy, gradients flatten). The cloud machine may not run
 the downloaded program, so there is no picture of it from there.
+
+`--ai-models <model>` (C++ program only) sends the 3D models' textures
+through the enlarger too, with a model of their own; the settings program
+passes `--ai-models realesrgan-x4plus` when an AI method is chosen and 3D
+のテクスチャも is ticked, since these are rendered and painted pictures.
+`--ai` and `--ai-models` are independent (one without the other leaves the
+other kind to the built-in filter). So that tiling textures still join,
+each is handed over with 8 texels of its surroundings on every side, taken
+the way the game addresses it (repeat, mirror or clamp), in `models-rgb`
+and `models-alpha`, and the margin is cut off again on import. That is
+about 1.3 times the texels of the plain textures (97 million before the
+margin), so expect the general model to take a multiple of the sprites'
+time. **Not run with the real enlarger yet**; with a stand-in enlarger the
+imported pictures line up with the built-in ones (Linux, whole disc) and
+all four folders pass through the Windows program under Wine (which found
+that the enlarger was started with relative paths: fixed).
 
 **`mkgp2-hires.exe --ai` itself (the download, the unpacking on Windows,
 starting the enlarger) has not been run anywhere yet.** Tried: the archive
