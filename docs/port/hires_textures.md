@@ -172,9 +172,11 @@ The program works in tiles, so video memory use stays at a few GB at most
 (`-Tile` sets the size). Both models redraw: small text and faces can change
 shape.
 
-**Not run yet anywhere**: the cloud machine may not run the downloaded
-program, and the script has not been run on Windows. The export and import
-steps were tried on Linux with a stand-in enlarger.
+Run once on the user's PC, 2026-11-12 (RTX 3060 Ti, default model): 586 s
+in all, of which 429 s enlarging (colour 2,694 pictures, alpha 1,286);
+`build\hires-ai\up` 2.4 GB; pack 10,518 files, 723 MB. **How the result
+looks in the game has not been judged yet.** The cloud machine may not run
+the downloaded program, so there is no picture of it from there.
 
 ## Known limits
 
