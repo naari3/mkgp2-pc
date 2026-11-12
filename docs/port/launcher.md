@@ -81,8 +81,9 @@ starts as the cabinet does.
 
 The board check between the two (60 seconds unless `MKGP2PC_BOOT_CHECK`
 handling of the cabinet link shortens it, cabinet_link.md) lies inside the
-fast stretch too. The log says `boot: start-up screens begin/end at retrace
-N`. Measured 2026-11-12 with the no-graphics Linux build: the screens end
+fast stretch too. The log says `boot: start-up screens begin` and `... end` (without a
+retrace number: a port object that calls into the video layer does not link
+on Windows). Measured 2026-11-12 with the no-graphics Linux build: the screens end
 at retrace 4653 without the setting and 4054 with it (the 599 frames of the
 NOTICE); the fast stretch itself needs the rendering build and has not been
 run yet.
