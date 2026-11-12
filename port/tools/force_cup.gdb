@@ -8,7 +8,8 @@
 # $cup: 1 is the Mario cup (tables `MRA_*`), 8 is the demo's own; the others
 # are the cases of clModelMgr's constructor (src/game/mapobject/fn_8017B1C0.cpp).
 # $long: 0 short round, 1 long. $variant: the course of the cup, 0..3 where
-# the cup has several.
+# the cup has several. $rev (optional, default 0): 1 loads the reverse
+# direction of the course, which the game uses for rounds 5 to 8 ("ura").
 # The demo's recorded steering belongs to its own course, so the kart drives
 # into walls; course loading, the decoration models and drawing still run.
 # The breakpoint is the statement after RaceSceneC's constructor has set the
@@ -23,7 +24,11 @@ commands
   set {int}&g_cupId = $cup
   set {int}&g_longRoundFlag = $long
   set {int}&g_courseVariantIdx = $variant
-  printf "force_cup: cup %d long %d variant %d\n", $cup, $long, $variant
+  if $_isvoid($rev)
+    set $rev = 0
+  end
+  set {int}&g_reverseRoundFlag = $rev
+  printf "force_cup: cup %d long %d variant %d reverse %d\n", $cup, $long, $variant, $rev
   continue
 end
 run

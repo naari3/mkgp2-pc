@@ -1197,3 +1197,47 @@ port draws what the game's code and data ask for.
 Tools: `port/docker/build-linux32.sh` (the Linux build in one step) and
 `port/tools/gdb_hsd.py` (joint tree with render modes, hiding one joint's
 polygons, setting render mode bits, single frame step from gdb).
+
+## 35. Hang loading an ura round (2026-11-12)
+
+Report from play on Windows (6f362d2): the game stopped at the course load
+of an ura round (rounds 5 to 8 of a cup, the course driven in the reverse
+direction). No crash log; the main loop kept running.
+
+- `clFlowRound` takes the course of a round from a table, cup x round, of
+  three words (long course, course of the cup, reverse direction) and hands
+  them to `SetCourseParams`. The table,
+  `GetCourseSelectEntry_data_8049A248`, was defined as byte arrays
+  (`CupCourseEntry { char data[12]; }`, a type nobody had named the members
+  of), so on the PC each word arrived byte-swapped: 1 became 0x01000000.
+- What that did. Long course 0x01000000: `SetCourseParams` refuses values
+  outside 0..1 and returns without setting anything, so the round ran with
+  what the cup menu had set before: the short course, forward. Reverse
+  0x01000000: not range-checked, stored in `g_reverseRoundFlag`, and
+  `GetCourseModelFilename` then indexes the course table far outside it
+  (segmentation fault on Linux, a hang on Windows). So before this
+  correction every Grand Prix round on the PC was the cup's short forward
+  course, and every reverse round stopped.
+- The same file had the course menu's table of versus and time attack,
+  `GetCourseSelectEntry_data_8049A5A8` (cup, long, course, three sprite
+  ids; read by `clFlowCourse` and `PCBCheckRecv`), as bytes too; and
+  `lbl_80495E30` kept two floats as bytes that `fn_8018D6F0` reads as
+  `float[4]`.
+- Correction upstream (mkgp2-decomp PR 6098, same bytes under MWCC): the
+  three objects are typed as what the code reads.
+- Reproduced on Linux without graphics: the blind script of section 30
+  (coins, item button) reaches the round menu of the Yoshi cup; a
+  breakpoint in `clFlowRound_Init` (`self->mode = g_roundIndex >= 4;`) with
+  `set {int}&g_roundIndex = 4` makes the menu offer the ura rounds. Before:
+  `SetCourseParams(7, 0, 0, 16777216)` and the fault. After:
+  `SetCourseParams(7, 0, 0, 1)` and the race runs. Not checked on Windows.
+- `port/tools/force_cup.gdb` and `cup_sweep.sh` take the direction as well
+  (`$rev`); the demo race loads every cup's reverse course without a crash
+  (that path never went through the table).
+- `port/tools/opaque_struct_census.py` lists initialised data whose type is
+  a struct of byte arrays only, the pattern `data_width_census.py` skips.
+  After the correction it lists string pools (`*_Pool`), three two-byte
+  `StatePair`, `BootColor` and the coin table's `CoinConfig`, all really
+  bytes. It does not see byte arrays inside a struct that has other members
+  (the `lbl_80495E30` case was found by its first, looser version); such
+  members with non-zero initialisers have not been listed yet.
