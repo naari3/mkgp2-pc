@@ -558,7 +558,7 @@ static void create_controls(void) {
   label(1, L"画面の比率", X, y + 3, 110, 18);
   HWND c = combo(1, X + 116, y, 220, ID_ASPECT);
   SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)L"4:3");
-  SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)L"16:9 (未対応)");
+  SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)L"16:9");
   y += 34;
   label(1, L"窓の大きさ", X, y + 3, 110, 18);
   combo(1, X + 116, y, 220, ID_SCALE);

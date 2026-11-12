@@ -259,11 +259,52 @@ for 32-bit Windows and Linux and, with `publish`, attaches the packages to a
 prerelease of this repository. For `AURORA_DAWN_REF`
 `1155e0ed531126f33a1279afa029349651ca1c93`:
 
-- https://github.com/naari3/mkgp2-pc/releases/download/dawn32-1155e0ed531126f33a1279afa029349651ca1c93/dawn-windows-x86.tar.gz
+- https://github.com/naari3/mkgp2-pc/releases/download/dawn32-1155e0ed531126f33a1279afa029349651ca1c93-r2/dawn-windows-x86.tar.gz
 - https://github.com/naari3/mkgp2-pc/releases/download/dawn32-1155e0ed531126f33a1279afa029349651ca1c93/dawn-linux-i686.tar.gz
 
 Pass the one for the target as `-DAURORA_DAWN_PACKAGE_URL=<url>` when
 configuring a 32-bit build. Not wired into the presets yet.
+
+### The crash at `webgpu_dawn.dll` + 0xb6b58 (package without `-r2`)
+
+Every crash record that ended at this offset (window size changes, exit
+before 01791c5, and during play, the last one 2026-11-12 15:39 JST in build
+6f362d2 with exception c0000005 reading address 000055c0) is one fault in
+the first Windows package, a miscompilation by 32-bit MSVC:
+
+- 0xb6b50 is `Result<ExecutionSerial, ErrorData>::Result(ExecutionSerial)`
+  (`src/dawn/common/Result.h`). It reads its argument through a pointer and
+  returns with `ret 4`.
+- Its only two callers, at 0x13c2f2 and 0x16468a, are the last lines of
+  `d3d::Queue::WaitForQueueSerialImpl` (`src/dawn/native/d3d/QueueD3D.cpp`,
+  `return didComplete ? waitSerial : kWaitSerialTimeout;`) and of the D3D11
+  queue's function of the same name. Both push the 64-bit serial itself
+  (two words). The constructor then takes the low word of the serial as an
+  address: the faulting address 0x55c0 was the serial being waited for.
+- `ExecutionSerial` is `TypedInteger<..., uint64_t>`, declared
+  `alignas(T)` (`src/utils/typed_integer.h`). 32-bit MSVC passes a class
+  with an explicit alignment above 4 through a pointer to a copy (the other
+  calls in the same function do that), but not when the argument is a
+  conditional expression.
+
+So in that package any wait for the GPU that does not return at once
+crashes. `WaitForQueueSerialImpl` returns early when the serial is already
+complete, which is why it only happened sometimes. Callers under D3D12:
+`SwapChainD3D12.cpp` before reusing a back buffer whose last frame the GPU
+has not finished (during play, when the GPU falls behind), the same file
+when the swap chain is detached (size change), `ResidencyManagerD3D12.cpp`
+when video memory is over budget, and queue destruction (exit). The D3D11
+backend has the same fault at its own call.
+
+The `-r2` package is built with `alignas(T)` removed from `TypedIntegerImpl`
+on Windows (a step of the workflow); size and alignment of the class are
+unchanged and it is passed like a plain 64-bit integer. Checked by
+disassembling the `-r2` DLL: the D3D12 queue's function (slot 10 of the
+`dawn::native::d3d12::Queue` vtable, 0x1013b150) now takes the serial by
+value (`ret 0x14`) and stores the result in place, with no call. Not yet
+run on Windows. Dawn's other
+explicitly aligned classes passed by value (`VkHandle` in the Vulkan
+backend, `Vector` in `Algebra.h`) were not examined.
 
 ## Test
 
@@ -331,8 +372,10 @@ program is started from (`MKGP2PC_CARD_FILE` names another file).
   again): every size change ended in `webgpu_dawn.dll` + 0xb6b58, on the
   render worker thread, below `Surface::Configure` called from
   `aurora::gfx::present::submit` (crash record of 2026-11-12 04:44 JST,
-  build 2502a6b). Why the reconfiguration fails is not known; the crashes
-  at exit (before 01791c5) and during play were at the same offset.
+  build 2502a6b). The cause is a fault in the first 32-bit Dawn package
+  (see "32-bit Dawn packages"); the crashes at exit (before 01791c5) and
+  during play were the same one. With the `-r2` package resizing has not
+  been tried on Windows yet, so the window stays fixed for now.
 - `MKGP2PC_BACKEND=d3d12|d3d11|vulkan|opengl` asks Aurora for that backend
   instead of its own order. Not tried on Windows yet.
 - `MKGP2PC_SHADOW_NEAREST=1`: the kart shadow is an image the game draws
@@ -353,6 +396,14 @@ program is started from (`MKGP2PC_CARD_FILE` names another file).
   complete and may take longer once; compiled pipelines stay in the cache
   file. This variable gives the dropping behaviour back. Seen in Aurora's
   source (lib/gfx/pipeline_cache.cpp), not yet confirmed on Windows.
+- `MKGP2PC_SPIKE_MS=N`: frames longer than N milliseconds get a `spike:`
+  line in the log with where the time went (default 25; 0 turns it off).
+  Fields: comment above `spike_log` in port/gfx/video_aurora.c, background
+  in census.md section 36.
+- `MKGP2PC_NO_CACHE_CHECK=1` skips the start-up check of Aurora's two cache
+  files (`dawn_cache.db`, `pipeline_cache.db` in the user directory). The
+  check sets a damaged file aside as `<name>.broken`; without it Aurora runs
+  the whole session without its shader cache (census.md section 36).
 - `MKGP2PC_CARD=0` starts the game with the baseboard DIP switch that turns
   the card service off, as all builds before this did. Input recordings
   (dumps) made by those builds need it to play back in step.
@@ -366,8 +417,8 @@ program is started from (`MKGP2PC_CARD_FILE` names another file).
 Copies of the program on one LAN, or on one PC, link up like cabinets do.
 Give each a different cabinet number with `MKGP2PC_PCB_ID=1..4` (on Windows
 `set MKGP2PC_PCB_ID=2` before `run-gfx.cmd`); they find each other by
-themselves. `MKGP2PC_LINK=0` turns the link off. Ports (TCP 29500-29563,
-UDP 29564-29567), the other settings, the protocol and what has been checked
+themselves. `MKGP2PC_LINK=0` turns the link off. Ports (UDP 29564-29568), play
+between two networks (`MKGP2PC_LINK_PEERS`), the other settings, the protocol and what has been checked
 so far: [cabinet_link.md](cabinet_link.md).
 
 ## Pause, frame step and dumps (rendering executable)
@@ -490,7 +541,7 @@ is the one dependency still fetched from the network at configure time.
       -DCMAKE_EXE_LINKER_FLAGS=-L$PWD/build/mingw-libshim -DCMAKE_SHARED_LINKER_FLAGS=-L$PWD/build/mingw-libshim \
       -DFT_DISABLE_ZLIB=ON -DAURORA_ENABLE_DVD=OFF -DAURORA_ENABLE_CARD=OFF -DAURORA_ENABLE_THP=OFF \
       -DAURORA_CACHE_USE_ZSTD=OFF -DAURORA_DAWN_PROVIDER=package -DAURORA_SDL3_PROVIDER=vendor \
-      -DAURORA_DAWN_PACKAGE_URL=https://github.com/naari3/mkgp2-pc/releases/download/dawn32-1155e0ed531126f33a1279afa029349651ca1c93/dawn-windows-x86.tar.gz \
+      -DAURORA_DAWN_PACKAGE_URL=https://github.com/naari3/mkgp2-pc/releases/download/dawn32-1155e0ed531126f33a1279afa029349651ca1c93-r2/dawn-windows-x86.tar.gz \
       -DFETCHCONTENT_SOURCE_DIR_FMT=... _IMGUI _SDL _TRACY _XXHASH _ZLIB _PNG _ABSEIL-CPP _FREETYPE _SQLITE3
 
 MusyX for Windows: the cmake line in "Sound" with

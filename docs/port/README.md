@@ -18,6 +18,7 @@ clean-up.
 |---|---|
 | [`build.md`](build.md) | How to build, run and test the PC executable; updating Aurora |
 | [`census.md`](census.md) | Measured: how much of the source a host compiler accepts, and what a link would need |
+| [`64bit.md`](64bit.md) | Assessment: what assumes 4-byte pointers, counted, and the ways to a 64-bit build |
 | [`layout.md`](layout.md) | Directory map, which SDK library comes from where, stub and back end conventions, open questions |
 | [`readiness.md`](readiness.md) | Assessment of how far the decomp is from a port: measured gaps, comparable projects, staged plan (estimates) |
 | [`widescreen.md`](widescreen.md) | Survey: what a 16:9 display needs (projection, culling, 2D layer, whole-screen effects), options |

@@ -12,7 +12,7 @@ in `../include/mkgp2pc/platform.h`:
 | Coin and credit bookkeeping | `amcoin*` | in-memory, free play by default |
 | Backup RAM (settings, bookkeeping) | `ambackup*` | a file in the user directory |
 | Magnetic card unit (69-byte track) | `amuart*` and the card code in `src/game` | done: `card_reader.c`, the unit's serial protocol; one file per card (docs/port/build.md "Magnetic card") |
-| Media board (network, boot, DIMM) | `amnet*`, `amsock`, `acsocket*`, `amboot`, `dvdlow*`, `dvdcmd` | done: `mediaboard.c` (mailboxes, replaces `dvdcmd.c`) and `netlink.c` (socket commands on host sockets, cabinet link; docs/port/cabinet_link.md) |
+| Media board (network, boot, DIMM) | `amnet*`, `amsock`, `acsocket*`, `amboot`, `dvdlow*`, `dvdcmd` | done: `mediaboard.c` (mailboxes, replaces `dvdcmd.c`) and `netlink.c` (socket commands carried in UDP datagrams, cabinet link; docs/port/cabinet_link.md) |
 | Board system services | `amsys`, `amsrv*`, `amexi`, `dikey`, `random*` | small host implementations |
 
 Only the `null` back end exists (no devices). Whether a library is replaced at

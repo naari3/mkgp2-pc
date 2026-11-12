@@ -1057,6 +1057,10 @@ one Linux machine connect both ways and follow each other's state. Protocol,
 settings and the limits of what was checked: [cabinet_link.md](cabinet_link.md).
 Before this, every socket command was answered "error" and, separately,
 `acConnect` was a stub (its unit did not compile, upstream request 46).
+Since 2026-11-12 the connections travel in UDP datagrams and the host's
+waiting rule in a linked race is the port's own
+(`port/patches/src/game/VSMode_FrameUpdate.c.patch`), both for play over
+connections with delay, jitter and loss; measurements in cabinet_link.md.
 
 ### Special kart tyres (upstream request 49, 2026-11-11)
 
@@ -1241,3 +1245,93 @@ direction). No crash log; the main loop kept running.
   bytes. It does not see byte arrays inside a struct that has other members
   (the `lbl_80495E30` case was found by its first, looser version); such
   members with non-zero initialisers have not been listed yet.
+
+## 36. Lag spikes during play (2026-11-12)
+
+Report from Windows (main 6f362d2): the game stalls for a moment now and
+then, cause unknown.
+
+What the log of that session showed (`gfx.log`, start-up):
+
+```
+[DEBUG] aurora::gpu::cache: Using dawn cache at C:\Users\...\AppData\Roaming\mkgp2-pc\dawn_cache.db
+[ERROR] aurora::gpu::cache: Failed to check schema table: database disk image is malformed
+[ERROR] aurora::gpu::cache: Failed to validate schema
+[ERROR] aurora::gpu::cache: SQLite DB init failed
+```
+
+Aurora keeps two SQLite files in the user directory. `pipeline_cache.db`
+lists the pipeline configurations met so far; at the next start they are
+compiled on the pipeline thread in the background. `dawn_cache.db` is Dawn's
+blob cache: the compiled shaders and pipeline objects, so that "compiling" a
+known pipeline is a load of a few milliseconds. When `dawn_cache.db` cannot
+be opened, Aurora marks the cache broken for the run (`lib/webgpu/gpu_cache.cpp`,
+`init_abort`) and never repairs the file: every later start compiles every
+shader from source again (WGSL to HLSL to the D3D compiler, tens to hundreds
+of milliseconds each).
+
+Since d63f890 draws wait for their pipeline (`AuroraSetDrawsBlocking`, the fix
+for models appearing one by one). A draw whose pipeline is still in the
+background queue is moved to the front and the game thread waits for the
+compilation in progress plus its own. With the blob cache gone that is a
+stall for every pipeline the game reaches before the background pass does,
+in every run; with a working cache it happens only the first time a pipeline
+is ever seen on that machine.
+
+How the file got damaged is not known. The earlier sessions of the same day
+opened it without complaint (their logs say "SQLite cache init succeeded");
+between them the process died several times inside `webgpu_dawn.dll` (the
++0xb6b58 crash, a miscompiled Dawn function, being fixed in its own thread)
+and is ended with `TerminateProcess` on every normal exit. The file is in
+WAL mode, which is meant to survive both.
+
+Changes:
+
+- `port/gfx/video_aurora.c`, `cache_check`: before Aurora starts, both files
+  get `PRAGMA quick_check`; a damaged one is renamed to `<name>.broken` (the
+  previous `.broken` is replaced) and Aurora creates a new one. The log says
+  `cache: ... is damaged (...)`, and always `cache: <dir> checked in N ms`.
+  `MKGP2PC_NO_CACHE_CHECK=1` skips the check.
+- Frame-time log: every frame longer than 25 ms (`MKGP2PC_SPIKE_MS`, 0 = off)
+  writes one `spike:` line with where the time went: the game's own part
+  (which contains the waits for pipelines), handing over the frame, the
+  limiter's sleep and how late it woke, the retrace callbacks, the wait for
+  the rendering thread, plus pipelines compiled during the frame, disc reads
+  (`port/nogfx/dvd_min.c`) and time spent waiting for the interrupt lock
+  (`port/nogfx/os_thread.c`). The field list is above `spike_log` in
+  video_aurora.c. Scene loads show up as spikes too; that is expected.
+
+First session with the log (Windows, afe2097, 16:9 at 1920x1080): 63 spike
+lines in about 20000 frames. Apart from the start-up frames and one long
+`events` (the window being handled), every one of them is in `game` with
+`pipelines +N`, 60 to 90 ms per pipeline, 50 to 470 ms a frame; disc, lock,
+limiter and `begin` are all at zero. So the stalls are pipeline
+compilations. The same log has, after the background pass,
+
+```
+[INFO] aurora::gpu::cache: Pruned 496 stale Dawn cache entries
+[ERROR] aurora::gfx::pipeline_cache: Failed to upsert pipeline cache row: database disk image is malformed
+```
+
+`pipeline_cache.db` had passed `quick_check` (which leaves indexes out) and
+failed on the first row written. Aurora then stops recording pipelines for
+good (`pipeline_cache_abort`), and the two caches work against each other:
+the background pass compiles only what the frozen list names, the prune that
+follows it deletes every Dawn blob that pass did not use (496 here), and
+every pipeline outside the list is compiled from source again in every run.
+`dawn_cache.db` opened without complaint in this run; the "malformed" of the
+earlier run did not come back.
+
+Second change: the start-up check uses `PRAGMA integrity_check`, and when
+Aurora reports "malformed" from one of its cache modules during a run, a
+marker file `cache_damaged` is written in the user directory; the next start
+sets both files aside whatever the check says.
+
+Still open: what damages the files, and the cost of the first sight of a
+pipeline with healthy caches (the same 60 to 90 ms, once per machine).
+
+Earlier note: it was not established that the damaged cache explains all of the reported spikes.
+The spike lines of the next session on Windows are what decides that; the
+other candidates (first sight of a pipeline with a working cache, disc reads
+on the game thread, the limiter waking late, the rendering thread falling
+behind) each have their own field in the line.
