@@ -693,7 +693,7 @@ static void create_controls(void) {
   SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)L"16:9");
   c = combo(1, X + 344, y, W - 344, ID_WIDE_HUD);
   SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)L"HUD は中央");
-  SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)L"HUD は両端 (未対応)");
+  SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)L"HUD は両端");
   y += 34;
   label(1, L"窓の大きさ", X, y + 3, 110, 18);
   combo(1, X + 116, y, 220, ID_SCALE);
