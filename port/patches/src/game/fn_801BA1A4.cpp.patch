@@ -1,0 +1,47 @@
+--- a/src/game/fn_801BA1A4.cpp
++++ b/src/game/fn_801BA1A4.cpp
+@@ -51,6 +51,11 @@ void SetRumbleMode(int a, int b, int c);
+ void SetPcbScratchFlag_806d11a4(void);
+ }
+ 
++#ifndef __MWERKS__
++extern "C" int mkgp2pc_linkflow_network(void);
++extern "C" int mkgp2pc_linkflow_lobby_over(float timer);
++extern "C" int mkgp2pc_linkflow_lobby_button(void);
++#endif
+ extern "C" int fn_801BA1A4(EntryScene *self) {
+     InputPlayer *pad;
+     int peers;
+@@ -60,9 +65,20 @@ extern "C" int fn_801BA1A4(EntryScene *self) {
+     }
+     pad = InputMgr_GetPlayer(GetInputManager(), 0);
+     peers = CountPeersWithRole(1);
++#ifndef __MWERKS__
++    /* PC port: in a network game the entry screen does not close because
++     * everybody connected has entered; it waits for the button
++     * (mkgp2pc_linkflow_lobby_timer). */
++    if (!mkgp2pc_linkflow_network() && PcbSync_CountJoinedPcbsAdvancedKarts() <= peers) {
++#else
+     if (PcbSync_CountJoinedPcbsAdvancedKarts() <= peers) {
++#endif
+         self->done = 1;
++#ifndef __MWERKS__
++    } else if (mkgp2pc_linkflow_lobby_over(PcbSyncTable_GetMyValue())) {
++#else
+     } else if (PcbSyncTable_GetMyValue() <= lbl_806D9960) {
++#endif
+         self->done = 1;
+     } else if (self->cardMode && !self->cardDone) {
+         if (self->reader->GetResult() == 1) {
+@@ -76,7 +92,11 @@ extern "C" int fn_801BA1A4(EntryScene *self) {
+             SetLocalPcbRole(0);
+             self->next = 9;
+         }
++#ifndef __MWERKS__
++    } else if (pad->IsPressed(0x2000) != 0 && mkgp2pc_linkflow_lobby_button()) {
++#else
+     } else if (pad->IsPressed(0x2000) != 0) {
++#endif
+         SetRumbleMode(0, 1, 1);
+         SetPcbScratchFlag_806d11a4();
+     }
