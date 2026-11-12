@@ -6,6 +6,8 @@
 //   mkgp2-hires --iso <disc image> --out <folder> [--scale 2|4] [--models] [--jobs N]
 //   mkgp2-hires --iso ... --out ... [--ai <model>] [--ai-models <model>] --work <folder> [--tool <folder>]
 //               [--download] [--tile N]      (--ai: the sprites, --ai-models: the 3D models' textures)
+//   --scale-courses 4    the textures of the courses' own archives at four times (others stay at --scale);
+//                        nothing wider than 2048 texels is made
 //   mkgp2-hires --iso ... --export-sprites <folder>
 //   mkgp2-hires --iso ... --out ... --import-sprites <folder>
 //
@@ -921,11 +923,12 @@ struct Tex {
   // axis (GX: 0 clamp, 1 repeat, 2 mirror) and whether they carry mip levels
   bool model = false, mipped = false;
   int wrapS = 0, wrapT = 0;
+  bool course = false;  // used by a course's own archive
 };
 
 struct Options {
   std::string iso, out, exportDir, importDir, only, ai, aiModels, work, tool;
-  int scale = 2, jobs = 0, tile = 0;
+  int scale = 2, scaleCourses = 0, jobs = 0, tile = 0;
   bool download = false, models = false;
 };
 
@@ -1050,9 +1053,14 @@ static void do_sprite(const Tex& t, const Options& o, const fs::path& outDir, in
     // (then all the way down). Given levels where the original has none,
     // the game drew it from a smaller level and it came out softer than the
     // original (seen on the start banner of Yoshi Park, Linux, 2026-11-12).
-    levels = 0;
-    if (t.mipped)
+    // At four times one level is given all the same: it is the picture at
+    // twice the size, never softer than that, and without it the far parts
+    // of a course shimmer.
+    levels = scale >= 4 ? 1 : 0;
+    if (t.mipped) {
+      levels = 0;
       for (int m = std::min(w, h) * scale; m > 4; m /= 2) levels++;
+    }
   }
   write_with_mips(t.model ? outDir / "models" : outDir, t.stem, big, levels);
 }
@@ -1187,7 +1195,8 @@ static void run_jobs(size_t n, int threads, uint64_t budget, W weight, F fn, con
 }
 
 static bool dat_bytes(Bytes& d);
-static void dat_textures(const Bytes& d, std::vector<Tex>& out, std::set<std::string>& seen, int& skipped);
+static void dat_textures(const Bytes& d, std::vector<Tex>& out, std::set<std::string>& seen, int& skipped, bool course);
+static bool course_archive(const std::string& name);
 
 struct Work {
   std::vector<Tex> sprites;
@@ -1218,7 +1227,7 @@ static Work collect(Disc& disc, const Options& o) {
     if (o.models && base.size() >= 4 && base.compare(base.size() - 4, 4, ".dat") == 0) {
       Bytes d = disc.at(f.second.first, f.second.second);
       if (dat_bytes(d)) {
-        dat_textures(d, wk.models, seen, wk.skipped);
+        dat_textures(d, wk.models, seen, wk.skipped, course_archive(f.first.substr(f.first.rfind('/') + 1)));
       } else {
         wk.skipped++;
       }
@@ -1325,7 +1334,25 @@ static bool dat_bytes(Bytes& d) {
   return d.size() >= 0x20 && be32(&d[0]) == d.size();
 }
 
-static void dat_textures(const Bytes& d, std::vector<Tex>& out, std::set<std::string>& seen, int& skipped) {
+// The archives of the courses themselves: two or three capitals and an
+// underscore (YIA_cake.dat, MR_highway_long_A.dat, ...); AT_ is the attract
+// film.
+static bool course_archive(const std::string& name) {
+  size_t n = 0;
+  while (n < name.size() && name[n] >= 'A' && name[n] <= 'Z') n++;
+  return (n == 2 || n == 3) && n < name.size() && name[n] == '_' && name.compare(0, 3, "AT_") != 0;
+}
+
+// The size a model texture is made at: --scale-courses for the courses'
+// own, as long as no side passes 2048 texels.
+static int model_scale(const Tex& t, const Options& o) {
+  int s = t.course && o.scaleCourses ? o.scaleCourses : o.scale;
+  while (s > 2 && std::max(t.e.w, t.e.h) * s > 2048) s /= 2;
+  return s;
+}
+
+static void dat_textures(const Bytes& d, std::vector<Tex>& out, std::set<std::string>& seen, int& skipped, bool course) {
+  static std::map<std::string, size_t> place;  // of a model texture in out
   uint32_t ds = be32(&d[4]), nrel = be32(&d[8]);
   if ((uint64_t)0x20 + ds + (uint64_t)nrel * 4 > d.size()) return;
   auto data = std::make_shared<Bytes>(d.begin() + 0x20, d.begin() + 0x20 + ds);
@@ -1376,7 +1403,14 @@ static void dat_textures(const Bytes& d, std::vector<Tex>& out, std::set<std::st
       skipped++;
       continue;
     }
-    if (seen.insert(tex.stem).second) out.push_back(tex);
+    tex.course = course;
+    if (seen.insert(tex.stem).second) {
+      place[tex.stem] = out.size();
+      out.push_back(tex);
+    } else if (course) {
+      auto at = place.find(tex.stem);
+      if (at != place.end()) out[at->second].course = true;
+    }
   }
 }
 
@@ -1412,8 +1446,24 @@ static void make_pack(const Work& wk, const Options& o, const fs::path& outDir, 
   run_jobs(wk.sprites.size(), threads, budget, [&](size_t i) { return texels(wk.sprites[i]); },
            [&](size_t i) { do_sprite(wk.sprites[i], plain, outDir, o.scale, true); },
            o.importDir.empty() ? "sprites" : "import");
-  run_jobs(wk.models.size(), threads, budget, [&](size_t i) { return texels(wk.models[i]); },
-           [&](size_t i) { do_sprite(wk.models[i], plain, outDir, o.scale, true); },
+  if (o.scaleCourses) {
+    uint64_t n = 0, before = 0, after = 0;
+    for (auto& t : wk.models) {
+      if (!t.course) continue;
+      int sc = model_scale(t, o);
+      n++;
+      before += texels(t) * o.scale * o.scale;
+      after += texels(t) * sc * sc;
+    }
+    say("note course textures: %d, %d MB of texels at x%d, %d MB as asked", (int)n, (int)(before * 4 >> 20), o.scale,
+        (int)(after * 4 >> 20));
+  }
+  run_jobs(wk.models.size(), threads, budget,
+           [&](size_t i) {
+             int sc = model_scale(wk.models[i], o);
+             return texels(wk.models[i]) * (sc * sc / 4);
+           },
+           [&](size_t i) { do_sprite(wk.models[i], plain, outDir, model_scale(wk.models[i], o), true); },
            o.importDir.empty() ? "models" : "import-models");
   say("note characters: %d enlarged from their own bitmap, %d of the 16 pixel font from the 24 pixel bitmap",
       (int)wk.glyphs.size() - larger.load(), larger.load());
@@ -1614,6 +1664,7 @@ static int run(const std::vector<std::string>& args) {
     if (a == "--iso") o.iso = value();
     else if (a == "--out") o.out = value();
     else if (a == "--scale") o.scale = atoi(value().c_str());
+    else if (a == "--scale-courses") o.scaleCourses = atoi(value().c_str());
     else if (a == "--jobs") o.jobs = atoi(value().c_str());
     else if (a == "--only") o.only = value();
     else if (a == "--export-sprites") o.exportDir = value();
@@ -1629,6 +1680,8 @@ static int run(const std::vector<std::string>& args) {
   }
   if (o.iso.empty()) fail("--iso <disc image> is needed");
   if (o.scale != 2 && o.scale != 4) fail("--scale is 2 or 4");
+  if (o.scaleCourses != 0 && o.scaleCourses != 2 && o.scaleCourses != 4) fail("--scale-courses is 2 or 4");
+  if (o.scaleCourses) o.models = true;
   if (o.exportDir.empty() && o.out.empty()) o.out = "hires";
   for (const std::string* m : {&o.ai, &o.aiModels})
     if (!m->empty() && *m != "realesrgan-x4plus-anime" && *m != "realesrgan-x4plus") fail("unknown model %s", m->c_str());
