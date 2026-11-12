@@ -9,8 +9,9 @@ State 2026-11-12: two and three copies of the no-graphics build on one Linux
 machine find each other, connect, form one group when they take a coin, pass
 the course selection and run a versus race together (scene 0x2C, race clock
 running on all), also with delay, jitter and loss added between them (table
-below). Since 2026-11-12 everything travels in UDP datagrams and the host's
-waiting rule is the port's own, both with play over the internet in mind.
+below). Since 2026-11-12 everything travels in UDP datagrams, the host's
+waiting rule is the port's own and every cabinet drives its own kart
+itself, all three with play over the internet in mind.
 Not checked: pictures (the rendering build), Windows (the file compiles,
 nothing more), two different PCs, a real internet connection, a race played
 by people.
@@ -44,6 +45,7 @@ when another cabinet is connected, and each copy needs its own number:
 | `MKGP2PC_LINK_PEERS=2=192.168.1.20,3=pc3:29566` | where the other cabinets are, by hand: host name or address, optionally `:port`. For networks that drop broadcasts and for play over the internet. The cabinets not named are still found by their announcements |
 | `MKGP2PC_LINK_PORT=29500` | base of the port numbers (see below); the same on all copies |
 | `MKGP2PC_LINK_PACE=0` | the arcade program's own rule for when the host waits for a client (see "How a race is kept in step") |
+| `MKGP2PC_LINK_OWNKART=0` | the arcade program's way of moving a client's kart: only the host drives it (see "Every cabinet drives its own kart"). Either side can set it; the race then runs the old way for that client |
 | `MKGP2PC_TRACE_LINK=1` | log connections and, every five seconds, the traffic; `2` logs every command |
 
 Ports, with the default base 29500: UDP 29564 + (cabinet - 1) for
@@ -360,10 +362,73 @@ waiting rule removes the slow race.
 Three copies with 20 ms, 0..5 ms jitter and 1 % loss: 1.00 on all three,
 133 ms input delay on both clients.
 
-What is left is the input delay of a client: about 80 ms plus twice the way,
-plus its reserve of frames. The host's player still has one frame. That is
-what a client moving its own kart ahead of the host's answer would remove
-(not done yet).
+What is left after these two is the input delay of a client: about 80 ms
+plus twice the way, plus its reserve of frames, while the host's player has
+one frame. The next section removes it.
+
+### Every cabinet drives its own kart (2026-11-12)
+
+In the arcade program only the host moves karts on its own account. A
+client's pedals and wheel travel to the host, the host steps that kart, and
+the client steps its copy when the frame with the same input comes back.
+Here every cabinet steps its own kart with the input of the very frame, as
+the host has always done for its own, and the kart's position travels the
+other way:
+
+- With every input sample a client reports where its kart is after its last
+  step. The 18 bytes of the sample between the buttons and `queued` are
+  unused on the way to the host (`pad3C` in `PCBCommBroadcast.c`) and the
+  host copies samples whole: +0x10 three floats position, +0x1C the float
+  the host sends at +0x1C of a kart's entry, +0x20 a mark (0x5A "can",
+  0xA5 "does"), +0x21 a sample counter.
+- The host puts its copy of that kart at the reported place before it steps
+  it with that sample, once per sample (with no new sample the copy runs on
+  by itself). This is what clients have always done with the positions in
+  the host's frame. The host's frame carries the kart's position on to the
+  other clients as before, so they need not know.
+- The host answers in byte +0x23 of the kart's entry in its frame (unused,
+  passed through from the sample): 0xA5 "positions are taken". A client
+  drives its kart only while it sees that. A host or a client without this
+  (`MKGP2PC_LINK_OWNKART=0`) leaves that client's race as it was.
+- Buttons still take the long way. The host says which item a kart holds
+  (+0x24 of its entry), and an item used before the host knows of it would
+  come back for a moment.
+
+Code: `mkgp2pc_link_kart` and `mkgp2pc_link_kart_done` in `netlink.c`,
+called from `port/patches/src/game/VSMode_FrameUpdate.c.patch`.
+
+Measured as above, with the wheel moved every 0.8 s as well:
+
+| one way delay, jitter, loss | race speed, mean (worst second) | pedals and wheel reach the own kart after, host | client (mean / worst) |
+|---|---|---|---|
+| 0 ms | 1.00 (0.98) | 17 ms | 1 / 66 ms |
+| 50 ms, 0..20 ms, 5 % | 0.99 (0.85) | 16 ms | 2 / 84 ms |
+
+(The 1 to 2 ms are from the retrace at which the probe sees the change to
+the step in the same frame; the worst cases are frames in which the client
+waited for the host.) How far the host's copy of the client's kart is from
+the place reported, just before it is put there: on average under a tenth of
+what the kart moves in a frame (0.0 to 0.2 against 1.7 units a frame at
+20 ms; 0.05 to 0.7 at 50 ms with jitter and loss), at most a few frames'
+worth when samples were skipped.
+
+What this does not solve, and what only play by people can judge:
+
+- Each cabinet sees the other karts where they were one way (plus reserve)
+  ago, and itself now. Whether a kart is hit by something moving, or two
+  karts touch, is worked out on each cabinet from what it sees, as before,
+  but the views now differ by that time. A hit that one cabinet sees and
+  another does not shows as a kart that spins on one screen and not on the
+  other; the positions stay those its own cabinet reports.
+- The host judges order and the finish from what it sees, and it sees its
+  own kart now and the others one way late. A client also starts later than
+  the host by the way of the start signal. So the host is ahead by about a
+  round trip in its own judgement. Before this change the same time was a
+  client's input delay throughout the race. Delaying each cabinet's start
+  by what it is nearer to the host than the farthest one would even it out
+  (not done).
+- A client that has no host frame still stands still for those retraces,
+  its own kart included.
 
 ### Measured with delay added, TCP and the arcade waiting rule (2026-11-11)
 

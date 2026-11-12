@@ -571,7 +571,7 @@ static void create_controls(void) {
   y += 40;
   check(1, L"影をなめらかにする", X, y, W, ID_SHADOW);
   y += 28;
-  check(1, L"高解像度の 2D テクスチャ (未対応)", X, y, W, ID_HIRES);
+  check(1, L"高解像度の 2D テクスチャ", X, y, W, ID_HIRES);
   y += 28;
   check(1, L"全速で開始", X, y, W, ID_FAST);
   y += 28;

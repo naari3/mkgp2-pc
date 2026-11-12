@@ -1059,8 +1059,10 @@ Before this, every socket command was answered "error" and, separately,
 `acConnect` was a stub (its unit did not compile, upstream request 46).
 Since 2026-11-12 the connections travel in UDP datagrams and the host's
 waiting rule in a linked race is the port's own
-(`port/patches/src/game/VSMode_FrameUpdate.c.patch`), both for play over
-connections with delay, jitter and loss; measurements in cabinet_link.md.
+(`port/patches/src/game/VSMode_FrameUpdate.c.patch`), and every cabinet
+drives its own kart and reports its position to the host (same patch), all
+for play over connections with delay, jitter and loss; measurements in
+cabinet_link.md.
 
 ### Special kart tyres (upstream request 49, 2026-11-11)
 
@@ -1335,3 +1337,67 @@ The spike lines of the next session on Windows are what decides that; the
 other candidates (first sight of a pipeline with a working cache, disc reads
 on the game thread, the limiter waking late, the rendering thread falling
 behind) each have their own field in the line.
+
+## 37. Crash on the test button (2026-11-12)
+
+Report from Windows (main afe2097): F1 (the test button) ended the game with
+an access violation. The crash record in `gfx.log`:
+
+```
+stub: ARReset (generated:0)
+stub: AIReset (generated:0)
+stub: GXAbortFrame (generated:0)
+stub: OSResetSystem (generated:0)
+[WARNING] aurora::gfx: Buffer mapping Aborted: Buffer was destroyed before mapping was resolved.
+crash: exception c0000005 in thread 37968, writing address 00000014
+crash: at ntdll.dll+0x68f56
+crash: stack+0d0 mkgp2-gfx.exe+0x612360   __gthr_win32_mutex_lock
+crash: stack+0f0 mkgp2-gfx.exe+0x3baf46   aurora::gfx::render_worker::FrameSlotPool::release
+crash: stack+104 mkgp2-gfx.exe+0x3a5a51   map_staging_buffer's map callback
+crash: stack+360 mkgp2-gfx.exe+0x3a2737   destructor of aurora::gfx::g_stagingBuffers
+```
+
+(names from the executable's symbol table). Not the Dawn defect of
+build.md "32-bit Dawn packages": two things of the port's own.
+
+1. **The test mode is a restart of the program.** `ServiceButton_Handler`
+   answers 1 while the test button is held; `MainGameLoop` leaves its loop and
+   `Game_Shutdown` closes the devices, puts 256 bytes at the top of the arena
+   with the first word 1, and calls `fn_80287EE4` (src/triforce/amboot.c):
+   `OSSetSaveRegion`, then `OSResetSystem(0, 0, 0)`. After the restart
+   `BootDispatcher` reads the bytes with `OSGetSavedRegion` (`fn_80287FDC`),
+   and word 1 makes `main` create the flow in mode 12, the GAME TEST menu.
+   `OSResetSystem` was a generated stub that returned, so `main` returned.
+2. **Returning from `main` crashed.** The C runtime ran the static
+   destructors; Aurora's staging buffers were destroyed, each pending map
+   called back with "Aborted", and the callback locked a mutex of an object
+   destroyed before it. (The window's close button never went this way: it
+   ends the process at once, `quit_now`.)
+
+What changed:
+
+- `port/platform/runtime/reset.c`: `OSResetSystem` restarts the program and
+  the saved bytes reach the next run (how, on Linux and on Windows, is at the
+  top of the file; on Windows the first process only supervises and the game
+  is its child). `OSSetSaveRegion` / `OSGetSavedRegion` moved there from
+  os_min.c and no longer hand back in the same run what was just set.
+- `__wrap_main` (video_aurora.c) ends the process with `quit_now` if the
+  game's `main` ever returns.
+
+EXIT in the GAME TEST menu calls the same `Game_Shutdown`, first word 1
+again (`GameTestTopMenu_Page`): by the game's code alone the next start
+would be the test mode again, and with the bytes passed on unchanged that is
+what happened here. On the board the program that starts the game stands
+between the two starts; it is not on the disc and what it does with the
+bytes is not known. Stand-in: a run that was started with saved bytes passes
+none on, so the reset after EXIT starts the game normally. A marked
+assumption, to be replaced when the board's behaviour is known.
+
+Checked on Linux (Xvfb, script `op=41` / `op=01` at retrace 600, then
+`MKGP2PC_RESET_SCRIPT_FILE` with eleven service presses and one test press):
+test button, restart, GAME TEST menu with the selected line blinking, OTHERS
+page (clock, version `MK2100-1-NA-MPR0-A36`), EXIT, restart, the normal
+start-up. The Windows path (supervising process, shared mapping) was run
+only as a small test program under Wine, not with the game and not on
+Windows. Not looked at: the pages of the test menu one by one, and whether
+settings saved there reach the next run.
