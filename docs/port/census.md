@@ -1401,3 +1401,46 @@ start-up. The Windows path (supervising process, shared mapping) was run
 only as a small test program under Wine, not with the game and not on
 Windows. Not looked at: the pages of the test menu one by one, and whether
 settings saved there reach the next run.
+
+## 38. Huge pale polygons flashing across the screen on the Mario cup courses (2026-11-12)
+
+Report from play on Windows (6f362d2, ura round of the Mario cup): something
+of a wildly wrong scale crosses the screen at high speed. Seven dumps in a
+row (retrace 9915 to 9922, the start grid): thin pale slivers on the road in
+some of them, gone in the next.
+
+- Reproduced on Linux with the dump's inputs on 4d8a546 (there the round is
+  the night course, reverse): a pale translucent band or wedge on about one
+  frame in five, each time somewhere else.
+- What it is: `clRipple` (src/game/objview/fn_8018F614.cpp), the ripples on
+  the water beside the Mario cup roads (`ripple.dat`, `ripple_tw.dat`,
+  `ripple_ni.dat`; three pairs of meshes). Each frame
+  `fn_8018F1E0` blends the positions of mesh 1 and mesh 2 of a pair into a
+  buffer of its own and the model's vertex description points at that
+  buffer. Vertex buffers stay big-endian in the port (the GX layer reads them
+  that way), and this code read and wrote them as host floats: the blended
+  numbers were garbage, so the ripple triangles reached anywhere.
+- The sea of the same courses has the same construction for texture
+  coordinates (`fn_8018FC24`, a wave added to the model's coordinates); its
+  result was garbage too (what that looked like was not examined).
+- Correction upstream (mkgp2-decomp 0023ddc, same objects under MWCC): both
+  go through `GXDATA_F32` and a new `GXDATA_SET_F32`
+  (include/game/types/gx_data.h); port/compat/mwcc_compat.h defines the store.
+  Taken here as a cherry-pick; the next merge of upstream brings the same
+  text.
+- How it was found (the picture alone misleads: the airships of the night
+  course have a searchlight cone and propellers scaled 31 times in the model
+  file, both innocent). Under gdb, one frame per stop at
+  `VIWaitForRetrace` with a screenshot each; a score per frame (blocks of
+  the picture that differ slightly from the median of the run) marks the
+  frames with a band; then one part of the course's effect list
+  (`clMapEffectMR`, `PartsNode`) was switched off per run by clearing its
+  `prio` word. Only without the ripple part were there no bands. Skipping
+  single display lists (`__wrap_GXCallDisplayList`) did not find it,
+  because the ripple meshes are small and spread over several lists.
+- Verified on Linux only (96 consecutive frames without a band, before: 10
+  to 20 with one). Not checked on Windows.
+- Other CPU writers of vertex buffers: none found in src/game
+  (`fn_80182ED0`/`fn_80183538`, the helpers these two use, have no other
+  caller); the HSD shape animation reader in pobj.c is still open
+  (upstream_requests.md item 36).
