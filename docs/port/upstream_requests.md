@@ -623,4 +623,5 @@ context no longer matches stops the build.
 | `MainGameLoop.cpp` | the current flow changes only when its own update says so | at the top of each frame the port may ask for another flow (`mkgp2pc_nav_flow_hook`; the port's menu, docs/port/menu.md) |
 | `fn_801B7EF8.c` | `MenuScene_Dispatch` builds the next selection screen from the number the current one returns | the number passes through `mkgp2pc_nav_scene_hook`, which can give the screen before instead; the flow's constructor reports its first screen |
 | `ItemSelectState.cpp` | the destructor stores the three chosen items in the player record even when none was chosen (-1) | not stored when unchosen: the screen can now be left backwards |
+| `Debug.c`, `DebugTextOutput.c`, `main.c` | `OSReport` and `OSPanic` are empty, `OverlayText` formats a string and drops it, `main` starts scene 3 or 12 | the ends of the debug paths call `port/platform/debug/debug.c`: log, overlay drawing, `MKGP2PC_START_SCENE` (docs/port/debug.md) |
 | 11 units with `PORT_DATA_LOADED` | the port's hook after a file is read, for byte order (removed upstream in 573f65a) | the calls and `port/compat/include/game/types/port_hooks.h` |

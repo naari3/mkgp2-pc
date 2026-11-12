@@ -126,7 +126,7 @@ def link_gfx_windows(stubs, thunks, cxxrt, replaced, aurora_fns, aurora_data, po
         fetched = os.path.join(ROOT, "build", "aurora-win32", "_deps", "sdl-src", "include")
         if os.path.isdir(fetched):
             sdl_inc = [fetched]
-    # Dear ImGui's headers (the port's own screens, port/gfx/port_ui.cpp),
+    # Dear ImGui's headers (port_ui.cpp and debug_overlay.cpp draw with it):
     # found the same way; the settings are those Aurora builds ImGui with
     imgui_inc = []
     for line in open(cache) if os.path.exists(cache) else []:
@@ -1091,6 +1091,31 @@ def main():
                 if c not in defined and c not in weak and c not in ours:
                     missing.setdefault(c, set())
         print(f"address-named references resolved to the symbol at that address: {by_addr}")
+        # A data label declared inside a namespace (`view9::lbl_806D15FC`
+        # in src/game/mapobject/fn_8017CE1C.cpp, one namespace per type the
+        # unit sees the object as) is that object. Without this every such
+        # name became a stub and the unit read code bytes as its data.
+        in_ns = 0
+        for n in sorted(missing):
+            m = re.match(r"_ZN(\d+)", n)
+            if not m or n in alias:
+                continue
+            rest = n[m.end() + int(m.group(1)):]
+            m = re.match(r"(\d+)", rest)
+            if not m or rest[m.end() + int(m.group(1)):] != "E":
+                continue   # a function (parameters follow) or a deeper name
+            c = rest[m.end():-1]
+            known = lambda x: x in defined or x in weak or x in ours or x in missing or x in info
+            if not known(c):
+                m = re.search(r"_(8[0-9A-Fa-f]{7})$", c)
+                c = at.get(int(m.group(1), 16)) if m else None
+                if c is None or not known(c):
+                    continue
+            alias[n] = c
+            in_ns += 1
+            if c not in defined and c not in weak and c not in ours:
+                missing.setdefault(c, set())   # placed like any other object the sources only declare
+        print(f"data names inside a namespace wired to the plain name: {in_ns}")
         defsyms = [f"-Wl,--defsym={n}={t}" for n, t in sorted(alias.items()) if n in missing] + thunk_defsyms
         missing = {n: u for n, u in missing.items() if n not in alias}
         print(f"wired to an existing definition (linkage or prototype mismatch): {len(defsyms)}")

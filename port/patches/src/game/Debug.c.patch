@@ -1,0 +1,33 @@
+--- a/src/game/Debug.c
++++ b/src/game/Debug.c
+@@ -22,10 +22,22 @@
+ 
+ void OSReport(const char *msg, ...);
+ 
++/* port: the retail build emptied these two (port/platform/debug/debug.c) */
++extern void mkgp2pc_debug_vreport(const char *fmt, va_list args);
++extern void mkgp2pc_debug_vpanic(const char *file, int line, const char *fmt, va_list args);
++
+ void OSPanic(const char *file, int line, const char *msg, ...) {
++    va_list args;
++    va_start(args, msg);
++    mkgp2pc_debug_vpanic(file, line, msg, args);
++    va_end(args);
+ }
+ 
+ void OSReport(const char *msg, ...) {
++    va_list args;
++    va_start(args, msg);
++    mkgp2pc_debug_vreport(msg, args);
++    va_end(args);
+ }
+ 
+ void DebugPrintf(const char *fmt, ...) {
+@@ -39,6 +51,6 @@
+         vsprintf(buf, fmt, args);
+         va_end(args);
+         OSRestoreInterrupts(enabled);
+-        OSReport(buf);
++        OSReport("%s", buf); /* port: buf is text, not a format */
+     }
+ }

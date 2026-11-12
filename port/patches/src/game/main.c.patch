@@ -1,0 +1,18 @@
+--- a/src/game/main.c
++++ b/src/game/main.c
+@@ -34,6 +34,7 @@
+ extern void Game_Shutdown(void);
+ 
+ extern void *main_rodata_80328C94[];
++extern int mkgp2pc_debug_start_scene(int mode); /* port: MKGP2PC_START_SCENE */
+ 
+ #pragma exceptions on
+ void main(void) {
+@@ -47,6 +48,7 @@
+     if (bootScratch[0] == 1) {
+         mode = 12;
+     }
++    mode = mkgp2pc_debug_start_scene(mode);
+     scene = FlowDispatcher_Create(main_rodata_80328C94, mode);
+     MainGameLoop(REG_ARGS1(scene)); /* r3 still holds scene */
+     FlowDispatcher_Dtor(scene, 1);

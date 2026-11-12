@@ -7,6 +7,10 @@
 #include <stdlib.h>
 #include <time.h>
 
+/* port/platform/debug/debug.c */
+void mkgp2pc_debug_overlay_clear(void);
+void mkgp2pc_debug_frame(void);
+
 int OSDisableInterrupts(void);
 int OSRestoreInterrupts(int);
 void mkgp2pc_mediaboard_tick(void); /* port/platform/triforce/mediaboard.c */
@@ -68,6 +72,8 @@ void VIWaitForRetrace(void) {
   s_retrace++;
   mkgp2pc_script_tick(s_retrace);
   mkgp2pc_mediaboard_tick();
+  mkgp2pc_debug_overlay_clear(); /* nothing draws the game's debug overlay here */
+  mkgp2pc_debug_frame();
   if (s_pre) {
     s_pre(s_retrace);
   }

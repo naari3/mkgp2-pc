@@ -398,6 +398,8 @@ program is started from (`MKGP2PC_CARD_FILE` names another file).
   complete and may take longer once; compiled pipelines stay in the cache
   file. This variable gives the dropping behaviour back. Seen in Aurora's
   source (lib/gfx/pipeline_cache.cpp), not yet confirmed on Windows.
+- `MKGP2PC_DEBUG=1`, `MKGP2PC_START_SCENE=N`, keys F3 and F4: the game's
+  own debug output, overlay and scene list (docs/port/debug.md).
 - `MKGP2PC_SPIKE_MS=N`: frames longer than N milliseconds get a `spike:`
   line in the log with where the time went (default 25; 0 turns it off).
   Fields: comment above `spike_log` in port/gfx/video_aurora.c, background
@@ -406,6 +408,12 @@ program is started from (`MKGP2PC_CARD_FILE` names another file).
   files (`dawn_cache.db`, `pipeline_cache.db` in the user directory). The
   check sets a damaged file aside as `<name>.broken`; without it Aurora runs
   the whole session without its shader cache (census.md section 36).
+- `MKGP2PC_NO_SUPERVISOR=1` (Windows): the game runs in the process that
+  was started, without the supervising process that restarts it on
+  OSResetSystem (the test button); a reset then just ends the game.
+  `MKGP2PC_RESET_SCRIPT_FILE=<path>`: the input script of the run after a
+  reset (the scripts of the first run are dropped there). Both: census.md
+  section 37, port/platform/runtime/reset.c.
 - `MKGP2PC_CARD=0` starts the game with the baseboard DIP switch that turns
   the card service off, as all builds before this did. Input recordings
   (dumps) made by those builds need it to play back in step.

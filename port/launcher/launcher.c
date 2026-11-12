@@ -59,6 +59,8 @@ static const KeyAction kActions[] = {
     {L"hires", L"高解像度 (切り替え)", {65, 0}},
     {L"menu", L"メニュー", {41, 0}},
     {L"back", L"一つ前の画面に戻る", {42, 0}},
+    {L"debug", L"デバッグ表示 (切り替え)", {60, 0}},
+    {L"debugpage", L"デバッグ表示のページ送り", {61, 0}},
 };
 #define ACTIONS LEN(kActions)
 
@@ -573,7 +575,7 @@ static void create_controls(void) {
   y += 40;
   check(1, L"影をなめらかにする", X, y, W, ID_SHADOW);
   y += 28;
-  check(1, L"高解像度の 2D テクスチャ (未対応)", X, y, W, ID_HIRES);
+  check(1, L"高解像度の 2D テクスチャ", X, y, W, ID_HIRES);
   y += 28;
   check(1, L"全速で開始", X, y, W, ID_FAST);
   y += 28;

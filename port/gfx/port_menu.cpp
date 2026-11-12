@@ -6,6 +6,7 @@
  */
 #include "port_ui.hpp"
 
+#include <mkgp2pc/debug.h>
 #include <mkgp2pc/nav.h>
 
 #include <cstdio>
@@ -52,6 +53,14 @@ portui::ListMenu& menu() {
                main_loop, Text{"No coin is taken", "コインは消費しません"}},
           Item{Text{"Cup / round selection", "カップ・ラウンド選択"}, [] { flow(MKGP2PC_FLOW_MENU, MKGP2PC_ENTRY_CUP); }, main_loop,
                Text{"No coin is taken", "コインは消費しません"}},
+          Item{Text{"Developer scene list", "開発用シーン一覧"},
+               [] {
+                 mkgp2pc_debug_set(1); /* the list is debug text: invisible without it */
+                 flow(-4, -1);
+               },
+               main_loop,
+               Text{"The game's own list; some scenes may not work. F2: move, Space: choose",
+                    "ゲーム内蔵の一覧です。動かないシーンもあります。F2: 移動、Space: 決定"}},
           Item{Text{"", ""}, {}},
           Item{Text{"Quit the game", "ゲームを終了する"}, [] { mkgp2pc_video_quit(); }},
       },

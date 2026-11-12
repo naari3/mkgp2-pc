@@ -30,6 +30,7 @@ brake) move the cursor, `Enter` (or the item key) takes the choice, `Esc`
 | クラス選択 / Class selection | the class selection, as the game shows it after "continue" |
 | キャラクター選択 / Character selection | the character selection |
 | カップ・ラウンド選択 / Cup / round selection | the cup selection; the round selection while a cup is being played (the game's own rule) |
+| 開発用シーン一覧 / Developer scene list | the game's own list of its 20 flows (index -4 of the flow table), with the debug display switched on so that its text shows (docs/port/debug.md). In the list F2 (service) moves the cursor and Space (item) chooses. Only the list itself and the way back to the title were tried; the developers' scenes behind it may not work |
 | ゲームを終了する / Quit the game | closes the program |
 
 The four destinations take no coin and do not look at the credits. They are
@@ -130,9 +131,8 @@ Restarting a race runs the race flow's constructor again, which counts a
 play in the statistics and writes the backup record, as every race start
 does.
 
-Other entries of the flow table (the developers' viewers, `Ending`, the
-scene list of index -4) can be asked for with the script command below; they
-are not in the menu because their text output is not drawn in the port yet.
+Other entries of the flow table (the developers' viewers, `Ending`) are
+reached through the scene list or with the script command below.
 
 ## Script commands
 

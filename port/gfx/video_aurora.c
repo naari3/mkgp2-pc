@@ -223,6 +223,14 @@ static bool s_fast, s_fastHeld; /* F10 and Tab: no frame limit */
 
 void mkgp2pc_shadow_record_frame(void);  /* gx_shim.cpp */
 void mkgp2pc_shadow_record_write(FILE* f);
+/* the game's own debug facilities: port/platform/debug/debug.c, debug_overlay.cpp */
+int mkgp2pc_debug_on(void);
+void mkgp2pc_debug_set(int on);
+void mkgp2pc_debug_frame(void);
+void mkgp2pc_debug_page(int step);
+int mkgp2pc_debug_overlay_get(int index, int* layer, int* column, int* row, const char** text);
+void mkgp2pc_debug_overlay_clear(void);
+void mkgp2pc_debug_overlay_draw(void);
 
 static void dump_text(const char* dir) {
   char path[600];
@@ -246,6 +254,15 @@ static void dump_text(const char* dir) {
       fprintf(f, "%s=%s\n", names[i], v ? v : "");
     }
     mkgp2pc_shadow_record_write(f);
+    /* what the game's debug overlay says on this frame */
+    for (int i = 0;; i++) {
+      int layer, column, row;
+      const char* text;
+      if (!mkgp2pc_debug_overlay_get(i, &layer, &column, &row, &text)) {
+        break;
+      }
+      fprintf(f, "overlay layer %d column %d row %d: %s\n", layer, column, row, text);
+    }
     fclose(f);
   }
 }
@@ -348,6 +365,10 @@ static int script_extra(const char* cmd) {
     s_step = true;
   } else if (strcmp(cmd, "dump") == 0) {
     s_dumpWanted = true;
+  } else if (strcmp(cmd, "debug") == 0) {
+    mkgp2pc_debug_set(!mkgp2pc_debug_on());
+  } else if (strcmp(cmd, "debugpage") == 0) {
+    mkgp2pc_debug_page(1);
   } else {
     return 0;
   }
@@ -368,20 +389,21 @@ static int script_extra(const char* cmd) {
 enum {
   KEY_LEFT, KEY_RIGHT, KEY_ACCEL, KEY_BRAKE, KEY_ITEM, KEY_TEST, KEY_SERVICE,
   KEY_COIN, KEY_CARD, KEY_PAUSE, KEY_STEP, KEY_FAST, KEY_FASTHOLD, KEY_DUMP,
-  KEY_MENU, KEY_BACK, KEY_HIRES,
+  KEY_MENU, KEY_BACK, KEY_HIRES, KEY_DEBUG, KEY_DEBUGPAGE,
   KEY_ACTIONS
 };
 #define KEYS_PER_ACTION 4
 static const char* const s_actionNames[KEY_ACTIONS] = {
     "left", "right", "accel", "brake", "item", "test", "service",
-    "coin", "card", "pause", "step", "fast", "fasthold", "dump", "menu", "back", "hires"};
+    "coin", "card", "pause", "step", "fast", "fasthold", "dump", "menu", "back", "hires",
+    "debug", "debugpage"};
 static int s_keyMap[KEY_ACTIONS][KEYS_PER_ACTION] = {
     {SDL_SCANCODE_LEFT}, {SDL_SCANCODE_RIGHT}, {SDL_SCANCODE_UP, SDL_SCANCODE_Z},
     {SDL_SCANCODE_DOWN, SDL_SCANCODE_X}, {SDL_SCANCODE_SPACE, SDL_SCANCODE_RETURN},
     {SDL_SCANCODE_F1}, {SDL_SCANCODE_F2}, {SDL_SCANCODE_5, SDL_SCANCODE_C},
     {SDL_SCANCODE_I}, {SDL_SCANCODE_P}, {SDL_SCANCODE_O}, {SDL_SCANCODE_F10},
     {SDL_SCANCODE_TAB}, {SDL_SCANCODE_F9}, {SDL_SCANCODE_ESCAPE}, {SDL_SCANCODE_BACKSPACE},
-    {SDL_SCANCODE_F8}};
+    {SDL_SCANCODE_F8}, {SDL_SCANCODE_F3}, {SDL_SCANCODE_F4}};
 
 void mkgp2pc_hires_init(void); /* gx_shim.cpp */
 void mkgp2pc_hires_toggle(void);
@@ -530,6 +552,16 @@ static void key_event(const SDL_Event* e) {
     case KEY_HIRES: /* high-resolution 2D textures on and off (gx_shim.cpp) */
       if (press) {
         mkgp2pc_hires_toggle();
+      }
+      break;
+    case KEY_DEBUG: /* the game's own debug output and overlay (docs/port/debug.md) */
+      if (press) {
+        mkgp2pc_debug_set(!mkgp2pc_debug_on());
+      }
+      break;
+    case KEY_DEBUGPAGE:
+      if (press) {
+        mkgp2pc_debug_page((SDL_GetModState() & SDL_KMOD_SHIFT) != 0 ? -1 : 1);
       }
       break;
     }
@@ -707,6 +739,7 @@ static void wide_frame(void) {
   mkgp2pc_wide_frame(k > 1.001f ? k : 1.0f);
 }
 void mkgp2pc_crash_log_install(void); /* shot_win32.c */
+static void quit_now(void);
 int __wrap_main(int argc, char** argv) {
   mkgp2pc_crash_log_install();
   AuroraConfig config;
@@ -794,7 +827,15 @@ int __wrap_main(int argc, char** argv) {
   s_inFrame = aurora_begin_frame();
   begin_frame_state();
   wide_frame();
-  return __real_main(argc, argv);
+  __real_main(argc, argv);
+  /* The game's main returned (it does not while OSResetSystem restarts the
+   * program). Returning from here would run the static destructors, and
+   * Aurora's end in an access violation on Windows: its staging buffers'
+   * map callbacks lock a mutex that was destroyed before them (crash record
+   * 2026-11-12 after the test button, docs/port/census.md section 37). */
+  fprintf(stderr, "main returned; leaving\n");
+  quit_now();
+  return 0;
 }
 
 void mkgp2pc_audio_frame(void); /* audio_musyx.c */
@@ -973,6 +1014,7 @@ void VIWaitForRetrace(void) {
       dump_capture();
     }
     mkgp2pc_shadow_record_frame();
+    mkgp2pc_debug_overlay_draw();
     aurora_end_frame();
     s_inFrame = false;
   }
@@ -1007,6 +1049,10 @@ void VIWaitForRetrace(void) {
   mkgp2pc_script_tick(s_retrace);
   mkgp2pc_mediaboard_tick();
   keyboard_tick();
+  /* the strings of the frame just shown are done with; the game's debug
+   * byte follows the switch before the next frame reads it */
+  mkgp2pc_debug_overlay_clear();
+  mkgp2pc_debug_frame();
   if (s_pre) {
     s_pre(s_retrace);
   }

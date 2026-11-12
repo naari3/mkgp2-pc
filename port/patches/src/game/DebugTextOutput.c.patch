@@ -1,0 +1,18 @@
+--- a/src/game/DebugTextOutput.c
++++ b/src/game/DebugTextOutput.c
+@@ -24,6 +24,8 @@
+ extern unsigned char lbl_80598A60[];
+ extern char DebugTextOutput_bss_805960F0[0x2010];
+ extern const char lbl_806D22D8[3];
++/* port: the drawing the retail build lost (port/platform/debug/debug.c) */
++extern void mkgp2pc_debug_overlay_text(int layer, int column, int row, const char *text);
+ 
+ void DebugTextOutput(int channel, const char *fmt, ...) {
+     va_list args;
+@@ -49,5 +51,6 @@
+         vsprintf(DebugTextOutput_bss_805960F0, fmt, args);
+         va_end(args);
+         OSRestoreInterrupts(enabled);
++        mkgp2pc_debug_overlay_text(layer, x, y, DebugTextOutput_bss_805960F0);
+     }
+ }
