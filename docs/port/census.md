@@ -1059,8 +1059,10 @@ Before this, every socket command was answered "error" and, separately,
 `acConnect` was a stub (its unit did not compile, upstream request 46).
 Since 2026-11-12 the connections travel in UDP datagrams and the host's
 waiting rule in a linked race is the port's own
-(`port/patches/src/game/VSMode_FrameUpdate.c.patch`), both for play over
-connections with delay, jitter and loss; measurements in cabinet_link.md.
+(`port/patches/src/game/VSMode_FrameUpdate.c.patch`), and every cabinet
+drives its own kart and reports its position to the host (same patch), all
+for play over connections with delay, jitter and loss; measurements in
+cabinet_link.md.
 
 ### Special kart tyres (upstream request 49, 2026-11-11)
 
