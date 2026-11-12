@@ -1414,6 +1414,7 @@ extern int g_currentSceneState;
 extern unsigned char PCBComm_BuildBroadcastSlot_bss_805A60C4[];
 
 enum { KART_CAN = 0x5A, KART_DOES = 0xA5 };
+enum { START_TURN = 50, START_SETTLE = 1000, START_MOST = 500 }; /* ms */
 static int s_ownKart = -1;
 static int s_driving;            /* client: this cabinet's kart is driven here */
 static uint8_t s_sample;         /* client: number of the last sample */
@@ -1441,12 +1442,48 @@ static void probe_used(const void* used, uint64_t now) {
   }
 }
 
+/* The start (see mkgp2pc_link_start_due). */
+static int s_trip[MAX_CABINETS]; /* host: ms from the start signal leaving to that client's first move arriving; -1 unknown */
+static int s_startArmed;         /* the signal has been seen and s_startAt set */
+static uint64_t s_startAt, s_startFirst;
+static int s_startMoved[MAX_CABINETS];
+static float s_startPlace[MAX_CABINETS][3];
+
+/* Round trip to a cabinet in ms, as the connections with it measure it; -1 unknown. */
+static int round_trip(int peer) {
+  int best = -1;
+  for (int i = 0; i < MAX_CHANS; i++) {
+    const Chan* c = &s_chan[i];
+    if (c->state == CH_OPEN && c->peer == peer && c->rtt >= 0 && (best < 0 || c->rtt < best)) {
+      best = c->rtt;
+    }
+  }
+  return best;
+}
+
+/* Host, trace: when each kart first leaves its place after the start signal. */
+static void start_watch(int kart, const float* at) {
+  if (!s_trace || !s_startArmed || s_startMoved[kart]) {
+    return;
+  }
+  if (s_startMoved[kart] == 0 && s_startPlace[kart][0] == 0 && s_startPlace[kart][1] == 0 && s_startPlace[kart][2] == 0) {
+    memcpy(s_startPlace[kart], at, sizeof(s_startPlace[kart]));
+    return;
+  }
+  if (fabs((double)(at[0] - s_startPlace[kart][0])) + fabs((double)(at[2] - s_startPlace[kart][2])) > 0.5) {
+    s_startMoved[kart] = 1;
+    TRACE("start: kart %d moves %llu ms after the host let its countdown go", kart + 1,
+          (unsigned long long)(now_ms() - s_startAt));
+  }
+}
+
 static int own_kart(void) {
   if (s_ownKart < 0) {
     const char* e = getenv("MKGP2PC_LINK_OWNKART");
     s_ownKart = e == NULL || e[0] != '0';
     for (int k = 0; k < MAX_CABINETS; k++) {
       s_placedSample[k] = -1;
+      s_trip[k] = -1;
     }
   }
   return s_ownKart;
@@ -1465,23 +1502,39 @@ int mkgp2pc_link_kart(int kart, int own, int host, char* slot, const float* matr
     float at[3];
     double off;
     if (own) {
+      start_watch(kart, matrix + 12);
       return 0;
     }
     if (b[0x20] != KART_CAN && b[0x20] != KART_DOES) {
       b[0x23] = 0;
       s_placedSample[kart] = -1;
+      s_trip[kart] = -1;
       return 0;
     }
     b[0x23] = KART_DOES;
     if (b[0x20] != KART_DOES) {
       s_placedSample[kart] = -1;
+      s_trip[kart] = -1;
       return 0;
+    }
+    if (!s_startArmed) { /* until the start: how long this client has to hold its countdown */
+      int trip = round_trip(kart), longest = 0;
+      uint16_t hold;
+      s_trip[kart] = trip < 0 ? -1 : trip + START_TURN;
+      for (int k = 0; k < MAX_CABINETS; k++) {
+        if (s_trip[k] > longest) {
+          longest = s_trip[k];
+        }
+      }
+      hold = (uint16_t)(s_trip[kart] < 0 ? 0 : longest - s_trip[kart]);
+      memcpy(b + 0x26, &hold, 2);
     }
     if (s_placedSample[kart] == b[0x21]) {
       return 1; /* no new sample: the copy runs on by itself */
     }
     s_placedSample[kart] = b[0x21];
     memcpy(at, b + 0x10, sizeof(at));
+    start_watch(kart, at);
     off = sqrt((double)(at[0] - matrix[12]) * (at[0] - matrix[12]) + (double)(at[1] - matrix[13]) * (at[1] - matrix[13]) +
                (double)(at[2] - matrix[14]) * (at[2] - matrix[14]));
     s_placed++;
@@ -1521,6 +1574,74 @@ void mkgp2pc_link_kart_done(const float* matrix, float value) {
   pad[0x11] = ++s_sample;
 }
 
+/* ---- the start ------------------------------------------------------------------
+ *
+ * The host releases the countdown on all cabinets with one signal. It sees
+ * it at once; a client sees it one way later, and where that client's kart
+ * is reaches the host another way later. So on the host, where order and
+ * finish are judged, its own kart would leave a round trip before a
+ * client's, and a near client's before a far one's.
+ *
+ * Every cabinet therefore holds the countdown a little longer after the
+ * signal: all of them by START_SETTLE, in which the cabinets find out who
+ * drives its own kart, then the host by the longest trip of all clients
+ * (round trip as the connections measure it, plus START_TURN for the frames
+ * in which the signal and a sample wait their turn; measured, see
+ * docs/port/cabinet_link.md), a client by what its own trip is shorter.
+ * The host tells each client its time, in ms, in the two unused bytes at
+ * +0x26 of the kart's entry in its frame. On the host all karts then leave
+ * together. A client sees its own kart leave a round trip before the
+ * host's: every screen shows its own kart now and the others earlier.
+ *
+ * Only for clients that drive their own karts; a cabinet that does not
+ * (MKGP2PC_LINK_OWNKART=0) holds nothing. MKGP2PC_LINK_START=0: nobody
+ * holds anything. Called every frame from the signal on, from
+ * port/patches/src/game/VSMode_FrameUpdate.c.patch; 1: release now. */
+int mkgp2pc_link_start_due(int host, const char* ownSlot) {
+  static int even = -1;
+  uint64_t now;
+  if (even < 0) {
+    const char* e = getenv("MKGP2PC_LINK_START");
+    even = e == NULL || e[0] != '0';
+  }
+  if (!own_kart()) {
+    return 1;
+  }
+  now = now_ms();
+  if (s_startFirst == 0) {
+    s_startFirst = now;
+  }
+  if (even && now - s_startFirst < START_SETTLE) {
+    return 0; /* the cabinets are still telling each other who drives, and measuring */
+  }
+  if (!s_startArmed) {
+    int hold = 0;
+    if (host) {
+      for (int k = 0; k < MAX_CABINETS; k++) {
+        if (s_trip[k] > hold) {
+          hold = s_trip[k];
+        }
+      }
+    } else if (s_driving && ownSlot != NULL) {
+      uint16_t told;
+      memcpy(&told, ownSlot + 0x26, 2);
+      hold = told;
+    }
+    if (!even) {
+      hold = 0;
+    }
+    if (hold > START_MOST) {
+      hold = START_MOST;
+    }
+    s_startArmed = 1;
+    s_startAt = now + (uint64_t)hold;
+    memset(s_startMoved, 0, sizeof(s_startMoved));
+    memset(s_startPlace, 0, sizeof(s_startPlace));
+    TRACE("start: countdown held %d ms more", hold);
+  }
+  return now >= s_startAt;
+}
+
 /* Every retrace: outside a race nothing is reported, so that the place a
  * kart had at the end of one race is not taken for its place in the next. */
 static void own_kart_tick(void) {
@@ -1532,8 +1653,11 @@ static void own_kart_tick(void) {
   if (own_kart() && (g_currentSceneState < 0x2B || g_currentSceneState > 0x2D)) {
     memset(PCBComm_BuildBroadcastSlot_bss_805A60C4 + 0x2C + 0x10, 0, 0x12);
     s_driving = 0;
+    s_startArmed = 0;
+    s_startFirst = 0;
     for (int k = 0; k < MAX_CABINETS; k++) {
       s_placedSample[k] = -1;
+      s_trip[k] = -1;
     }
   }
 }
