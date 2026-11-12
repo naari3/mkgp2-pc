@@ -73,8 +73,9 @@ Read by `key_map_load` in `port/gfx/video_aurora.c`:
 `action=key[,key...]` separated by `;`, up to four keys per action. Actions
 not named keep their default keys; nothing after `=` leaves an action without
 a key. Actions: `left right accel brake item coin card test service pause
-step fast fasthold dump hires debug debugpage` (the last two: the game's own
-debug output, debug.md). A key is an SDL scancode name (`A`, `Left`, `F9`,
+step fast fasthold dump hires debug debugpage devup devdown devstart devsub`
+(from `debug` on: the game's own debug output and the buttons of the
+developers' scenes, debug.md). A key is an SDL scancode name (`A`, `Left`, `F9`,
 `Keypad 5`) or the scancode number, which is the USB keyboard usage (4 = A).
 A single character is always a name (`5` is the key 5), so numbers are
 written with two digits (`04`). Scancodes name physical keys: the layout does

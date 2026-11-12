@@ -48,6 +48,8 @@ typedef void (*RetraceCallback)(uint32_t retraceCount);
  * script (MKGP2PC_SCRIPT) may drive them.
  */
 static bool s_keyLeft, s_keyRight, s_keyAccel, s_keyBrake, s_keyItem, s_keyTest, s_keyService;
+/* buttons the cabinet does not have: the developers' scenes read them (docs/port/debug.md) */
+static bool s_keyDevUp, s_keyDevDown, s_keyDevStart, s_keyDevSub;
 static bool s_keyboardUsed;
 static int s_wheel; /* -0x7FFF .. 0x7FFF */
 
@@ -359,20 +361,23 @@ enum {
   KEY_LEFT, KEY_RIGHT, KEY_ACCEL, KEY_BRAKE, KEY_ITEM, KEY_TEST, KEY_SERVICE,
   KEY_COIN, KEY_CARD, KEY_PAUSE, KEY_STEP, KEY_FAST, KEY_FASTHOLD, KEY_DUMP,
   KEY_HIRES, KEY_DEBUG, KEY_DEBUGPAGE,
+  KEY_DEVUP, KEY_DEVDOWN, KEY_DEVSTART, KEY_DEVSUB,
   KEY_ACTIONS
 };
 #define KEYS_PER_ACTION 4
 static const char* const s_actionNames[KEY_ACTIONS] = {
     "left", "right", "accel", "brake", "item", "test", "service",
     "coin", "card", "pause", "step", "fast", "fasthold", "dump", "hires",
-    "debug", "debugpage"};
+    "debug", "debugpage",
+    "devup", "devdown", "devstart", "devsub"};
 static int s_keyMap[KEY_ACTIONS][KEYS_PER_ACTION] = {
     {SDL_SCANCODE_LEFT}, {SDL_SCANCODE_RIGHT}, {SDL_SCANCODE_UP, SDL_SCANCODE_Z},
     {SDL_SCANCODE_DOWN, SDL_SCANCODE_X}, {SDL_SCANCODE_SPACE, SDL_SCANCODE_RETURN},
     {SDL_SCANCODE_F1}, {SDL_SCANCODE_F2}, {SDL_SCANCODE_5, SDL_SCANCODE_C},
     {SDL_SCANCODE_I}, {SDL_SCANCODE_P}, {SDL_SCANCODE_O}, {SDL_SCANCODE_F10},
     {SDL_SCANCODE_TAB}, {SDL_SCANCODE_F9}, {SDL_SCANCODE_F8},
-    {SDL_SCANCODE_F3}, {SDL_SCANCODE_F4}};
+    {SDL_SCANCODE_F3}, {SDL_SCANCODE_F4},
+    {SDL_SCANCODE_PAGEUP}, {SDL_SCANCODE_PAGEDOWN}, {SDL_SCANCODE_END}, {SDL_SCANCODE_HOME}};
 
 void mkgp2pc_hires_init(void); /* gx_shim.cpp */
 void mkgp2pc_hires_toggle(void);
@@ -437,6 +442,10 @@ static void key_event(const SDL_Event* e) {
     case KEY_ACCEL: s_keyAccel = down; control = true; break;
     case KEY_BRAKE: s_keyBrake = down; control = true; break;
     case KEY_ITEM: s_keyItem = down; control = true; break;
+    case KEY_DEVUP: s_keyDevUp = down; control = true; break;
+    case KEY_DEVDOWN: s_keyDevDown = down; control = true; break;
+    case KEY_DEVSTART: s_keyDevStart = down; control = true; break;
+    case KEY_DEVSUB: s_keyDevSub = down; control = true; break;
     case KEY_TEST: s_keyTest = down; control = true; break;
     case KEY_SERVICE: s_keyService = down; control = true; break;
     case KEY_COIN:
@@ -517,7 +526,17 @@ static void keyboard_tick(void) {
   rec_analog(0, (uint16_t)(0x8000 + s_wheel));
   rec_analog(1, s_keyAccel ? 0xFFFF : 0);
   rec_analog(2, s_keyBrake ? 0xFFFF : 0);
-  rec_switch((uint8_t)(s_keyItem ? 0x20 : 0));
+  /* Second switch byte of player 1. The cabinet wires only the item button
+   * (0x20). The game's table kRawGameMap_Raw0 also knows 0x80, 0x40, 0x10
+   * and 0x02, which the developers' scenes use as up, down, a second button
+   * and start / leave; they are passed on only while debugging is on, so
+   * that a stray key cannot do anything in a normal game. */
+  uint8_t dev = 0;
+  if (mkgp2pc_debug_on()) {
+    dev = (uint8_t)((s_keyDevUp ? 0x80 : 0) | (s_keyDevDown ? 0x40 : 0) | (s_keyDevSub ? 0x10 : 0) |
+                    (s_keyDevStart ? 0x02 : 0));
+  }
+  rec_switch((uint8_t)((s_keyItem ? 0x20 : 0) | dev));
   /* 0x01: the DIP switch that skips the card reader, printer and camera */
   rec_operator((uint8_t)((mkgp2pc_card_enabled() ? 0 : 0x01) | (s_keyTest ? 0x40 : 0) | (s_keyService ? 0x80 : 0)));
 }
