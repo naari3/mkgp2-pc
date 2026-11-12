@@ -22,7 +22,12 @@ namespace portui {
 struct Text {
   const char* en = "";
   const char* ja = ""; /* UTF-8 */
+  /* Japanese for the game's own font (port/platform/ui/gameui.c), where
+   * `ja` has letters that font lacks (it has about 450 kanji); nullptr: `ja` */
+  const char* game = nullptr;
   const char* get() const;
+  /* the text for a screen drawn with the game's font */
+  const char* get_game() const;
 };
 
 /* true when Japanese texts are shown */
@@ -51,6 +56,14 @@ public:
   /* returns true when the key closed the menu (Cancel, or a choice was taken) */
   bool key(Key k);
   void draw() const;
+  /* For a drawing of another kind (the game's own sprites, port_menu.cpp):
+   * what the list shows now. kind: 0 a choice, 1 a choice that cannot be
+   * taken, 2 a heading. Returns the number of rows. */
+  int rows(const char** text, int* kind, int max) const;
+  int cursor() const { return m_cursor; }
+  const char* title() const { return m_title.get_game(); }
+  const char* footer() const { return m_footer.get_game(); }
+  const char* note() const;
 
 private:
   bool selectable(int i) const;

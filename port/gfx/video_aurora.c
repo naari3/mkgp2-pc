@@ -354,7 +354,31 @@ void mkgp2pc_menu_draw(void);
 void mkgp2pc_ui_init(const AuroraWindowSize* size);
 void mkgp2pc_script_run(const char* cmd, uint32_t at); /* port/nogfx/input_script.c */
 
+/* The menu is drawn by the game itself, with its fonts and panels
+ * (port/platform/ui/gamemenu.c), when the game's main loop runs: that loop
+ * then makes the frames of the stopped game. Otherwise, and with
+ * MKGP2PC_MENU=plain, the game waits inside VIWaitForRetrace and the menu is
+ * drawn over its last picture (port_ui.cpp). */
+static bool s_menuByGame;
+static bool s_menuFrame; /* the frame that ends now was one of the stopped game */
+static int s_menuUnserved;
+static bool s_mainLoopRuns;
+
+bool mkgp2pc_video_menu_frame(void) {
+  if (!s_menuByGame) {
+    return false;
+  }
+  s_menuFrame = true;
+  s_menuUnserved = 0;
+  return true;
+}
+
 static void menu_open(bool open) {
+  if (open && !mkgp2pc_menu_is_open()) {
+    const char* style = getenv("MKGP2PC_MENU");
+    s_menuByGame = s_mainLoopRuns && (style == NULL || strcmp(style, "plain") != 0);
+    s_menuUnserved = 0;
+  }
   if (open) {
     /* nothing stays held down behind the menu */
     s_keyLeft = s_keyRight = s_keyAccel = s_keyBrake = s_keyItem = s_keyTest = s_keyService = false;
@@ -369,8 +393,7 @@ void mkgp2pc_video_command(const char* cmd) { mkgp2pc_script_run(cmd, s_retrace 
 
 /* The game's main loop asks for flow requests once per frame; before it (the
  * boot checks) and in loops of its own (test mode) nobody would take one. */
-static bool s_mainLoopRuns;
-bool mkgp2pc_video_main_loop_runs(void) { return s_mainLoopRuns; }
+bool mkgp2pc_video_main_loop_runs(void) { return s_mainLoopRuns || (mkgp2pc_menu_is_open() && s_menuByGame); }
 unsigned mkgp2pc_nav_flow_ticks(void);
 
 extern int (*mkgp2pc_script_extra)(const char* cmd);
@@ -1295,7 +1318,13 @@ void VIWaitForRetrace(void) {
   static Uint64 lastReturn;
   Uint64 t[7];
   bool skip = s_paused || s_dumpWanted || s_shotWait != 0 || mkgp2pc_menu_is_open();
-  {
+  bool menuFrame = s_menuFrame;
+  s_menuFrame = false;
+  if (mkgp2pc_menu_is_open() && s_menuByGame && !menuFrame && ++s_menuUnserved > 3) {
+    /* the game is in a loop that does not come by its main loop's top */
+    s_menuByGame = false;
+  }
+  if (!menuFrame) {
     static unsigned ticks;
     unsigned now = mkgp2pc_nav_flow_ticks();
     s_mainLoopRuns = now != ticks;
@@ -1323,7 +1352,7 @@ void VIWaitForRetrace(void) {
   dump_poll();
   s_step = false;
   skip |= s_paused;
-  while ((s_paused && !s_step) || mkgp2pc_menu_is_open()) {
+  while ((s_paused && !s_step) || (mkgp2pc_menu_is_open() && !s_menuByGame)) {
     if (mkgp2pc_menu_is_open()) {
       /* The game's last picture stays (it is the copy the game made of its
        * frame buffer); each pass presents it again with the menu on top. */
@@ -1344,6 +1373,32 @@ void VIWaitForRetrace(void) {
   t[3] = SDL_GetTicksNS();
   frame_limit();
   t[4] = SDL_GetTicksNS();
+  if (menuFrame) {
+    /* A frame of the stopped game: no retrace is counted and the inputs
+     * are not read, so that a recording of the inputs does not see the time
+     * spent in the menu. The game's retrace callbacks do run: its video
+     * library hands its display buffers on in them, and without that it
+     * stops copying frames to the display. */
+    {
+      int level = OSDisableInterrupts();
+      if (s_pre) {
+        s_pre(s_retrace);
+      }
+      if (s_post) {
+        s_post(s_retrace);
+      }
+      OSRestoreInterrupts(level);
+    }
+    if (!s_inFrame) {
+      s_inFrame = aurora_begin_frame();
+      begin_frame_state();
+      wide_frame();
+    }
+    mkgp2pc_skip_draw = false;
+    lastReturn = SDL_GetTicksNS();
+    stall_beat(true);
+    return;
+  }
   int level = OSDisableInterrupts();
   s_retrace++;
   mkgp2pc_script_tick(s_retrace);

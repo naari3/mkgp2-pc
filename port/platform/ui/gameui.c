@@ -96,11 +96,24 @@ typedef struct Label {
   Text text;
 } Label;
 
-static int s_open;
-static int s_layer;
-static int s_res[MAX_RES];
-static int s_resCount;
-static Label s_labels[MAX_LABELS];
+/* Two sets: the screen of the scene that runs, and the one that is laid over
+ * a stopped game (mkgp2pc_gameui_overlay_begin), which may come up while the
+ * first is open. */
+typedef struct State {
+  int open;
+  int layer;
+  int res[MAX_RES];
+  int resCount;
+  Label labels[MAX_LABELS];
+} State;
+
+static State s_states[2];
+static State* s_state = &s_states[0];
+#define s_open (s_state->open)
+#define s_layer (s_state->layer)
+#define s_res (s_state->res)
+#define s_resCount (s_state->resCount)
+#define s_labels (s_state->labels)
 
 static void hold(int res) {
   int i;
@@ -500,4 +513,122 @@ void mkgp2pc_gameui_choice(const char* title, const char* const* items, int coun
     mkgp2pc_gameui_hint_select(224.0f, 452.0f, age - 15);
     mkgp2pc_gameui_hint_decide(366.0f, 452.0f, age - 15);
   }
+}
+
+/* A whole screen: a list of rows one under the other with a cursor, as the
+ * port's menu has it. kinds: 0 a choice, 1 a choice that cannot be taken
+ * (pale), 2 a heading (small; an empty one is half a row of space). The
+ * note and the footer are small lines under the list. */
+void mkgp2pc_gameui_list(const char* title, const char* const* rows, const int* kinds, int count, int cursor,
+                         const char* note, const char* footer, int age) {
+  const float cx = 320.0f, cy = 240.0f;
+  const float rowH = 29.0f, headH = 22.0f, gapH = 10.0f;
+  float s = open_scale(age);
+  unsigned int dim = age < 10 ? (unsigned int)(0x90 * age / 10) : 0x90;
+  float listH = 0.0f, widest = 0.0f, panelW, panelH, y;
+  int i;
+  for (i = 0; i < count; i++) {
+    float w = mkgp2pc_gameui_text_width(kinds[i] == 2 ? GAMEUI_FONT_16 : GAMEUI_FONT_24, 1.0f, rows[i]);
+    if (w > widest) {
+      widest = w;
+    }
+    listH += kinds[i] != 2 ? rowH : (rows[i][0] ? headH : gapH);
+  }
+  panelW = widest + 150.0f;
+  if (panelW < 380.0f) {
+    panelW = 380.0f;
+  }
+  panelH = listH + 128.0f;
+  mkgp2pc_gameui_dim(dim);
+  mkgp2pc_gameui_panel(cx, cy, panelW * s, panelH * s, 0xFFFFFFFF);
+  mkgp2pc_gameui_panel(cx, cy, panelW * s, panelH * s, 0xFFFFFFFF);
+  if (age < 12) {
+    return; /* the texts come when the panel has its size */
+  }
+  y = cy - panelH * 0.5f + 34.0f;
+  if (title != NULL && title[0]) {
+    mkgp2pc_gameui_text(GAMEUI_FONT_24, GAMEUI_CENTER, cx, y, 1.0f, 0xFFE860FF, title);
+  }
+  y += 36.0f;
+  for (i = 0; i < count; i++) {
+    if (kinds[i] == 2) {
+      if (rows[i][0]) {
+        mkgp2pc_gameui_text(GAMEUI_FONT_16, GAMEUI_CENTER, cx, y + headH * 0.5f + 2.0f, 1.0f, 0xA0D0FFFF, rows[i]);
+        y += headH;
+      } else {
+        y += gapH;
+      }
+      continue;
+    }
+    if (i == cursor && kinds[i] == 0) {
+      int k = age % 40;
+      float beat = (float)(k < 20 ? k : 40 - k) / 20.0f;
+      mkgp2pc_gameui_glow(cx, y + rowH * 0.5f, widest + 64.0f + 8.0f * beat, rowH + 14.0f + 4.0f * beat,
+                          0xFFFFFF00 | (unsigned int)(0xC0 + 0x3F * beat));
+      mkgp2pc_gameui_text(GAMEUI_FONT_24, GAMEUI_CENTER, cx, y + rowH * 0.5f, 1.0f, 0xFFFFFFFF, rows[i]);
+    } else {
+      mkgp2pc_gameui_text(GAMEUI_FONT_24, GAMEUI_CENTER, cx, y + rowH * 0.5f, 0.9f,
+                          kinds[i] == 0 ? 0xFFFFFFD0 : 0xFFFFFF50, rows[i]);
+    }
+    y += rowH;
+  }
+  y = cy + panelH * 0.5f - 42.0f;
+  if (note != NULL && note[0]) {
+    mkgp2pc_gameui_text(GAMEUI_FONT_16, GAMEUI_CENTER, cx, y, 1.0f, 0xFFFFFFFF, note);
+  }
+  if (footer != NULL && footer[0]) {
+    mkgp2pc_gameui_text(GAMEUI_FONT_16, GAMEUI_CENTER, cx, y + 20.0f, 1.0f, 0xFFFFFFA0, footer);
+  }
+}
+
+/* ---- over a stopped game -------------------------------------------------- */
+
+/* The game's list of queued sprites (SpriteList in src/game/SpriteHandle.cpp).
+ * A scene queues in its Update what the next frame's Draw shows, so while
+ * the game is stopped between two frames the list holds the sprites of the
+ * frame to come. */
+typedef struct SpriteList {
+  int capacity, count;
+  void *nodes, *freeHead, *freeTail, *head, *tail;
+} SpriteList;
+extern SpriteList* lbl_806D1500;
+void fn_8011F994(int layer);      /* draw one layer of the queue now */
+void SpriteHandlePool_GC(void);   /* empty the queue */
+
+static void *s_keptHead, *s_keptTail;
+static int s_overlay;
+
+/* A screen over a game that stands still: the sprites the stopped scene has
+ * queued are put aside (they are neither drawn with the overlay nor used
+ * up), and the overlay's own queue is drawn by mkgp2pc_gameui_overlay_draw.
+ * The caller provides the frame around it and whatever lies underneath. */
+void mkgp2pc_gameui_overlay_begin(void) {
+  if (s_overlay) {
+    return;
+  }
+  s_overlay = 1;
+  s_keptHead = lbl_806D1500->head;
+  s_keptTail = lbl_806D1500->tail;
+  lbl_806D1500->head = lbl_806D1500->tail = NULL;
+  s_state = &s_states[1];
+  mkgp2pc_gameui_begin(7);
+}
+
+void mkgp2pc_gameui_overlay_draw(void) {
+  if (s_overlay) {
+    fn_8011F994(7);
+    SpriteHandlePool_GC();
+  }
+}
+
+void mkgp2pc_gameui_overlay_end(void) {
+  if (!s_overlay) {
+    return;
+  }
+  SpriteHandlePool_GC();
+  mkgp2pc_gameui_end();
+  s_state = &s_states[0];
+  lbl_806D1500->head = s_keptHead;
+  lbl_806D1500->tail = s_keptTail;
+  s_overlay = 0;
 }

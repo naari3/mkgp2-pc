@@ -58,6 +58,13 @@ std::string find_font() {
 } // namespace
 
 const char* Text::get() const { return g_japanese && ja != nullptr && *ja != 0 ? ja : en; }
+const char* Text::get_game() const {
+  static const bool english = std::getenv("MKGP2PC_UI_ENGLISH") != nullptr;
+  if (english) {
+    return en;
+  }
+  return game != nullptr ? game : (ja != nullptr && *ja != 0 ? ja : en);
+}
 bool japanese() { return g_japanese; }
 void announce(const char* utf8) {
   if (utf8 != nullptr) {
@@ -118,6 +125,20 @@ bool ListMenu::key(Key k) {
   default:
     return false;
   }
+}
+
+int ListMenu::rows(const char** text, int* kind, int max) const {
+  int n = 0;
+  for (int i = 0; i < static_cast<int>(m_items.size()) && n < max; i++, n++) {
+    const Item& it = m_items[static_cast<size_t>(i)];
+    text[n] = it.label.get_game();
+    kind[n] = !it.act ? 2 : (selectable(i) ? 0 : 1);
+  }
+  return n;
+}
+
+const char* ListMenu::note() const {
+  return selectable(m_cursor) ? m_items[static_cast<size_t>(m_cursor)].note.get_game() : "";
 }
 
 void ListMenu::draw() const {

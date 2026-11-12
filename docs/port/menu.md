@@ -37,6 +37,7 @@ The four destinations take no coin and do not look at the credits. They are
 grey before the game's main loop runs (the boot checks) and in loops of the
 game's own (test mode).
 
+The following is about the plain drawing (see "How the menu is drawn").
 The texts are Japanese when a font with Japanese letters is found on the
 machine (Windows: `meiryo.ttc`, `YuGothM.ttc`, `msgothic.ttc` in the Fonts
 folder; Linux: Noto Sans CJK or IPA Gothic; `MKGP2PC_UI_FONT=<file>` names
@@ -149,7 +150,50 @@ For tests and in the recorded inputs of a dump (`input.txt`), in the
 What the menu and the keys do is recorded as these commands, so a dump
 plays back the same way.
 
-## The picture behind the menu
+## How the menu is drawn
+
+With the game's own fonts and panels (`port/platform/ui/gameui.c`,
+[`game_ui.md`](game_ui.md)): the blue panel and the cursor of the name entry
+screen, the 24 and 16 pixel text fonts. The game stands still meanwhile, so
+no scene is there to queue the sprites; instead the game's main loop stays
+at the top of its pass while the menu is open
+(`mkgp2pc_gamemenu_frame()`, `port/platform/ui/gamemenu.c`, called from
+`MainGameLoop.cpp.patch`) and makes frames of this kind:
+
+1. the game's start of a frame (`HSD_StartRender`);
+2. the stopped game's last picture over the whole frame. The game copies
+   every finished frame into a texture of its own (`g_backupBufferTexture`,
+   `Frame_PostDraw_BackupBuffer`), which its screen transitions draw; the
+   menu draws the same texture (`game_backdrop`, `port_menu.cpp`);
+3. the menu, queued and drawn through the game's sprite system. The sprites
+   the stopped scene has queued for its next frame are put aside for the
+   time and come back when the menu closes
+   (`mkgp2pc_gameui_overlay_begin` / `_end`);
+4. the game's end of a frame (`Frame_PostDrawOverlay`: copy to the display,
+   wait for the retrace). The credit display the game draws there stays
+   bright over the darkened picture.
+
+No scene is updated or drawn, and `VIWaitForRetrace` counts no retrace for
+such a frame and reads no input, so a recording of the inputs does not see
+the time spent in the menu. The game's retrace callbacks do run: its video
+library hands its display buffers on in them and stops copying frames to
+the display without.
+
+The game's font has kana, Latin letters and about 450 kanji; the menu's
+Japanese texts have a second wording for it where one is missing (戻, 覧,
+閉, 紹介, 費: `portui::Text::game`).
+
+Where nobody comes by the top of the main loop, the menu is drawn the other
+way, with Dear ImGui over the picture as described below: during the boot
+checks, and whenever the menu is open for three frames without the main
+loop asking for it. `MKGP2PC_MENU=plain` asks for that drawing always.
+
+Tried on 32-bit Linux (2026-11-12): attract loop, class selection, a race
+(4:3 and `MKGP2PC_ASPECT=16:9`), the test mode after F1; "restart this
+race" and "title" taken from it. Not run on Windows; not tried with
+`MKGP2PC_HIRES=1`.
+
+## The picture behind the plain menu
 
 While the menu is open the game's loop waits inside `VIWaitForRetrace`
 (`port/gfx/video_aurora.c`) and frames with nothing but the menu are
@@ -165,6 +209,8 @@ buffer; the menu then has a black background.
 |---|---|
 | `port/gfx/port_ui.hpp`, `port_ui.cpp` | for any screen of the port's own: two-language texts, the font, `portui::ListMenu` (a list with a cursor, drawn with Dear ImGui, which the rendering library links and draws after the game's frame) |
 | `port/gfx/port_menu.cpp` | this menu: a `ListMenu` and its choices |
+| `port/platform/ui/gamemenu.c`, `port/platform/include/mkgp2pc/gamemenu.h` | the frames of the stopped game with the menu in the game's fonts |
+| `port/platform/ui/gameui.c` | the drawing itself (`mkgp2pc_gameui_list`, the overlay functions) |
 | `port/platform/nav/nav.c`, `port/platform/include/mkgp2pc/nav.h` | the requests and the back stack; no game symbols |
 | `port/gfx/video_aurora.c` | the two keys, the menu's loop |
 | `port/nogfx/input_script.c` | `back`, `flow=` |

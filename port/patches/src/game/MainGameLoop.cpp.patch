@@ -1,6 +1,6 @@
 --- a/src/game/MainGameLoop.cpp
 +++ b/src/game/MainGameLoop.cpp
-@@ -35,6 +35,11 @@
+@@ -35,6 +35,14 @@
  void fn_8011F994(int);
  void fn_801A1280();
  void Game_Shutdown();
@@ -9,13 +9,20 @@
 + * menu flow's constructor to choose its first screen. */
 +int mkgp2pc_nav_flow_hook(int current, int *entry);
 +extern unsigned char lbl_806D17F0, lbl_806D17F1, lbl_806D17F2;
++/* PC port: the port's menu drawn with the game's fonts
++ * (port/platform/ui/gamemenu.c); one call is one frame of a stopped game. */
++int mkgp2pc_gamemenu_frame(void);
  }
  class FrameInput {
  public:
-@@ -62,6 +67,21 @@
+@@ -62,6 +70,25 @@
      const char *text = lbl_802E89A0;
      unsigned char error = 0;
      while (!error) {
++        /* PC port: while the port's menu is open the game stands still
++         * here, between two frames. */
++        while (mkgp2pc_gamemenu_frame()) {
++        }
 +        {
 +            /* PC port: before anything of the frame is drawn, so that no
 +             * drawing command still refers to the flow that is deleted. */

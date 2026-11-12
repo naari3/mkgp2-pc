@@ -12,9 +12,9 @@ time, so the high-resolution option (`MKGP2PC_HIRES`,
 [`hires_textures.md`](hires_textures.md)) replaces them like the game's own.
 
 State 2026-11-12: written and tried on 32-bit Linux only (software GL under
-Xvfb, real key events): the question after the coin and the hint on the
-entry screen. **Not run on Windows.** `MKGP2PC_ASPECT=16:9` and the
-high-resolution option have not been tried with it.
+Xvfb, real key events): the question after the coin, the hint on the entry
+screen, the port's menu (also with `MKGP2PC_ASPECT=16:9`). **Not run on
+Windows.** The high-resolution option has not been tried with it.
 
 ## What the game has
 
@@ -88,16 +88,43 @@ mkgp2pc_gameui_end();                    /* once, when it closes */
 - `mkgp2pc_gameui_hint_button(x, y, frame, caption)`: the flashing item
   button with a caption in the 64 pixel font (kana and Latin only).
 
-A scene that is not the game's own (the port's Esc menu is drawn by Dear
-ImGui over the finished picture, `port/gfx/port_ui.hpp` on its branch) can
-only use this while the game's frame runs and its sprite system draws, that
-is, not while the game is paused.
+- `mkgp2pc_gameui_list(title, rows, kinds, count, cursor, note, footer,
+  age)` is a whole screen too: rows one under the other on the blue panel
+  (choices, pale ones that cannot be taken, small headings), the cursor
+  behind the chosen row, two small lines underneath.
+
+### Over a stopped game
+
+The functions above queue sprites for the frame a running scene draws.
+While the game stands still (the port's menu) there is no such frame; the
+caller makes its own and uses
+
+```c
+mkgp2pc_gameui_overlay_begin();   /* once */
+/* per frame: start the frame, draw what lies underneath, then */
+mkgp2pc_gameui_list(...);         /* or any of the functions above */
+mkgp2pc_gameui_overlay_draw();    /* draws what was queued, empties the queue */
+/* end the frame */
+mkgp2pc_gameui_overlay_end();     /* once */
+```
+
+`overlay_begin` puts aside the sprites the stopped scene has queued for its
+next frame (a scene queues in Update what the following Draw shows; they
+would be drawn with the overlay and be gone when the game goes on) and
+`overlay_end` brings them back. The overlay has its own set of loaded
+texts and pictures, so it may come up while a scene's port screen is open.
+`port/platform/ui/gamemenu.c` is the user: see [`menu.md`](menu.md), "How
+the menu is drawn".
 
 ## Where it is used
 
-- The question after the coin: `mkgp2pc_linkflow_draw`
+- The question after the coin (only with `MKGP2PC_LINK_MODE=ask` since the
+  mode is chosen in the launcher): `mkgp2pc_linkflow_draw`
   (`port/platform/triforce/linkflow.c`), called from `clFlowTitle::Draw`
   (`port/patches/src/game/fn_801B785C.cpp.patch`).
+- The port's menu (Esc): `mkgp2pc_gamemenu_frame`
+  (`port/platform/ui/gamemenu.c`), called from the top of `MainGameLoop`
+  (`MainGameLoop.cpp.patch`).
 - The entry screen of a network game: button and "スタート"
   (`mkgp2pc_linkflow_lobby_draw`, from `clFlowEntry::Draw`,
   `fn_801BA318.cpp.patch`). The count of players and "しばらくお待ちください"

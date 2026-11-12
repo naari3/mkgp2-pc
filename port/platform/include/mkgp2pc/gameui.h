@@ -30,6 +30,17 @@ void mkgp2pc_gameui_hint_decide(float x, float y, int t);
 void mkgp2pc_gameui_hint_button(float x, float y, int t, const char* caption);
 
 void mkgp2pc_gameui_choice(const char* title, const char* const* items, int count, int cursor, int age);
+void mkgp2pc_gameui_list(const char* title, const char* const* rows, const int* kinds, int count, int cursor,
+                         const char* note, const char* footer, int age);
+
+/* A screen over a game that stands still (the port's menu, gamemenu.c): the
+ * caller makes the frame and draws what lies underneath; between begin and
+ * end the functions above queue for the overlay, and overlay_draw draws
+ * what was queued. The stopped scene's own queued sprites are put aside and
+ * come back with overlay_end. */
+void mkgp2pc_gameui_overlay_begin(void);
+void mkgp2pc_gameui_overlay_draw(void);
+void mkgp2pc_gameui_overlay_end(void);
 
 #ifdef __cplusplus
 }
