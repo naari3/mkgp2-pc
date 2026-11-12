@@ -349,6 +349,9 @@ is used, `MKGP2PC_SCRIPT` may drive the inputs. Not tested with a real
 keyboard yet (the cloud build machine has no input device); the same input
 calls driven by the script steer and accelerate the kart.
 
+A game controller or racing wheel gives the wheel and the pedals the
+positions in between: [controller.md](controller.md).
+
 ## Magnetic card
 
 `port/platform/triforce/card_reader.c` stands in for the cabinet's card unit

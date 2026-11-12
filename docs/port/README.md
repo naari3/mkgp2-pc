@@ -31,6 +31,7 @@ clean-up.
 | [`internet_play.md`](internet_play.md) | Play between distant PCs without opening ports: room name, STUN, hole punching, the rendezvous Worker in `port/server/rendezvous`, what was tested |
 | [`backup_memory.md`](backup_memory.md) | The cabinet's backup memory (time attack records, test menu settings, credits) kept in `backup_ram.bin`: format, safe writing, two copies on one PC, what was checked |
 | [`launcher.md`](launcher.md) | The settings program `mkgp2-launcher.exe`: what it sets, the ini file, `MKGP2PC_KEYS`, how it is built |
+| [`controller.md`](controller.md) | Game controllers and racing wheels: the wheel and pedals as analog values, what the game expects on the JVS channels, `MKGP2PC_PAD`, the settings page, what was tested |
 
 ## What goes where
 
