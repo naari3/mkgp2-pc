@@ -97,6 +97,7 @@ static void non_blocking(HostSocket s) { fcntl(s, F_SETFL, fcntl(s, F_GETFL, 0) 
 static void no_reset_reports(HostSocket s) { (void)s; }
 #endif
 
+#include "mkgp2pc/camera.h"
 #include "mkgp2pc/triforce.h"
 #include "netmeet.h"
 
@@ -108,7 +109,7 @@ enum { E_BADF = 9, E_INVAL = 22, E_NFILE = 23, E_WOULDBLOCK = 35, E_NETDOWN = 50
 #define MAX_CABINETS 4
 #define ANNOUNCE_SIZE 12
 
-typedef enum { FREE, FRESH, LISTENING, CONNECTING, CONNECTED } Kind;
+typedef enum { FREE, FRESH, LISTENING, CONNECTING, CONNECTED, CAMERA } Kind;
 
 typedef struct {
   Kind kind;
@@ -120,6 +121,12 @@ typedef struct {
   uint8_t target[4];
   uint16_t targetPort;
   uint64_t since;
+  /* the camera's web server (see "the camera" below) */
+  int forCamera;       /* made while the link is off: good for the camera only */
+  uint32_t camAsked;   /* bytes of the request taken so far */
+  uint8_t camTail[4];  /* the last four of them */
+  int camAnswering;    /* the request is complete */
+  uint32_t camSent;    /* bytes of the answer the game has */
 } Sock;
 
 typedef struct {
@@ -979,6 +986,80 @@ static int32_t fail(Sock* k, int error) {
   return -1;
 }
 
+/* ---- the camera ----------------------------------------------------------------
+ *
+ * The cabinet's camera is a web server at 192.168.29.(103 + cabinet), port
+ * 80. The game connects, sends "GET /img.jpg HTTP/1.0" and an empty line,
+ * reads until the camera closes, and starts over for the next picture
+ * (src/game/NamCam_GetImageHandle.c). With a picture source set
+ * (MKGP2PC_CAMERA, port/platform/camera/camera.c) a connection to such an
+ * address is answered here, without any host socket: the connect succeeds at
+ * once, the request is counted until its empty line, and the answer becomes
+ * readable when the source has a picture.
+ *
+ * The camera must also work while the cabinet link is off, when every
+ * other socket command fails as it always did. Which socket() call is the
+ * camera's cannot be seen from the command, so the game's own state is
+ * looked at: its camera code makes its socket in step 1 of its connection
+ * state. A socket made that way is good for the camera only. */
+static int camera_address(const uint8_t* a, uint16_t port) {
+  return port == 80 && a[0] == 192 && a[1] == 168 && a[2] == 29 && a[3] >= 104 && a[3] < 104 + MAX_CABINETS;
+}
+
+extern uint8_t* g_namCam; /* the game's camera work area: 0x80000 bytes of picture, then the connection */
+
+static int camera_about_to_connect(void) {
+  return g_namCam != NULL && g_namCam[0x80010] == 1;
+}
+
+static int camera_sockets(void) {
+  for (int i = 0; i < MAX_SOCKETS; i++) {
+    if (s_sock[i].kind != FREE && (s_sock[i].forCamera || s_sock[i].kind == CAMERA)) {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+static int camera_readable(Sock* k) {
+  const uint8_t* data;
+  uint32_t size;
+  return k->camAnswering && mkgp2pc_camera_reply(&data, &size);
+}
+
+static int32_t camera_send(Sock* k, uint32_t at, uint32_t length) {
+  uint8_t data[64];
+  if (length > sizeof(data)) {
+    length = sizeof(data);
+  }
+  mkgp2pc_mediaboard_load(at, data, length);
+  for (uint32_t i = 0; i < length && !k->camAnswering; i++) {
+    memmove(k->camTail, k->camTail + 1, 3);
+    k->camTail[3] = data[i];
+    k->camAsked++;
+    if (memcmp(k->camTail, "\r\n\r\n", 4) == 0) {
+      k->camAnswering = 1;
+      k->camSent = 0;
+      mkgp2pc_camera_request();
+    }
+  }
+  return (int32_t)length;
+}
+
+static int32_t camera_recv(Sock* k, uint32_t at, uint32_t length) {
+  const uint8_t* data;
+  uint32_t size;
+  if (!k->camAnswering || !mkgp2pc_camera_reply(&data, &size)) {
+    return fail(k, E_WOULDBLOCK);
+  }
+  if (length > size - k->camSent) {
+    length = size - k->camSent; /* 0 at the end: the camera has closed */
+  }
+  mkgp2pc_mediaboard_store(at, data + k->camSent, length);
+  k->camSent += length;
+  return (int32_t)length;
+}
+
 static int32_t do_bind(Sock* k, uint32_t at) {
   uint8_t address[4];
   uint16_t port;
@@ -993,10 +1074,18 @@ static int32_t do_bind(Sock* k, uint32_t at) {
 
 static void do_connect(Sock* k, uint64_t now) {
   int index = cabinet_index(k->target);
+  if (camera_address(k->target, k->targetPort) && mkgp2pc_camera_enabled()) {
+    k->kind = CAMERA;
+    k->chan = -1;
+    k->camAsked = k->camSent = 0;
+    k->camAnswering = 0;
+    memset(k->camTail, 0, sizeof(k->camTail));
+    return;
+  }
   k->kind = CONNECTING;
   k->since = now;
   k->chan = -1;
-  /* Any other address (the camera, 192.168.29.104-107) is one nobody answers at. */
+  /* Any other address (the camera without a picture source) is one nobody answers at. */
   if (index >= 0 && index != s_announceIndex && s_announce != NO_SOCKET) {
     Chan* c;
     if (s_nextId == 0) {
@@ -1095,6 +1184,8 @@ static int select_set(uint32_t at, uint32_t count, int forWrite) {
       int on = 0;
       if (k != NULL && k->kind == CONNECTED) {
         on = forWrite ? chan_writable(&s_chan[k->chan]) : chan_readable(&s_chan[k->chan]);
+      } else if (k != NULL && k->kind == CAMERA) {
+        on = forWrite || camera_readable(k);
       } else if (k != NULL && k->kind == LISTENING && !forWrite) {
         on = accept_poll(k) >= 0;
       }
@@ -1113,6 +1204,9 @@ static int32_t do_send(Sock* k, uint32_t at, uint32_t length) {
   static uint8_t data[0x80000];
   Chan* c;
   uint32_t room;
+  if (k->kind == CAMERA) {
+    return camera_send(k, at, length);
+  }
   if (k->kind != CONNECTED || s_chan[k->chan].state != CH_OPEN) {
     return fail(k, E_NOTCONN);
   }
@@ -1141,6 +1235,9 @@ static int32_t do_recv(Sock* k, uint32_t at, uint32_t length) {
   static uint8_t data[0x80000];
   Chan* c;
   uint32_t have;
+  if (k->kind == CAMERA) {
+    return camera_recv(k, at, length);
+  }
   if (k->kind != CONNECTED) {
     return fail(k, E_NOTCONN);
   }
@@ -1205,6 +1302,7 @@ int mkgp2pc_netlink_command(uint16_t command, const uint32_t* arg, uint32_t* res
   Sock* k;
   int32_t r = -1;
   uint64_t now;
+  int linked;
   switch (command) {
   case CMD_ACCEPT: case CMD_BIND: case CMD_CLOSE: case CMD_CONNECT: case CMD_INET_ADDR: case CMD_LISTEN:
   case CMD_RECV: case CMD_SEND: case CMD_SOCKET: case CMD_SELECT: case CMD_SET_TIMEOUTS:
@@ -1213,12 +1311,29 @@ int mkgp2pc_netlink_command(uint16_t command, const uint32_t* arg, uint32_t* res
   default:
     return MKGP2PC_NETLINK_UNKNOWN;
   }
-  if (!enabled()) {
-    return MKGP2PC_NETLINK_UNKNOWN;
+  k = sock(arg[0]);
+  linked = enabled();
+  if (!linked) {
+    /* Only the camera's connection gets through (see "the camera"). */
+    if (!mkgp2pc_camera_enabled()) {
+      return MKGP2PC_NETLINK_UNKNOWN;
+    }
+    if (command == CMD_INET_ADDR) {
+      /* the camera's address is worked out when its code starts */
+    } else if (command == CMD_SOCKET) {
+      if (!camera_about_to_connect()) {
+        return MKGP2PC_NETLINK_UNKNOWN;
+      }
+    } else if (command == CMD_SELECT) {
+      if (!camera_sockets()) {
+        return MKGP2PC_NETLINK_UNKNOWN;
+      }
+    } else if (command == CMD_MODIFY_MY_IP || k == NULL || !(k->forCamera || k->kind == CAMERA)) {
+      return MKGP2PC_NETLINK_UNKNOWN;
+    }
   }
   now = now_ms();
-  k = sock(arg[0]);
-  if (command == CMD_SELECT || command == CMD_SEND || command == CMD_RECV) {
+  if (linked && (command == CMD_SELECT || command == CMD_SEND || command == CMD_RECV)) {
     mkgp2pc_netlink_pump(); /* what has arrived since the retrace */
   }
   if (s_trace > 1 && command != CMD_SELECT && command != CMD_SEND && command != CMD_RECV) {
@@ -1244,6 +1359,9 @@ int mkgp2pc_netlink_command(uint16_t command, const uint32_t* arg, uint32_t* res
   }
   case CMD_SOCKET:
     r = new_sock(FRESH);
+    if (r >= 0 && !linked) {
+      s_sock[r].forCamera = 1;
+    }
     break;
   case CMD_SET_TIMEOUTS:
     if (k != NULL) {
@@ -1262,10 +1380,14 @@ int mkgp2pc_netlink_command(uint16_t command, const uint32_t* arg, uint32_t* res
     }
     break;
   case CMD_BIND:
+    if (k != NULL && k->forCamera) {
+      fail(k, E_NETDOWN); /* the link is off */
+      break;
+    }
     r = k != NULL ? do_bind(k, arg[1]) : -1;
     break;
   case CMD_LISTEN:
-    if (k != NULL && k->kind == FRESH) {
+    if (k != NULL && k->kind == FRESH && !k->forCamera) {
       k->kind = LISTENING;
       r = 0;
     } else {
@@ -1293,6 +1415,10 @@ int mkgp2pc_netlink_command(uint16_t command, const uint32_t* arg, uint32_t* res
       break;
     }
     read_address(arg[1], k->target, &k->targetPort);
+    if (k->forCamera && !camera_address(k->target, k->targetPort)) {
+      fail(k, E_NETDOWN); /* the link is off */
+      break;
+    }
     do_connect(k, now);
     TRACE("connect %u to %u.%u.%u.%u:%u", arg[0], k->target[0], k->target[1], k->target[2], k->target[3], k->targetPort);
     return MKGP2PC_NETLINK_LATER;
@@ -1318,7 +1444,7 @@ int mkgp2pc_netlink_poll(uint16_t command, const uint32_t* arg, uint32_t* result
     return MKGP2PC_NETLINK_DONE;
   }
   if (command == CMD_CONNECT) {
-    int state = k->kind == CONNECTING ? connect_poll(k, now) : -1;
+    int state = k->kind == CAMERA ? 1 : k->kind == CONNECTING ? connect_poll(k, now) : -1;
     if (state == 0) {
       return MKGP2PC_NETLINK_LATER;
     }

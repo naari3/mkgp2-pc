@@ -44,6 +44,7 @@ window. Empty fields show their default as grey text.
 | 基本 | card file (empty = `card.bin` in the folder) | `MKGP2PC_CARD_FILE` |
 | 基本 | skip the device check and the NOTICE at start-up (see below) | `MKGP2PC_BOOT_SKIP` |
 | 基本 | close this window after starting | (launcher only) |
+| 基本 | camera: なし, or one of the cameras connected when the list is opened (by name); [camera.md](camera.md) | `MKGP2PC_CAMERA` |
 | 表示 | aspect 4:3 or 16:9 (4:3 = not set); what 16:9 does is in widescreen.md | `MKGP2PC_ASPECT` |
 | 表示 | window size: height 480 x factor, width from the aspect. 4:3 offers 1 to 6, 16:9 offers 1, 1.5 (1280x720), 2, 2.25 (1920x1080), 3, 4.5. | `MKGP2PC_SCALE` |
 | 表示 | rendering backend (automatic, d3d12, d3d11, vulkan, opengl) | `MKGP2PC_BACKEND` |

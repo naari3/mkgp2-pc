@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <mkgp2pc/camera.h>
 #include "mkgp2pc/triforce.h"
 
 #define BOARD_ID 0x29u
@@ -187,6 +188,7 @@ static void request(Board* b, const Packet* in) {
 
 void mkgp2pc_mediaboard_tick(void) {
   mkgp2pc_netlink_tick();
+  mkgp2pc_camera_tick();
   for (int i = 0; i < s_laterCount; i++) {
     Waiting w = s_later[i];
     uint32_t arg[6], result = 0;

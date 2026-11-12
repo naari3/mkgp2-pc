@@ -250,6 +250,14 @@ void __wrap_GXSetChanMatColor(u32 id, GXColor color) { set_chan_color(sMat, id, 
 
 /* The game changes texture memory in place and says so with this call. */
 void mkgp2pc_gx_forget_textures(void) { sTextures.clear(); }
+/* One texture's memory has a new picture (the camera, port/platform/camera/camera.c). */
+void mkgp2pc_gx_texture_changed(const void* data) {
+  for (auto& [key, real] : sTextures) {
+    if (std::get<0>(key) == data) {
+      GXInitTexObjData(&real, data);
+    }
+  }
+}
 void __wrap_GXInvalidateTexAll(void) {
   sTextures.clear();
   __real_GXInvalidateTexAll();

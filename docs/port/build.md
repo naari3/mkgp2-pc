@@ -365,8 +365,9 @@ program is started from (`MKGP2PC_CARD_FILE` names another file).
   of the play.
 - A new card bought while `card.bin` exists keeps the old file as
   `card.bin.bak<n>`.
-- What is printed on the card's face is not kept. There is no camera: the
-  stand-in turns the game's camera option off during the power-on checks.
+- What is printed on the card's face is not kept. Without a picture source
+  for the camera (`MKGP2PC_CAMERA`, [camera.md](camera.md)) the stand-in
+  turns the game's camera option off during the power-on checks.
 - `MKGP2PC_SCALE=N` opens the window at N times 640x480. On Windows the
   window cannot be resized or maximized (`MKGP2PC_RESIZABLE=1` allows it
   again): every size change ended in `webgpu_dawn.dll` + 0xb6b58, on the

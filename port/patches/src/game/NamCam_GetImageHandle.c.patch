@@ -1,0 +1,15 @@
+--- a/src/game/NamCam_GetImageHandle.c
++++ b/src/game/NamCam_GetImageHandle.c
+@@ -225,7 +225,11 @@
+             {
+                 NamCamWork *work = g_namCam;
+                 char *end = work->buffer + work->conn.received;
+-                if (end[-2] == -1 && end[-1] == -0x27) {
++                /* The end-of-image marker FF D9. MWCC compares a plain char
++                 * with a negative constant as signed bytes although char is
++                 * unsigned in this build (extsb; cmpwi), so the arcade
++                 * program sees the marker; a conforming compiler never does. */
++                if ((signed char)end[-2] == -1 && (signed char)end[-1] == -0x27) {
+                     for (*outData = work->buffer + 3;
+                          (*outData)[0] != '\n' || (*outData)[-1] != '\r' || (*outData)[-2] != '\n' ||
+                          (*outData)[-3] != '\r';
