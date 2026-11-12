@@ -47,6 +47,18 @@ AURORA_ARGS=(
   -DAURORA_SDL3_PROVIDER=vendor
   -DAURORA_DAWN_PROVIDER=package "-DAURORA_DAWN_PACKAGE_URL=$DAWN_URL"
 )
+# Where release archives cannot be downloaded (git clones still can):
+# MKGP2PC_DEPS=<dir> with clones fmt, imgui, sdl, tracy, xxhash, as in
+# build-linux32.sh.
+if [ -n "${MKGP2PC_DEPS:-}" ]; then
+  AURORA_ARGS+=(
+    "-DFETCHCONTENT_SOURCE_DIR_FMT=$MKGP2PC_DEPS/fmt"
+    "-DFETCHCONTENT_SOURCE_DIR_IMGUI=$MKGP2PC_DEPS/imgui"
+    "-DFETCHCONTENT_SOURCE_DIR_SDL=$MKGP2PC_DEPS/sdl"
+    "-DFETCHCONTENT_SOURCE_DIR_TRACY=$MKGP2PC_DEPS/tracy"
+    "-DFETCHCONTENT_SOURCE_DIR_XXHASH=$MKGP2PC_DEPS/xxhash"
+  )
+fi
 
 step "Aurora (standalone; link_census.py reads its symbol lists)"
 cmake -S port/extern/aurora -B build/aurora-win32 "${AURORA_ARGS[@]}"

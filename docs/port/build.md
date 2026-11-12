@@ -388,14 +388,22 @@ program is started from (`MKGP2PC_CARD_FILE` names another file).
   GX_LINEAR; this variable gives the game's own setting back.
   `MKGP2PC_SHOW_COPY=1` (debugging) leaves the copied image on screen
   instead of the scene.
-- `MKGP2PC_ASYNC_PIPELINES=1`: Aurora compiles the pipeline for a draw's
-  state on a worker thread and drops the draw until it is ready (backends
-  with a pipeline thread, D3D12 among them), so after a scene change models
-  appeared one after another. The port asks for blocking draws
-  (`AuroraSetDrawsBlocking`) every frame: the first frame of a scene is
-  complete and may take longer once; compiled pipelines stay in the cache
-  file. This variable gives the dropping behaviour back. Seen in Aurora's
-  source (lib/gfx/pipeline_cache.cpp), not yet confirmed on Windows.
+- `MKGP2PC_PIPELINE_WAIT`: Aurora compiles the pipeline for a draw's state
+  on a worker thread the first time it is seen (backends with a pipeline
+  thread, D3D12 among them) and can either leave the draw out until it is
+  ready or make the draw wait. Leaving out made models appear one after
+  another after a scene change; waiting made every pipeline first met in a
+  race a stall. The port waits only around loading (the start, and 120
+  frames after the game last read 128 KB or more from the disc in one
+  frame); in a running race a draw with a new pipeline is left out for the
+  few frames its compilation takes. `always` waits every time, `never`
+  (or the older `MKGP2PC_ASYNC_PIPELINES=1`) never. census.md section 36.
+- `MKGP2PC_NO_SHADER_WAIT=1`: by default the game is held at its start until
+  every pipeline of Aurora's list is compiled (title bar: "preparing
+  shaders, N left"); this starts it at once. The list is the user's own
+  `pipeline_cache.db` plus `initial_pipeline_cache.db` from the executable's
+  folder, if there is one (`port/tools/pipeline_list.py`,
+  `port/tools/pipeline_sweep.sh`; census.md section 36).
 - `MKGP2PC_SPIKE_MS=N`: frames longer than N milliseconds get a `spike:`
   line in the log with where the time went (default 25; 0 turns it off).
   Fields: comment above `spike_log` in port/gfx/video_aurora.c, background

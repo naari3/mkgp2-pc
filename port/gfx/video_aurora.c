@@ -48,6 +48,8 @@ typedef void (*RetraceCallback)(uint32_t retraceCount);
  * script (MKGP2PC_SCRIPT) may drive them.
  */
 static bool s_keyLeft, s_keyRight, s_keyAccel, s_keyBrake, s_keyItem, s_keyTest, s_keyService;
+/* buttons the cabinet does not have: the developers' scenes read them (docs/port/debug.md) */
+static bool s_keyDevUp, s_keyDevDown, s_keyDevStart, s_keyDevSub;
 static bool s_keyboardUsed;
 static int s_wheel; /* -0x7FFF .. 0x7FFF */
 
@@ -218,9 +220,18 @@ static uint32_t s_shotW, s_shotH;
 static char s_shotPath[600];
 static int s_dumpCount;
 static bool s_fast, s_fastHeld; /* F10 and Tab: no frame limit */
+extern int mkgp2pc_boot_fast;   /* the same during start-up (port/platform/runtime/boot_skip.c) */
 
 void mkgp2pc_shadow_record_frame(void);  /* gx_shim.cpp */
 void mkgp2pc_shadow_record_write(FILE* f);
+/* the game's own debug facilities: port/platform/debug/debug.c, debug_overlay.cpp */
+int mkgp2pc_debug_on(void);
+void mkgp2pc_debug_set(int on);
+void mkgp2pc_debug_frame(void);
+void mkgp2pc_debug_page(int step);
+int mkgp2pc_debug_overlay_get(int index, int* layer, int* column, int* row, const char** text);
+void mkgp2pc_debug_overlay_clear(void);
+void mkgp2pc_debug_overlay_draw(void);
 
 static void dump_text(const char* dir) {
   char path[600];
@@ -244,6 +255,15 @@ static void dump_text(const char* dir) {
       fprintf(f, "%s=%s\n", names[i], v ? v : "");
     }
     mkgp2pc_shadow_record_write(f);
+    /* what the game's debug overlay says on this frame */
+    for (int i = 0;; i++) {
+      int layer, column, row;
+      const char* text;
+      if (!mkgp2pc_debug_overlay_get(i, &layer, &column, &row, &text)) {
+        break;
+      }
+      fprintf(f, "overlay layer %d column %d row %d: %s\n", layer, column, row, text);
+    }
     fclose(f);
   }
 }
@@ -317,6 +337,10 @@ static int script_extra(const char* cmd) {
     s_step = true;
   } else if (strcmp(cmd, "dump") == 0) {
     s_dumpWanted = true;
+  } else if (strcmp(cmd, "debug") == 0) {
+    mkgp2pc_debug_set(!mkgp2pc_debug_on());
+  } else if (strcmp(cmd, "debugpage") == 0) {
+    mkgp2pc_debug_page(1);
   } else {
     return 0;
   }
@@ -337,19 +361,24 @@ static int script_extra(const char* cmd) {
 enum {
   KEY_LEFT, KEY_RIGHT, KEY_ACCEL, KEY_BRAKE, KEY_ITEM, KEY_TEST, KEY_SERVICE,
   KEY_COIN, KEY_CARD, KEY_PAUSE, KEY_STEP, KEY_FAST, KEY_FASTHOLD, KEY_DUMP,
-  KEY_HIRES,
+  KEY_HIRES, KEY_DEBUG, KEY_DEBUGPAGE,
+  KEY_DEVUP, KEY_DEVDOWN, KEY_DEVSTART, KEY_DEVSUB,
   KEY_ACTIONS
 };
 #define KEYS_PER_ACTION 4
 static const char* const s_actionNames[KEY_ACTIONS] = {
     "left", "right", "accel", "brake", "item", "test", "service",
-    "coin", "card", "pause", "step", "fast", "fasthold", "dump", "hires"};
+    "coin", "card", "pause", "step", "fast", "fasthold", "dump", "hires",
+    "debug", "debugpage",
+    "devup", "devdown", "devstart", "devsub"};
 static int s_keyMap[KEY_ACTIONS][KEYS_PER_ACTION] = {
     {SDL_SCANCODE_LEFT}, {SDL_SCANCODE_RIGHT}, {SDL_SCANCODE_UP, SDL_SCANCODE_Z},
     {SDL_SCANCODE_DOWN, SDL_SCANCODE_X}, {SDL_SCANCODE_SPACE, SDL_SCANCODE_RETURN},
     {SDL_SCANCODE_F1}, {SDL_SCANCODE_F2}, {SDL_SCANCODE_5, SDL_SCANCODE_C},
     {SDL_SCANCODE_I}, {SDL_SCANCODE_P}, {SDL_SCANCODE_O}, {SDL_SCANCODE_F10},
-    {SDL_SCANCODE_TAB}, {SDL_SCANCODE_F9}, {SDL_SCANCODE_F8}};
+    {SDL_SCANCODE_TAB}, {SDL_SCANCODE_F9}, {SDL_SCANCODE_F8},
+    {SDL_SCANCODE_F3}, {SDL_SCANCODE_F4},
+    {SDL_SCANCODE_PAGEUP}, {SDL_SCANCODE_PAGEDOWN}, {SDL_SCANCODE_END}, {SDL_SCANCODE_HOME}};
 
 void mkgp2pc_hires_init(void); /* gx_shim.cpp */
 void mkgp2pc_hires_toggle(void);
@@ -414,6 +443,10 @@ static void key_event(const SDL_Event* e) {
     case KEY_ACCEL: s_keyAccel = down; control = true; break;
     case KEY_BRAKE: s_keyBrake = down; control = true; break;
     case KEY_ITEM: s_keyItem = down; control = true; break;
+    case KEY_DEVUP: s_keyDevUp = down; control = true; break;
+    case KEY_DEVDOWN: s_keyDevDown = down; control = true; break;
+    case KEY_DEVSTART: s_keyDevStart = down; control = true; break;
+    case KEY_DEVSUB: s_keyDevSub = down; control = true; break;
     case KEY_TEST: s_keyTest = down; control = true; break;
     case KEY_SERVICE: s_keyService = down; control = true; break;
     case KEY_COIN:
@@ -463,6 +496,16 @@ static void key_event(const SDL_Event* e) {
         mkgp2pc_hires_toggle();
       }
       break;
+    case KEY_DEBUG: /* the game's own debug output and overlay (docs/port/debug.md) */
+      if (press) {
+        mkgp2pc_debug_set(!mkgp2pc_debug_on());
+      }
+      break;
+    case KEY_DEBUGPAGE:
+      if (press) {
+        mkgp2pc_debug_page((SDL_GetModState() & SDL_KMOD_SHIFT) != 0 ? -1 : 1);
+      }
+      break;
     }
   }
   if (control) {
@@ -484,7 +527,17 @@ static void keyboard_tick(void) {
   rec_analog(0, (uint16_t)(0x8000 + s_wheel));
   rec_analog(1, s_keyAccel ? 0xFFFF : 0);
   rec_analog(2, s_keyBrake ? 0xFFFF : 0);
-  rec_switch((uint8_t)(s_keyItem ? 0x20 : 0));
+  /* Second switch byte of player 1. The cabinet wires only the item button
+   * (0x20). The game's table kRawGameMap_Raw0 also knows 0x80, 0x40, 0x10
+   * and 0x02, which the developers' scenes use as up, down, a second button
+   * and start / leave; they are passed on only while debugging is on, so
+   * that a stray key cannot do anything in a normal game. */
+  uint8_t dev = 0;
+  if (mkgp2pc_debug_on()) {
+    dev = (uint8_t)((s_keyDevUp ? 0x80 : 0) | (s_keyDevDown ? 0x40 : 0) | (s_keyDevSub ? 0x10 : 0) |
+                    (s_keyDevStart ? 0x02 : 0));
+  }
+  rec_switch((uint8_t)((s_keyItem ? 0x20 : 0) | dev));
   /* 0x01: the DIP switch that skips the card reader, printer and camera */
   rec_operator((uint8_t)((mkgp2pc_card_enabled() ? 0 : 0x01) | (s_keyTest ? 0x40 : 0) | (s_keyService ? 0x80 : 0)));
 }
@@ -522,17 +575,44 @@ int __real_main(int argc, char** argv);
 /* Aurora compiles a draw's pipeline on a worker thread the first time the
  * draw's state is seen and, by default, drops the draw until that is done:
  * after a scene change the models, each with new state, appeared one after
- * another over the first frames. Blocking draws wait for the pipeline, so
- * the first frame of a scene is complete (it may take longer once; compiled
- * pipelines are kept in the cache file). MKGP2PC_ASYNC_PIPELINES=1 gives the
- * dropping behaviour back. The setting is GX state, sent with each frame. */
+ * another over the first frames. Blocking draws wait for the pipeline
+ * instead, which makes the first frame of a scene complete, and makes a
+ * pipeline first met in the middle of a race a stall of 60 ms and more
+ * (docs/port/census.md section 36). So draws wait only around loading: at
+ * the start and for WAIT_FRAMES frames after the game last read a
+ * substantial amount from the disc (a scene being loaded reads hundreds of
+ * kilobytes and more a frame, a running race next to nothing). At any other
+ * time a draw whose pipeline is not ready is left out for the few frames the
+ * compilation takes, once per pipeline and machine.
+ *   MKGP2PC_PIPELINE_WAIT=always   wait for every pipeline (before 2026-11-12)
+ *   MKGP2PC_PIPELINE_WAIT=never    never wait (Aurora's own behaviour);
+ *                                  MKGP2PC_ASYNC_PIPELINES=1 says the same
+ * The setting is GX state, sent with each frame. */
+extern uint64_t mkgp2pc_perf_dvd_bytes; /* port/nogfx/dvd_min.c */
+static bool s_drawsWait;                /* this frame's setting, for the frame-time log */
 static void begin_frame_state(void) {
-  static int blocking = -1;
-  if (blocking < 0) {
-    blocking = getenv("MKGP2PC_ASYNC_PIPELINES") == NULL;
+  enum { WAIT_FRAMES = 120, LOAD_BYTES = 128 << 10 };
+  static int mode = -1; /* 0 never, 1 always, 2 around loading */
+  static uint64_t seenBytes;
+  static int left = WAIT_FRAMES;
+  if (mode < 0) {
+    const char* text = getenv("MKGP2PC_PIPELINE_WAIT");
+    mode = 2;
+    if (getenv("MKGP2PC_ASYNC_PIPELINES") != NULL || (text != NULL && strcmp(text, "never") == 0)) {
+      mode = 0;
+    } else if (text != NULL && strcmp(text, "always") == 0) {
+      mode = 1;
+    }
   }
+  if (mkgp2pc_perf_dvd_bytes - seenBytes >= LOAD_BYTES) {
+    left = WAIT_FRAMES;
+  } else if (left > 0) {
+    left--;
+  }
+  seenBytes = mkgp2pc_perf_dvd_bytes;
+  s_drawsWait = mode == 1 || (mode == 2 && left > 0);
   if (s_inFrame) {
-    AuroraSetDrawsBlocking(blocking != 0);
+    AuroraSetDrawsBlocking(s_drawsWait);
   }
 }
 /*
@@ -561,8 +641,13 @@ static int cache_check_row(void* state, int count, char** values, char** names) 
 }
 /* s_cacheMarker: a file whose existence tells the next start that Aurora
  * reported a damaged cache during the run (log_callback). */
-static void cache_check_file(const char* dir, const char* name, bool reported) {
-  char path[1024], other[1040];
+/* keepCopy (pipeline_cache.db, the list of pipelines seen so far): a file
+ * that passes the check is copied to <name>.backup, and a damaged one is
+ * replaced by that copy instead of an empty file. With the list back, the
+ * pipelines are compiled in the background at the start, as always, and not
+ * one by one when the game first draws with them. */
+static void cache_check_file(const char* dir, const char* name, bool reported, bool keepCopy) {
+  char path[1024], other[1040], copy[1040];
   sqlite3* db = NULL;
   int state = 0; /* 1: the check said ok */
   char why[200] = "";
@@ -581,6 +666,21 @@ static void cache_check_file(const char* dir, const char* name, bool reported) {
     snprintf(why, sizeof(why), "%s", db != NULL ? sqlite3_errmsg(db) : "cannot open");
     state = 2;
   }
+  snprintf(copy, sizeof(copy), "%s.backup", path);
+  if (state == 1 && keepCopy && strchr(path, '\'') == NULL) {
+    /* VACUUM INTO writes a compact file of its own from the rows; it does
+     * not replace an existing one, so: new file first, then swap. */
+    char sql[2200];
+    snprintf(other, sizeof(other), "%s.backup.new", path);
+    SDL_RemovePath(other);
+    snprintf(sql, sizeof(sql), "VACUUM INTO '%s';", other);
+    if (sqlite3_exec(db, sql, NULL, NULL, NULL) == 0) {
+      SDL_RemovePath(copy);
+      SDL_RenamePath(other, copy);
+    } else {
+      fprintf(stderr, "cache: no backup of %s (%s)\n", name, sqlite3_errmsg(db));
+    }
+  }
   if (db != NULL) {
     sqlite3_close(db);
   }
@@ -597,26 +697,96 @@ static void cache_check_file(const char* dir, const char* name, bool reported) {
   SDL_RemovePath(other);
   snprintf(other, sizeof(other), "%s-shm", path);
   SDL_RemovePath(other);
+  if (moved && keepCopy && SDL_GetPathInfo(copy, NULL) && SDL_CopyFile(copy, path)) {
+    fprintf(stderr, "cache: %s is damaged (%s); set aside as .broken and replaced by the backup of the last good start\n",
+            path, why[0] ? why : "failed the check");
+    return;
+  }
   fprintf(stderr, "cache: %s is damaged (%s); %s\n", path, why[0] ? why : "failed the check",
           moved ? "set aside as .broken, a new one is started (shaders are compiled again once)"
                 : "and could not be moved away: this run has no shader cache");
 }
-static void cache_check(const char* appName) {
-  if (getenv("MKGP2PC_NO_CACHE_CHECK") != NULL) {
-    return;
+/*
+ * One game at a time per cache folder. Two copies running together (two
+ * cabinets on one PC for the link) used to share the two files; SQLite is
+ * meant to cope with that, but the copies are also ended with
+ * TerminateProcess (quit_now, a reset) in the middle of whatever they are
+ * writing, and the files did get damaged on the one PC where both happened
+ * (2026-11-12, cause not proven). The first copy takes a lock file in the
+ * user directory and uses the directory itself; a copy that finds the lock
+ * taken uses the sub-folder copy2 (then copy3, copy4) with caches of its
+ * own. The operating system drops the lock when the process ends, however
+ * it ends.
+ */
+#ifdef _WIN32
+__declspec(dllimport) void* __stdcall CreateFileA(const char* name, unsigned long access, unsigned long share,
+                                                  void* security, unsigned long creation, unsigned long flags,
+                                                  void* templateFile);
+static bool cache_lock(const char* path) {
+  /* GENERIC_WRITE, no sharing, OPEN_ALWAYS; the handle is kept for good */
+  return CreateFileA(path, 0x40000000ul, 0, NULL, 4, 0x80, NULL) != (void*)(intptr_t)-1;
+}
+#else
+#include <fcntl.h>
+#include <sys/file.h>
+#include <unistd.h>
+static bool cache_lock(const char* path) {
+  int fd = open(path, O_RDWR | O_CREAT, 0644);
+  if (fd < 0) {
+    return true; /* cannot tell: behave as the only copy */
   }
-  char* dir = SDL_GetPrefPath(NULL, appName); /* what Aurora uses when no cache path is given */
+  if (flock(fd, LOCK_EX | LOCK_NB) != 0) {
+    close(fd);
+    return false;
+  }
+  return true;
+}
+#endif
+/* The folder for this copy's caches; NULL when it is Aurora's default (the
+ * user directory). The string stays allocated: Aurora keeps the pointer. */
+static const char* cache_check(const char* appName) {
+  char* base = SDL_GetPrefPath(NULL, appName); /* what Aurora uses when no cache path is given */
+  char* dir = base;
+  char lock[1100];
+  if (base == NULL) {
+    return NULL;
+  }
+  for (int copy = 1; copy <= 4; copy++) {
+    if (copy > 1) {
+      size_t size = strlen(base) + 16;
+      dir = (char*)SDL_malloc(size);
+#ifdef _WIN32
+      snprintf(dir, size, "%scopy%d\\", base, copy);
+#else
+      snprintf(dir, size, "%scopy%d/", base, copy);
+#endif
+      SDL_CreateDirectory(dir);
+    }
+    snprintf(lock, sizeof(lock), "%srunning.lock", dir);
+    if (cache_lock(lock)) {
+      break;
+    }
+    if (copy > 1) {
+      SDL_free(dir);
+    }
+    dir = NULL;
+  }
   if (dir == NULL) {
-    return;
+    fprintf(stderr, "cache: four copies are running already; this one shares the first one's caches\n");
+    dir = base;
+  } else if (dir != base) {
+    fprintf(stderr, "cache: another copy is running; this one keeps its caches in %s\n", dir);
   }
-  Uint64 start = SDL_GetTicksNS();
-  snprintf(s_cacheMarker, sizeof(s_cacheMarker), "%scache_damaged", dir);
-  bool reported = SDL_GetPathInfo(s_cacheMarker, NULL);
-  cache_check_file(dir, "dawn_cache.db", reported);
-  cache_check_file(dir, "pipeline_cache.db", reported);
-  SDL_RemovePath(s_cacheMarker);
-  fprintf(stderr, "cache: %s checked in %.0f ms\n", dir, (double)(SDL_GetTicksNS() - start) / 1e6);
-  SDL_free(dir);
+  if (getenv("MKGP2PC_NO_CACHE_CHECK") == NULL) {
+    Uint64 start = SDL_GetTicksNS();
+    snprintf(s_cacheMarker, sizeof(s_cacheMarker), "%scache_damaged", dir);
+    bool reported = SDL_GetPathInfo(s_cacheMarker, NULL);
+    cache_check_file(dir, "dawn_cache.db", reported, false);
+    cache_check_file(dir, "pipeline_cache.db", reported, true);
+    SDL_RemovePath(s_cacheMarker);
+    fprintf(stderr, "cache: %s checked in %.0f ms\n", dir, (double)(SDL_GetTicksNS() - start) / 1e6);
+  }
+  return dir != base ? dir : NULL;
 }
 
 /* Wide picture (MKGP2PC_ASPECT, docs/port/widescreen.md). The rendering
@@ -696,7 +866,7 @@ int __wrap_main(int argc, char** argv) {
   }
   mkgp2pc_script_extra = &script_extra;
   mkgp2pc_script_record = &rec_script;
-  cache_check(config.appName);
+  config.cachePath = cache_check(config.appName);
   s_window = aurora_initialize(argc, argv, &config).window;
   mkgp2pc_hires_init();
 #ifdef _WIN32
@@ -763,7 +933,7 @@ static void frame_limit(void) {
     off = getenv("MKGP2PC_NOLIMIT") != NULL;
   }
   s_limitWanted = 0;
-  if (off || s_fast || s_fastHeld) {
+  if (off || s_fast || s_fastHeld || mkgp2pc_boot_fast) {
     next = 0; /* the pace starts afresh when the limit comes back */
     return;
   }
@@ -785,7 +955,7 @@ static void frame_limit(void) {
 extern bool mkgp2pc_skip_draw;
 static bool show_next_frame(void) {
   static Uint64 shown;
-  if (!(s_fast || s_fastHeld) || s_paused || s_dumpWanted) {
+  if (!(s_fast || s_fastHeld || mkgp2pc_boot_fast) || s_paused || s_dumpWanted) {
     shown = 0;
     return true;
   }
@@ -844,6 +1014,8 @@ static void pump_events(void) {
  *   disc      reads from the disc image during the frame, on any thread
  *   lock      time this thread waited for the "interrupts off" lock while
  *             the sound or another thread held it
+ *   [loading] draws waited for their pipelines in this frame (the game had
+ *             just read from the disc, begin_frame_state)
  * Scene loads are long frames too and are listed like any other. Frames in
  * which the game was paused or a dump was made are left out.
  */
@@ -866,18 +1038,73 @@ static void spike_log(const Uint64 t[7], bool skip) {
     lines++;
     fprintf(stderr,
             "spike: retrace %u frame %.1f ms: game %.1f end %.1f events %.1f sleep %.1f (late %.1f) retrace %.1f "
-            "begin %.1f | pipelines +%u (%u waiting) disc %.1f ms %u KB lock %.1f ms%s\n",
+            "begin %.1f | pipelines +%u (%u waiting) disc %.1f ms %u KB lock %.1f ms%s%s\n",
             (unsigned)s_retrace, MS(t[0], t[6]), MS(t[0], t[1]), MS(t[1], t[2]), MS(t[2], t[3]), slept,
             late > 0.0 ? late : 0.0, MS(t[4], t[5]), MS(t[5], t[6]), (unsigned)(stats->createdPipelines - pipelines),
             (unsigned)stats->queuedPipelines, (double)(mkgp2pc_perf_dvd_ns - dvdNs) / 1e6,
             (unsigned)((mkgp2pc_perf_dvd_bytes - dvdBytes) >> 10), (double)(lockNow - lockNs) / 1e6,
-            s_fast || s_fastHeld ? " [full speed]" : "");
+            s_drawsWait ? " [loading]" : "", s_fast || s_fastHeld ? " [full speed]" : "");
   }
 #undef MS
   pipelines = stats->createdPipelines;
   dvdNs = mkgp2pc_perf_dvd_ns;
   dvdBytes = mkgp2pc_perf_dvd_bytes;
   lockNs = lockNow;
+}
+
+/*
+ * Shaders before the game. Aurora queues every pipeline of its list
+ * (pipeline_cache.db, merged at each start with initial_pipeline_cache.db
+ * from the executable's folder) for its pipeline thread when it starts. The
+ * game is held at its first retraces until that queue is empty, so that
+ * none of the listed pipelines is compiled while the game runs. With the
+ * compiled blobs in dawn_cache.db this is a second or less; without them (first
+ * start on a machine, new driver) every pipeline is compiled, 60 to 90 ms
+ * each on D3D12. The title bar counts down meanwhile.
+ * MKGP2PC_NO_SHADER_WAIT=1 lets the game start at once as before.
+ */
+static void shader_wait(void) {
+  static int off = -1;
+  const AuroraStats* stats = aurora_get_stats();
+  if (off < 0) {
+    off = getenv("MKGP2PC_NO_SHADER_WAIT") != NULL;
+  }
+  uint32_t first = stats->queuedPipelines;
+  if (off || first == 0) {
+    return;
+  }
+  Uint64 start = SDL_GetTicksNS(), moved = start, titled = 0;
+  uint32_t last = first;
+  char* title = s_window != NULL ? SDL_strdup(SDL_GetWindowTitle(s_window)) : NULL;
+  for (;;) {
+    uint32_t left = stats->queuedPipelines;
+    Uint64 now = SDL_GetTicksNS();
+    if (left == 0) {
+      break;
+    }
+    if (left != last) {
+      last = left;
+      moved = now;
+    } else if (now - moved > 20000000000ull) {
+      fprintf(stderr, "shaders: no progress for 20 s with %u left; the game starts without waiting\n", (unsigned)left);
+      break;
+    }
+    if (s_window != NULL && now - titled > 200000000ull) {
+      char text[128];
+      titled = now;
+      snprintf(text, sizeof(text), "%s - preparing shaders, %u left", title != NULL ? title : "mkgp2-pc",
+               (unsigned)left);
+      SDL_SetWindowTitle(s_window, text);
+    }
+    pump_events();
+    SDL_Delay(5);
+  }
+  if (s_window != NULL && title != NULL) {
+    SDL_SetWindowTitle(s_window, title);
+  }
+  SDL_free(title);
+  fprintf(stderr, "shaders: %u pipelines prepared before the game in %.1f s\n", (unsigned)(first - stats->queuedPipelines),
+          (double)(SDL_GetTicksNS() - start) / 1e9);
 }
 
 void VIWaitForRetrace(void) {
@@ -894,6 +1121,7 @@ void VIWaitForRetrace(void) {
       dump_capture();
     }
     mkgp2pc_shadow_record_frame();
+    mkgp2pc_debug_overlay_draw();
     aurora_end_frame();
     s_inFrame = false;
   }
@@ -916,6 +1144,10 @@ void VIWaitForRetrace(void) {
   mkgp2pc_script_tick(s_retrace);
   mkgp2pc_mediaboard_tick();
   keyboard_tick();
+  /* the strings of the frame just shown are done with; the game's debug
+   * byte follows the switch before the next frame reads it */
+  mkgp2pc_debug_overlay_clear();
+  mkgp2pc_debug_frame();
   if (s_pre) {
     s_pre(s_retrace);
   }
@@ -925,6 +1157,10 @@ void VIWaitForRetrace(void) {
   OSRestoreInterrupts(level);
   if (s_frameLimit >= 0 && (long)s_retrace >= s_frameLimit) {
     quit_now();
+  }
+  if (s_retrace <= 3) {
+    shader_wait();
+    skip = true;
   }
   t[5] = SDL_GetTicksNS();
   if (!s_inFrame) {

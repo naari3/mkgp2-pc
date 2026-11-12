@@ -1,0 +1,18 @@
+--- a/src/game/SetCourseParams.c
++++ b/src/game/SetCourseParams.c
+@@ -930,6 +930,15 @@ void *GetKartModelNameEntry(int chara, int kart)
+     if (kart == 3) {
+         k = 2;
+     }
++    /* port: gold_waluigi.dat and gold_mametch.dat on the disc are copies of
++     * gold_mario.dat, their joints are named mario_cart_*; the kart set-up
++     * looks for waluigi_cart_* / mametch_cart_*, finds none and reads a null
++     * joint.  Only the developers' race set-up page can ask for these two. */
++    if (k == 1 && chara >= 11) {
++        extern void OSPanic(const char *file, int line, const char *msg, ...);
++        OSPanic(__FILE__, __LINE__, "port: no gold kart model for character %d, normal kart used", chara);
++        k = 0;
++    }
+     return RaceScene_GetPerspFovyForCup_data_80401118 + k * 0x9C + chara * 0xC;
+ }
+ 

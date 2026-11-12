@@ -3983,7 +3983,7 @@ game/DrawEffect_Cb_KartTwoPlaneRing_Tick.c:
 	.sdata2     start:0x806D5640 end:0x806D5658
 
 game/autodata/sdata2_806D5658.c:
-	.sdata2     start:0x806D5658 end:0x806D7900
+	.sdata2     start:0x806D5658 end:0x806D7040
 
 game/DrawEffect_SmokePuff_Update.c:
 	extab       start:0x8000AB20 end:0x8000AB28
@@ -4122,7 +4122,7 @@ game/DbgMenu.cpp:
 	.sdata      start:0x806CF330 end:0x806CF34C
 
 game/autodata/sdata_806CF34C.c:
-	.sdata      start:0x806CF34C end:0x806CF488
+	.sdata      start:0x806CF34C end:0x806CF470
 
 game/autodata/data_8041C9E8.c:
 	.data       start:0x8041C9E8 end:0x8041E8B0
@@ -5714,7 +5714,7 @@ game/NokoNokoChallenge.c:
 	.rodata     start:0x80355840 end:0x803558A8
 
 game/autodata/rodata_803558A8.c:
-	.rodata     start:0x803558A8 end:0x803558E8
+	.rodata     start:0x803558A8 end:0x803558B8
 
 game/NokoNokoChallenge_TransitionToResult.c:
 	extab       start:0x8000BCEC end:0x8000BCF4
@@ -5741,14 +5741,19 @@ game/MiniGame.c:
 	.text       start:0x80123050 end:0x8012318C
 	.data       start:0x8048E158 end:0x8048E178
 
-game/autodata/data_8048E178.c:
-	.data       start:0x8048E178 end:0x8048E1C0
-
 game/ZoneList.c:
-	extab       start:0x8000BD8C end:0x8000BE88
-	extabindex  start:0x80024794 end:0x8002486C
-	.text       start:0x8012318C end:0x801240B4
+	extab       start:0x8000BD8C end:0x8000BE44
+	extabindex  start:0x80024794 end:0x8002483C
+	.text       start:0x8012318C end:0x80123F34
 	.ctors      start:0x802E8908 end:0x802E890C
+	.rodata     start:0x803558B8 end:0x803558E8
+	.data       start:0x8048E178 end:0x8048E1C0
+	.sdata      start:0x806CF470 end:0x806CF488
+
+game/ZoneList_Attract.cpp:
+	extab       start:0x8000BE44 end:0x8000BE88
+	extabindex  start:0x8002483C end:0x8002486C
+	.text       start:0x80123F34 end:0x801240B4
 	.rodata     start:0x803558E8 end:0x80355900
 	.data       start:0x8048E1C0 end:0x8048E1E0
 	.sdata      start:0x806CF488 end:0x806CF498
@@ -5849,14 +5854,18 @@ game/NokoNoko_801287F8.cpp:
 	extabindex  start:0x800249BC end:0x80024A10
 	.text       start:0x801287F8 end:0x8012A5AC
 	.rodata     start:0x803561E8 end:0x80356708
-	.data       start:0x8048E318 end:0x8048E34C
-	.sdata      start:0x806CF548 end:0x806CF560
+	.data       start:0x8048E318 end:0x8048E380
+	.sdata      start:0x806CF548 end:0x806CF570
+	.sdata2     start:0x806D7040 end:0x806D7048
 
-game/autodata/sdata_806CF560.c:
-	.sdata      start:0x806CF560 end:0x806CF5C8
+game/autodata/sdata2_806D7048.c:
+	.sdata2     start:0x806D7048 end:0x806D7900
 
-game/autodata/data_8048E34C.c:
-	.data       start:0x8048E34C end:0x8048E3D8
+game/autodata/sdata_806CF570.c:
+	.sdata      start:0x806CF570 end:0x806CF5C8
+
+game/autodata/data_8048E380.c:
+	.data       start:0x8048E380 end:0x8048E3D8
 
 game/autodata/rodata_80356708.c:
 	.rodata     start:0x80356708 end:0x80356730
@@ -6013,19 +6022,22 @@ game/KartPreview.c:
 	.data       start:0x8048EACC end:0x8048EAE8
 	.sdata      start:0x806CF650 end:0x806CF660
 
-game/autodata/sdata_806CF660.c:
-	.sdata      start:0x806CF660 end:0x806CF6E8
-
-game/autodata/data_8048EAE8.c:
-	.data       start:0x8048EAE8 end:0x8048EBEC
-
-game/autodata/rodata_80360440.c:
-	.rodata     start:0x80360440 end:0x80360498
-
 game/PreviewModel.c:
 	extab       start:0x8000D538 end:0x8000D630
 	extabindex  start:0x80024E48 end:0x80024F38
 	.text       start:0x8013D4B0 end:0x8013DD38
+	.rodata     start:0x80360440 end:0x80360450
+	.data       start:0x8048EAE8 end:0x8048EB18
+	.sdata      start:0x806CF660 end:0x806CF668
+
+game/autodata/sdata_806CF668.c:
+	.sdata      start:0x806CF668 end:0x806CF6E8
+
+game/autodata/data_8048EB18.c:
+	.data       start:0x8048EB18 end:0x8048EBEC
+
+game/autodata/rodata_80360450.c:
+	.rodata     start:0x80360450 end:0x80360498
 
 game/SpriteEffects.c:
 	extab       start:0x8000D630 end:0x8000D670

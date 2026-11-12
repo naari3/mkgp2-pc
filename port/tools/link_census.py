@@ -72,7 +72,9 @@ GFX_WRAPPED = ("GXInitTexObj", "GXInitTexObjCI", "GXInitTexObjLOD", "GXLoadTexOb
                "sndInit")  # port/gfx/audio_musyx.c
 # Functions of the game itself that the glue wraps the same way (the
 # original stays reachable as __real_<name>).
-GAME_WRAPPED = ("HSD_ShadowSetSize", "fn_8013879C")  # port/gfx/gx_shim.cpp
+# port/gfx/gx_shim.cpp. OSAllocFromHeap is the game's own (src/game/OSAlloc_Game.c):
+# vertex buffer extents are forgotten when the heap hands memory out again.
+GAME_WRAPPED = ("HSD_ShadowSetSize", "fn_8013879C", "OSAllocFromHeap")
 
 
 def asm_name(name):
@@ -126,6 +128,16 @@ def link_gfx_windows(stubs, thunks, cxxrt, replaced, aurora_fns, aurora_data, po
         fetched = os.path.join(ROOT, "build", "aurora-win32", "_deps", "sdl-src", "include")
         if os.path.isdir(fetched):
             sdl_inc = [fetched]
+    # Dear ImGui's headers (debug_overlay.cpp draws with it): same search
+    imgui_inc = []
+    for line in open(cache) if os.path.exists(cache) else []:
+        m = re.match(r"(imgui_SOURCE_DIR|FETCHCONTENT_SOURCE_DIR_IMGUI)\w*:\w+=(.+)", line)
+        if m and os.path.exists(os.path.join(m.group(2), "imgui.h")):
+            imgui_inc = [m.group(2)]
+    if not imgui_inc:
+        fetched = os.path.join(ROOT, "build", "aurora-win32", "_deps", "imgui-src")
+        if os.path.exists(os.path.join(fetched, "imgui.h")):
+            imgui_inc = [fetched]
     aurora = os.path.join(ROOT, "port", "extern", "aurora")
     for src in sorted(glob.glob(os.path.join(ROOT, "port", "gfx", "*.c*"))):
         if os.path.basename(src).startswith("dawn_"):
@@ -134,7 +146,7 @@ def link_gfx_windows(stubs, thunks, cxxrt, replaced, aurora_fns, aurora_data, po
         cxx = src.endswith(".cpp")
         r = subprocess.run(["clang++" if cxx else "clang", "-target", WIN_TARGET, "-femulated-tls", "-O2", "-g", "-msse2", "-c", src, "-o", o,
                             "-DAURORA", "-DAURORA_ENABLE_GX", "-DTARGET_PC=1", "-I" + os.path.join(aurora, "include")]
-                           + ["-I" + d for d in sdl_inc]
+                           + ["-I" + d for d in sdl_inc + imgui_inc]
                            + (["-std=gnu++20", "-femulated-tls"] if cxx else []), capture_output=True, text=True)
         if r.returncode != 0:
             print(r.stderr[:3000])
@@ -201,7 +213,7 @@ def link_gfx_windows(stubs, thunks, cxxrt, replaced, aurora_fns, aurora_data, po
     with open(link, "w") as f:
         f.write("\n".join(["-static", "-fcommon", "-Wl,--large-address-aware", "-Wl,--disable-dynamicbase", "-Wl,-T," + script, "-Wl,-T," + bss_ld]
                           + gen + port_objs + objs + defsyms + [f"-Wl,--defsym,{n}=_{n}" for n in data]
-                          + [os.path.join(ROOT, "build", "musyx-win32", "libmusyxRD.a")] + ([WIN_ZLIB] if os.path.exists(WIN_ZLIB) else []) + ["-lwinpthread", "-lws2_32", "-Wl,--allow-multiple-definition"]) + "\n")
+                          + [os.path.join(ROOT, "build", "musyx-win32", "libmusyxRD.a")] + ([WIN_ZLIB] if os.path.exists(WIN_ZLIB) else []) + ["-lwinpthread", "-lws2_32", "-lwinhttp", "-Wl,--allow-multiple-definition"]) + "\n")
     print(f"link inputs for CMake: {os.path.relpath(link, ROOT)}")
     return 0
 
@@ -604,7 +616,9 @@ def cxx_renames(built):
             if c and not v.startswith(("@", "extern:", "active:")):
                 # ("extern:NAME" and "active:NAME" are instructions to the matching
                 # build about a unit-local object, not a name for the host object)
-                table[unit][c] = v
+                # ("global:NAME" also asks the matching build for global
+                # binding; the name is what follows)
+                table[unit][c] = v[len("global:"):] if v.startswith("global:") else v
             elif not c and re.fullmatch(r"[A-Za-z]\w*", k) and "__" not in k and re.fullmatch(r"(global:)?[A-Za-z]\w*", v):
                 # a C-linkage function or object the unit writes under a
                 # descriptive name (`SceneListInsert` -> `fn_801F4DF0`)
@@ -1078,6 +1092,31 @@ def main():
                 if c not in defined and c not in weak and c not in ours:
                     missing.setdefault(c, set())
         print(f"address-named references resolved to the symbol at that address: {by_addr}")
+        # A data label declared inside a namespace (`view9::lbl_806D15FC`
+        # in src/game/mapobject/fn_8017CE1C.cpp, one namespace per type the
+        # unit sees the object as) is that object. Without this every such
+        # name became a stub and the unit read code bytes as its data.
+        in_ns = 0
+        for n in sorted(missing):
+            m = re.match(r"_ZN(\d+)", n)
+            if not m or n in alias:
+                continue
+            rest = n[m.end() + int(m.group(1)):]
+            m = re.match(r"(\d+)", rest)
+            if not m or rest[m.end() + int(m.group(1)):] != "E":
+                continue   # a function (parameters follow) or a deeper name
+            c = rest[m.end():-1]
+            known = lambda x: x in defined or x in weak or x in ours or x in missing or x in info
+            if not known(c):
+                m = re.search(r"_(8[0-9A-Fa-f]{7})$", c)
+                c = at.get(int(m.group(1), 16)) if m else None
+                if c is None or not known(c):
+                    continue
+            alias[n] = c
+            in_ns += 1
+            if c not in defined and c not in weak and c not in ours:
+                missing.setdefault(c, set())   # placed like any other object the sources only declare
+        print(f"data names inside a namespace wired to the plain name: {in_ns}")
         defsyms = [f"-Wl,--defsym={n}={t}" for n, t in sorted(alias.items()) if n in missing] + thunk_defsyms
         missing = {n: u for n, u in missing.items() if n not in alias}
         print(f"wired to an existing definition (linkage or prototype mismatch): {len(defsyms)}")
@@ -1232,7 +1271,7 @@ def main():
             # (port/nogfx/os_min.c). Static, so that the executable needs no
             # MinGW runtime DLLs next to it.
             cmd = ["clang", "-target", WIN_TARGET, "-g", "-static", "-Wl,--large-address-aware", "-Wl,--disable-dynamicbase", "-Wl,-T," + script, "-Wl,-T," + bss_ld,
-                   "-o", exe] + gen + port_objs + ["@" + rsp] + defsyms + ([WIN_ZLIB] if os.path.exists(WIN_ZLIB) else []) + ["-lstdc++", "-lwinpthread", "-lws2_32", "-Wl,--allow-multiple-definition"]
+                   "-o", exe] + gen + port_objs + ["@" + rsp] + defsyms + ([WIN_ZLIB] if os.path.exists(WIN_ZLIB) else []) + ["-lstdc++", "-lwinpthread", "-lws2_32", "-lwinhttp", "-Wl,--allow-multiple-definition"]
         else:
           cmd = ["clang", "-m32", "-O0", "-g", "-fcommon", "-no-pie", "-Wl,--version-script=" + private, "-Wl,-T," + script, "-Wl,-T," + bss_ld, "-o", exe, stubs, thunks] + port_objs + [
                  "@" + rsp] + defsyms + ["-lm", "-lpthread", "-lstdc++"] + (["-lz"] if os.path.exists("/usr/lib32/libz.so") else []) + [ "-Wl,--allow-multiple-definition", "-Wl,--no-warn-rwx-segments"]

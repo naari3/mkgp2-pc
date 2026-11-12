@@ -57,6 +57,12 @@ static const KeyAction kActions[] = {
     {L"fasthold", L"全速 (押下中)", {43, 0}},
     {L"dump", L"ダンプ", {66, 0}},
     {L"hires", L"高解像度 (切り替え)", {65, 0}},
+    {L"debug", L"デバッグ表示 (切り替え)", {60, 0}},
+    {L"debugpage", L"デバッグ表示のページ送り", {61, 0}},
+    {L"devup", L"開発用 上", {75, 0}},
+    {L"devdown", L"開発用 下", {78, 0}},
+    {L"devstart", L"開発用 決定/戻る", {77, 0}},
+    {L"devsub", L"開発用 サブ", {74, 0}},
 };
 #define ACTIONS LEN(kActions)
 
@@ -65,6 +71,7 @@ typedef struct {
   int card;
   wchar_t cardFile[MAX_PATH];
   int closeOnStart;
+  int bootSkip;
   int wide;            /* 16:9 instead of 4:3 */
   int scale;           /* window height in hundredths of 480 lines: 150 = 720 */
   wchar_t backend[16]; /* "" = the library's own choice */
@@ -75,8 +82,10 @@ typedef struct {
   int goodsDisc;
   int hires;
   int link;
-  int pcbId; /* 1..4 */
+  int pcbId; /* 1..4, 0 = not given: 1, or with a room the first free one */
   wchar_t peers[256];
+  wchar_t room[64];
+  wchar_t server[200];
   wchar_t port[16];
   int keys[ACTIONS][KEY_SLOTS];
   wchar_t extra[2048]; /* NAME=VALUE lines, CR LF between them */
@@ -126,6 +135,7 @@ static void load_settings(Settings* s) {
   s->card = ini_int(L"card", 1) != 0;
   ini_str(L"card_file", s->cardFile, LEN(s->cardFile));
   s->closeOnStart = ini_int(L"close_on_start", 0) != 0;
+  s->bootSkip = ini_int(L"boot_skip", 0) != 0;
   s->wide = ini_int(L"wide", 0) != 0;
   {
     wchar_t text[16] = L"1";
@@ -140,7 +150,9 @@ static void load_settings(Settings* s) {
   s->goodsDisc = ini_int(L"goods_disc", 0) != 0;
   s->hires = ini_int(L"hires", 0) != 0;
   s->link = ini_int(L"link", 1) != 0;
-  s->pcbId = clampi(ini_int(L"pcb_id", 1), 1, 4, 1);
+  s->pcbId = clampi(ini_int(L"pcb_id", 1), 0, 4, 1);
+  ini_str(L"room", s->room, LEN(s->room));
+  ini_str(L"server", s->server, LEN(s->server));
   ini_str(L"peers", s->peers, LEN(s->peers));
   ini_str(L"port", s->port, LEN(s->port));
   for (int i = 0; i < ACTIONS; i++) {
@@ -188,6 +200,7 @@ static int save_settings(const Settings* s) {
   put_int(L"card", s->card);
   put_str(L"card_file", s->cardFile);
   put_int(L"close_on_start", s->closeOnStart);
+  put_int(L"boot_skip", s->bootSkip);
   put_int(L"wide", s->wide);
   {
     wchar_t text[16];
@@ -204,6 +217,8 @@ static int save_settings(const Settings* s) {
   put_int(L"link", s->link);
   put_int(L"pcb_id", s->pcbId);
   put_str(L"peers", s->peers);
+  put_str(L"room", s->room);
+  put_str(L"server", s->server);
   put_str(L"port", s->port);
   for (int i = 0; i < ACTIONS; i++) {
     wchar_t text[32];
@@ -291,6 +306,7 @@ static void apply_environment(const Settings* s) {
   env_text(L"MKGP2_ISO", s->iso);
   env_text(L"MKGP2PC_CARD", s->card ? NULL : L"0");
   env_text(L"MKGP2PC_CARD_FILE", s->cardFile);
+  env_flag(L"MKGP2PC_BOOT_SKIP", s->bootSkip);
   swprintf(text, LEN(text), L"%g", s->scale / 100.0);
   env_text(L"MKGP2PC_SCALE", s->scale != 100 ? text : NULL);
   env_text(L"MKGP2PC_ASPECT", s->wide ? L"16:9" : NULL);
@@ -303,7 +319,9 @@ static void apply_environment(const Settings* s) {
   env_flag(L"MKGP2PC_HIRES", s->hires);
   env_text(L"MKGP2PC_LINK", s->link ? NULL : L"0");
   swprintf(text, LEN(text), L"%d", s->pcbId);
-  env_text(L"MKGP2PC_PCB_ID", text);
+  env_text(L"MKGP2PC_PCB_ID", s->pcbId > 0 ? text : NULL);
+  env_text(L"MKGP2PC_LINK_ROOM", s->room);
+  env_text(L"MKGP2PC_LINK_SERVER", s->server);
   env_text(L"MKGP2PC_LINK_PEERS", s->peers);
   env_text(L"MKGP2PC_LINK_PORT", s->port);
   if (keys_are_default(s)) {
@@ -417,9 +435,9 @@ static void log_exit_code(DWORD code) {
 
 enum {
   ID_TAB = 100, ID_SAVE, ID_START, ID_STATUS,
-  ID_ISO, ID_ISO_BROWSE, ID_CARD, ID_CARD_FILE, ID_CARD_BROWSE, ID_CLOSE_ON_START,
+  ID_ISO, ID_ISO_BROWSE, ID_CARD, ID_CARD_FILE, ID_CARD_BROWSE, ID_CLOSE_ON_START, ID_BOOT_SKIP,
   ID_ASPECT, ID_SCALE, ID_BACKEND, ID_RESIZABLE, ID_SHADOW, ID_FAST, ID_ASYNC, ID_GOODS, ID_HIRES,
-  ID_LINK, ID_PCB, ID_PEERS, ID_PORT,
+  ID_LINK, ID_PCB, ID_PEERS, ID_PORT, ID_ROOM, ID_SERVER,
   ID_KEYS, ID_KEY_SET1, ID_KEY_SET2, ID_KEY_CLEAR1, ID_KEY_CLEAR2, ID_KEY_RESET,
   ID_EXTRA, ID_OPEN_LOG, ID_OPEN_FOLDER,
 };
@@ -551,6 +569,8 @@ static void create_controls(void) {
   }
   button(0, L"カードを選ぶ", X + W - 80, y + 47, 80, ID_CARD_BROWSE);
   y += 92;
+  check(0, L"デバイスチェックと NOTICE を飛ばす", X, y, W, ID_BOOT_SKIP);
+  y += 28;
   check(0, L"起動後に閉じる", X, y, W, ID_CLOSE_ON_START);
 
   /* 表示 */
@@ -587,6 +607,7 @@ static void create_controls(void) {
   y += 34;
   label(2, L"PCB ID", X, y + 3, 130, 18);
   c = combo(2, X + 136, y, 80, ID_PCB);
+  SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)L"自動");
   for (int i = 1; i <= 4; i++) {
     wchar_t text[8];
     swprintf(text, LEN(text), L"%d", i);
@@ -598,6 +619,12 @@ static void create_controls(void) {
   y += 58;
   label(2, L"ポート", X, y + 3, 130, 18);
   SendMessageW(edit(2, X + 136, y, 80, ID_PORT), 0x1501, TRUE, (LPARAM)L"29500");
+  y += 40;
+  label(2, L"合言葉", X, y + 3, 130, 18);
+  edit(2, X + 136, y, W - 136, ID_ROOM);
+  y += 34;
+  label(2, L"仲介サーバー", X, y + 3, 130, 18);
+  SendMessageW(edit(2, X + 136, y, W - 136, ID_SERVER), 0x1501, TRUE, (LPARAM)L"https://...workers.dev");
   y += 40;
 
   /* キー */
@@ -651,6 +678,7 @@ static void settings_to_window(void) {
   CheckDlgButton(g_wnd, ID_CARD, g_set.card);
   SetDlgItemTextW(g_wnd, ID_CARD_FILE, g_set.cardFile);
   CheckDlgButton(g_wnd, ID_CLOSE_ON_START, g_set.closeOnStart);
+  CheckDlgButton(g_wnd, ID_BOOT_SKIP, g_set.bootSkip);
   SendDlgItemMessageW(g_wnd, ID_ASPECT, CB_SETCURSEL, (WPARAM)g_set.wide, 0);
   scale_fill(g_set.wide, g_set.scale);
   int backend = 0;
@@ -665,7 +693,9 @@ static void settings_to_window(void) {
   CheckDlgButton(g_wnd, ID_GOODS, g_set.goodsDisc);
   CheckDlgButton(g_wnd, ID_HIRES, g_set.hires);
   CheckDlgButton(g_wnd, ID_LINK, g_set.link);
-  SendDlgItemMessageW(g_wnd, ID_PCB, CB_SETCURSEL, (WPARAM)(g_set.pcbId - 1), 0);
+  SendDlgItemMessageW(g_wnd, ID_PCB, CB_SETCURSEL, (WPARAM)g_set.pcbId, 0);
+  SetDlgItemTextW(g_wnd, ID_ROOM, g_set.room);
+  SetDlgItemTextW(g_wnd, ID_SERVER, g_set.server);
   SetDlgItemTextW(g_wnd, ID_PEERS, g_set.peers);
   SetDlgItemTextW(g_wnd, ID_PORT, g_set.port);
   SetDlgItemTextW(g_wnd, ID_EXTRA, g_set.extra);
@@ -677,6 +707,7 @@ static void window_to_settings(void) {
   g_set.card = checked(ID_CARD);
   GetDlgItemTextW(g_wnd, ID_CARD_FILE, g_set.cardFile, LEN(g_set.cardFile));
   g_set.closeOnStart = checked(ID_CLOSE_ON_START);
+  g_set.bootSkip = checked(ID_BOOT_SKIP);
   g_set.scale = scale_selected();
   g_set.wide = SendDlgItemMessageW(g_wnd, ID_ASPECT, CB_GETCURSEL, 0, 0) == 1;
   int backend = (int)SendDlgItemMessageW(g_wnd, ID_BACKEND, CB_GETCURSEL, 0, 0);
@@ -688,11 +719,13 @@ static void window_to_settings(void) {
   g_set.goodsDisc = checked(ID_GOODS);
   g_set.hires = checked(ID_HIRES);
   g_set.link = checked(ID_LINK);
-  g_set.pcbId = (int)SendDlgItemMessageW(g_wnd, ID_PCB, CB_GETCURSEL, 0, 0) + 1;
+  g_set.pcbId = (int)SendDlgItemMessageW(g_wnd, ID_PCB, CB_GETCURSEL, 0, 0);
+  GetDlgItemTextW(g_wnd, ID_ROOM, g_set.room, LEN(g_set.room));
+  GetDlgItemTextW(g_wnd, ID_SERVER, g_set.server, LEN(g_set.server));
   GetDlgItemTextW(g_wnd, ID_PEERS, g_set.peers, LEN(g_set.peers));
   GetDlgItemTextW(g_wnd, ID_PORT, g_set.port, LEN(g_set.port));
   GetDlgItemTextW(g_wnd, ID_EXTRA, g_set.extra, LEN(g_set.extra));
-  if (g_set.pcbId < 1) g_set.pcbId = 1;
+  if (g_set.pcbId < 0) g_set.pcbId = 0;
 }
 
 static int save_from_window(void) {
