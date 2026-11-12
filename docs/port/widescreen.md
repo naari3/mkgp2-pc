@@ -49,6 +49,12 @@ from this port yet.
 
 Known gaps:
 
+- In the race, a black area can show at a side where the course has no
+  ground beside the track (seen in Yoshi Park next to a fence, lower right).
+  Widening the culling frustum three times more (`MKGP2PC_WIDE_CULL=3`) did
+  not bring anything back there, so it is not the frustum test; whether the
+  game leaves that ground out by another rule (course section visibility)
+  or the course simply ends there is not established.
 - Elements that slide in from outside the screen appear at the edge of the
   4:3 area, not at the screen edge.
 - The HUD is not moved to the screen edges (option C below).
