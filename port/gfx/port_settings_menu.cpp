@@ -20,6 +20,13 @@
 #include <cstring>
 #include <string>
 
+extern "C" {
+/* gx_shim.cpp: the race HUD at the edges of a wide picture (1) or where 4:3 has it (0) */
+int mkgp2pc_wide_hud_get(void);
+void mkgp2pc_wide_hud_set(int edge);
+extern float mkgp2pc_wide_k; /* the picture's width over 4:3's; above 1 in a wide picture */
+}
+
 namespace {
 
 using portui::Item;
@@ -49,7 +56,7 @@ struct Start {
 Start g_run, g_next;
 
 const char* const kBackendIds[] = {"", "d3d12", "d3d11", "vulkan", "opengl"};
-const Text kBackends[] = {{"Automatic", "自動"}, {"Direct3D 12", "Direct3D 12"}, {"Direct3D 11", "Direct3D 11"},
+const Text kBackends[] = {{"Automatic", "自動"}, {"Direct3D 12", "Direct3D 12", "D3D12"}, {"Direct3D 11", "Direct3D 11", "D3D11"},
                           {"Vulkan", "Vulkan"}, {"OpenGL", "OpenGL"}};
 const Text kAa[] = {{"None", "なし"}, {"MSAA 4x", "MSAA 4x"}, {"SSAA 2x", "SSAA 2x"}, {"MSAA + SSAA", "MSAA+SSAA"}};
 /* the sizes the settings program offers (launcher.c) */
@@ -197,6 +204,16 @@ ListMenu& graphics() {
         g_next.scale = list[cycle(at, dir, SCALES)];
         save_scale();
       }));
+  /* Where the race's HUD sits in a wide picture (gx_shim.cpp, widescreen.md):
+   * applies at once; there is nothing to choose in a 4:3 picture. */
+  rows.push_back(Item::Setting(
+      Text{"Race HUD position", "レース中の UI の位置", "レース中のUIの位置"},
+      [] { return mkgp2pc_wide_hud_get() ? Text{"Screen edges", "左右の端", "左右のはし"} : Text{"As in 4:3", "4:3 の位置", "4:3の位置"}; },
+      [](int) {
+        mkgp2pc_wide_hud_set(!mkgp2pc_wide_hud_get());
+        mkgp2pc_settings_save("wide_hud", mkgp2pc_wide_hud_get() ? "edge" : "center");
+      },
+      [] { return mkgp2pc_wide_k > 1.001f; }));
   rows.push_back(restart_row(
       Text{"Renderer", "描画方式", "レンダリング"}, [] { return shown(2, kBackends[g_next.backend], g_next.backend != g_run.backend); },
       [](int dir) {
@@ -218,7 +235,7 @@ ListMenu& graphics() {
   rows.push_back(live_row(Text{"Do not wait for pipelines", "描画の準備を待たない", "シェーダーを待たない"},
                           mkgp2pc_video_pipeline_async, mkgp2pc_video_pipeline_async_set, "async_pipelines"));
   rows.push_back(restart_row(
-      Text{"Resizable window (unstable)", "窓のサイズ変更を許可 (不安定)", "ウィンドウのサイズ変更"},
+      Text{"Resizable window (unstable)", "窓のサイズ変更を許可 (不安定)", "ウィンドウのリサイズ"},
       [] { return shown(4, g_next.resizable ? kOn : kOff, g_next.resizable != g_run.resizable); },
       [](int) {
         g_next.resizable = !g_next.resizable;
@@ -458,7 +475,7 @@ struct Announce {
       portui::announce(t.ja);
     }
     portui::announce("画面の比率窓の大きさ描画方式アンチエイリアス影をなめらかにする高解像度のテクスチャ描画の準備を待たない"
-                     "窓のサイズ変更を許可 (不安定)hires フォルダが必要です (ランチャーで作成)グラフィックキー入力"
+                     "窓のサイズ変更を許可 (不安定)レース中の UI の位置左右の端hires フォルダが必要です (ランチャーで作成)グラフィックキー入力"
                      "Windows では不安定です。* は次回の起動からキーを初期化キーを押してくださいなし上下左右スペースは次回の起動から変わります");
     read_start();
   }
