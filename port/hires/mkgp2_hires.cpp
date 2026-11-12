@@ -4,7 +4,10 @@
 // handed out next to the game and started from the settings program.
 //
 //   mkgp2-hires --iso <disc image> --out <folder> [--scale 2|4] [--models] [--jobs N]
-//   mkgp2-hires --iso ... --out ... --ai <model> --work <folder> [--tool <folder>] [--download] [--tile N]
+//   mkgp2-hires --iso ... --out ... [--ai <model>] [--ai-models <model>] --work <folder> [--tool <folder>]
+//               [--download] [--tile N]      (--ai: the sprites, --ai-models: the 3D models' textures)
+//   --scale-courses 4    the textures of the courses' own archives at four times (others stay at --scale);
+//                        nothing wider than 2048 texels is made
 //   mkgp2-hires --iso ... --export-sprites <folder>
 //   mkgp2-hires --iso ... --out ... --import-sprites <folder>
 //
@@ -14,7 +17,7 @@
 //
 // Standard output carries lines for the settings program:
 //   stage <name>      what is being done (read, fonts, sprites, models, export, download, enlarge-rgb,
-//                     enlarge-alpha, import, import-models)
+//                     enlarge-alpha, enlarge-models-rgb, enlarge-models-alpha, import, import-models)
 //   progress <0-100>  how far the stage is
 //   error <text>      why it stopped (exit code 1)
 //   done <folder>
@@ -920,13 +923,17 @@ struct Tex {
   // axis (GX: 0 clamp, 1 repeat, 2 mirror) and whether they carry mip levels
   bool model = false, mipped = false;
   int wrapS = 0, wrapT = 0;
+  bool course = false;  // used by a course's own archive
 };
 
 struct Options {
-  std::string iso, out, exportDir, importDir, only, ai, work, tool;
-  int scale = 2, jobs = 0, tile = 0;
+  std::string iso, out, exportDir, importDir, only, ai, aiModels, work, tool;
+  int scale = 2, scaleCourses = 0, jobs = 0, tile = 0;
   bool download = false, models = false;
 };
+
+static const int MODEL_PAD = 4;     // texels of surrounding added to a model texture before enlarging
+static const int MODEL_PAD_AI = 8;  // the same for an outside enlarger, which looks further
 
 static bool read_png_plane(const fs::path& path, int w, int h, int scale, Plane out[3], int channels) {
   FILE* f = open_file(path, "rb");
@@ -954,8 +961,19 @@ static bool read_png_plane(const fs::path& path, int w, int h, int scale, Plane 
 // filter is used then).
 static bool import_sprite(const fs::path& dir, const Tex& t, const std::vector<uint8_t>& px, int scale, Picture& out) {
   int w = t.e.w, h = t.e.h;
+  // a model texture was exported with its surroundings (see enlarge_model)
+  int P = t.model ? MODEL_PAD_AI : 0, W = w + 2 * P, H = h + 2 * P;
+  const char* rgbDir = t.model ? "models-rgb" : "rgb";
+  const char* alphaDir = t.model ? "models-alpha" : "alpha";
   Plane rgb[3];
-  if (!read_png_plane(dir / "rgb" / (t.stem + ".png"), w, h, scale, rgb, 3)) return false;
+  if (!read_png_plane(dir / rgbDir / (t.stem + ".png"), W, H, scale, rgb, 3)) return false;
+  auto cut = [&](const Plane& a) {
+    if (P == 0) return a;
+    Plane c(w * scale, h * scale);
+    for (int y = 0; y < c.h; y++)
+      memcpy(&c.v[(size_t)y * c.w], &a.v[(size_t)(y + P * scale) * a.w + P * scale], sizeof(float) * c.w);
+    return c;
+  };
   uint8_t a0 = px[3];
   bool flat = true;
   for (size_t i = 0; i < (size_t)w * h && flat; i++) flat = px[i * 4 + 3] == a0;
@@ -963,14 +981,12 @@ static bool import_sprite(const fs::path& dir, const Tex& t, const std::vector<u
     out.c[3] = Plane(w * scale, h * scale, a0);
   } else {
     Plane a[3];
-    if (!read_png_plane(dir / "alpha" / (t.stem + ".png"), w, h, scale, a, 1)) return false;
-    out.c[3] = a[0];
+    if (!read_png_plane(dir / alphaDir / (t.stem + ".png"), W, H, scale, a, 1)) return false;
+    out.c[3] = cut(a[0]);
   }
-  for (int k = 0; k < 3; k++) out.c[k] = rgb[k];
+  for (int k = 0; k < 3; k++) out.c[k] = cut(rgb[k]);
   return true;
 }
-
-static const int MODEL_PAD = 4;  // texels of surrounding added to a model texture before enlarging
 
 static inline int wrap_index(int i, int n, int mode) {
   if (mode == 1) return ((i % n) + n) % n;
@@ -985,13 +1001,19 @@ static inline int wrap_index(int i, int n, int mode) {
 // across its edge into the other side. The enlargement has to see the same
 // neighbours or a seam shows where two copies meet: the picture is extended
 // by what the wrap mode puts there, enlarged, and cut back.
-static Picture enlarge_model(const Tex& t, const std::vector<uint8_t>& px, int scale) {
-  int w = t.e.w, h = t.e.h, P = MODEL_PAD, W = w + 2 * P, H = h + 2 * P;
+static std::vector<uint8_t> with_surroundings(const Tex& t, const std::vector<uint8_t>& px, int P) {
+  int w = t.e.w, h = t.e.h, W = w + 2 * P, H = h + 2 * P;
   std::vector<uint8_t> padded((size_t)W * H * 4);
   for (int y = 0; y < H; y++)
     for (int x = 0; x < W; x++)
       memcpy(&padded[((size_t)y * W + x) * 4],
              &px[((size_t)wrap_index(y - P, h, t.wrapT) * w + wrap_index(x - P, w, t.wrapS)) * 4], 4);
+  return padded;
+}
+
+static Picture enlarge_model(const Tex& t, const std::vector<uint8_t>& px, int scale) {
+  int w = t.e.w, h = t.e.h, P = MODEL_PAD, W = w + 2 * P, H = h + 2 * P;
+  std::vector<uint8_t> padded = with_surroundings(t, px, P);
   Picture big = enlarge_sprite(padded, W, H, scale, t.e.fmt);
   Picture out;
   for (int k = 0; k < 4; k++) {
@@ -1009,15 +1031,16 @@ static void do_sprite(const Tex& t, const Options& o, const fs::path& outDir, in
   if (!o.exportDir.empty() && allowImport) {
     // for an outside enlarger: the colour as an opaque picture, and the
     // alpha (when it is not the same everywhere) as a grey one
-    Picture p = to_picture(px, w, h);
+    int P = t.model ? MODEL_PAD_AI : 0;
+    Picture p = P ? to_picture(with_surroundings(t, px, P), w + 2 * P, h + 2 * P) : to_picture(px, w, h);
     fill_unknown(p);
-    write_png(upath(o.exportDir) / "rgb" / (t.stem + ".png"), p, 3);
+    write_png(upath(o.exportDir) / (t.model ? "models-rgb" : "rgb") / (t.stem + ".png"), p, 3);
     bool flat = true;
     for (size_t i = 0; i < (size_t)w * h && flat; i++) flat = px[i * 4 + 3] == px[3];
     if (!flat) {
       Picture a;
       a.c[0] = a.c[1] = a.c[2] = p.c[3];
-      write_png(upath(o.exportDir) / "alpha" / (t.stem + ".png"), a, 3);
+      write_png(upath(o.exportDir) / (t.model ? "models-alpha" : "alpha") / (t.stem + ".png"), a, 3);
     }
     return;
   }
@@ -1030,9 +1053,14 @@ static void do_sprite(const Tex& t, const Options& o, const fs::path& outDir, in
     // (then all the way down). Given levels where the original has none,
     // the game drew it from a smaller level and it came out softer than the
     // original (seen on the start banner of Yoshi Park, Linux, 2026-11-12).
-    levels = 0;
-    if (t.mipped)
+    // At four times one level is given all the same: it is the picture at
+    // twice the size, never softer than that, and without it the far parts
+    // of a course shimmer.
+    levels = scale >= 4 ? 1 : 0;
+    if (t.mipped) {
+      levels = 0;
       for (int m = std::min(w, h) * scale; m > 4; m /= 2) levels++;
+    }
   }
   write_with_mips(t.model ? outDir / "models" : outDir, t.stem, big, levels);
 }
@@ -1167,7 +1195,8 @@ static void run_jobs(size_t n, int threads, uint64_t budget, W weight, F fn, con
 }
 
 static bool dat_bytes(Bytes& d);
-static void dat_textures(const Bytes& d, std::vector<Tex>& out, std::set<std::string>& seen, int& skipped);
+static void dat_textures(const Bytes& d, std::vector<Tex>& out, std::set<std::string>& seen, int& skipped, bool course);
+static bool course_archive(const std::string& name);
 
 struct Work {
   std::vector<Tex> sprites;
@@ -1198,7 +1227,7 @@ static Work collect(Disc& disc, const Options& o) {
     if (o.models && base.size() >= 4 && base.compare(base.size() - 4, 4, ".dat") == 0) {
       Bytes d = disc.at(f.second.first, f.second.second);
       if (dat_bytes(d)) {
-        dat_textures(d, wk.models, seen, wk.skipped);
+        dat_textures(d, wk.models, seen, wk.skipped, course_archive(f.first.substr(f.first.rfind('/') + 1)));
       } else {
         wk.skipped++;
       }
@@ -1305,7 +1334,25 @@ static bool dat_bytes(Bytes& d) {
   return d.size() >= 0x20 && be32(&d[0]) == d.size();
 }
 
-static void dat_textures(const Bytes& d, std::vector<Tex>& out, std::set<std::string>& seen, int& skipped) {
+// The archives of the courses themselves: two or three capitals and an
+// underscore (YIA_cake.dat, MR_highway_long_A.dat, ...); AT_ is the attract
+// film.
+static bool course_archive(const std::string& name) {
+  size_t n = 0;
+  while (n < name.size() && name[n] >= 'A' && name[n] <= 'Z') n++;
+  return (n == 2 || n == 3) && n < name.size() && name[n] == '_' && name.compare(0, 3, "AT_") != 0;
+}
+
+// The size a model texture is made at: --scale-courses for the courses'
+// own, as long as no side passes 2048 texels.
+static int model_scale(const Tex& t, const Options& o) {
+  int s = t.course && o.scaleCourses ? o.scaleCourses : o.scale;
+  while (s > 2 && std::max(t.e.w, t.e.h) * s > 2048) s /= 2;
+  return s;
+}
+
+static void dat_textures(const Bytes& d, std::vector<Tex>& out, std::set<std::string>& seen, int& skipped, bool course) {
+  static std::map<std::string, size_t> place;  // of a model texture in out
   uint32_t ds = be32(&d[4]), nrel = be32(&d[8]);
   if ((uint64_t)0x20 + ds + (uint64_t)nrel * 4 > d.size()) return;
   auto data = std::make_shared<Bytes>(d.begin() + 0x20, d.begin() + 0x20 + ds);
@@ -1356,18 +1403,28 @@ static void dat_textures(const Bytes& d, std::vector<Tex>& out, std::set<std::st
       skipped++;
       continue;
     }
-    if (seen.insert(tex.stem).second) out.push_back(tex);
+    tex.course = course;
+    if (seen.insert(tex.stem).second) {
+      place[tex.stem] = out.size();
+      out.push_back(tex);
+    } else if (course) {
+      auto at = place.find(tex.stem);
+      if (at != place.end()) out[at->second].course = true;
+    }
   }
 }
 
 static uint64_t texels(const Tex& t) { return (uint64_t)t.e.w * t.e.h; }
 
-static void export_sprites(const Work& wk, const Options& o, int threads, uint64_t budget) {
-  fs::create_directories(upath(o.exportDir) / "rgb");
-  fs::create_directories(upath(o.exportDir) / "alpha");
+static const char* const EXPORT_KINDS[] = {"rgb", "alpha", "models-rgb", "models-alpha"};
+
+static void export_sprites(const Work& wk, const Options& o, int threads, uint64_t budget, bool sprites, bool models) {
+  for (const char* kind : EXPORT_KINDS) fs::create_directories(upath(o.exportDir) / kind);
   std::vector<const Tex*> all;
-  for (auto& t : wk.sprites) all.push_back(&t);
-  for (auto& t : wk.models) all.push_back(&t);
+  if (sprites)
+    for (auto& t : wk.sprites) all.push_back(&t);
+  if (models)
+    for (auto& t : wk.models) all.push_back(&t);
   run_jobs(all.size(), threads, budget, [&](size_t i) { return texels(*all[i]); },
            [&](size_t i) { do_sprite(*all[i], o, fs::path(), o.scale, true); }, "export");
   say("note %d sprite textures exported", (int)all.size());
@@ -1389,8 +1446,24 @@ static void make_pack(const Work& wk, const Options& o, const fs::path& outDir, 
   run_jobs(wk.sprites.size(), threads, budget, [&](size_t i) { return texels(wk.sprites[i]); },
            [&](size_t i) { do_sprite(wk.sprites[i], plain, outDir, o.scale, true); },
            o.importDir.empty() ? "sprites" : "import");
-  run_jobs(wk.models.size(), threads, budget, [&](size_t i) { return texels(wk.models[i]); },
-           [&](size_t i) { do_sprite(wk.models[i], plain, outDir, o.scale, true); },
+  if (o.scaleCourses) {
+    uint64_t n = 0, before = 0, after = 0;
+    for (auto& t : wk.models) {
+      if (!t.course) continue;
+      int sc = model_scale(t, o);
+      n++;
+      before += texels(t) * o.scale * o.scale;
+      after += texels(t) * sc * sc;
+    }
+    say("note course textures: %d, %d MB of texels at x%d, %d MB as asked", (int)n, (int)(before * 4 >> 20), o.scale,
+        (int)(after * 4 >> 20));
+  }
+  run_jobs(wk.models.size(), threads, budget,
+           [&](size_t i) {
+             int sc = model_scale(wk.models[i], o);
+             return texels(wk.models[i]) * (sc * sc / 4);
+           },
+           [&](size_t i) { do_sprite(wk.models[i], plain, outDir, model_scale(wk.models[i], o), true); },
            o.importDir.empty() ? "models" : "import-models");
   say("note characters: %d enlarged from their own bitmap, %d of the 16 pixel font from the 24 pixel bitmap",
       (int)wk.glyphs.size() - larger.load(), larger.load());
@@ -1489,7 +1562,9 @@ static std::wstring quote(const std::wstring& s) { return L"\"" + s + L"\""; }
 // Runs the enlarger on one folder; progress from the number of pictures it
 // has written. The child dies with this process (job object), so that a
 // cancel from the settings program stops the GPU work too.
-static bool run_tool(const fs::path& exe, const fs::path& in, const fs::path& out, const std::string& model, int tile) {
+static bool run_tool(const fs::path& exe0, const fs::path& in0, const fs::path& out0, const std::string& model, int tile) {
+  // it is started in its own folder, so no path may be relative to ours
+  fs::path exe = fs::absolute(exe0), in = fs::absolute(in0), out = fs::absolute(out0);
   size_t total = std::max<size_t>(count_png(in), 1);
   std::wstring cmd = quote(exe.wstring()) + L" -i " + quote(in.wstring()) + L" -o " + quote(out.wstring()) + L" -n " +
                      std::wstring(model.begin(), model.end()) + L" -m " + quote((exe.parent_path() / "models").wstring()) +
@@ -1552,14 +1627,15 @@ static void ai_enlarge(const Options& o, const fs::path& work) {
     exe = find_tool(toolDir);
     if (exe.empty()) fail("the downloaded archive holds no %s", TOOL_EXE);
   }
-  for (const char* kind : {"rgb", "alpha"}) {
+  for (const char* kind : EXPORT_KINDS) {
+    const std::string& model = strncmp(kind, "models", 6) == 0 ? o.aiModels : o.ai;
     fs::path in = work / "src" / kind, out = work / "up" / kind;
     std::error_code ec;
     fs::remove_all(out, ec);
     fs::create_directories(out);
     say("stage enlarge-%s", kind);
-    if (count_png(in) == 0) continue;
-    if (!run_tool(exe, in, out, o.ai, o.tile))
+    if (count_png(in) == 0 || model.empty()) continue;
+    if (!run_tool(exe, in, out, model, o.tile))
       fail("the enlarger stopped before it was done (%s). It needs a graphics card with Vulkan.", kind);
     say("progress 100");
   }
@@ -1588,11 +1664,13 @@ static int run(const std::vector<std::string>& args) {
     if (a == "--iso") o.iso = value();
     else if (a == "--out") o.out = value();
     else if (a == "--scale") o.scale = atoi(value().c_str());
+    else if (a == "--scale-courses") o.scaleCourses = atoi(value().c_str());
     else if (a == "--jobs") o.jobs = atoi(value().c_str());
     else if (a == "--only") o.only = value();
     else if (a == "--export-sprites") o.exportDir = value();
     else if (a == "--import-sprites") o.importDir = value();
     else if (a == "--ai") o.ai = value();
+    else if (a == "--ai-models") o.aiModels = value();
     else if (a == "--work") o.work = value();
     else if (a == "--tool") o.tool = value();
     else if (a == "--tile") o.tile = atoi(value().c_str());
@@ -1602,8 +1680,13 @@ static int run(const std::vector<std::string>& args) {
   }
   if (o.iso.empty()) fail("--iso <disc image> is needed");
   if (o.scale != 2 && o.scale != 4) fail("--scale is 2 or 4");
+  if (o.scaleCourses != 0 && o.scaleCourses != 2 && o.scaleCourses != 4) fail("--scale-courses is 2 or 4");
+  if (o.scaleCourses) o.models = true;
   if (o.exportDir.empty() && o.out.empty()) o.out = "hires";
-  if (!o.ai.empty() && o.ai != "realesrgan-x4plus-anime" && o.ai != "realesrgan-x4plus") fail("unknown model %s", o.ai.c_str());
+  for (const std::string* m : {&o.ai, &o.aiModels})
+    if (!m->empty() && *m != "realesrgan-x4plus-anime" && *m != "realesrgan-x4plus") fail("unknown model %s", m->c_str());
+  if (!o.aiModels.empty()) o.models = true;
+  bool ai = !o.ai.empty() || !o.aiModels.empty();
   int threads = o.jobs > 0 ? o.jobs : (int)std::max(1u, std::thread::hardware_concurrency());
   // About 100 bytes of working memory per source texel at the peak; a 32-bit
   // process has 2 to 4 GB of address space.
@@ -1614,21 +1697,21 @@ static int run(const std::vector<std::string>& args) {
   disc.open(o.iso);
   Work wk = collect(disc, o);
 
-  if (!o.exportDir.empty() && o.ai.empty()) {
-    export_sprites(wk, o, threads, budget);
+  if (!o.exportDir.empty() && !ai) {
+    export_sprites(wk, o, threads, budget, true, true);
     say("done %s", o.exportDir.c_str());
     return 0;
   }
 
   fs::path work;
-  if (!o.ai.empty()) {
+  if (ai) {
     work = o.work.empty() ? upath(o.out).parent_path() / "hires-ai" : upath(o.work);
     std::error_code ec;
     fs::remove_all(work / "src", ec);
     fs::remove_all(work / "up", ec);
     fs::create_directories(work);
     o.exportDir = (work / "src").u8string();
-    export_sprites(wk, o, threads, budget);
+    export_sprites(wk, o, threads, budget, !o.ai.empty(), !o.aiModels.empty());
     ai_enlarge(o, work);
     o.exportDir.clear();
     o.importDir = (work / "up").u8string();
@@ -1644,7 +1727,7 @@ static int run(const std::vector<std::string>& args) {
   fs::remove_all(out, ec);
   fs::rename(tmp, out, ec);
   if (ec) fail("cannot put the folder in place: %s", out.u8string().c_str());
-  if (!o.ai.empty()) {
+  if (ai) {
     fs::remove_all(work / "src", ec);
     fs::remove_all(work / "up", ec);
   }

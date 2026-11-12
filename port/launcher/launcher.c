@@ -67,6 +67,10 @@ static const KeyAction kActions[] = {
 };
 #define ACTIONS LEN(kActions)
 
+/* MKGP2PC_LINK_MODE (docs/port/cabinet_link.md); the first is the default */
+static const wchar_t* const kLinkModes[] = {L"solo", L"network", L"ask", L"arcade"};
+static const wchar_t* const kLinkModeNames[] = {L"ひとりで遊ぶ", L"通信対戦", L"ゲーム内で選ぶ", L"アーケード方式"};
+
 typedef struct {
   wchar_t iso[MAX_PATH];
   int card;
@@ -82,7 +86,7 @@ typedef struct {
   int asyncPipelines;
   int goodsDisc;
   int hires;
-  int link;
+  int linkMode; /* index into kLinkModes */
   int pcbId; /* 1..4, 0 = not given: 1, or with a room the first free one */
   wchar_t peers[256];
   wchar_t room[64];
@@ -109,7 +113,6 @@ static void defaults(Settings* s) {
   s->card = 1;
   s->scale = 100;
   s->shadowSmooth = 1;
-  s->link = 1;
   s->pcbId = 1;
   defaults_keys(s);
 }
@@ -150,7 +153,13 @@ static void load_settings(Settings* s) {
   s->asyncPipelines = ini_int(L"async_pipelines", 0) != 0;
   s->goodsDisc = ini_int(L"goods_disc", 0) != 0;
   s->hires = ini_int(L"hires", 0) != 0;
-  s->link = ini_int(L"link", 1) != 0;
+  {
+    wchar_t text[16] = L"";
+    ini_str(L"link_mode", text, LEN(text));
+    for (int i = 0; i < LEN(kLinkModes); i++) {
+      if (wcscmp(text, kLinkModes[i]) == 0) s->linkMode = i;
+    }
+  }
   s->pcbId = clampi(ini_int(L"pcb_id", 1), 0, 4, 1);
   ini_str(L"room", s->room, LEN(s->room));
   ini_str(L"server", s->server, LEN(s->server));
@@ -215,7 +224,7 @@ static int save_settings(const Settings* s) {
   put_int(L"async_pipelines", s->asyncPipelines);
   put_int(L"goods_disc", s->goodsDisc);
   put_int(L"hires", s->hires);
-  put_int(L"link", s->link);
+  put_str(L"link_mode", kLinkModes[s->linkMode]);
   put_int(L"pcb_id", s->pcbId);
   put_str(L"peers", s->peers);
   put_str(L"room", s->room);
@@ -318,7 +327,10 @@ static void apply_environment(const Settings* s) {
   env_flag(L"MKGP2PC_ASYNC_PIPELINES", s->asyncPipelines);
   env_flag(L"MKGP2PC_GOODS_DISC", s->goodsDisc);
   env_flag(L"MKGP2PC_HIRES", s->hires);
-  env_text(L"MKGP2PC_LINK", s->link ? NULL : L"0");
+  /* solo also switches the link off outright, which is what a game from
+   * before MKGP2PC_LINK_MODE understands */
+  env_text(L"MKGP2PC_LINK_MODE", kLinkModes[s->linkMode]);
+  env_text(L"MKGP2PC_LINK", s->linkMode == 0 ? L"0" : NULL);
   swprintf(text, LEN(text), L"%d", s->pcbId);
   env_text(L"MKGP2PC_PCB_ID", s->pcbId > 0 ? text : NULL);
   env_text(L"MKGP2PC_LINK_ROOM", s->room);
@@ -607,7 +619,11 @@ static void create_controls(void) {
 
   /* 通信 */
   y = 48;
-  check(2, L"筐体間通信", X, y, W, ID_LINK);
+  label(2, L"通信", X, y + 3, 130, 18);
+  c = combo(2, X + 136, y, 220, ID_LINK);
+  for (int i = 0; i < LEN(kLinkModeNames); i++) {
+    SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)kLinkModeNames[i]);
+  }
   y += 34;
   label(2, L"PCB ID", X, y + 3, 130, 18);
   c = combo(2, X + 136, y, 80, ID_PCB);
@@ -696,7 +712,7 @@ static void settings_to_window(void) {
   CheckDlgButton(g_wnd, ID_ASYNC, g_set.asyncPipelines);
   CheckDlgButton(g_wnd, ID_GOODS, g_set.goodsDisc);
   CheckDlgButton(g_wnd, ID_HIRES, g_set.hires);
-  CheckDlgButton(g_wnd, ID_LINK, g_set.link);
+  SendDlgItemMessageW(g_wnd, ID_LINK, CB_SETCURSEL, (WPARAM)g_set.linkMode, 0);
   SendDlgItemMessageW(g_wnd, ID_PCB, CB_SETCURSEL, (WPARAM)g_set.pcbId, 0);
   SetDlgItemTextW(g_wnd, ID_ROOM, g_set.room);
   SetDlgItemTextW(g_wnd, ID_SERVER, g_set.server);
@@ -722,7 +738,8 @@ static void window_to_settings(void) {
   g_set.asyncPipelines = checked(ID_ASYNC);
   g_set.goodsDisc = checked(ID_GOODS);
   g_set.hires = checked(ID_HIRES);
-  g_set.link = checked(ID_LINK);
+  g_set.linkMode = (int)SendDlgItemMessageW(g_wnd, ID_LINK, CB_GETCURSEL, 0, 0);
+  if (g_set.linkMode < 0 || g_set.linkMode >= LEN(kLinkModes)) g_set.linkMode = 0;
   g_set.pcbId = (int)SendDlgItemMessageW(g_wnd, ID_PCB, CB_GETCURSEL, 0, 0);
   GetDlgItemTextW(g_wnd, ID_ROOM, g_set.room, LEN(g_set.room));
   GetDlgItemTextW(g_wnd, ID_SERVER, g_set.server, LEN(g_set.server));
@@ -869,7 +886,8 @@ static const struct { const char* id; const wchar_t* text; } kHiresStages[] = {
     {"read", L"読み込み"},        {"fonts", L"フォント"},          {"sprites", L"スプライト"},
     {"export", L"書き出し"},      {"download", L"ダウンロード"},   {"enlarge-rgb", L"AI 拡大 (色)"},
     {"enlarge-alpha", L"AI 拡大 (透明度)"}, {"import", L"取り込み"}, {"models", L"3D のテクスチャ"},
-    {"import-models", L"取り込み (3D)"},
+    {"import-models", L"取り込み (3D)"}, {"enlarge-models-rgb", L"AI 拡大 (3D、色)"},
+    {"enlarge-models-alpha", L"AI 拡大 (3D、透明度)"},
 };
 
 static void hires_text(void) {
@@ -967,8 +985,9 @@ static void hires_start(void) {
     return;
   }
   if (method < 0 || method > 2) method = 0;
+  int models3d = IsDlgButtonChecked(g_hr, HR_MODELS) == BST_CHECKED;
   int n = swprintf(cmd, LEN(cmd), L"\"%ls\" --iso \"%ls\" --out \"%ls\" --scale %d%ls", exe, iso, out, scale,
-                   IsDlgButtonChecked(g_hr, HR_MODELS) == BST_CHECKED ? L" --models" : L"");
+                   models3d ? L" --models" : L"");
   if (method != 0) {
     if (GetFileAttributesW(tool) == INVALID_FILE_ATTRIBUTES) {
       /* the one place with a sentence: fetching a program needs a yes */
@@ -981,7 +1000,9 @@ static void hires_start(void) {
                tool);
       if (MessageBoxW(g_hr, ask, L"高解像度テクスチャの作成", MB_OKCANCEL | MB_ICONQUESTION) != IDOK) return;
     }
-    swprintf(cmd + n, LEN(cmd) - n, L" --ai %ls --work \"%ls\" --download", models[method], work);
+    /* the 3D models' textures are rendered and painted pictures: always the general model */
+    swprintf(cmd + n, LEN(cmd) - n, L" --ai %ls%ls --work \"%ls\" --download", models[method],
+             models3d ? L" --ai-models realesrgan-x4plus" : L"", work);
   }
 
   SECURITY_ATTRIBUTES sa = {sizeof(sa), NULL, TRUE};
