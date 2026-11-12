@@ -54,7 +54,7 @@ window. Empty fields show their default as grey text.
 | 表示 | coin tally popups as on the disc (English) | `MKGP2PC_GOODS_DISC` |
 | 表示 | do not wait for pipelines | `MKGP2PC_ASYNC_PIPELINES` |
 | 表示 | resizable window (crashes are known, see build.md) | `MKGP2PC_RESIZABLE` |
-| 通信 | cabinet link on (off = `0`) | `MKGP2PC_LINK` |
+| 通信 | mode: solo (default; also sets `MKGP2PC_LINK=0`), network, ask, arcade. network and ask need the game side of PR 8 and are marked 未対応 until it is on main; before it the game treats them like arcade (link always on) | `MKGP2PC_LINK_MODE`, `MKGP2PC_LINK` |
 | 通信 | cabinet number 1-4; 自動 leaves the variable unset | `MKGP2PC_PCB_ID` |
 | 通信 | where the other cabinets are | `MKGP2PC_LINK_PEERS` |
 | 通信 | first port | `MKGP2PC_LINK_PORT` |
