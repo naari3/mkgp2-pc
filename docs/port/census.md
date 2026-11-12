@@ -1109,11 +1109,16 @@ loading, reading address 0x6e6e7540 in `fn_8017BC24`.
   tables. Not checked on Windows.
 - Second case, found by loading every cup the same way
   (`port/tools/cup_sweep.sh`): the Bowser cup (cup 5) crashed in
-  `fn_8016E7E4`, the list append of `CoursePropNode` (course props of
-  `clMapEffectKP`, `src/game/mapeffect/CoursePropCtor.cpp`; MWCC has the
-  vtable pointer at +0x10). Its two update functions `fn_8016E8B8` and
-  `fn_8016E8E0` read the objects through private structs too. Three more
-  patches (`port/patches/src/game/misc3d/`).
+  `fn_8016E7E4`, the list append of the course props of `clMapEffectKP`
+  (`clKPCharaData`, built in `src/game/mapeffect/CoursePropCtor.cpp`; MWCC
+  has the vtable pointer at +0x10). One more patch
+  (`port/patches/src/game/misc3d/fn_8016E7E4.c.patch`). The class's two
+  update functions were C functions over private structs as well until
+  upstream made them members (`clKPCharaData_MKoopa::Update`,
+  `clKPCharaData_NokoPata::Update`, merge cc6706a); 560066a carried patches
+  for the old files, made in a tree that was behind main, and did not build;
+  6f362d2 put that right. Make patches in a tree at origin/main, and build
+  after the last rebase.
 - After both corrections the sweep (cups 1..8, short and long, course 0..3,
   one demo load each, no-graphics build on Linux) has no crash in a course
   that exists. It reports three combinations the game does not have: cup 3
