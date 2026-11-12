@@ -60,7 +60,12 @@ anti-aliasing: MSAA 4x, supersampling 2
 anti-aliasing: frame buffer 1280x960 for a window of 640x480 (factor 2)
 ```
 
+Also run the same way: 16:9 at 1280x720 (none, MSAA, SSAA 2 with a frame
+buffer of 2560x1440; the centred 2D layer sits in the same place in all
+three), and all four choices with Aurora's persistent display copy switched
+on by hand (`AuroraConfig.emulateXfb`, which the port menu of pull request
+17 uses and which was not on main at the time).
+
 Not yet run on Windows (Direct3D 12), where the cost and the first start
 after a change are still to be seen. The launcher's new item was compiled
-with MinGW only. Not tried together with the persistent display copy of
-the port menu (`MKGP2PC_XFB`, pull request 17, not on main at the time).
+with MinGW only.
