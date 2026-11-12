@@ -65,6 +65,8 @@ GFX_WRAPPED = ("GXInitTexObj", "GXInitTexObjCI", "GXInitTexObjLOD", "GXLoadTexOb
                "GXSetViewport", "GXSetViewportJitter", "GXSetCurrentMtx", "GXSetScissor", "GXGetScissor", "GXGetProjectionv", "GXSetProjectionv", "GXCallDisplayList", "GXSetTevKColor",
                # dropped on frames that are not shown (full speed, gx_shim.cpp)
                "GXBegin", "GXCopyTex", "GXCopyDisp",
+               # the draw commands of a frame, copied for dumps (gx_shim.cpp)
+               "GXDrawDone",
                "GXPosition3f32", "GXPosition3u16", "GXPosition3s16", "GXPosition3u8", "GXPosition3s8", "GXPosition2f32", "GXPosition2u16", "GXPosition2s16", "GXPosition2u8", "GXPosition2s8", "GXPosition1x16", "GXPosition1x8",
                "GXNormal3f32", "GXNormal3s16", "GXNormal3s8", "GXNormal1x16", "GXNormal1x8", "GXColor4u8", "GXColor3u8", "GXColor1u32", "GXColor1u16", "GXColor1x16", "GXColor1x8",
                "GXTexCoord2f32", "GXTexCoord2u16", "GXTexCoord2s16", "GXTexCoord2u8", "GXTexCoord2s8", "GXTexCoord1f32", "GXTexCoord1u16", "GXTexCoord1s16", "GXTexCoord1u8", "GXTexCoord1s8", "GXTexCoord1x16", "GXTexCoord1x8", "GXEnd",
@@ -72,7 +74,9 @@ GFX_WRAPPED = ("GXInitTexObj", "GXInitTexObjCI", "GXInitTexObjLOD", "GXLoadTexOb
                "sndInit")  # port/gfx/audio_musyx.c
 # Functions of the game itself that the glue wraps the same way (the
 # original stays reachable as __real_<name>).
-GAME_WRAPPED = ("HSD_ShadowSetSize", "fn_8013879C")  # port/gfx/gx_shim.cpp
+# port/gfx/gx_shim.cpp. OSAllocFromHeap is the game's own (src/game/OSAlloc_Game.c):
+# vertex buffer extents are forgotten when the heap hands memory out again.
+GAME_WRAPPED = ("HSD_ShadowSetSize", "fn_8013879C", "OSAllocFromHeap")
 
 
 def asm_name(name):
@@ -143,7 +147,7 @@ def link_gfx_windows(stubs, thunks, cxxrt, replaced, aurora_fns, aurora_data, po
             continue   # needs Dawn's headers: CMake compiles it
         o = os.path.join(OUT, "gfx__" + os.path.basename(src) + ".o")
         cxx = src.endswith(".cpp")
-        r = subprocess.run(["clang++" if cxx else "clang", "-target", WIN_TARGET, "-femulated-tls", "-O2", "-g", "-msse2", "-c", src, "-o", o,
+        r = subprocess.run(["clang++" if cxx else "clang", "-target", WIN_TARGET, "-femulated-tls", "-O2", "-g", "-fno-omit-frame-pointer", "-msse2", "-c", src, "-o", o,
                             "-DAURORA", "-DAURORA_ENABLE_GX", "-DTARGET_PC=1", "-I" + os.path.join(aurora, "include"),
                             "-I" + os.path.join(ROOT, "port", "platform", "include"),
                             '-DIMGUI_USER_CONFIG="aurora/imgui_config.h"']
@@ -214,7 +218,7 @@ def link_gfx_windows(stubs, thunks, cxxrt, replaced, aurora_fns, aurora_data, po
     with open(link, "w") as f:
         f.write("\n".join(["-static", "-fcommon", "-Wl,--large-address-aware", "-Wl,--disable-dynamicbase", "-Wl,-T," + script, "-Wl,-T," + bss_ld]
                           + gen + port_objs + objs + defsyms + [f"-Wl,--defsym,{n}=_{n}" for n in data]
-                          + [os.path.join(ROOT, "build", "musyx-win32", "libmusyxRD.a")] + ([WIN_ZLIB] if os.path.exists(WIN_ZLIB) else []) + ["-lwinpthread", "-lws2_32", "-Wl,--allow-multiple-definition"]) + "\n")
+                          + [os.path.join(ROOT, "build", "musyx-win32", "libmusyxRD.a")] + ([WIN_ZLIB] if os.path.exists(WIN_ZLIB) else []) + ["-lwinpthread", "-lws2_32", "-lwinhttp", "-Wl,--allow-multiple-definition"]) + "\n")
     print(f"link inputs for CMake: {os.path.relpath(link, ROOT)}")
     return 0
 
@@ -617,7 +621,9 @@ def cxx_renames(built):
             if c and not v.startswith(("@", "extern:", "active:")):
                 # ("extern:NAME" and "active:NAME" are instructions to the matching
                 # build about a unit-local object, not a name for the host object)
-                table[unit][c] = v
+                # ("global:NAME" also asks the matching build for global
+                # binding; the name is what follows)
+                table[unit][c] = v[len("global:"):] if v.startswith("global:") else v
             elif not c and re.fullmatch(r"[A-Za-z]\w*", k) and "__" not in k and re.fullmatch(r"(global:)?[A-Za-z]\w*", v):
                 # a C-linkage function or object the unit writes under a
                 # descriptive name (`SceneListInsert` -> `fn_801F4DF0`)
@@ -1270,7 +1276,7 @@ def main():
             # (port/nogfx/os_min.c). Static, so that the executable needs no
             # MinGW runtime DLLs next to it.
             cmd = ["clang", "-target", WIN_TARGET, "-g", "-static", "-Wl,--large-address-aware", "-Wl,--disable-dynamicbase", "-Wl,-T," + script, "-Wl,-T," + bss_ld,
-                   "-o", exe] + gen + port_objs + ["@" + rsp] + defsyms + ([WIN_ZLIB] if os.path.exists(WIN_ZLIB) else []) + ["-lstdc++", "-lwinpthread", "-lws2_32", "-Wl,--allow-multiple-definition"]
+                   "-o", exe] + gen + port_objs + ["@" + rsp] + defsyms + ([WIN_ZLIB] if os.path.exists(WIN_ZLIB) else []) + ["-lstdc++", "-lwinpthread", "-lws2_32", "-lwinhttp", "-Wl,--allow-multiple-definition"]
         else:
           cmd = ["clang", "-m32", "-O0", "-g", "-fcommon", "-no-pie", "-Wl,--version-script=" + private, "-Wl,-T," + script, "-Wl,-T," + bss_ld, "-o", exe, stubs, thunks] + port_objs + [
                  "@" + rsp] + defsyms + ["-lm", "-lpthread", "-lstdc++"] + (["-lz"] if os.path.exists("/usr/lib32/libz.so") else []) + [ "-Wl,--allow-multiple-definition", "-Wl,--no-warn-rwx-segments"]

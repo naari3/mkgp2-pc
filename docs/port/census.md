@@ -1401,3 +1401,191 @@ start-up. The Windows path (supervising process, shared mapping) was run
 only as a small test program under Wine, not with the game and not on
 Windows. Not looked at: the pages of the test menu one by one, and whether
 settings saved there reach the next run.
+
+## 38. Huge pale polygons flashing across the screen on the Mario cup courses (2026-11-12)
+
+Report from play on Windows (6f362d2, ura round of the Mario cup): something
+of a wildly wrong scale crosses the screen at high speed. Seven dumps in a
+row (retrace 9915 to 9922, the start grid): thin pale slivers on the road in
+some of them, gone in the next.
+
+- Reproduced on Linux with the dump's inputs on 4d8a546 (there the round is
+  the night course, reverse): a pale translucent band or wedge on about one
+  frame in five, each time somewhere else.
+- What it is: `clRipple` (src/game/objview/fn_8018F614.cpp), the ripples on
+  the water beside the Mario cup roads (`ripple.dat`, `ripple_tw.dat`,
+  `ripple_ni.dat`; three pairs of meshes). Each frame
+  `fn_8018F1E0` blends the positions of mesh 1 and mesh 2 of a pair into a
+  buffer of its own and the model's vertex description points at that
+  buffer. Vertex buffers stay big-endian in the port (the GX layer reads them
+  that way), and this code read and wrote them as host floats: the blended
+  numbers were garbage, so the ripple triangles reached anywhere.
+- The sea of the same courses has the same construction for texture
+  coordinates (`fn_8018FC24`, a wave added to the model's coordinates); its
+  result was garbage too (what that looked like was not examined).
+- Correction upstream (mkgp2-decomp 0023ddc, same objects under MWCC): both
+  go through `GXDATA_F32` and a new `GXDATA_SET_F32`
+  (include/game/types/gx_data.h); port/compat/mwcc_compat.h defines the store.
+  Taken here as a cherry-pick; the next merge of upstream brings the same
+  text.
+- How it was found (the picture alone misleads: the airships of the night
+  course have a searchlight cone and propellers scaled 31 times in the model
+  file, both innocent). Under gdb, one frame per stop at
+  `VIWaitForRetrace` with a screenshot each; a score per frame (blocks of
+  the picture that differ slightly from the median of the run) marks the
+  frames with a band; then one part of the course's effect list
+  (`clMapEffectMR`, `PartsNode`) was switched off per run by clearing its
+  `prio` word. Only without the ripple part were there no bands. Skipping
+  single display lists (`__wrap_GXCallDisplayList`) did not find it,
+  because the ripple meshes are small and spread over several lists.
+- Verified on Linux only (96 consecutive frames without a band, before: 10
+  to 20 with one). Not checked on Windows.
+- Other CPU writers of vertex buffers: none found in src/game
+  (`fn_80182ED0`/`fn_80183538`, the helpers these two use, have no other
+  caller); the HSD shape animation reader in pobj.c is still open
+  (upstream_requests.md item 36).
+
+### Compiling at the start instead of during play (2026-11-12)
+
+Aurora already does this for every pipeline it knows: the rows of
+`pipeline_cache.db` are queued at the first frame and compiled on the
+pipeline thread in the background, in the order of first use, while the game
+boots. What stalls play is only a pipeline that is not in the list (never
+seen on this machine, or the list was lost) or one the game needs before the
+background pass has reached it.
+
+- The list no longer starts empty after damage: a list that passes the
+  start-up check is copied to `pipeline_cache.db.backup` (`VACUUM INTO`), and
+  a damaged list is replaced by that copy. Only the pipelines first met in
+  the last run are lost.
+- A list for a machine that has never run the game: Aurora merges
+  `initial_pipeline_cache.db` from the executable's folder into the list at
+  every start (`seed_pipeline_cache`; the file must not be in WAL mode, which
+  the `.backup` copy is not). Copying a well-used `pipeline_cache.db.backup`
+  there under that name is all it takes. Not shipped so far.
+- Cost: with the Dawn blobs present the background pass is a load of a few
+  milliseconds per pipeline. Without them (new machine, new driver, blob
+  cache replaced) it is the full 60 to 90 ms each on one thread, about a
+  minute for 800 pipelines, running beside the boot screens without holding
+  the game up.
+- What no list can cover: pipelines nobody has drawn yet, and a list written
+  by another Aurora version whose configuration layout differs (rows carry a
+  version and are skipped).
+
+Seen in the same log: the `.backup`-less restart cost one full session of
+first-sight stalls (about 45), and while another program used the GPU
+(an upscaler) a compilation took 200 to 330 ms instead of 60 to 100.
+
+### No waiting for pipelines during a race (2026-11-12)
+
+Request from play: whatever else happens, no compilation stalls in a race.
+A list of known pipelines cannot promise that (it only holds what has been
+drawn somewhere before), so the waiting itself is limited to loading:
+`begin_frame_state` in port/gfx/video_aurora.c turns blocking draws on at
+the start and for 120 frames after a frame in which the game read 128 KB or
+more from the disc, and off otherwise. In the Windows logs a scene load
+reads 0.4 to 11 MB in a frame and a running race 0 to 26 KB. The price: a
+pipeline first met in mid-race has its draws left out for the 60 to 300 ms
+its compilation takes, once per machine. Spike lines of frames that waited
+end in `[loading]`. `MKGP2PC_PIPELINE_WAIT=always|never` picks one behaviour
+for everything. Linux check only (no pipeline thread there, so the dropping
+itself was not exercised).
+
+### Rethink: every known pipeline compiled before the game starts (2026-11-12)
+
+Play feedback: neither the stalls nor left-out draws are acceptable; the
+emulator shows no such hitches. What was measured and read:
+
+- A stall is one shader per new GX state. The Windows list of one afternoon
+  holds 306 pipelines (260 distinct shaders); with the rows recovered from
+  the damaged list and a Linux replay, 367. Not thousands.
+- On D3D12 one costs 60 to 100 ms: Aurora writes a specialised WGSL shader
+  per `ShaderConfig` (TEV stages, channels, texgens, alpha compare, fog and
+  the vertex layout), Dawn turns it into HLSL and runs the DXC compiler on
+  the vertex and the fragment part (`use_dxc` is on). Render state that is
+  not in `ShaderConfig` (blend, depth, cull) makes a new pipeline but reuses
+  the compiled shader through Dawn's blob cache. Aurora has no general
+  ("uber") shader to draw with while a specialised one is compiled; adding
+  one is a change to Aurora, not to the port.
+- The list is the same on every machine: of the 163 rows a Linux replay of
+  a recorded Windows session produced, 145 are in the Windows list with the
+  same hash and the same bytes. So a list can be made away from the player's
+  PC and shipped.
+- The damaged `pipeline_cache.db` (kept as `.broken`): all 244 rows read,
+  `integrity_check` reports rows missing from both indexes. The table was
+  written and the index pages were not, or were lost.
+
+What the port does now:
+
+1. `port/tools/pipeline_list.py` merges any number of lists into
+   `initial_pipeline_cache.db`; `port/tools/pipeline_sweep.sh` produces
+   lists without playing (the attract demo forced onto every cup and course
+   under Xvfb, each run with its own user directory). Aurora merges that
+   file from the executable's folder at every start.
+2. `shader_wait` (port/gfx/video_aurora.c) holds the game at its first
+   retraces until Aurora's queue is empty; the title bar counts down. The
+   log says `shaders: N pipelines prepared before the game in X s`. On
+   Linux/GLES 354 pipelines took 4.3 s without blobs and 1.1 s with them; on
+   D3D12 expect about half a minute the first time (367 x 80 ms on one
+   thread) and a second or so afterwards. Not measured on Windows yet.
+   `MKGP2PC_NO_SHADER_WAIT=1` starts at once.
+3. A pipeline that is in no list still exists: the port then behaves as
+   above (waits around loading, leaves the draw out in a running race), the
+   pipeline enters the user's list, and that list can be merged into the
+   shipped one.
+4. Two copies running at once no longer share the cache files: the first
+   holds `running.lock` in the user directory, a second uses the sub-folder
+   `copy2` (`cache_check`). Sharing plus `TerminateProcess` exits is the one
+   circumstance the damaged files had in common; not proven to be the cause.
+
+Not done, and what it would take: a faster first compilation (the Vulkan
+backend skips DXC; `MKGP2PC_BACKEND=vulkan` is untested on Windows), several
+pipeline threads in Aurora, a general shader in Aurora. Dolphin, for
+comparison (its graphics settings as publicly described; no code read): it offers synchronous
+specialised shaders, "ubershaders" (one general shader interpreting the
+state, exclusively or while the specialised one compiles), skipping the
+draw, and compiling the cached shaders before the game starts.
+
+The shipped list is game-derived data (the render states of the game's
+materials); whether it may live in this public repository is the owner's
+decision. Until then it is kept outside it and copied next to the
+executable.
+
+## 39. A ripple strip standing in the sky on the night Mario cup course (2026-11-12)
+
+Report from play on Windows (build 0c3e815, which has section 38's
+correction; dump `002_f8686`, race start of an ura round, 16:9): a thin
+crescent with the ripple texture stands in the sky at the upper right.
+
+- Not the positions: with the race-start camera the blended buffers of
+  clRipple put all three strips on the sea (`y/-z` 0.2 to 0.26 of the view,
+  just under the horizon; a picture with and without the ripple part differs
+  only by a thin line there). Other things looked at and found in order: the
+  lighthouse beam (the white wedge that turns inside the arch), the airship
+  searchlights, the moon.
+- The fault: the size the port hands to Aurora with each vertex buffer.
+  `mkgp2pc_array_extent` (port/platform/data/hsd_archive.c) knows where the
+  vertex buffers of a converted archive end and keeps that by address. The
+  entries were dropped only when another archive was loaded over them, not
+  when the archive was freed. clRipple allocates its own position buffers
+  from the game's heap; one of them lay where a freed archive's vertex
+  buffer had been and was given that buffer's extent: on Linux
+  `ripple0.0`, 69 vertices = 828 bytes, extent 352 (an unknown buffer gets
+  64 KB). The vertices past the extent are then whatever Aurora reads there.
+  Which buffer is hit and by how much depends on what was loaded before, so
+  it differs between machines and sessions.
+- Correction: `OSAllocFromHeap` (the game's own, src/game/OSAlloc_Game.c)
+  is wrapped in port/gfx/gx_shim.cpp; every block it hands out has its
+  address range forgotten (`mkgp2pc_array_forget`), including the tail of a
+  recorded buffer that reaches into the block. No game source changed.
+- Check (Linux, same replay): the six ripple buffers have extent 0 (64 KB
+  default) and the model's own pool keeps its 3360; the table went from 369
+  to 294 entries at the race start, the rest being live archives. The
+  crescent itself never appeared on Linux, so whether this is all of the
+  Windows picture is not checked until that build is rebuilt and played.
+- Method worth keeping: `MKGP2PC_BOOT_CHECK=1 MKGP2PC_LINK_MODE=arcade`
+  makes a build with the network-versus screens follow an input script
+  recorded before them; an absolute path for `MKGP2PC_CARD_FILE` (a relative
+  one silently plays without the card and lands in another cup).
+- Seen on the way and left: thin red horizontal quads at the karts' grid
+  places at the start of this course (Linux too).

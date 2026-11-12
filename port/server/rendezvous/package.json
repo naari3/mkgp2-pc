@@ -1,0 +1,10 @@
+{
+  "name": "mkgp2pc-rendezvous",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test src/room.test.js",
+    "local": "node src/local.js",
+    "deploy": "wrangler deploy"
+  }
+}

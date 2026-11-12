@@ -1,0 +1,47 @@
+--- a/src/game/BootDispatcher.cpp
++++ b/src/game/BootDispatcher.cpp
+@@ -109,6 +109,10 @@
+ void fn_8011F994(int);
+ void fn_801DB68C(void *,int);
+ extern void (*g_dvdLoadCallback)();
++#ifndef __MWERKS__
++void mkgp2pc_boot_phase(int on);
++int mkgp2pc_boot_skip(void);
++#endif
+ 
+ extern BootState g_bootState;
+ extern BootConfig lbl_80598A60;
+@@ -458,6 +462,11 @@
+         DebugPrintf(lbl_802E95AC);
+     } else Boot_bss_806D0FA0=1;
+     fn_801213EC();
++#ifndef __MWERKS__
++    /* PC port: MKGP2PC_BOOT_SKIP runs the device check without the frame
++     * limit and leaves the NOTICE out (port/platform/runtime/boot_skip.c). */
++    mkgp2pc_boot_phase(1);
++#endif
+     if (Boot_bss_806D0FA0==1) {
+         int card=1, other=1;
+         if (!g_serviceEnable || g_serviceValue==1) card=0;
+@@ -506,6 +515,12 @@
+         if (ServiceButton_Handler()==1) Shutdown();
+     }
+     BootNotice_CheckEnterCondition();
++#ifndef __MWERKS__
++    if (mkgp2pc_boot_skip()) {
++        mkgp2pc_boot_phase(0);
++        return;
++    }
++#endif
+     if (!lbl_80598A60.skipNotice) {
+         SetSyncTarget(55);
+         BootNotice notice;
+@@ -521,5 +536,8 @@
+             FinishFrame();
+         }
+     }
++#ifndef __MWERKS__
++    mkgp2pc_boot_phase(0);
++#endif
+ }
+ 

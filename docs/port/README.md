@@ -17,6 +17,7 @@ clean-up.
 | Document | Content |
 |---|---|
 | [`build.md`](build.md) | How to build, run and test the PC executable; updating Aurora |
+| [`dumps.md`](dumps.md) | What an F9 dump and a crash folder hold (memory, stacks of all threads, minidump), how to read them with `port/tools/dump_inspect.py` |
 | [`census.md`](census.md) | Measured: how much of the source a host compiler accepts, and what a link would need |
 | [`64bit.md`](64bit.md) | Assessment: what assumes 4-byte pointers, counted, and the ways to a 64-bit build |
 | [`layout.md`](layout.md) | Directory map, which SDK library comes from where, stub and back end conventions, open questions |
@@ -25,6 +26,7 @@ clean-up.
 | [`menu.md`](menu.md) | The port's menu (Esc) and "one screen back" (Backspace): what they do, how they reach the game's flows and selection screens |
 | [`hires_textures.md`](hires_textures.md) | High-resolution 2D textures (fonts, sprites): the switch, how the folder is made from the user's disc image, the filters |
 | [`debug.md`](debug.md) | The game's own debug output, overlay pages and developers' scene list, and the switches that bring them back |
+| [`internet_play.md`](internet_play.md) | Play between distant PCs without opening ports: room name, STUN, hole punching, the rendezvous Worker in `port/server/rendezvous`, what was tested |
 | [`launcher.md`](launcher.md) | The settings program `mkgp2-launcher.exe`: what it sets, the ini file, `MKGP2PC_KEYS`, how it is built |
 
 ## What goes where

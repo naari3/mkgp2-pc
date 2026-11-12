@@ -47,6 +47,7 @@ static const KeyAction kActions[] = {
     {L"accel", L"アクセル", {82, 29}},
     {L"brake", L"ブレーキ", {81, 27}},
     {L"item", L"アイテム", {44, 40}},
+    {L"cancel", L"キャンセル (マリオボタン)", {225, 0}},
     {L"coin", L"コイン", {34, 6}},
     {L"card", L"カード挿入", {12, 0}},
     {L"test", L"テスト", {58, 0}},
@@ -61,6 +62,10 @@ static const KeyAction kActions[] = {
     {L"back", L"一つ前の画面に戻る", {42, 0}},
     {L"debug", L"デバッグ表示 (切り替え)", {60, 0}},
     {L"debugpage", L"デバッグ表示のページ送り", {61, 0}},
+    {L"devup", L"開発用 上", {75, 0}},
+    {L"devdown", L"開発用 下", {78, 0}},
+    {L"devstart", L"開発用 決定/戻る", {77, 0}},
+    {L"devsub", L"開発用 サブ", {74, 0}},
 };
 #define ACTIONS LEN(kActions)
 
@@ -69,6 +74,7 @@ typedef struct {
   int card;
   wchar_t cardFile[MAX_PATH];
   int closeOnStart;
+  int bootSkip;
   int wide;            /* 16:9 instead of 4:3 */
   int scale;           /* window height in hundredths of 480 lines: 150 = 720 */
   wchar_t backend[16]; /* "" = the library's own choice */
@@ -79,8 +85,10 @@ typedef struct {
   int goodsDisc;
   int hires;
   int link;
-  int pcbId; /* 1..4 */
+  int pcbId; /* 1..4, 0 = not given: 1, or with a room the first free one */
   wchar_t peers[256];
+  wchar_t room[64];
+  wchar_t server[200];
   wchar_t port[16];
   int keys[ACTIONS][KEY_SLOTS];
   wchar_t extra[2048]; /* NAME=VALUE lines, CR LF between them */
@@ -130,6 +138,7 @@ static void load_settings(Settings* s) {
   s->card = ini_int(L"card", 1) != 0;
   ini_str(L"card_file", s->cardFile, LEN(s->cardFile));
   s->closeOnStart = ini_int(L"close_on_start", 0) != 0;
+  s->bootSkip = ini_int(L"boot_skip", 0) != 0;
   s->wide = ini_int(L"wide", 0) != 0;
   {
     wchar_t text[16] = L"1";
@@ -144,7 +153,9 @@ static void load_settings(Settings* s) {
   s->goodsDisc = ini_int(L"goods_disc", 0) != 0;
   s->hires = ini_int(L"hires", 0) != 0;
   s->link = ini_int(L"link", 1) != 0;
-  s->pcbId = clampi(ini_int(L"pcb_id", 1), 1, 4, 1);
+  s->pcbId = clampi(ini_int(L"pcb_id", 1), 0, 4, 1);
+  ini_str(L"room", s->room, LEN(s->room));
+  ini_str(L"server", s->server, LEN(s->server));
   ini_str(L"peers", s->peers, LEN(s->peers));
   ini_str(L"port", s->port, LEN(s->port));
   for (int i = 0; i < ACTIONS; i++) {
@@ -192,6 +203,7 @@ static int save_settings(const Settings* s) {
   put_int(L"card", s->card);
   put_str(L"card_file", s->cardFile);
   put_int(L"close_on_start", s->closeOnStart);
+  put_int(L"boot_skip", s->bootSkip);
   put_int(L"wide", s->wide);
   {
     wchar_t text[16];
@@ -208,6 +220,8 @@ static int save_settings(const Settings* s) {
   put_int(L"link", s->link);
   put_int(L"pcb_id", s->pcbId);
   put_str(L"peers", s->peers);
+  put_str(L"room", s->room);
+  put_str(L"server", s->server);
   put_str(L"port", s->port);
   for (int i = 0; i < ACTIONS; i++) {
     wchar_t text[32];
@@ -295,6 +309,7 @@ static void apply_environment(const Settings* s) {
   env_text(L"MKGP2_ISO", s->iso);
   env_text(L"MKGP2PC_CARD", s->card ? NULL : L"0");
   env_text(L"MKGP2PC_CARD_FILE", s->cardFile);
+  env_flag(L"MKGP2PC_BOOT_SKIP", s->bootSkip);
   swprintf(text, LEN(text), L"%g", s->scale / 100.0);
   env_text(L"MKGP2PC_SCALE", s->scale != 100 ? text : NULL);
   env_text(L"MKGP2PC_ASPECT", s->wide ? L"16:9" : NULL);
@@ -307,7 +322,9 @@ static void apply_environment(const Settings* s) {
   env_flag(L"MKGP2PC_HIRES", s->hires);
   env_text(L"MKGP2PC_LINK", s->link ? NULL : L"0");
   swprintf(text, LEN(text), L"%d", s->pcbId);
-  env_text(L"MKGP2PC_PCB_ID", text);
+  env_text(L"MKGP2PC_PCB_ID", s->pcbId > 0 ? text : NULL);
+  env_text(L"MKGP2PC_LINK_ROOM", s->room);
+  env_text(L"MKGP2PC_LINK_SERVER", s->server);
   env_text(L"MKGP2PC_LINK_PEERS", s->peers);
   env_text(L"MKGP2PC_LINK_PORT", s->port);
   if (keys_are_default(s)) {
@@ -421,13 +438,15 @@ static void log_exit_code(DWORD code) {
 
 enum {
   ID_TAB = 100, ID_SAVE, ID_START, ID_STATUS,
-  ID_ISO, ID_ISO_BROWSE, ID_CARD, ID_CARD_FILE, ID_CARD_BROWSE, ID_CLOSE_ON_START,
-  ID_ASPECT, ID_SCALE, ID_BACKEND, ID_RESIZABLE, ID_SHADOW, ID_FAST, ID_ASYNC, ID_GOODS, ID_HIRES,
-  ID_LINK, ID_PCB, ID_PEERS, ID_PORT,
+  ID_ISO, ID_ISO_BROWSE, ID_CARD, ID_CARD_FILE, ID_CARD_BROWSE, ID_CLOSE_ON_START, ID_BOOT_SKIP,
+  ID_ASPECT, ID_SCALE, ID_BACKEND, ID_RESIZABLE, ID_SHADOW, ID_FAST, ID_ASYNC, ID_GOODS, ID_HIRES, ID_HIRES_MAKE,
+  ID_LINK, ID_PCB, ID_PEERS, ID_PORT, ID_ROOM, ID_SERVER,
   ID_KEYS, ID_KEY_SET1, ID_KEY_SET2, ID_KEY_CLEAR1, ID_KEY_CLEAR2, ID_KEY_RESET,
   ID_EXTRA, ID_OPEN_LOG, ID_OPEN_FOLDER,
 };
 #define TIMER_GAME 1
+#define TIMER_HIRES 2
+#define HIRES_EXE L"mkgp2-hires.exe"
 #define PAGES 5
 
 static HINSTANCE g_inst;
@@ -555,6 +574,8 @@ static void create_controls(void) {
   }
   button(0, L"カードを選ぶ", X + W - 80, y + 47, 80, ID_CARD_BROWSE);
   y += 92;
+  check(0, L"デバイスチェックと NOTICE を飛ばす", X, y, W, ID_BOOT_SKIP);
+  y += 28;
   check(0, L"起動後に閉じる", X, y, W, ID_CLOSE_ON_START);
 
   /* 表示 */
@@ -575,7 +596,8 @@ static void create_controls(void) {
   y += 40;
   check(1, L"影をなめらかにする", X, y, W, ID_SHADOW);
   y += 28;
-  check(1, L"高解像度の 2D テクスチャ", X, y, W, ID_HIRES);
+  check(1, L"高解像度の 2D テクスチャ", X, y, 240, ID_HIRES);
+  button(1, L"作成...", X + 248, y - 3, 88, ID_HIRES_MAKE);
   y += 28;
   check(1, L"全速で開始", X, y, W, ID_FAST);
   y += 28;
@@ -591,6 +613,7 @@ static void create_controls(void) {
   y += 34;
   label(2, L"PCB ID", X, y + 3, 130, 18);
   c = combo(2, X + 136, y, 80, ID_PCB);
+  SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)L"自動");
   for (int i = 1; i <= 4; i++) {
     wchar_t text[8];
     swprintf(text, LEN(text), L"%d", i);
@@ -602,6 +625,12 @@ static void create_controls(void) {
   y += 58;
   label(2, L"ポート", X, y + 3, 130, 18);
   SendMessageW(edit(2, X + 136, y, 80, ID_PORT), 0x1501, TRUE, (LPARAM)L"29500");
+  y += 40;
+  label(2, L"合言葉", X, y + 3, 130, 18);
+  edit(2, X + 136, y, W - 136, ID_ROOM);
+  y += 34;
+  label(2, L"仲介サーバー", X, y + 3, 130, 18);
+  SendMessageW(edit(2, X + 136, y, W - 136, ID_SERVER), 0x1501, TRUE, (LPARAM)L"https://...workers.dev");
   y += 40;
 
   /* キー */
@@ -655,6 +684,7 @@ static void settings_to_window(void) {
   CheckDlgButton(g_wnd, ID_CARD, g_set.card);
   SetDlgItemTextW(g_wnd, ID_CARD_FILE, g_set.cardFile);
   CheckDlgButton(g_wnd, ID_CLOSE_ON_START, g_set.closeOnStart);
+  CheckDlgButton(g_wnd, ID_BOOT_SKIP, g_set.bootSkip);
   SendDlgItemMessageW(g_wnd, ID_ASPECT, CB_SETCURSEL, (WPARAM)g_set.wide, 0);
   scale_fill(g_set.wide, g_set.scale);
   int backend = 0;
@@ -669,7 +699,9 @@ static void settings_to_window(void) {
   CheckDlgButton(g_wnd, ID_GOODS, g_set.goodsDisc);
   CheckDlgButton(g_wnd, ID_HIRES, g_set.hires);
   CheckDlgButton(g_wnd, ID_LINK, g_set.link);
-  SendDlgItemMessageW(g_wnd, ID_PCB, CB_SETCURSEL, (WPARAM)(g_set.pcbId - 1), 0);
+  SendDlgItemMessageW(g_wnd, ID_PCB, CB_SETCURSEL, (WPARAM)g_set.pcbId, 0);
+  SetDlgItemTextW(g_wnd, ID_ROOM, g_set.room);
+  SetDlgItemTextW(g_wnd, ID_SERVER, g_set.server);
   SetDlgItemTextW(g_wnd, ID_PEERS, g_set.peers);
   SetDlgItemTextW(g_wnd, ID_PORT, g_set.port);
   SetDlgItemTextW(g_wnd, ID_EXTRA, g_set.extra);
@@ -681,6 +713,7 @@ static void window_to_settings(void) {
   g_set.card = checked(ID_CARD);
   GetDlgItemTextW(g_wnd, ID_CARD_FILE, g_set.cardFile, LEN(g_set.cardFile));
   g_set.closeOnStart = checked(ID_CLOSE_ON_START);
+  g_set.bootSkip = checked(ID_BOOT_SKIP);
   g_set.scale = scale_selected();
   g_set.wide = SendDlgItemMessageW(g_wnd, ID_ASPECT, CB_GETCURSEL, 0, 0) == 1;
   int backend = (int)SendDlgItemMessageW(g_wnd, ID_BACKEND, CB_GETCURSEL, 0, 0);
@@ -692,11 +725,13 @@ static void window_to_settings(void) {
   g_set.goodsDisc = checked(ID_GOODS);
   g_set.hires = checked(ID_HIRES);
   g_set.link = checked(ID_LINK);
-  g_set.pcbId = (int)SendDlgItemMessageW(g_wnd, ID_PCB, CB_GETCURSEL, 0, 0) + 1;
+  g_set.pcbId = (int)SendDlgItemMessageW(g_wnd, ID_PCB, CB_GETCURSEL, 0, 0);
+  GetDlgItemTextW(g_wnd, ID_ROOM, g_set.room, LEN(g_set.room));
+  GetDlgItemTextW(g_wnd, ID_SERVER, g_set.server, LEN(g_set.server));
   GetDlgItemTextW(g_wnd, ID_PEERS, g_set.peers, LEN(g_set.peers));
   GetDlgItemTextW(g_wnd, ID_PORT, g_set.port, LEN(g_set.port));
   GetDlgItemTextW(g_wnd, ID_EXTRA, g_set.extra, LEN(g_set.extra));
-  if (g_set.pcbId < 1) g_set.pcbId = 1;
+  if (g_set.pcbId < 0) g_set.pcbId = 0;
 }
 
 static int save_from_window(void) {
@@ -816,6 +851,258 @@ static void key_change(int slot, int ask) {
   set_status(L"");
 }
 
+/* ---- making the high-resolution textures --------------------------------- */
+
+/* mkgp2-hires.exe (port/hires/mkgp2_hires.cpp) makes the folder "hires" from
+ * the disc image; this window starts it, shows the lines it prints ("stage",
+ * "progress", "error", "done") as a bar and can stop it. The program runs in
+ * a job object, so that stopping it also stops the enlarger it may have
+ * started. */
+
+enum { HR_METHOD = 1, HR_SCALE, HR_MODELS, HR_BAR, HR_TEXT, HR_START, HR_CLOSE };
+
+static HWND g_hr;
+static HANDLE g_hrProc, g_hrJob, g_hrPipe;
+static char g_hrLine[1024];
+static int g_hrLen, g_hrDone, g_hrClosed, g_hrPercent;
+static wchar_t g_hrStage[64], g_hrError[400];
+
+static const struct { const char* id; const wchar_t* text; } kHiresStages[] = {
+    {"read", L"読み込み"},        {"fonts", L"フォント"},          {"sprites", L"スプライト"},
+    {"export", L"書き出し"},      {"download", L"ダウンロード"},   {"enlarge-rgb", L"AI 拡大 (色)"},
+    {"enlarge-alpha", L"AI 拡大 (透明度)"}, {"import", L"取り込み"}, {"models", L"3D のテクスチャ"},
+    {"import-models", L"取り込み (3D)"},
+};
+
+static void hires_text(void) {
+  wchar_t text[128];
+  swprintf(text, LEN(text), L"%ls  %d%%", g_hrStage, g_hrPercent);
+  SetDlgItemTextW(g_hr, HR_TEXT, text);
+  SendDlgItemMessageW(g_hr, HR_BAR, PBM_SETPOS, (WPARAM)g_hrPercent, 0);
+}
+
+static void hires_line(const char* line) {
+  if (strncmp(line, "stage ", 6) == 0) {
+    MultiByteToWideChar(CP_UTF8, 0, line + 6, -1, g_hrStage, LEN(g_hrStage));
+    for (int i = 0; i < LEN(kHiresStages); i++) {
+      if (strcmp(line + 6, kHiresStages[i].id) == 0) wcscpy(g_hrStage, kHiresStages[i].text);
+    }
+    g_hrPercent = 0;
+    hires_text();
+  } else if (strncmp(line, "progress ", 9) == 0) {
+    g_hrPercent = clampi(atoi(line + 9), 0, 100, 0);
+    hires_text();
+  } else if (strncmp(line, "error ", 6) == 0) {
+    MultiByteToWideChar(CP_UTF8, 0, line + 6, -1, g_hrError, LEN(g_hrError));
+  } else if (strncmp(line, "done ", 5) == 0) {
+    g_hrDone = 1;
+  }
+}
+
+static void hires_running(int running) {
+  EnableWindow(GetDlgItem(g_hr, HR_METHOD), !running);
+  EnableWindow(GetDlgItem(g_hr, HR_SCALE), !running);
+  EnableWindow(GetDlgItem(g_hr, HR_MODELS), !running);
+  EnableWindow(GetDlgItem(g_hr, HR_START), !running);
+  SetDlgItemTextW(g_hr, HR_CLOSE, running ? L"中止" : L"閉じる");
+}
+
+static void hires_stop(void) {
+  if (g_hrJob != NULL) TerminateJobObject(g_hrJob, 1);
+}
+
+static void hires_poll(void) {
+  if (g_hrProc == NULL) return;
+  for (;;) {
+    char buf[512];
+    DWORD avail = 0, got = 0;
+    if (!PeekNamedPipe(g_hrPipe, NULL, 0, NULL, &avail, NULL) || avail == 0) break;
+    if (!ReadFile(g_hrPipe, buf, avail < sizeof(buf) ? avail : sizeof(buf), &got, NULL) || got == 0) break;
+    for (DWORD i = 0; i < got; i++) {
+      if (buf[i] == '\n') {
+        g_hrLine[g_hrLen] = 0;
+        hires_line(g_hrLine);
+        g_hrLen = 0;
+      } else if (buf[i] != '\r' && g_hrLen < (int)sizeof(g_hrLine) - 1) {
+        g_hrLine[g_hrLen++] = buf[i];
+      }
+    }
+  }
+  if (WaitForSingleObject(g_hrProc, 0) != WAIT_OBJECT_0) return;
+  DWORD avail = 0;
+  if (PeekNamedPipe(g_hrPipe, NULL, 0, NULL, &avail, NULL) && avail != 0) return; /* the last lines first */
+  KillTimer(g_hr, TIMER_HIRES);
+  CloseHandle(g_hrProc);
+  CloseHandle(g_hrPipe);
+  CloseHandle(g_hrJob);
+  g_hrProc = g_hrPipe = g_hrJob = NULL;
+  hires_running(0);
+  if (g_hrDone) {
+    SendDlgItemMessageW(g_hr, HR_BAR, PBM_SETPOS, 100, 0);
+    SetDlgItemTextW(g_hr, HR_TEXT, L"完了");
+  } else {
+    SendDlgItemMessageW(g_hr, HR_BAR, PBM_SETPOS, 0, 0);
+    SetDlgItemTextW(g_hr, HR_TEXT, g_hrError[0] ? g_hrError : L"中止しました");
+  }
+}
+
+static void hires_start(void) {
+  static const wchar_t* const models[] = {NULL, L"realesrgan-x4plus-anime", L"realesrgan-x4plus"};
+  wchar_t exe[MAX_PATH], out[MAX_PATH], work[MAX_PATH], tool[MAX_PATH], cmd[2600], iso[MAX_PATH];
+  int method = (int)SendDlgItemMessageW(g_hr, HR_METHOD, CB_GETCURSEL, 0, 0);
+  int scale = SendDlgItemMessageW(g_hr, HR_SCALE, CB_GETCURSEL, 0, 0) == 1 ? 4 : 2;
+  GetDlgItemTextW(g_wnd, ID_ISO, iso, LEN(iso));
+  dir_path(exe, HIRES_EXE);
+  dir_path(out, L"hires");
+  dir_path(work, L"hires-ai");
+  dir_path(tool, L"hires-ai\\tool");
+  if (!file_exists(exe)) {
+    SetDlgItemTextW(g_hr, HR_TEXT, HIRES_EXE L" がありません");
+    return;
+  }
+  if (!file_exists(iso)) {
+    SetDlgItemTextW(g_hr, HR_TEXT, L"ISO ファイルがありません");
+    return;
+  }
+  if (g_game != NULL) {
+    SetDlgItemTextW(g_hr, HR_TEXT, L"ゲームの終了後に実行してください");
+    return;
+  }
+  if (method < 0 || method > 2) method = 0;
+  int n = swprintf(cmd, LEN(cmd), L"\"%ls\" --iso \"%ls\" --out \"%ls\" --scale %d%ls", exe, iso, out, scale,
+                   IsDlgButtonChecked(g_hr, HR_MODELS) == BST_CHECKED ? L" --models" : L"");
+  if (method != 0) {
+    if (GetFileAttributesW(tool) == INVALID_FILE_ATTRIBUTES) {
+      /* the one place with a sentence: fetching a program needs a yes */
+      wchar_t ask[900];
+      swprintf(ask, LEN(ask),
+               L"AI 拡大には Real-ESRGAN (realesrgan-ncnn-vulkan) が必要です。\n"
+               L"次の場所からダウンロードして %ls に置きます。\n\n"
+               L"https://github.com/xinntao/Real-ESRGAN/releases/tag/v0.2.5.0\n\n"
+               L"ダウンロードしますか?",
+               tool);
+      if (MessageBoxW(g_hr, ask, L"高解像度テクスチャの作成", MB_OKCANCEL | MB_ICONQUESTION) != IDOK) return;
+    }
+    swprintf(cmd + n, LEN(cmd) - n, L" --ai %ls --work \"%ls\" --download", models[method], work);
+  }
+
+  SECURITY_ATTRIBUTES sa = {sizeof(sa), NULL, TRUE};
+  HANDLE rd = NULL, wr = NULL;
+  if (!CreatePipe(&rd, &wr, &sa, 0)) return;
+  SetHandleInformation(rd, HANDLE_FLAG_INHERIT, 0);
+  HANDLE job = CreateJobObjectW(NULL, NULL);
+  JOBOBJECT_EXTENDED_LIMIT_INFORMATION info;
+  ZeroMemory(&info, sizeof(info));
+  info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+  SetInformationJobObject(job, JobObjectExtendedLimitInformation, &info, sizeof(info));
+  STARTUPINFOW si;
+  PROCESS_INFORMATION pi;
+  ZeroMemory(&si, sizeof(si));
+  si.cb = sizeof(si);
+  si.dwFlags = STARTF_USESTDHANDLES;
+  si.hStdOutput = si.hStdError = wr;
+  si.hStdInput = INVALID_HANDLE_VALUE;
+  BOOL ok = CreateProcessW(NULL, cmd, NULL, NULL, TRUE, CREATE_NO_WINDOW | CREATE_SUSPENDED, NULL, g_dir, &si, &pi);
+  CloseHandle(wr);
+  if (!ok) {
+    CloseHandle(rd);
+    CloseHandle(job);
+    SetDlgItemTextW(g_hr, HR_TEXT, L"開始できませんでした");
+    return;
+  }
+  AssignProcessToJobObject(job, pi.hProcess);
+  ResumeThread(pi.hThread);
+  CloseHandle(pi.hThread);
+  g_hrProc = pi.hProcess;
+  g_hrJob = job;
+  g_hrPipe = rd;
+  g_hrLen = g_hrDone = g_hrPercent = 0;
+  g_hrError[0] = 0;
+  wcscpy(g_hrStage, L"開始");
+  hires_text();
+  hires_running(1);
+  SetTimer(g_hr, TIMER_HIRES, 200, NULL);
+}
+
+static LRESULT CALLBACK hires_proc(HWND wnd, UINT msg, WPARAM wp, LPARAM lp) {
+  switch (msg) {
+  case WM_COMMAND:
+    if (LOWORD(wp) == HR_START && g_hrProc == NULL) {
+      hires_start();
+    } else if (LOWORD(wp) == HR_CLOSE || LOWORD(wp) == IDCANCEL) {
+      if (g_hrProc != NULL) {
+        hires_stop();
+      } else {
+        g_hrClosed = 1;
+      }
+    }
+    return 0;
+  case WM_TIMER:
+    if (wp == TIMER_HIRES) hires_poll();
+    return 0;
+  case WM_CTLCOLORSTATIC:
+    SetBkMode((HDC)wp, TRANSPARENT);
+    return (LRESULT)GetSysColorBrush(COLOR_WINDOW);
+  case WM_CLOSE:
+    if (g_hrProc != NULL) {
+      hires_stop();
+    } else {
+      g_hrClosed = 1;
+    }
+    return 0;
+  }
+  return DefWindowProcW(wnd, msg, wp, lp);
+}
+
+static HWND hires_ctl(const wchar_t* cls, const wchar_t* text, DWORD style, int x, int y, int w, int h, int id) {
+  HWND c = CreateWindowExW(0, cls, text, WS_CHILD | WS_VISIBLE | style, S(x), S(y), S(w), S(h), g_hr, (HMENU)(INT_PTR)id, g_inst,
+                           NULL);
+  SendMessageW(c, WM_SETFONT, (WPARAM)g_font, TRUE);
+  return c;
+}
+
+static void hires_window(void) {
+  RECT rc, need = {0, 0, S(400), S(190)};
+  DWORD style = WS_POPUP | WS_CAPTION | WS_SYSMENU;
+  AdjustWindowRectEx(&need, style, FALSE, WS_EX_DLGMODALFRAME);
+  int w = need.right - need.left, h = need.bottom - need.top;
+  GetWindowRect(g_wnd, &rc);
+  g_hr = CreateWindowExW(WS_EX_DLGMODALFRAME, L"Mkgp2Hires", L"高解像度テクスチャの作成", style, (rc.left + rc.right - w) / 2,
+                         (rc.top + rc.bottom - h) / 2, w, h, g_wnd, NULL, g_inst, NULL);
+  hires_ctl(L"STATIC", L"方式", SS_LEFT, 16, 20, 60, 20, -1);
+  HWND c = hires_ctl(L"COMBOBOX", L"", CBS_DROPDOWNLIST | WS_TABSTOP, 84, 16, 300, 200, HR_METHOD);
+  SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)L"内蔵フィルタ");
+  SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)L"AI (Real-ESRGAN、イラスト向け)");
+  SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)L"AI (Real-ESRGAN、汎用)");
+  SendMessageW(c, CB_SETCURSEL, 0, 0);
+  hires_ctl(L"STATIC", L"倍率", SS_LEFT, 16, 54, 60, 20, -1);
+  c = hires_ctl(L"COMBOBOX", L"", CBS_DROPDOWNLIST | WS_TABSTOP, 84, 50, 120, 200, HR_SCALE);
+  SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)L"2 倍");
+  SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)L"4 倍");
+  SendMessageW(c, CB_SETCURSEL, 0, 0);
+  hires_ctl(L"BUTTON", L"3D のテクスチャも", BS_AUTOCHECKBOX | WS_TABSTOP, 220, 52, 164, 20, HR_MODELS);
+  c = hires_ctl(PROGRESS_CLASSW, L"", 0, 16, 90, 368, 18, HR_BAR);
+  SendMessageW(c, PBM_SETRANGE, 0, MAKELPARAM(0, 100));
+  hires_ctl(L"STATIC", L"", SS_LEFT | SS_ENDELLIPSIS, 16, 114, 368, 20, HR_TEXT);
+  hires_ctl(L"BUTTON", L"開始", BS_DEFPUSHBUTTON | WS_TABSTOP, 196, 148, 90, 28, HR_START);
+  hires_ctl(L"BUTTON", L"閉じる", BS_PUSHBUTTON | WS_TABSTOP, 294, 148, 90, 28, HR_CLOSE);
+
+  g_hrClosed = 0;
+  EnableWindow(g_wnd, FALSE);
+  ShowWindow(g_hr, SW_SHOW);
+  MSG msg;
+  while (!g_hrClosed && GetMessageW(&msg, NULL, 0, 0) > 0) {
+    if (!IsDialogMessageW(g_hr, &msg)) {
+      TranslateMessage(&msg);
+      DispatchMessageW(&msg);
+    }
+  }
+  EnableWindow(g_wnd, TRUE);
+  DestroyWindow(g_hr);
+  g_hr = NULL;
+  SetForegroundWindow(g_wnd);
+}
+
 /* ---- main window -------------------------------------------------------- */
 
 static void game_started(void) {
@@ -868,6 +1155,7 @@ static LRESULT CALLBACK main_proc(HWND wnd, UINT msg, WPARAM wp, LPARAM lp) {
         scale_fill(wide, scale_list(!wide)[i < 0 || i >= SCALE_CHOICES ? 0 : i]);
       }
       break;
+    case ID_HIRES_MAKE: hires_window(); break;
     case ID_SAVE: save_from_window(); break;
     case ID_START:
       if (g_game == NULL && save_from_window()) {
@@ -938,7 +1226,7 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE prev, PWSTR cmd, int show) {
     return 0;
   }
 
-  INITCOMMONCONTROLSEX icc = {sizeof(icc), ICC_TAB_CLASSES | ICC_LISTVIEW_CLASSES | ICC_STANDARD_CLASSES};
+  INITCOMMONCONTROLSEX icc = {sizeof(icc), ICC_TAB_CLASSES | ICC_LISTVIEW_CLASSES | ICC_STANDARD_CLASSES | ICC_PROGRESS_CLASS};
   InitCommonControlsEx(&icc);
   HDC dc = GetDC(NULL);
   g_dpi = GetDeviceCaps(dc, LOGPIXELSY);
@@ -963,6 +1251,9 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE prev, PWSTR cmd, int show) {
   RegisterClassExW(&wc);
   wc.lpfnWndProc = capture_proc;
   wc.lpszClassName = L"Mkgp2KeyCapture";
+  RegisterClassExW(&wc);
+  wc.lpfnWndProc = hires_proc;
+  wc.lpszClassName = L"Mkgp2Hires";
   RegisterClassExW(&wc);
 
   DWORD style = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_CLIPCHILDREN;

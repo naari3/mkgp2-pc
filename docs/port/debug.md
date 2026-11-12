@@ -104,9 +104,71 @@ machine (Title, the stage select, GameMain, Miyoshi->main, result and the two
 miyazaki entries). On the PC that byte is another one of the word, so all 20
 are listed. Left as it is: the hidden ones are wanted here.
 
-In the scene list (`clMenu::Update`) the service button (F2) moves the
-cursor down and the item button (Space) selects; the cabinet's developer
-panel also had an up button (input bit 0x40), which no key produces.
+## Buttons inside the developers' scenes
+
+The scenes read input bits that the cabinet's controls never produce. The
+game's table `kRawGameMap_Raw0` maps five bits of player 1's JVS switch word
+to input bits; the cabinet wires one (the item button). The port has a key
+for each of the other four, passed on only while debugging is on:
+
+| Key action (default) | JVS switch bit | Input bits | Use in the scenes |
+|---|---|---|---|
+| `item` (Space) | 0x2000 | 0x6001 | select, change a value, next |
+| `devup` (PageUp) | 0x8000 | 0x40 | cursor up |
+| `devdown` (PageDown) | 0x4000 | 0x80 | cursor down |
+| `devstart` (End) | 0x0200 | 0x8400 | start / leave / previous. The same switch is the cabinet's cancel ("Mario") button: the key action `cancel` (Left Shift; not Backspace, which the port menu work uses for "one screen back") sends it without debugging on |
+| `devsub` (Home) | 0x1000 | 0x6002 | second button (Miyazaki's scenes) |
+| `service` (F2) | operator | 0x800 | cursor down in some lists, play / stop in viewers |
+| brake held + `item` | | 0x80 | the game's own combination for "down" |
+
+Input bits 4 and 8, which some of Miyazaki's scenes test, come from none of
+these (probably a controller of the development machine).
+
+With the debug byte set, `MainGameLoop` also changes the overlay page on
+0x40 and 0x80: moving a cursor up or down turns the pages. F4 turns them
+back; page 0 is none.
+
+| Scene | Inside it | Leave |
+|---|---|---|
+| scene list | PageDown / F2 down, PageUp up, Space selects | selecting |
+| 0, 1 | go on to 2 by themselves | |
+| 2 race set-up | PageUp / PageDown / F2 choose the line, Space changes the value (held: repeats on the three item lines), End starts | End |
+| 5 Cab | shows wheel and pedal values | Space or End: back to the scene list |
+| 6 Miyoshi | PageUp / PageDown line, Space changes stage / type / player | End: next scene of the table |
+| 9 Hidaka | PageUp / PageDown, Space opens the sub-scene | End: scene list; End inside a sub-scene: back to this list |
+| 10 Yokome | PageUp / PageDown, Space runs the entry | End: scene list |
+| 11 Miyazaki | console menu; its pages use Space, Home and bits 4 / 8 | End: scene list |
+| 16 Sprite Viewer | Space next, End previous, steering steps with repeat, accelerator held: steps of 50, F2 back to number 0 | none (use the port's menu) |
+| 17 Flash Viewer | Space next, End previous, steering steps, accelerator held: steps of 10, F2 play / stop | none |
+| 18 Live Test | steering or F2 changes the clip, accelerator / brake lengthen / shorten it, Space plays, End stops | none |
+| 19 Ending | plays | by itself, to the scene list |
+
+Read from the sources; tried on Linux: the scene list (up, down, select),
+Yokome's list (up, down, leave), the race set-up page with End (the race
+loads and runs).
+
+### What the race set-up page can ask for and the game cannot do
+
+The page offers every character, kart type and item number, also the
+combinations the normal game never builds. Two of them crashed (Windows,
+2026-11-12) and are caught by the port now, each with an `OSPanic` line in
+the log:
+
+- kart type GOLD with WALUIGI or MAMETCH: `gold_waluigi.dat` and
+  `gold_mametch.dat` on the disc are copies of `gold_mario.dat` (same size,
+  joints named `mario_cart_*`). `KartDriver_InitFull` looks for
+  `waluigi_cart_*`, finds no joint and reads through a null pointer. The
+  port gives these two the normal kart
+  (`port/patches/src/game/SetCourseParams.c.patch`).
+- an item whose number reaches the AI's hit reaction table unconverted:
+  `lbl_8049BC30` has 159 entries, the callers accept numbers up to 0x114,
+  and a number past the end read the kart tuning floats behind the table as
+  a steering action number. The port treats such a number as entry 0, no
+  reaction (`port/patches/src/game/fn_801DB800.c.patch`). The log line names
+  the item number. Not tried: which item it was is not known.
+
+Both are in the arcade program itself; whether the cabinet would stop the
+same way was not tried.
 
 A scene started from here gets none of the state the normal flow sets up
 before it (player data, course, card).
