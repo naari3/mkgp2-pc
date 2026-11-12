@@ -1490,3 +1490,63 @@ its compilation takes, once per machine. Spike lines of frames that waited
 end in `[loading]`. `MKGP2PC_PIPELINE_WAIT=always|never` picks one behaviour
 for everything. Linux check only (no pipeline thread there, so the dropping
 itself was not exercised).
+
+### Rethink: every known pipeline compiled before the game starts (2026-11-12)
+
+Play feedback: neither the stalls nor left-out draws are acceptable; the
+emulator shows no such hitches. What was measured and read:
+
+- A stall is one shader per new GX state. The Windows list of one afternoon
+  holds 306 pipelines (260 distinct shaders); with the rows recovered from
+  the damaged list and a Linux replay, 367. Not thousands.
+- On D3D12 one costs 60 to 100 ms: Aurora writes a specialised WGSL shader
+  per `ShaderConfig` (TEV stages, channels, texgens, alpha compare, fog and
+  the vertex layout), Dawn turns it into HLSL and runs the DXC compiler on
+  the vertex and the fragment part (`use_dxc` is on). Render state that is
+  not in `ShaderConfig` (blend, depth, cull) makes a new pipeline but reuses
+  the compiled shader through Dawn's blob cache. Aurora has no general
+  ("uber") shader to draw with while a specialised one is compiled; adding
+  one is a change to Aurora, not to the port.
+- The list is the same on every machine: of the 163 rows a Linux replay of
+  a recorded Windows session produced, 145 are in the Windows list with the
+  same hash and the same bytes. So a list can be made away from the player's
+  PC and shipped.
+- The damaged `pipeline_cache.db` (kept as `.broken`): all 244 rows read,
+  `integrity_check` reports rows missing from both indexes. The table was
+  written and the index pages were not, or were lost.
+
+What the port does now:
+
+1. `port/tools/pipeline_list.py` merges any number of lists into
+   `initial_pipeline_cache.db`; `port/tools/pipeline_sweep.sh` produces
+   lists without playing (the attract demo forced onto every cup and course
+   under Xvfb, each run with its own user directory). Aurora merges that
+   file from the executable's folder at every start.
+2. `shader_wait` (port/gfx/video_aurora.c) holds the game at its first
+   retraces until Aurora's queue is empty; the title bar counts down. The
+   log says `shaders: N pipelines prepared before the game in X s`. On
+   Linux/GLES 354 pipelines took 4.3 s without blobs and 1.1 s with them; on
+   D3D12 expect about half a minute the first time (367 x 80 ms on one
+   thread) and a second or so afterwards. Not measured on Windows yet.
+   `MKGP2PC_NO_SHADER_WAIT=1` starts at once.
+3. A pipeline that is in no list still exists: the port then behaves as
+   above (waits around loading, leaves the draw out in a running race), the
+   pipeline enters the user's list, and that list can be merged into the
+   shipped one.
+4. Two copies running at once no longer share the cache files: the first
+   holds `running.lock` in the user directory, a second uses the sub-folder
+   `copy2` (`cache_check`). Sharing plus `TerminateProcess` exits is the one
+   circumstance the damaged files had in common; not proven to be the cause.
+
+Not done, and what it would take: a faster first compilation (the Vulkan
+backend skips DXC; `MKGP2PC_BACKEND=vulkan` is untested on Windows), several
+pipeline threads in Aurora, a general shader in Aurora. Dolphin, for
+comparison (its documentation, no code read): it offers synchronous
+specialised shaders, "ubershaders" (one general shader interpreting the
+state, exclusively or while the specialised one compiles), skipping the
+draw, and compiling the cached shaders before the game starts.
+
+The shipped list is game-derived data (the render states of the game's
+materials); whether it may live in this public repository is the owner's
+decision. Until then it is kept outside it and copied next to the
+executable.
