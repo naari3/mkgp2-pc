@@ -17,6 +17,8 @@ typedef struct Mkgp2pcMenuView {
   int count, cursor;
   const char* text[MKGP2PC_MENU_ROWS];
   int kind[MKGP2PC_MENU_ROWS]; /* 0 a choice, 1 one that cannot be taken, 2 a heading */
+  const char* value[MKGP2PC_MENU_ROWS]; /* NULL, or the text at the right of the row (a setting's value) */
+  int more_above, more_below;           /* the rows are a part of a longer list that goes on there */
 } Mkgp2pcMenuView;
 
 /* Set by the program that has a menu. view: nonzero while the menu is open

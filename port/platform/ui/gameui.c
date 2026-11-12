@@ -229,6 +229,142 @@ void mkgp2pc_gameui_glow(float x, float y, float width, float height, unsigned i
   mkgp2pc_gameui_sprite(0x715, x, y, width / 64.0f, height / 64.0f, rgba);
 }
 
+/* SpriteHandle (include/game/types/SpriteHandle.h): a queued sprite. Only
+ * what a piece of a picture needs: the four corners on the screen (bottom
+ * left, top left, top right, bottom right) and the two texture corners. */
+typedef struct Handle {
+  char pad0[0x88];
+  float corner[4][2];
+  float texUV[2][2];
+  char padB8[0xDA - 0xB8];
+  signed char dirty;
+  char padDB;
+  int tail[2];
+} Handle;
+extern Handle g_SpriteHandlePool[];
+int SpriteHandle_CreateEx(Sprite* s, int layer, unsigned char keep); /* queue; returns the handle's number */
+
+/* The part (sx0,sy0)-(sx1,sy1) of a picture of w x h, drawn into
+ * (dx0,dy0)-(dx1,dy1) on the screen. */
+static void piece(int res, float w, float h, float sx0, float sy0, float sx1, float sy1, float dx0, float dy0,
+                  float dx1, float dy1, unsigned int rgba) {
+  Sprite s;
+  Handle* p;
+  float u0, v0, du, dv;
+  int n;
+  hold(res);
+  ResCtrl_Init(&s);
+  s.resId = res;
+  s.flag = 1;
+  s.x = (dx0 + dx1) * 0.5f;
+  s.y = (dy0 + dy1) * 0.5f;
+  s.z = 1.0f;
+  s.colors[0] = s.colors[1] = s.colors[2] = s.colors[3] = rgba;
+  n = SpriteHandle_CreateEx(&s, s_layer, 0);
+  if (n == 0) {
+    return;
+  }
+  p = &g_SpriteHandlePool[(n - 1) % 500];
+  p->corner[0][0] = dx0, p->corner[0][1] = dy1;
+  p->corner[1][0] = dx0, p->corner[1][1] = dy0;
+  p->corner[2][0] = dx1, p->corner[2][1] = dy0;
+  p->corner[3][0] = dx1, p->corner[3][1] = dy1;
+  u0 = p->texUV[0][0], v0 = p->texUV[0][1];
+  du = (p->texUV[1][0] - u0) / w, dv = (p->texUV[1][1] - v0) / h;
+  p->texUV[0][0] = u0 + du * sx0, p->texUV[0][1] = v0 + dv * sy0;
+  p->texUV[1][0] = u0 + du * sx1, p->texUV[1][1] = v0 + dv * sy1;
+  p->dirty = 0;
+}
+
+/* A frame picture of w x h drawn at any size without stretching it: the
+ * four corners (`edge` pixels each way) as they are, the sides and the
+ * middle repeated. mirror: the right side is the left one turned over (for
+ * a picture whose right side is something else, like the tail of a speech
+ * bubble); the middle then repeats only the picture's left half. */
+void mkgp2pc_gameui_frame(int res, float w, float h, float edge, int mirror, float x, float y, float width,
+                          float height, unsigned int rgba) {
+  const float midW = mirror ? w * 0.5f - edge : w - 2.0f * edge, midH = h - 2.0f * edge;
+  const float x0 = x - width * 0.5f, y0 = y - height * 0.5f;
+  float dy = y0;
+  int row = 0;
+  if (!s_open || midW <= 0.0f || midH <= 0.0f || width < 2.0f * edge || height < 2.0f * edge) {
+    return;
+  }
+  while (row < 3) {
+    /* one band: the top edge, a strip of the middle, or the bottom edge */
+    float bandH, srcY;
+    float dx = x0;
+    int col = 0;
+    if (row == 0) {
+      bandH = edge, srcY = 0.0f;
+    } else if (row == 1) {
+      float left = y0 + height - edge - dy;
+      if (left <= 0.01f) {
+        row = 2;
+        continue;
+      }
+      bandH = left < midH ? left : midH, srcY = edge;
+    } else {
+      bandH = edge, srcY = h - edge;
+    }
+    while (col < 3) {
+      float pw, srcX0, srcX1;
+      if (col == 0) {
+        pw = edge, srcX0 = 0.0f, srcX1 = edge;
+      } else if (col == 1) {
+        float left = x0 + width - edge - dx;
+        if (left <= 0.01f) {
+          col = 2;
+          continue;
+        }
+        pw = left < midW ? left : midW, srcX0 = edge, srcX1 = edge + pw;
+      } else if (mirror) {
+        pw = edge, srcX0 = edge, srcX1 = 0.0f;
+      } else {
+        pw = edge, srcX0 = w - edge, srcX1 = w;
+      }
+      piece(res, w, h, srcX0, srcY, srcX1, srcY + bandH, dx, dy, dx + pw, dy + bandH, rgba);
+      dx += pw;
+      if (col != 1) {
+        col++;
+      }
+    }
+    dy += bandH;
+    if (row != 1) {
+      row++;
+    }
+  }
+}
+
+/* The sheet the port's screens write on: the game's dark dotted caption
+ * bubble (0x72D, without its tail), which the game writes on in white, at
+ * any size. It is see-through; a dark fill under it keeps a busy picture
+ * from showing through the text. */
+void mkgp2pc_gameui_sheet(float x, float y, float width, float height) {
+  mkgp2pc_gameui_fill(x, y, width - 8.0f, height - 8.0f, 0x000818B0);
+  mkgp2pc_gameui_frame(0x72D, 296.0f, 80.0f, 16.0f, 1, x, y, width, height, 0xFFFFFFFF);
+}
+
+/* The game's white message window (the upright one of the card screens,
+ * 0x72E, over its shadow 0x72F) at any size, for pictures and dark things;
+ * the game's text fonts are white with a black outline and read poorly on
+ * it. */
+void mkgp2pc_gameui_white_sheet(float x, float y, float width, float height) {
+  mkgp2pc_gameui_sprite(0x72F, x + 8.0f, y + 8.0f, (width + 16.0f) / 272.0f, (height + 8.0f) / 304.0f, 0xFFFFFFC0);
+  mkgp2pc_gameui_frame(0x72E, 248.0f, 304.0f, 24.0f, 0, x, y, width, height, 0xFFFFFFFF);
+}
+
+/* The cursor of the game's windows: the glow behind the chosen line and
+ * the striped arrow pointing at it from the left. */
+void mkgp2pc_gameui_cursor(float x, float y, float width, float height, int t) {
+  int k = t % 40;
+  float beat = (float)(k < 20 ? k : 40 - k) / 20.0f;
+  /* the game's glow is white; in blue it carries the white text */
+  mkgp2pc_gameui_sprite(0x8CE, x, y, width / 100.0f * 1.25f, height / 76.0f * 1.5f,
+                        0x2878FF00 | (unsigned int)(0xC0 + 0x3F * beat));
+  mkgp2pc_gameui_sprite(0x8CD, x - width * 0.5f - 6.0f + 4.0f * beat, y, 0.3f, 0.3f, 0xFFFFFFFF);
+}
+
 /* ---- text --------------------------------------------------------------- */
 
 static int next_code(const unsigned char** p) {
@@ -471,7 +607,7 @@ static float open_scale(int age) {
 void mkgp2pc_gameui_choice(const char* title, const char* const* items, int count, int cursor, int age) {
   const float cx = 320.0f, cy = 228.0f;
   float s = open_scale(age);
-  unsigned int dim = age < 10 ? (unsigned int)(0x90 * age / 10) : 0x90;
+  unsigned int dim = age < 10 ? (unsigned int)(0x7F * age / 10) : 0x7F;
   float pitch, widest = 0.0f;
   int i;
   if (count < 1) {
@@ -483,31 +619,27 @@ void mkgp2pc_gameui_choice(const char* title, const char* const* items, int coun
       widest = w;
     }
   }
-  pitch = widest + 56.0f;
+  pitch = widest + 84.0f;
   if (pitch * (float)count > 520.0f) {
     pitch = 520.0f / (float)count;
   }
   mkgp2pc_gameui_dim(dim);
-  /* the panel is see-through (on the name entry screen it lies on a plain
-   * background); twice over each other it carries text over any picture */
-  mkgp2pc_gameui_panel(cx, cy, 548.0f * s, 196.0f * s, 0xFFFFFFFF);
-  mkgp2pc_gameui_panel(cx, cy, 548.0f * s, 196.0f * s, 0xFFFFFFFF);
-  if (title != NULL && title[0]) {
-    mkgp2pc_gameui_text(GAMEUI_FONT_24, GAMEUI_CENTER, cx, cy - 50.0f * s, s, 0xFFFFFFFF, title);
+  mkgp2pc_gameui_sheet(cx, cy, (pitch * (float)count + 72.0f) * s, 168.0f * s);
+  if (age < 12) {
+    return; /* the texts come when the window has its size */
   }
+  s = 1.0f;
+  if (title != NULL && title[0]) {
+    mkgp2pc_gameui_text(GAMEUI_FONT_24, GAMEUI_CENTER, cx, cy - 46.0f, 1.0f, 0x70D8FFFF, title);
+  }
+  mkgp2pc_gameui_fill(cx, cy - 24.0f, pitch * (float)count + 24.0f, 2.0f, 0x70D8FF80);
   for (i = 0; i < count; i++) {
     float x = cx + ((float)i - (float)(count - 1) * 0.5f) * pitch * s;
     float y = cy + 26.0f * s;
     if (i == cursor) {
-      /* the name entry screen's cursor: the glow breathing behind the text */
-      int k = age % 40;
-      float beat = (float)(k < 20 ? k : 40 - k) / 20.0f;
-      float w = mkgp2pc_gameui_text_width(GAMEUI_FONT_24, 1.0f, items[i]);
-      mkgp2pc_gameui_glow(x, y, (w + 56.0f + 8.0f * beat) * s, (58.0f + 6.0f * beat) * s, 0xFFFFFF00 | (unsigned int)(0xC0 + 0x3F * beat));
-      mkgp2pc_gameui_text(GAMEUI_FONT_24, GAMEUI_CENTER, x, y, s * 1.1f, 0xFFFFFFFF, items[i]);
-    } else {
-      mkgp2pc_gameui_text(GAMEUI_FONT_24, GAMEUI_CENTER, x, y, s * 0.9f, 0xFFFFFFB0, items[i]);
+      mkgp2pc_gameui_cursor(x, y, pitch - 44.0f, 34.0f, age);
     }
+    mkgp2pc_gameui_text(GAMEUI_FONT_24, GAMEUI_CENTER, x, y, 1.0f, 0xFFFFFFFF, items[i]);
   }
   if (age >= 15) {
     mkgp2pc_gameui_hint_select(224.0f, 452.0f, age - 15);
@@ -516,68 +648,97 @@ void mkgp2pc_gameui_choice(const char* title, const char* const* items, int coun
 }
 
 /* A whole screen: a list of rows one under the other with a cursor, as the
- * port's menu has it. kinds: 0 a choice, 1 a choice that cannot be taken
- * (pale), 2 a heading (small; an empty one is half a row of space). The
- * note and the footer are small lines under the list. */
-void mkgp2pc_gameui_list(const char* title, const char* const* rows, const int* kinds, int count, int cursor,
-                         const char* note, const char* footer, int age) {
+ * port's menu has it, on the game's white message window. kinds: 0 a
+ * choice, 1 a choice that cannot be taken (grey), 2 a heading (small; an
+ * empty one is some space). values: NULL, or per row NULL or a text that
+ * stands at the right of the row (a setting's value); such a list has its
+ * labels at the left. more_above / more_below: marks that the list goes on.
+ * The note and the footer are small lines under the list. */
+#define INK 0xFFFFFFFF
+#define INK_OFF 0xFFFFFF48
+#define INK_HEAD 0x70D8FFFF
+void mkgp2pc_gameui_list(const char* title, const char* const* rows, const int* kinds, const char* const* values,
+                         int count, int cursor, int more_above, int more_below, const char* note,
+                         const char* footer, int age) {
   const float cx = 320.0f, cy = 240.0f;
-  const float rowH = 29.0f, headH = 22.0f, gapH = 10.0f;
-  float s = open_scale(age);
-  unsigned int dim = age < 10 ? (unsigned int)(0x90 * age / 10) : 0x90;
-  float listH = 0.0f, widest = 0.0f, panelW, panelH, y;
-  int i;
+  const float rowH = 30.0f, headH = 24.0f, gapH = 10.0f;
+  unsigned int dim = age < 10 ? (unsigned int)(0x7F * age / 10) : 0x7F;
+  float listH = 0.0f, widest = 0.0f, widestValue = 0.0f, inner, sheetW, sheetH, y, grow;
+  int i, split = 0;
   for (i = 0; i < count; i++) {
     float w = mkgp2pc_gameui_text_width(kinds[i] == 2 ? GAMEUI_FONT_16 : GAMEUI_FONT_24, 1.0f, rows[i]);
     if (w > widest) {
       widest = w;
     }
+    if (values != NULL && values[i] != NULL) {
+      float v = mkgp2pc_gameui_text_width(GAMEUI_FONT_24, 1.0f, values[i]);
+      split = 1;
+      if (v > widestValue) {
+        widestValue = v;
+      }
+    }
     listH += kinds[i] != 2 ? rowH : (rows[i][0] ? headH : gapH);
   }
-  panelW = widest + 150.0f;
-  if (panelW < 380.0f) {
-    panelW = 380.0f;
+  inner = widest + (split ? widestValue + 48.0f : 0.0f) + 24.0f;
+  if (inner < 300.0f) {
+    inner = 300.0f;
   }
-  panelH = listH + 128.0f;
+  sheetW = inner + 96.0f;
+  sheetH = listH + 134.0f;
+  /* the window comes up as the game's do: small, a little too large, right */
+  grow = age < 8 ? 0.5f + 0.55f * (float)age / 8.0f : (age < 12 ? 1.05f - 0.05f * (float)(age - 8) / 4.0f : 1.0f);
   mkgp2pc_gameui_dim(dim);
-  mkgp2pc_gameui_panel(cx, cy, panelW * s, panelH * s, 0xFFFFFFFF);
-  mkgp2pc_gameui_panel(cx, cy, panelW * s, panelH * s, 0xFFFFFFFF);
+  mkgp2pc_gameui_sheet(cx, cy, sheetW * grow, sheetH * grow);
   if (age < 12) {
-    return; /* the texts come when the panel has its size */
+    return; /* the texts come when the window has its size */
   }
-  y = cy - panelH * 0.5f + 34.0f;
+  y = cy - sheetH * 0.5f + 40.0f;
   if (title != NULL && title[0]) {
-    mkgp2pc_gameui_text(GAMEUI_FONT_24, GAMEUI_CENTER, cx, y, 1.0f, 0xFFE860FF, title);
+    mkgp2pc_gameui_text(GAMEUI_FONT_24, GAMEUI_CENTER, cx, y, 1.0f, INK_HEAD, title);
   }
-  y += 36.0f;
+  mkgp2pc_gameui_fill(cx, y + 20.0f, inner + 24.0f, 2.0f, 0x70D8FF80);
+  y += 32.0f;
+  if (more_above) {
+    mkgp2pc_gameui_sprite(0x8CD, cx, y - 5.0f, 0.16f, 0.16f, 0xFFFFFFFF);
+  }
   for (i = 0; i < count; i++) {
+    float mid;
+    unsigned int ink;
     if (kinds[i] == 2) {
       if (rows[i][0]) {
-        mkgp2pc_gameui_text(GAMEUI_FONT_16, GAMEUI_CENTER, cx, y + headH * 0.5f + 2.0f, 1.0f, 0xA0D0FFFF, rows[i]);
+        mkgp2pc_gameui_text(GAMEUI_FONT_16, GAMEUI_LEFT, cx - inner * 0.5f + 8.0f, y + headH * 0.5f + 3.0f, 1.0f,
+                            INK_HEAD, rows[i]);
         y += headH;
       } else {
         y += gapH;
       }
       continue;
     }
+    mid = y + rowH * 0.5f;
+    ink = kinds[i] == 0 ? INK : INK_OFF;
     if (i == cursor && kinds[i] == 0) {
-      int k = age % 40;
-      float beat = (float)(k < 20 ? k : 40 - k) / 20.0f;
-      mkgp2pc_gameui_glow(cx, y + rowH * 0.5f, widest + 64.0f + 8.0f * beat, rowH + 14.0f + 4.0f * beat,
-                          0xFFFFFF00 | (unsigned int)(0xC0 + 0x3F * beat));
-      mkgp2pc_gameui_text(GAMEUI_FONT_24, GAMEUI_CENTER, cx, y + rowH * 0.5f, 1.0f, 0xFFFFFFFF, rows[i]);
+      mkgp2pc_gameui_cursor(cx, mid, inner + 20.0f, rowH, age);
+    }
+    if (split) {
+      mkgp2pc_gameui_text(GAMEUI_FONT_24, GAMEUI_LEFT, cx - inner * 0.5f + 20.0f, mid, 1.0f, ink, rows[i]);
+      if (values[i] != NULL) {
+        mkgp2pc_gameui_text(GAMEUI_FONT_24, GAMEUI_RIGHT, cx + inner * 0.5f - 12.0f, mid, 1.0f, ink, values[i]);
+      }
     } else {
-      mkgp2pc_gameui_text(GAMEUI_FONT_24, GAMEUI_CENTER, cx, y + rowH * 0.5f, 0.9f,
-                          kinds[i] == 0 ? 0xFFFFFFD0 : 0xFFFFFF50, rows[i]);
+      mkgp2pc_gameui_text(GAMEUI_FONT_24, GAMEUI_CENTER, cx, mid, 1.0f, ink, rows[i]);
     }
     y += rowH;
   }
-  y = cy + panelH * 0.5f - 42.0f;
+  if (more_below) {
+    mkgp2pc_gameui_sprite(0x8CD, cx, y + 5.0f, 0.16f, 0.16f, 0xFFFFFFFF);
+  }
+  y = cy + sheetH * 0.5f - 50.0f;
+  mkgp2pc_gameui_fill(cx, y - 14.0f, inner + 24.0f, 2.0f, 0x70D8FF80);
   if (note != NULL && note[0]) {
-    mkgp2pc_gameui_text(GAMEUI_FONT_16, GAMEUI_CENTER, cx, y, 1.0f, 0xFFFFFFFF, note);
+    mkgp2pc_gameui_text(GAMEUI_FONT_16, GAMEUI_CENTER, cx, y, 1.0f, INK, note);
   }
   if (footer != NULL && footer[0]) {
-    mkgp2pc_gameui_text(GAMEUI_FONT_16, GAMEUI_CENTER, cx, y + 20.0f, 1.0f, 0xFFFFFFA0, footer);
+    mkgp2pc_gameui_text(GAMEUI_FONT_16, GAMEUI_CENTER, cx, y + 21.0f, 1.0f, 0xFFFFFFC0, footer);
   }
 }
 

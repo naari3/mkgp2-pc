@@ -29,6 +29,10 @@ Found in the decompiled sources and on the disc (resource numbers index
 | character set | `lbl_804E5590`, 739 entries | 654 full-width (kana, Latin, signs, about 450 kanji) and 85 ASCII. The ASCII entries name the same textures as the full-width ones |
 | text object | `TextManager` (`TexMgr_Init`, `TexMgr_SetTexture`, `TexMgr_Apply`, `fn_801F8A34`) | holds up to 255 character numbers, position, scale, colour; drawing queues one sprite per character |
 | blue panel | 0x6F0, 588x212, `sprite_sel_2_1.tpl` | the key field of the name entry screen; see-through |
+| dark caption bubble | 0x72D, 296x80, `sprite_sel_3_1.tpl` | dark dotted sheet with a white edge and a tail at the right; the game writes on it in white. **The sheet of the port's screens** (without the tail) |
+| white windows | 0x72E (248x304, upright), 0x8CC (268x240), 0x731 (472x168); shadow 0x72F | white dotted sheets with a blue edge; the game puts pictures and picture labels on them ("はい" 0x8C3, "いいえ" 0x8C4 are black pictures) |
+| window cursor | glow 0x8CE / 0x730 (100x76), striped arrow 0x8CD (68x100) | the glow lies behind the chosen thing, the arrow points at it |
+| screen titles | 0x8B0 to 0x8BE, 508x44 | finished pictures ("ゲームモードを選んでください" ...), not text |
 | cursor glow | 0x715, 64x64, same file | behind the chosen key of the name entry screen |
 | message window | 0x731 (472x168) over shadow 0x72F, `sprite_sel_3_1.tpl` | `MsgPopup`; white dotted sheet with a blue edge |
 | steering wheel hint | 0x89B to 0x8A1, caption "選択" 0x8A2, `sprite_sel_kihon.tpl` | `clMnHandleTask`; frame table `lbl_803C0074` |
@@ -88,10 +92,43 @@ mkgp2pc_gameui_end();                    /* once, when it closes */
 - `mkgp2pc_gameui_hint_button(x, y, frame, caption)`: the flashing item
   button with a caption in the 64 pixel font (kana and Latin only).
 
-- `mkgp2pc_gameui_list(title, rows, kinds, count, cursor, note, footer,
-  age)` is a whole screen too: rows one under the other on the blue panel
-  (choices, pale ones that cannot be taken, small headings), the cursor
-  behind the chosen row, two small lines underneath.
+- `mkgp2pc_gameui_list(title, rows, kinds, values, count, cursor,
+  more_above, more_below, note, footer, age)` is a whole screen too: rows
+  one under the other on the sheet (choices, pale ones that cannot be taken,
+  small headings), optionally a value at the right of a row (then the labels
+  stand at the left), marks that the list goes on above or below, the cursor
+  on the chosen row, two small lines underneath.
+- `mkgp2pc_gameui_sheet(x, y, width, height)`: what the port's screens write
+  on. `mkgp2pc_gameui_frame(res, w, h, edge, mirror, ...)` draws any frame
+  picture at any size without stretching it (corners as they are, sides and
+  middle repeated); `mkgp2pc_gameui_cursor` is the glow and the arrow.
+
+### Which frame, and why
+
+The first version (2026-11-12 morning) put the texts on the blue panel of
+the name entry screen, stretched to the size needed. The owner, who has the
+cabinet: very hard to read, the frame is used badly. What was wrong and
+what the rule is now:
+
+- **No frame is stretched.** The panel was drawn at up to twice its height;
+  its scan lines and edge went coarse. A frame is now cut into corners,
+  sides and middle (`mkgp2pc_gameui_frame`) and the middle is repeated. A
+  queued sprite can show a part of its picture: `SpriteHandle_CreateEx`
+  returns the handle, whose four screen corners and two texture corners are
+  then set (`piece()` in gameui.c).
+- **Text needs a dark ground.** The 16 and 24 pixel fonts are a white (or
+  tinted) body with a black outline, drawn as two textures; a dark tint
+  turns a character into a blot, so "black text" is not to be had from
+  them, and white text on the white windows or on the pale blue panel
+  reads poorly. The game itself puts text of these fonts on dark or
+  saturated grounds and uses finished pictures for everything on its white
+  windows. So the port's sheet is the game's dark caption bubble with a
+  dark fill under it (the bubble is see-through), white text, titles in the
+  pale blue of the game's screen titles.
+- The cursor is the game's window cursor (glow and arrow); the glow is
+  tinted blue so that the white text stays readable on it.
+- The picture behind is darkened with 0x7F as the game's message windows
+  do (`MsgPopup`).
 
 ### Over a stopped game
 
