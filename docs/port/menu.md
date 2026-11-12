@@ -125,7 +125,10 @@ library's command reader, with drawing commands read from freed memory):
   resources. Leaving from outside left a live screen (the attract demo, for
   one) drawing with purged resources. A flow request therefore first makes
   the dispatcher delete the screen (`mkgp2pc_nav_scene_hook()` returns 0:
-  delete, build nothing) and the flow changes one frame later.
+  delete, build nothing) and the flow changes one frame later. The rule
+  holds whenever the dispatcher ran in the frame before, whatever the
+  flow's number: the same flow is entry 3 and, through a trampoline, entry
+  8 (`Yamana`) of the table.
 
 Restarting a race runs the race flow's constructor again, which counts a
 play in the statistics and writes the backup record, as every race start

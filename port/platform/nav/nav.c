@@ -37,6 +37,7 @@ unsigned mkgp2pc_nav_flow_ticks(void) { return s_flowTicks; }
 static void scene_reset(void);
 static int s_scene; /* the selection screen running now, 0: unknown */
 static int s_menuLeft; /* the menu flow has given up its screen for a flow request */
+static unsigned s_sceneTick = ~0u; /* s_flowTicks when the dispatcher last asked */
 
 int mkgp2pc_nav_flow_hook(int current, int* entry) {
   int wanted;
@@ -46,8 +47,11 @@ int mkgp2pc_nav_flow_hook(int current, int* entry) {
   if (!s_flowPending) {
     return -2;
   }
-  if (current == MKGP2PC_FLOW_MENU && !s_menuLeft) {
-    return -2; /* its screen goes first, see mkgp2pc_nav_scene_hook */
+  /* The menu flow's dispatcher ran in the frame before (under whichever
+   * index of the flow table: 3, or 8 from the developers' scene list): its
+   * screen goes first, see mkgp2pc_nav_scene_hook. */
+  if (s_sceneTick == s_flowTicks - 1 && !s_menuLeft) {
+    return -2;
   }
   fprintf(stderr, "nav: flow %d -> %d (entry %d)\n", current, s_flowWanted, s_flowEntry);
   wanted = s_flowWanted;
@@ -115,6 +119,7 @@ int mkgp2pc_nav_current_scene(void) { return s_scene; }
 int mkgp2pc_nav_scene_hook(int next) {
   int back = s_backWanted;
   s_backWanted = 0;
+  s_sceneTick = s_flowTicks;
   /*
    * Another flow is wanted while the menu flow runs. Its destructor does not
    * delete the screen it is showing (the game only ever leaves this flow
