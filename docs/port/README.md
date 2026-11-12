@@ -24,6 +24,7 @@ clean-up.
 | [`readiness.md`](readiness.md) | Assessment of how far the decomp is from a port: measured gaps, comparable projects, staged plan (estimates) |
 | [`char_sign.md`](char_sign.md) | Plain `char` is signed in the game's build: the flag per directory, the census of what the wrong sign changed (one line, the camera's end-of-picture test) |
 | [`widescreen.md`](widescreen.md) | Survey: what a 16:9 display needs (projection, culling, 2D layer, whole-screen effects), options |
+| [`antialiasing.md`](antialiasing.md) | Anti-aliasing options: MSAA 4x and supersampling, what each reaches, what follows for dumps and copies |
 | [`hires_textures.md`](hires_textures.md) | High-resolution 2D textures (fonts, sprites): the switch, how the folder is made from the user's disc image, the filters |
 | [`debug.md`](debug.md) | The game's own debug output, overlay pages and developers' scene list, and the switches that bring them back |
 | [`internet_play.md`](internet_play.md) | Play between distant PCs without opening ports: room name, STUN, hole punching, the rendezvous Worker in `port/server/rendezvous`, what was tested |

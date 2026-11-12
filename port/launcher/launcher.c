@@ -82,6 +82,7 @@ typedef struct {
   int asyncPipelines;
   int goodsDisc;
   int hires;
+  int aa; /* anti-aliasing: bit 0 = MSAA 4x, bit 1 = supersampling 2x */
   int link;
   int pcbId; /* 1..4, 0 = not given: 1, or with a room the first free one */
   wchar_t peers[256];
@@ -150,6 +151,7 @@ static void load_settings(Settings* s) {
   s->asyncPipelines = ini_int(L"async_pipelines", 0) != 0;
   s->goodsDisc = ini_int(L"goods_disc", 0) != 0;
   s->hires = ini_int(L"hires", 0) != 0;
+  s->aa = clampi(ini_int(L"aa", 0), 0, 3, 0);
   s->link = ini_int(L"link", 1) != 0;
   s->pcbId = clampi(ini_int(L"pcb_id", 1), 0, 4, 1);
   ini_str(L"room", s->room, LEN(s->room));
@@ -215,6 +217,7 @@ static int save_settings(const Settings* s) {
   put_int(L"async_pipelines", s->asyncPipelines);
   put_int(L"goods_disc", s->goodsDisc);
   put_int(L"hires", s->hires);
+  put_int(L"aa", s->aa);
   put_int(L"link", s->link);
   put_int(L"pcb_id", s->pcbId);
   put_str(L"peers", s->peers);
@@ -318,6 +321,8 @@ static void apply_environment(const Settings* s) {
   env_flag(L"MKGP2PC_ASYNC_PIPELINES", s->asyncPipelines);
   env_flag(L"MKGP2PC_GOODS_DISC", s->goodsDisc);
   env_flag(L"MKGP2PC_HIRES", s->hires);
+  env_text(L"MKGP2PC_MSAA", (s->aa & 1) ? L"4" : NULL);
+  env_text(L"MKGP2PC_SSAA", (s->aa & 2) ? L"2" : NULL);
   env_text(L"MKGP2PC_LINK", s->link ? NULL : L"0");
   swprintf(text, LEN(text), L"%d", s->pcbId);
   env_text(L"MKGP2PC_PCB_ID", s->pcbId > 0 ? text : NULL);
@@ -437,7 +442,7 @@ static void log_exit_code(DWORD code) {
 enum {
   ID_TAB = 100, ID_SAVE, ID_START, ID_STATUS,
   ID_ISO, ID_ISO_BROWSE, ID_CARD, ID_CARD_FILE, ID_CARD_BROWSE, ID_CLOSE_ON_START, ID_BOOT_SKIP,
-  ID_ASPECT, ID_SCALE, ID_BACKEND, ID_RESIZABLE, ID_SHADOW, ID_FAST, ID_ASYNC, ID_GOODS, ID_HIRES, ID_HIRES_MAKE,
+  ID_ASPECT, ID_SCALE, ID_BACKEND, ID_RESIZABLE, ID_SHADOW, ID_FAST, ID_ASYNC, ID_GOODS, ID_HIRES, ID_HIRES_MAKE, ID_AA,
   ID_LINK, ID_PCB, ID_PEERS, ID_PORT, ID_ROOM, ID_SERVER,
   ID_KEYS, ID_KEY_SET1, ID_KEY_SET2, ID_KEY_CLEAR1, ID_KEY_CLEAR2, ID_KEY_RESET,
   ID_EXTRA, ID_OPEN_LOG, ID_OPEN_FOLDER,
@@ -591,6 +596,13 @@ static void create_controls(void) {
   for (int i = 0; i < LEN(kBackendNames); i++) {
     SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)kBackendNames[i]);
   }
+  y += 34;
+  label(1, L"アンチエイリアス", X, y + 3, 110, 18);
+  c = combo(1, X + 116, y, 220, ID_AA);
+  SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)L"なし");
+  SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)L"MSAA 4x");
+  SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)L"SSAA 2x");
+  SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)L"MSAA 4x + SSAA 2x");
   y += 40;
   check(1, L"影をなめらかにする", X, y, W, ID_SHADOW);
   y += 28;
@@ -696,6 +708,7 @@ static void settings_to_window(void) {
   CheckDlgButton(g_wnd, ID_ASYNC, g_set.asyncPipelines);
   CheckDlgButton(g_wnd, ID_GOODS, g_set.goodsDisc);
   CheckDlgButton(g_wnd, ID_HIRES, g_set.hires);
+  SendDlgItemMessageW(g_wnd, ID_AA, CB_SETCURSEL, (WPARAM)g_set.aa, 0);
   CheckDlgButton(g_wnd, ID_LINK, g_set.link);
   SendDlgItemMessageW(g_wnd, ID_PCB, CB_SETCURSEL, (WPARAM)g_set.pcbId, 0);
   SetDlgItemTextW(g_wnd, ID_ROOM, g_set.room);
@@ -722,6 +735,7 @@ static void window_to_settings(void) {
   g_set.asyncPipelines = checked(ID_ASYNC);
   g_set.goodsDisc = checked(ID_GOODS);
   g_set.hires = checked(ID_HIRES);
+  g_set.aa = clampi((int)SendDlgItemMessageW(g_wnd, ID_AA, CB_GETCURSEL, 0, 0), 0, 3, 0);
   g_set.link = checked(ID_LINK);
   g_set.pcbId = (int)SendDlgItemMessageW(g_wnd, ID_PCB, CB_GETCURSEL, 0, 0);
   GetDlgItemTextW(g_wnd, ID_ROOM, g_set.room, LEN(g_set.room));
