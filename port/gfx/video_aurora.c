@@ -483,10 +483,22 @@ static RetraceCallback s_pre, s_post;
 static bool s_inFrame;
 static long s_frameLimit = -1;
 
+static char s_cacheMarker[1024]; /* see cache_check */
 static void log_callback(AuroraLogLevel level, const char* module, const char* message, unsigned int len) {
   static const char* const names[] = {"DEBUG", "INFO", "WARNING", "ERROR", "FATAL"};
   (void)len;
   fprintf(stderr, "[%s] %s: %s\n", names[level], module, message);
+  /* What the start-up check did not catch: both caches are replaced at the
+   * next start (cache_check). Aurora itself goes on without the cache. */
+  if (level >= LOG_ERROR && s_cacheMarker[0] != 0 && strstr(module, "cache") != NULL &&
+      strstr(message, "malformed") != NULL) {
+    FILE* f = fopen(s_cacheMarker, "w");
+    if (f != NULL) {
+      fclose(f);
+      fprintf(stderr, "cache: damaged while running; both cache files are replaced at the next start\n");
+    }
+    s_cacheMarker[0] = 0;
+  }
   if (level == LOG_FATAL) {
     abort();
   }
@@ -537,7 +549,9 @@ static int cache_check_row(void* state, int count, char** values, char** names) 
   *(int*)state = count >= 1 && values[0] != NULL && strcmp(values[0], "ok") == 0 ? 1 : 2;
   return 0;
 }
-static void cache_check_file(const char* dir, const char* name) {
+/* s_cacheMarker: a file whose existence tells the next start that Aurora
+ * reported a damaged cache during the run (log_callback). */
+static void cache_check_file(const char* dir, const char* name, bool reported) {
   char path[1024], other[1040];
   sqlite3* db = NULL;
   int state = 0; /* 1: the check said ok */
@@ -546,8 +560,14 @@ static void cache_check_file(const char* dir, const char* name) {
   if (!SDL_GetPathInfo(path, NULL)) {
     return; /* first start */
   }
-  if (sqlite3_open_v2(path, &db, 2 /* SQLITE_OPEN_READWRITE */, NULL) != 0 ||
-      sqlite3_exec(db, "PRAGMA quick_check(1);", cache_check_row, &state, NULL) != 0) {
+  /* integrity_check, not quick_check: the quick one leaves the indexes
+   * out, and a file that passed it failed on the first row written
+   * (pipeline_cache.db, Windows 2026-11-12). */
+  if (reported) {
+    snprintf(why, sizeof(why), "reported by Aurora in the last run");
+    state = 2;
+  } else if (sqlite3_open_v2(path, &db, 2 /* SQLITE_OPEN_READWRITE */, NULL) != 0 ||
+             sqlite3_exec(db, "PRAGMA integrity_check(1);", cache_check_row, &state, NULL) != 0) {
     snprintf(why, sizeof(why), "%s", db != NULL ? sqlite3_errmsg(db) : "cannot open");
     state = 2;
   }
@@ -580,8 +600,11 @@ static void cache_check(const char* appName) {
     return;
   }
   Uint64 start = SDL_GetTicksNS();
-  cache_check_file(dir, "dawn_cache.db");
-  cache_check_file(dir, "pipeline_cache.db");
+  snprintf(s_cacheMarker, sizeof(s_cacheMarker), "%scache_damaged", dir);
+  bool reported = SDL_GetPathInfo(s_cacheMarker, NULL);
+  cache_check_file(dir, "dawn_cache.db", reported);
+  cache_check_file(dir, "pipeline_cache.db", reported);
+  SDL_RemovePath(s_cacheMarker);
   fprintf(stderr, "cache: %s checked in %.0f ms\n", dir, (double)(SDL_GetTicksNS() - start) / 1e6);
   SDL_free(dir);
 }

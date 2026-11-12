@@ -1301,7 +1301,36 @@ Changes:
   (`port/nogfx/os_thread.c`). The field list is above `spike_log` in
   video_aurora.c. Scene loads show up as spikes too; that is expected.
 
-Not established: that the damaged cache explains all of the reported spikes.
+First session with the log (Windows, afe2097, 16:9 at 1920x1080): 63 spike
+lines in about 20000 frames. Apart from the start-up frames and one long
+`events` (the window being handled), every one of them is in `game` with
+`pipelines +N`, 60 to 90 ms per pipeline, 50 to 470 ms a frame; disc, lock,
+limiter and `begin` are all at zero. So the stalls are pipeline
+compilations. The same log has, after the background pass,
+
+```
+[INFO] aurora::gpu::cache: Pruned 496 stale Dawn cache entries
+[ERROR] aurora::gfx::pipeline_cache: Failed to upsert pipeline cache row: database disk image is malformed
+```
+
+`pipeline_cache.db` had passed `quick_check` (which leaves indexes out) and
+failed on the first row written. Aurora then stops recording pipelines for
+good (`pipeline_cache_abort`), and the two caches work against each other:
+the background pass compiles only what the frozen list names, the prune that
+follows it deletes every Dawn blob that pass did not use (496 here), and
+every pipeline outside the list is compiled from source again in every run.
+`dawn_cache.db` opened without complaint in this run; the "malformed" of the
+earlier run did not come back.
+
+Second change: the start-up check uses `PRAGMA integrity_check`, and when
+Aurora reports "malformed" from one of its cache modules during a run, a
+marker file `cache_damaged` is written in the user directory; the next start
+sets both files aside whatever the check says.
+
+Still open: what damages the files, and the cost of the first sight of a
+pipeline with healthy caches (the same 60 to 90 ms, once per machine).
+
+Earlier note: it was not established that the damaged cache explains all of the reported spikes.
 The spike lines of the next session on Windows are what decides that; the
 other candidates (first sight of a pipeline with a working cache, disc reads
 on the game thread, the limiter waking late, the rendering thread falling
