@@ -61,6 +61,16 @@ static inline float mkgp2pc_gxdata_f32(const void *p) {
 #define GXDATA_SET_U16(p, v) \
     ((void)(((unsigned char *)(p))[0] = (unsigned char)((v) >> 8), ((unsigned char *)(p))[1] = (unsigned char)(v)))
 #define GXDATA_F32(p) mkgp2pc_gxdata_f32(p)
+static inline void mkgp2pc_gxdata_set_f32(void *p, float f) {
+    unsigned char *b = (unsigned char *)p;
+    union { unsigned int u; float f; } v;
+    v.f = f;
+    b[0] = (unsigned char)(v.u >> 24);
+    b[1] = (unsigned char)(v.u >> 16);
+    b[2] = (unsigned char)(v.u >> 8);
+    b[3] = (unsigned char)v.u;
+}
+#define GXDATA_SET_F32(p, v) mkgp2pc_gxdata_set_f32(p, v)
 
 /* Cabinet-link slot fields that cross a byte boundary
  * (include/game/types/pcb_link.h): taken from the bytes, as the console's
