@@ -25,8 +25,13 @@
 #include <commdlg.h>
 #include <objbase.h>
 #include <shellapi.h>
+<<<<<<< HEAD
 #include <mfidl.h>
 #include <mfobjects.h>
+=======
+#include <stdbool.h>
+#include <stddef.h>
+>>>>>>> origin/main
 #include <stdio.h>
 #include <stdlib.h>
 #include <wchar.h>
@@ -99,6 +104,13 @@ typedef struct {
   wchar_t server[200];
   wchar_t port[16];
   int keys[ACTIONS][KEY_SLOTS];
+  /* the controller (MKGP2PC_PAD): row 0 is the wheel, row i + 1 is kActions[i].
+   * A row holds a source as the game reads it ("a2~", "b3"), "" for the
+   * game's default and "-" for nothing. */
+  int padOn;
+  wchar_t padDevice[128]; /* "" = the game's own choice */
+  wchar_t padDeadzone[8], padRange[8];
+  wchar_t pad[ACTIONS + 1][24];
   wchar_t extra[2048]; /* NAME=VALUE lines, CR LF between them */
 } Settings;
 
@@ -120,8 +132,13 @@ static void defaults(Settings* s) {
   s->scale = 100;
   s->shadowSmooth = 1;
   s->pcbId = 1;
+  s->padOn = 1;
   defaults_keys(s);
 }
+
+#define PAD_ROWS (ACTIONS + 1)
+static const wchar_t* pad_id(int row) { return row == 0 ? L"steer" : kActions[row - 1].id; }
+static const wchar_t* pad_label(int row) { return row == 0 ? L"ハンドル" : kActions[row - 1].label; }
 
 static int keys_are_default(const Settings* s) {
   for (int i = 0; i < ACTIONS; i++) {
@@ -182,6 +199,13 @@ static void load_settings(Settings* s) {
       s->keys[i][k] = clampi((int)wcstol(p, &p, 10), 0, 511, 0);
       if (*p == L',') p++;
     }
+  }
+  s->padOn = (int)GetPrivateProfileIntW(L"pad", L"on", 1, g_ini) != 0;
+  GetPrivateProfileStringW(L"pad", L"device", L"", s->padDevice, LEN(s->padDevice), g_ini);
+  GetPrivateProfileStringW(L"pad", L"deadzone", L"", s->padDeadzone, LEN(s->padDeadzone), g_ini);
+  GetPrivateProfileStringW(L"pad", L"range", L"", s->padRange, LEN(s->padRange), g_ini);
+  for (int i = 0; i < PAD_ROWS; i++) {
+    GetPrivateProfileStringW(L"pad", pad_id(i), L"", s->pad[i], LEN(s->pad[i]), g_ini);
   }
   /* [env]: the section's lines as they are */
   static wchar_t section[4096];
@@ -244,6 +268,14 @@ static int save_settings(const Settings* s) {
     wchar_t text[32];
     swprintf(text, LEN(text), L"%d,%d", s->keys[i][0], s->keys[i][1]);
     WritePrivateProfileStringW(L"keys", kActions[i].id, text, g_ini);
+  }
+  /* [pad] holds one more name than the actions: "on" */
+  WritePrivateProfileStringW(L"pad", L"on", s->padOn ? L"1" : L"0", g_ini);
+  WritePrivateProfileStringW(L"pad", L"device", s->padDevice, g_ini);
+  WritePrivateProfileStringW(L"pad", L"deadzone", s->padDeadzone, g_ini);
+  WritePrivateProfileStringW(L"pad", L"range", s->padRange, g_ini);
+  for (int i = 0; i < PAD_ROWS; i++) {
+    WritePrivateProfileStringW(L"pad", pad_id(i), s->pad[i], g_ini);
   }
   static wchar_t section[4096];
   int n = 0;
@@ -365,6 +397,24 @@ static void apply_environment(const Settings* s) {
     }
     env_text(L"MKGP2PC_KEYS", text);
   }
+  if (!s->padOn) {
+    env_text(L"MKGP2PC_PAD", L"off");
+  } else {
+    /* only what differs from the game's defaults; nothing differs: not set */
+    int n = 0;
+    text[0] = 0;
+    if (s->padDevice[0] != 0) {
+      n += swprintf(text + n, LEN(text) - n, L"device=%.*ls;", (int)wcscspn(s->padDevice, L";"), s->padDevice);
+    }
+    if (s->padDeadzone[0] != 0) n += swprintf(text + n, LEN(text) - n, L"deadzone=%d;", _wtoi(s->padDeadzone));
+    if (s->padRange[0] != 0) n += swprintf(text + n, LEN(text) - n, L"range=%d;", _wtoi(s->padRange));
+    for (int i = 0; i < PAD_ROWS; i++) {
+      if (s->pad[i][0] != 0) {
+        n += swprintf(text + n, LEN(text) - n, L"%ls=%ls;", pad_id(i), s->pad[i][0] == L'-' ? L"" : s->pad[i]);
+      }
+    }
+    env_text(L"MKGP2PC_PAD", text);
+  }
   /* the extra lines last: they win over the settings above */
   for (const wchar_t* p = s->extra; *p != 0;) {
     size_t len = wcscspn(p, L"\r\n");
@@ -466,11 +516,15 @@ enum {
   ID_LINK, ID_PCB, ID_PEERS, ID_PORT, ID_ROOM, ID_SERVER,
   ID_KEYS, ID_KEY_SET1, ID_KEY_SET2, ID_KEY_CLEAR1, ID_KEY_CLEAR2, ID_KEY_RESET,
   ID_EXTRA, ID_OPEN_LOG, ID_OPEN_FOLDER,
+  ID_PAD_ON, ID_PAD_DEVICE, ID_PAD_FIND, ID_PADS, ID_PAD_SET, ID_PAD_CLEAR, ID_PAD_DEFAULT, ID_PAD_RESET, ID_PAD_DEADZONE,
+  ID_PAD_RANGE,
 };
 #define TIMER_GAME 1
 #define TIMER_HIRES 2
 #define HIRES_EXE L"mkgp2-hires.exe"
-#define PAGES 5
+#define PAGES 6
+/* which page a tab shows: the controller page was added last and stands after the keys */
+static const int kTabPage[PAGES] = {0, 1, 2, 3, 5, 4};
 
 static HINSTANCE g_inst;
 static HWND g_wnd, g_tab;
@@ -564,6 +618,10 @@ static int scale_selected(void) {
   return scale_list(wide)[i < 0 || i >= SCALE_CHOICES ? 0 : i];
 }
 
+static void pad_devices_fill(int how); /* the controller page, further down */
+static void pads_fill(void);
+static void pad_change(int ask);
+
 static void create_controls(void) {
   const int X = 24, W = 512; /* inside the tab control */
   int y;
@@ -573,7 +631,7 @@ static void create_controls(void) {
   g_tab = CreateWindowExW(0, WC_TABCONTROLW, L"", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_TABSTOP, S(8), S(8), S(544), S(404),
                           g_wnd, (HMENU)ID_TAB, g_inst, NULL);
   SendMessageW(g_tab, WM_SETFONT, (WPARAM)g_font, TRUE);
-  static const wchar_t* const tabs[PAGES] = {L"基本", L"表示", L"通信", L"キー", L"その他"};
+  static const wchar_t* const tabs[PAGES] = {L"基本", L"表示", L"通信", L"キー", L"コントローラ", L"その他"};
   for (int i = 0; i < PAGES; i++) {
     TCITEMW item;
     ZeroMemory(&item, sizeof(item));
@@ -699,6 +757,49 @@ static void create_controls(void) {
   button(3, L"キー 2 を外す", X + 304, 338, 92, ID_KEY_CLEAR2);
   button(3, L"キーを初期化", X + 400, 338, 112, ID_KEY_RESET);
 
+  /* コントローラ */
+  y = 44;
+  check(5, L"コントローラを使う", X, y, W, ID_PAD_ON);
+  y += 28;
+  label(5, L"デバイス", X, y + 3, 70, 18);
+  combo(5, X + 76, y, W - 76 - 88, ID_PAD_DEVICE);
+  button(5, L"再検索", X + W - 80, y - 1, 80, ID_PAD_FIND);
+  y += 32;
+  list = mk(5, WC_LISTVIEWW, L"", LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS | LVS_NOSORTHEADER | WS_TABSTOP, WS_EX_CLIENTEDGE, X,
+            y, W, 196, ID_PADS);
+  SendMessageW(list, LVM_SETEXTENDEDLISTVIEWSTYLE, 0, LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
+  {
+    static const wchar_t* const padColumns[] = {L"操作", L"割り当て"};
+    static const int padWidths[] = {236, 252};
+    for (int i = 0; i < 2; i++) {
+      LVCOLUMNW col;
+      ZeroMemory(&col, sizeof(col));
+      col.mask = LVCF_TEXT | LVCF_WIDTH | LVCF_SUBITEM;
+      col.pszText = (wchar_t*)padColumns[i];
+      col.cx = S(padWidths[i]);
+      col.iSubItem = i;
+      SendMessageW(list, LVM_INSERTCOLUMNW, (WPARAM)i, (LPARAM)&col);
+    }
+    for (int i = 0; i < PAD_ROWS; i++) {
+      LVITEMW item;
+      ZeroMemory(&item, sizeof(item));
+      item.mask = LVIF_TEXT;
+      item.iItem = i;
+      item.pszText = (wchar_t*)pad_label(i);
+      SendMessageW(list, LVM_INSERTITEMW, 0, (LPARAM)&item);
+    }
+  }
+  y += 202;
+  button(5, L"変更", X, y, 80, ID_PAD_SET);
+  button(5, L"外す", X + 84, y, 80, ID_PAD_CLEAR);
+  button(5, L"既定に戻す", X + 168, y, 100, ID_PAD_DEFAULT);
+  button(5, L"すべて既定に戻す", X + 372, y, 140, ID_PAD_RESET);
+  y += 34;
+  label(5, L"ハンドルの遊び (%)", X, y + 3, 130, 18);
+  SendMessageW(edit(5, X + 134, y, 60, ID_PAD_DEADZONE), 0x1501, TRUE, (LPARAM)L"自動");
+  label(5, L"ハンドルの切れ幅 (%)", X + 250, y + 3, 140, 18);
+  SendMessageW(edit(5, X + 394, y, 60, ID_PAD_RANGE), 0x1501, TRUE, (LPARAM)L"100");
+
   /* その他 */
   y = 48;
   label(4, L"追加の環境変数 (名前=値)", X, y, W, 18);
@@ -819,6 +920,11 @@ static void settings_to_window(void) {
   SetDlgItemTextW(g_wnd, ID_PEERS, g_set.peers);
   SetDlgItemTextW(g_wnd, ID_PORT, g_set.port);
   SetDlgItemTextW(g_wnd, ID_EXTRA, g_set.extra);
+  CheckDlgButton(g_wnd, ID_PAD_ON, g_set.padOn);
+  SetDlgItemTextW(g_wnd, ID_PAD_DEADZONE, g_set.padDeadzone);
+  SetDlgItemTextW(g_wnd, ID_PAD_RANGE, g_set.padRange);
+  pad_devices_fill(-1);
+  pads_fill();
   keys_fill();
 }
 
@@ -849,6 +955,16 @@ static void window_to_settings(void) {
   GetDlgItemTextW(g_wnd, ID_PORT, g_set.port, LEN(g_set.port));
   GetDlgItemTextW(g_wnd, ID_EXTRA, g_set.extra, LEN(g_set.extra));
   if (g_set.pcbId < 0) g_set.pcbId = 0;
+  g_set.padOn = checked(ID_PAD_ON);
+  GetDlgItemTextW(g_wnd, ID_PAD_DEADZONE, g_set.padDeadzone, LEN(g_set.padDeadzone));
+  GetDlgItemTextW(g_wnd, ID_PAD_RANGE, g_set.padRange, LEN(g_set.padRange));
+  {
+    int sel = (int)SendDlgItemMessageW(g_wnd, ID_PAD_DEVICE, CB_GETCURSEL, 0, 0);
+    g_set.padDevice[0] = 0;
+    if (sel > 0 && SendDlgItemMessageW(g_wnd, ID_PAD_DEVICE, CB_GETLBTEXTLEN, (WPARAM)sel, 0) < LEN(g_set.padDevice)) {
+      SendDlgItemMessageW(g_wnd, ID_PAD_DEVICE, CB_GETLBTEXT, (WPARAM)sel, (LPARAM)g_set.padDevice);
+    }
+  }
 }
 
 static int save_from_window(void) {
@@ -966,6 +1082,375 @@ static void key_change(int slot, int ask) {
   g_set.keys[action][slot] = usage;
   keys_fill();
   set_status(L"");
+}
+
+
+/* ---- the controller page -------------------------------------------------- */
+
+/* Axis and button numbers have to be the game's, and the game gets them
+ * from SDL. So the controllers are read here through the SDL3.dll that
+ * lies next to the game program, loaded only when this page asks for it
+ * (the program still builds and runs without any library of the port). */
+typedef unsigned int SdlJoystickId;
+static struct {
+  int state; /* 0 not tried, 1 ready, -1 not there */
+  bool (__cdecl* SetHint)(const char*, const char*);
+  bool (__cdecl* InitSubSystem)(unsigned);
+  SdlJoystickId* (__cdecl* GetJoysticks)(int*);
+  const char* (__cdecl* GetJoystickNameForID)(SdlJoystickId);
+  void* (__cdecl* OpenJoystick)(SdlJoystickId);
+  void (__cdecl* CloseJoystick)(void*);
+  void (__cdecl* UpdateJoysticks)(void);
+  int (__cdecl* GetNumJoystickAxes)(void*);
+  short (__cdecl* GetJoystickAxis)(void*, int);
+  int (__cdecl* GetNumJoystickButtons)(void*);
+  bool (__cdecl* GetJoystickButton)(void*, int);
+  int (__cdecl* GetNumJoystickHats)(void*);
+  unsigned char (__cdecl* GetJoystickHat)(void*, int);
+  void (__cdecl* free)(void*);
+  SdlJoystickId (__cdecl* AttachVirtualJoystick)(const void*);
+  bool (__cdecl* SetJoystickVirtualAxis)(void*, int, short);
+  bool (__cdecl* SetJoystickVirtualButton)(void*, int, bool);
+} g_sdl;
+
+/* MKGP2PC_PAD_TEST=<axis>,<from>,<to> or b<button>: a controller made of
+ * nothing (SDL virtual joystick, 4 axes, 12 buttons) whose axis goes from
+ * one value to the other, or whose button goes down, a second after the
+ * question for a source opens. For trying this page where no controller
+ * can be attached (Wine in a container). */
+static void* g_padTest;
+static int g_padTestAxis = -1, g_padTestTo, g_padTestButton = -1;
+
+static void pad_test_device(void) {
+  struct { /* SDL_VirtualJoystickDesc of SDL 3.2 and later */
+    unsigned version;
+    unsigned short type, padding, vendor, product, naxes, nbuttons, nballs, nhats, ntouchpads, nsensors, padding2[2];
+    unsigned buttonMask, axisMask;
+    const char* name;
+    const void *touchpads, *sensors;
+    void* userdata;
+    void* callbacks[8];
+  } desc;
+  wchar_t text[64];
+  if (GetEnvironmentVariableW(L"MKGP2PC_PAD_TEST", text, LEN(text)) == 0 || g_sdl.AttachVirtualJoystick == NULL) return;
+  ZeroMemory(&desc, sizeof(desc));
+  desc.version = sizeof(desc);
+  desc.type = 2; /* SDL_JOYSTICK_TYPE_WHEEL */
+  desc.naxes = 4;
+  desc.nbuttons = 12;
+  desc.name = "mkgp2pc test wheel";
+  SdlJoystickId id = g_sdl.AttachVirtualJoystick(&desc);
+  g_padTest = id != 0 ? g_sdl.OpenJoystick(id) : NULL;
+  if (g_padTest == NULL) return;
+  if (text[0] == L'b') {
+    g_padTestButton = _wtoi(text + 1);
+  } else {
+    int from = 0;
+    swscanf(text, L"%d,%d,%d", &g_padTestAxis, &from, &g_padTestTo);
+    g_sdl.SetJoystickVirtualAxis(g_padTest, g_padTestAxis, (short)from);
+  }
+}
+
+static int sdl_ready(void) {
+  static const struct { const char* name; size_t at; } kFunctions[] = {
+#define F(n) {"SDL_" #n, offsetof(__typeof__(g_sdl), n)}
+      F(SetHint), F(InitSubSystem), F(GetJoysticks), F(GetJoystickNameForID), F(OpenJoystick), F(CloseJoystick),
+      F(UpdateJoysticks), F(GetNumJoystickAxes), F(GetJoystickAxis), F(GetNumJoystickButtons), F(GetJoystickButton),
+      F(GetNumJoystickHats), F(GetJoystickHat), F(free), F(AttachVirtualJoystick), F(SetJoystickVirtualAxis),
+      F(SetJoystickVirtualButton),
+#undef F
+  };
+  if (g_sdl.state != 0) return g_sdl.state > 0;
+  g_sdl.state = -1;
+  wchar_t path[MAX_PATH];
+  dir_path(path, L"SDL3.dll");
+  HMODULE dll = LoadLibraryExW(path, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
+  if (dll == NULL) return 0;
+  for (int i = 0; i < LEN(kFunctions); i++) {
+    FARPROC f = GetProcAddress(dll, kFunctions[i].name);
+    if (f == NULL) return 0;
+    memcpy((char*)&g_sdl + kFunctions[i].at, &f, sizeof(f));
+  }
+  /* this program has no SDL window that could have the focus */
+  g_sdl.SetHint("SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS", "1");
+  if (!g_sdl.InitSubSystem(0x200 /* SDL_INIT_JOYSTICK */)) return 0;
+  g_sdl.state = 1;
+  pad_test_device();
+  return 1;
+}
+
+#define PAD_DEVICES 8
+static void* g_padJoy[PAD_DEVICES];
+static wchar_t g_padName[PAD_DEVICES][128];
+static int g_padCount;
+
+static void pad_devices_close(void) {
+  for (int i = 0; i < g_padCount; i++) {
+    if (g_padJoy[i] != NULL) g_sdl.CloseJoystick(g_padJoy[i]);
+  }
+  g_padCount = 0;
+}
+
+static void pad_devices_open(void) {
+  int count = 0;
+  pad_devices_close();
+  g_sdl.UpdateJoysticks();
+  SdlJoystickId* ids = g_sdl.GetJoysticks(&count);
+  for (int i = 0; ids != NULL && i < count && g_padCount < PAD_DEVICES; i++) {
+    const char* name = g_sdl.GetJoystickNameForID(ids[i]);
+    void* joy = g_sdl.OpenJoystick(ids[i]);
+    if (joy == NULL) continue;
+    g_padJoy[g_padCount] = joy;
+    MultiByteToWideChar(CP_UTF8, 0, name != NULL ? name : "?", -1, g_padName[g_padCount], LEN(g_padName[0]));
+    g_padName[g_padCount][LEN(g_padName[0]) - 1] = 0;
+    g_padCount++;
+  }
+  g_sdl.free(ids);
+}
+
+/* The list of controllers: 自動, the saved one, the ones attached now.
+ * how: -1 from the settings, without looking for controllers; 0 look once
+ * (the page is shown for the first time); 1 look again (再検索). */
+static void pad_devices_fill(int how) {
+  static int looked;
+  HWND box = GetDlgItem(g_wnd, ID_PAD_DEVICE);
+  wchar_t chosen[128];
+  int sel = (int)SendMessageW(box, CB_GETCURSEL, 0, 0);
+  if (how == 0 && looked) return;
+  wcscpy(chosen, g_set.padDevice);
+  if (how >= 0) {
+    chosen[0] = 0;
+    if (sel > 0 && SendMessageW(box, CB_GETLBTEXTLEN, (WPARAM)sel, 0) < LEN(chosen)) {
+      SendMessageW(box, CB_GETLBTEXT, (WPARAM)sel, (LPARAM)chosen);
+    }
+    looked = 1;
+    if (sdl_ready()) {
+      pad_devices_open();
+      if (how == 1) {
+        wchar_t text[64];
+        swprintf(text, LEN(text), L"コントローラ: %d 台", g_padCount);
+        set_status(text);
+      }
+    } else if (how == 1) {
+      set_status(L"SDL3.dll を読み込めません");
+    }
+  }
+  SendMessageW(box, CB_RESETCONTENT, 0, 0);
+  SendMessageW(box, CB_ADDSTRING, 0, (LPARAM)L"自動");
+  sel = 0;
+  for (int i = 0; i < g_padCount; i++) {
+    if (SendMessageW(box, CB_FINDSTRINGEXACT, (WPARAM)-1, (LPARAM)g_padName[i]) == CB_ERR) {
+      SendMessageW(box, CB_ADDSTRING, 0, (LPARAM)g_padName[i]);
+    }
+  }
+  if (chosen[0] != 0) {
+    sel = (int)SendMessageW(box, CB_FINDSTRINGEXACT, (WPARAM)-1, (LPARAM)chosen);
+    if (sel == CB_ERR) sel = (int)SendMessageW(box, CB_ADDSTRING, 0, (LPARAM)chosen); /* not attached now */
+  }
+  SendMessageW(box, CB_SETCURSEL, (WPARAM)sel, 0);
+}
+
+/* "a2~" as 軸 2 (逆) */
+static const wchar_t* pad_name(const wchar_t* src, wchar_t* buf, int size) {
+  wchar_t* end;
+  if (src[0] == 0) return L"(既定)";
+  if (src[0] == L'-' && src[1] == 0) return L"なし";
+  long n = wcstol(src + 1, &end, 10);
+  if (end == src + 1) return src;
+  if (src[0] == L'a' && (*end == 0 || end[1] == 0)) {
+    swprintf(buf, size, L"軸 %ld%ls", n, *end == L'~' ? L" (逆)" : *end == L'+' ? L" (+ 側)" : *end == L'-' ? L" (- 側)" : L"");
+  } else if (src[0] == L'b' && *end == 0) {
+    swprintf(buf, size, L"ボタン %ld", n);
+  } else if (src[0] == L'h' && *end != 0 && end[1] == 0) {
+    swprintf(buf, size, L"ハット %ld %ls", n, *end == L'u' ? L"上" : *end == L'd' ? L"下" : *end == L'l' ? L"左" : L"右");
+  } else {
+    return src;
+  }
+  return buf;
+}
+
+static void pads_fill(void) {
+  HWND list = GetDlgItem(g_wnd, ID_PADS);
+  wchar_t buf[48];
+  for (int i = 0; i < PAD_ROWS; i++) {
+    LVITEMW item;
+    ZeroMemory(&item, sizeof(item));
+    item.iSubItem = 1;
+    item.pszText = (wchar_t*)pad_name(g_set.pad[i], buf, LEN(buf));
+    SendMessageW(list, LVM_SETITEMTEXTW, (WPARAM)i, (LPARAM)&item);
+  }
+}
+
+/* Asking for a source: the first button or hat direction that goes down, or
+ * the first axis that moves by a quarter of its travel. */
+static wchar_t g_padGot[24];
+static int g_padGotDevice, g_padCapDone, g_padCapTicks, g_padCapRow;
+static int g_padCapOnly; /* the controller chosen in the list, -1: any */
+static short g_padBaseAxis[PAD_DEVICES][32];
+static unsigned char g_padBaseHat[PAD_DEVICES][4];
+static bool g_padBaseButton[PAD_DEVICES][64];
+
+static void padcap_tick(void) {
+  enum { SETTLE = 8, MOVED = 16000, AT_END = 20000 };
+  g_sdl.UpdateJoysticks();
+  g_padCapTicks++;
+  if (g_padTest != NULL && g_padCapTicks == 30) {
+    if (g_padTestAxis >= 0) g_sdl.SetJoystickVirtualAxis(g_padTest, g_padTestAxis, (short)g_padTestTo);
+    if (g_padTestButton >= 0) g_sdl.SetJoystickVirtualButton(g_padTest, g_padTestButton, true);
+  }
+  for (int d = 0; d < g_padCount; d++) {
+    void* joy = g_padJoy[d];
+    if (g_padCapOnly >= 0 && d != g_padCapOnly) continue;
+    int axes = g_sdl.GetNumJoystickAxes(joy), buttons = g_sdl.GetNumJoystickButtons(joy), hats = g_sdl.GetNumJoystickHats(joy);
+    for (int i = 0; i < axes && i < 32; i++) {
+      int v = g_sdl.GetJoystickAxis(joy, i), base = g_padBaseAxis[d][i];
+      if (g_padCapTicks <= SETTLE) {
+        g_padBaseAxis[d][i] = (short)v; /* the first readings may not be the device's yet */
+      } else if (v - base > MOVED || base - v > MOVED) {
+        const wchar_t* way;
+        if (g_padCapRow == 0) {
+          way = v > base ? L"" : L"~"; /* asked to turn right */
+        } else {
+          way = base < -AT_END ? L"" : base > AT_END ? L"~" : v > base ? L"+" : L"-";
+        }
+        swprintf(g_padGot, LEN(g_padGot), L"a%d%ls", i, way);
+        g_padGotDevice = d;
+        g_padCapDone = 1;
+        return;
+      }
+    }
+    for (int i = 0; i < buttons && i < 64 && g_padCapRow != 0; i++) {
+      bool v = g_sdl.GetJoystickButton(joy, i);
+      if (g_padCapTicks <= SETTLE) {
+        g_padBaseButton[d][i] = v;
+      } else if (v && !g_padBaseButton[d][i]) {
+        swprintf(g_padGot, LEN(g_padGot), L"b%d", i);
+        g_padGotDevice = d;
+        g_padCapDone = 1;
+        return;
+      } else if (!v) {
+        g_padBaseButton[d][i] = false;
+      }
+    }
+    for (int i = 0; i < hats && i < 4 && g_padCapRow != 0; i++) {
+      unsigned char v = g_sdl.GetJoystickHat(joy, i), fresh = v & (unsigned char)~g_padBaseHat[d][i];
+      if (g_padCapTicks <= SETTLE) {
+        g_padBaseHat[d][i] = v;
+      } else if (fresh != 0) {
+        swprintf(g_padGot, LEN(g_padGot), L"h%d%lc", i, fresh & 1 ? L'u' : fresh & 2 ? L'r' : fresh & 4 ? L'd' : L'l');
+        g_padGotDevice = d;
+        g_padCapDone = 1;
+        return;
+      } else {
+        g_padBaseHat[d][i] = v;
+      }
+    }
+  }
+}
+
+static LRESULT CALLBACK padcap_proc(HWND wnd, UINT msg, WPARAM wp, LPARAM lp) {
+  switch (msg) {
+  case WM_TIMER:
+    padcap_tick();
+    return 0;
+  case WM_KEYDOWN:
+    if (wp == VK_ESCAPE) g_padCapDone = 1;
+    return 0;
+  case WM_CTLCOLORSTATIC:
+    SetBkMode((HDC)wp, TRANSPARENT);
+    return (LRESULT)GetSysColorBrush(COLOR_WINDOW);
+  case WM_KILLFOCUS:
+  case WM_CLOSE:
+    g_padCapDone = 1;
+    return 0;
+  }
+  return DefWindowProcW(wnd, msg, wp, lp);
+}
+
+/* ask: 1 ask for a source, 0 none, -1 the game's default */
+static void pad_change(int ask) {
+  int row = (int)SendDlgItemMessageW(g_wnd, ID_PADS, LVM_GETNEXTITEM, (WPARAM)-1, LVNI_SELECTED);
+  if (row < 0 || row >= PAD_ROWS) {
+    set_status(L"操作を選んでください");
+    return;
+  }
+  set_status(L"");
+  if (ask <= 0) {
+    wcscpy(g_set.pad[row], ask == 0 ? L"-" : L"");
+    pads_fill();
+    return;
+  }
+  if (!sdl_ready()) {
+    set_status(L"SDL3.dll を読み込めません");
+    return;
+  }
+  pad_devices_fill(1);
+  if (g_padCount == 0) {
+    set_status(L"コントローラが見つかりません");
+    return;
+  }
+  wchar_t text[160];
+  RECT rc;
+  GetWindowRect(g_wnd, &rc);
+  int w = S(360), h = S(130);
+  HWND wnd = CreateWindowExW(WS_EX_DLGMODALFRAME, L"Mkgp2PadCapture", L"コントローラの割り当て", WS_POPUP | WS_CAPTION | WS_SYSMENU,
+                             (rc.left + rc.right - w) / 2, (rc.top + rc.bottom - h) / 2, w, h, g_wnd, NULL, g_inst, NULL);
+  if (row == 0) {
+    wcscpy(text, L"ハンドルを右に切る");
+  } else if (wcscmp(pad_id(row), L"accel") == 0 || wcscmp(pad_id(row), L"brake") == 0) {
+    swprintf(text, LEN(text), L"%ls のペダルを踏む (ボタンでも可)", pad_label(row));
+  } else {
+    swprintf(text, LEN(text), L"%ls のボタンを押す", pad_label(row));
+  }
+  HWND st = CreateWindowExW(0, L"STATIC", text, WS_CHILD | WS_VISIBLE | SS_CENTER, S(10), S(24), w - S(36), S(60), wnd, (HMENU)1,
+                            g_inst, NULL);
+  SendMessageW(st, WM_SETFONT, (WPARAM)g_font, TRUE);
+  g_padGot[0] = 0;
+  g_padCapDone = 0;
+  g_padCapTicks = 0;
+  g_padCapRow = row;
+  g_padCapOnly = -1;
+  {
+    wchar_t chosen[128];
+    int sel = (int)SendDlgItemMessageW(g_wnd, ID_PAD_DEVICE, CB_GETCURSEL, 0, 0);
+    if (sel > 0 && SendDlgItemMessageW(g_wnd, ID_PAD_DEVICE, CB_GETLBTEXTLEN, (WPARAM)sel, 0) < LEN(chosen)) {
+      SendDlgItemMessageW(g_wnd, ID_PAD_DEVICE, CB_GETLBTEXT, (WPARAM)sel, (LPARAM)chosen);
+      for (int d = g_padCount - 1; d >= 0; d--) {
+        if (wcscmp(g_padName[d], chosen) == 0) g_padCapOnly = d;
+      }
+      if (g_padCapOnly < 0) {
+        set_status(L"選んだコントローラが見つかりません");
+        DestroyWindow(wnd);
+        return;
+      }
+    }
+  }
+  EnableWindow(g_wnd, FALSE);
+  ShowWindow(wnd, SW_SHOW);
+  SetFocus(wnd);
+  SetTimer(wnd, 1, 30, NULL);
+  MSG msg;
+  while (!g_padCapDone && GetMessageW(&msg, NULL, 0, 0) > 0) {
+    DispatchMessageW(&msg);
+  }
+  KillTimer(wnd, 1);
+  EnableWindow(g_wnd, TRUE);
+  DestroyWindow(wnd);
+  SetForegroundWindow(g_wnd);
+  SetFocus(GetDlgItem(g_wnd, ID_PADS));
+  if (g_padGot[0] == 0) return;
+  /* one source, one action: it leaves wherever else it was (a pedal axis
+   * may still be shared by its two halves, those are different sources) */
+  for (int i = 0; i < PAD_ROWS; i++) {
+    if (wcscmp(g_set.pad[i], g_padGot) == 0) wcscpy(g_set.pad[i], L"-");
+  }
+  wcscpy(g_set.pad[row], g_padGot);
+  pads_fill();
+  /* the numbers belong to the controller they were read from */
+  if (g_padCount > 1 && SendDlgItemMessageW(g_wnd, ID_PAD_DEVICE, CB_GETCURSEL, 0, 0) <= 0) {
+    int at = (int)SendDlgItemMessageW(g_wnd, ID_PAD_DEVICE, CB_FINDSTRINGEXACT, (WPARAM)-1, (LPARAM)g_padName[g_padGotDevice]);
+    if (at != CB_ERR) SendDlgItemMessageW(g_wnd, ID_PAD_DEVICE, CB_SETCURSEL, (WPARAM)at, 0);
+  }
 }
 
 /* ---- making the high-resolution textures --------------------------------- */
@@ -1308,6 +1793,15 @@ static LRESULT CALLBACK main_proc(HWND wnd, UINT msg, WPARAM wp, LPARAM lp) {
       keys_fill();
       set_status(L"");
       break;
+    case ID_PAD_FIND: pad_devices_fill(1); break;
+    case ID_PAD_SET: pad_change(1); break;
+    case ID_PAD_CLEAR: pad_change(0); break;
+    case ID_PAD_DEFAULT: pad_change(-1); break;
+    case ID_PAD_RESET:
+      for (int i = 0; i < PAD_ROWS; i++) g_set.pad[i][0] = 0;
+      pads_fill();
+      set_status(L"");
+      break;
     case ID_OPEN_LOG: open_path(LOG_NAME); break;
     case ID_OPEN_FOLDER: open_path(L""); break;
     }
@@ -1315,10 +1809,14 @@ static LRESULT CALLBACK main_proc(HWND wnd, UINT msg, WPARAM wp, LPARAM lp) {
   case WM_NOTIFY: {
     const NMHDR* hdr = (const NMHDR*)lp;
     if (hdr->idFrom == ID_TAB && hdr->code == TCN_SELCHANGE) {
-      show_page((int)SendMessageW(g_tab, TCM_GETCURSEL, 0, 0));
+      int tab = (int)SendMessageW(g_tab, TCM_GETCURSEL, 0, 0);
+      show_page(kTabPage[tab < 0 || tab >= PAGES ? 0 : tab]);
+      if (kTabPage[tab < 0 || tab >= PAGES ? 0 : tab] == 5) pad_devices_fill(0);
     } else if (hdr->idFrom == ID_KEYS && hdr->code == NM_DBLCLK) {
       const NMITEMACTIVATE* act = (const NMITEMACTIVATE*)lp;
       key_change(act->iSubItem == 2 ? 1 : 0, 1);
+    } else if (hdr->idFrom == ID_PADS && hdr->code == NM_DBLCLK) {
+      pad_change(1);
     }
     return 0;
   }
@@ -1380,6 +1878,9 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE prev, PWSTR cmd, int show) {
   RegisterClassExW(&wc);
   wc.lpfnWndProc = capture_proc;
   wc.lpszClassName = L"Mkgp2KeyCapture";
+  RegisterClassExW(&wc);
+  wc.lpfnWndProc = padcap_proc;
+  wc.lpszClassName = L"Mkgp2PadCapture";
   RegisterClassExW(&wc);
   wc.lpfnWndProc = hires_proc;
   wc.lpszClassName = L"Mkgp2Hires";

@@ -538,9 +538,12 @@ int32_t THPVideoDecode(THPDecHandle* handle, uint8_t* statusOut, void* work, voi
   return 1;
 }
 
-#ifdef MKGP2PC_GFX
-void mkgp2pc_gx_texture_changed(const void* data); /* port/gfx/gx_shim.cpp */
-#endif
+/* The texture memory last written here and how often: the drawing layer
+ * (port/gfx/gx_shim.cpp) keeps a copy of each texture and looks at these to
+ * see that this one has a new picture. Read from there, not called: an
+ * object in port/platform cannot refer to port/gfx in the Windows link. */
+const void* mkgp2pc_camera_texture;
+uint32_t mkgp2pc_camera_texture_serial;
 
 /* RGBA8 texture: tiles of 4x4 pixels, each 16 times (alpha, red), then 16
  * times (green, blue). */
@@ -561,11 +564,8 @@ void fn_8029BCF0(THPDecHandle* handle, uint8_t* dst, uint8_t alpha) {
       dst += 64;
     }
   }
-#ifdef MKGP2PC_GFX
-  mkgp2pc_gx_texture_changed(texture);
-#else
-  (void)texture;
-#endif
+  mkgp2pc_camera_texture = texture;
+  mkgp2pc_camera_texture_serial++;
 }
 
 #ifndef _WIN32

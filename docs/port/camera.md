@@ -43,7 +43,7 @@ Found in the decompiled source; nothing here comes from another project.
 | Webcam on Windows (Media Foundation source reader) | `port/platform/camera/camera_mf.c` |
 | The shutter's drawing selects the matrix it loads | `port/patches/src/game/DrawNamCamImage.c.patch` |
 | Camera option left on when a source is set | `port/platform/triforce/card_reader.c` |
-| Refresh of one changed texture | `mkgp2pc_gx_texture_changed`, `port/gfx/gx_shim.cpp` |
+| Refresh of the camera's texture when its memory has a new picture | `__wrap_GXLoadTexObj`, `port/gfx/gx_shim.cpp` (reads `mkgp2pc_camera_texture`; `port/platform` does not call into `port/gfx`, the Windows link cannot resolve that) |
 
 The game's code runs unchanged apart from one one-line patch: its
 connection state machine, its timeouts and its scenes are the cabinet's.
