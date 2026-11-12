@@ -71,7 +71,7 @@ static const KeyAction kActions[] = {
 
 /* MKGP2PC_LINK_MODE (docs/port/cabinet_link.md); the first is the default */
 static const wchar_t* const kLinkModes[] = {L"solo", L"network", L"ask", L"arcade"};
-static const wchar_t* const kLinkModeNames[] = {L"ひとりで遊ぶ", L"通信対戦 (未対応)", L"ゲーム内で選ぶ (未対応)", L"アーケード方式"};
+static const wchar_t* const kLinkModeNames[] = {L"ひとりで遊ぶ", L"通信対戦", L"ゲーム内で選ぶ", L"アーケード方式"};
 
 typedef struct {
   wchar_t iso[MAX_PATH];
