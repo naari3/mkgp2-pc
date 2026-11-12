@@ -36,6 +36,7 @@
 #define GAME_EXE L"mkgp2-gfx.exe"
 #define INI_NAME L"mkgp2-pc.ini"
 #define LOG_NAME L"gfx.log"
+static wchar_t g_logName[32] = LOG_NAME; /* the log of the game this launcher started last */
 #define LEN(a) ((int)(sizeof(a) / sizeof((a)[0])))
 
 /* ---- settings ---------------------------------------------------------- */
@@ -469,8 +470,23 @@ static HANDLE start_game(const Settings* s, wchar_t* error, int errorSize) {
   apply_environment(s);
 
   SECURITY_ATTRIBUTES sa = {sizeof(sa), NULL, TRUE};
-  HANDLE out = CreateFileW(log, GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, &sa, CREATE_ALWAYS,
-                           FILE_ATTRIBUTE_NORMAL, NULL);
+  /* Nobody else may write the log while the game has it. A second game
+   * started from the same folder (two cabinets on one PC) then finds
+   * gfx.log taken and writes gfx.2.log, the third gfx.3.log, ... instead of
+   * emptying the log of the first. */
+  HANDLE out = INVALID_HANDLE_VALUE;
+  for (int copy = 1; copy <= 4 && out == INVALID_HANDLE_VALUE; copy++) {
+    if (copy == 1) {
+      wcscpy(g_logName, LOG_NAME);
+    } else {
+      swprintf(g_logName, LEN(g_logName), L"gfx.%d.log", copy);
+    }
+    dir_path(log, g_logName);
+    out = CreateFileW(log, GENERIC_WRITE, FILE_SHARE_READ, &sa, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (out == INVALID_HANDLE_VALUE && GetLastError() != ERROR_SHARING_VIOLATION) {
+      break;
+    }
+  }
   HANDLE in = CreateFileW(L"NUL", GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, &sa, OPEN_EXISTING, 0, NULL);
   if (out == INVALID_HANDLE_VALUE) {
     if (in != INVALID_HANDLE_VALUE) CloseHandle(in);
@@ -505,7 +521,7 @@ static void log_exit_code(DWORD code) {
   wchar_t log[MAX_PATH];
   char line[64];
   DWORD done;
-  dir_path(log, LOG_NAME);
+  dir_path(log, g_logName);
   HANDLE f = CreateFileW(log, FILE_APPEND_DATA, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
   if (f == INVALID_HANDLE_VALUE) return;
   if (code >= 0x80000000u) {
@@ -1780,6 +1796,39 @@ static void open_path(const wchar_t* name) {
   }
 }
 
+/* The colour of the tab control's page. With the Windows 11 theme it is a
+ * light grey (249,249,249), not the window colour, and labels and check
+ * boxes painted in the window colour stood on it as white bands (seen
+ * 2026-11-12). No system colour names it, so the tab control is asked to
+ * draw itself into a bitmap and one point of the page is read. */
+static HBRUSH g_pageBrush;
+static void page_color_update(void) {
+  RECT rc, page;
+  COLORREF color = GetSysColor(COLOR_WINDOW);
+  if (g_tab == NULL) return;
+  GetClientRect(g_tab, &rc);
+  page = rc;
+  SendMessageW(g_tab, TCM_ADJUSTRECT, FALSE, (LPARAM)&page);
+  HDC screen = GetDC(g_tab);
+  HDC dc = CreateCompatibleDC(screen);
+  HBITMAP bitmap = CreateCompatibleBitmap(screen, rc.right, rc.bottom);
+  if (dc != NULL && bitmap != NULL) {
+    HGDIOBJ old = SelectObject(dc, bitmap);
+    HBRUSH fill = CreateSolidBrush(color);
+    FillRect(dc, &rc, fill);
+    DeleteObject(fill);
+    SendMessageW(g_tab, WM_PRINTCLIENT, (WPARAM)dc, PRF_CLIENT | PRF_ERASEBKGND);
+    COLORREF got = GetPixel(dc, (page.left + page.right) / 2, (page.top + page.bottom) / 2);
+    if (got != CLR_INVALID) color = got;
+    SelectObject(dc, old);
+  }
+  if (bitmap != NULL) DeleteObject(bitmap);
+  if (dc != NULL) DeleteDC(dc);
+  ReleaseDC(g_tab, screen);
+  if (g_pageBrush != NULL) DeleteObject(g_pageBrush);
+  g_pageBrush = CreateSolidBrush(color);
+}
+
 static LRESULT CALLBACK main_proc(HWND wnd, UINT msg, WPARAM wp, LPARAM lp) {
   switch (msg) {
   case WM_COMMAND:
@@ -1862,8 +1911,15 @@ static LRESULT CALLBACK main_proc(HWND wnd, UINT msg, WPARAM wp, LPARAM lp) {
     if (wp == TIMER_GAME) game_poll();
     return 0;
   case WM_CTLCOLORSTATIC:
+    /* labels and check boxes stand on the tab control's page */
     SetBkMode((HDC)wp, TRANSPARENT);
+    if (g_pageBrush != NULL && GetDlgCtrlID((HWND)lp) != ID_STATUS) return (LRESULT)g_pageBrush;
     return (LRESULT)GetSysColorBrush(COLOR_WINDOW);
+  case WM_THEMECHANGED:
+  case WM_SYSCOLORCHANGE:
+    page_color_update();
+    InvalidateRect(wnd, NULL, TRUE);
+    break;
   case WM_DESTROY:
     PostQuitMessage(0);
     return 0;
@@ -1930,6 +1986,7 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE prev, PWSTR cmd, int show) {
   g_wnd = CreateWindowExW(0, L"Mkgp2Launcher", L"mkgp2-pc 設定", style, CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left,
                           rc.bottom - rc.top, NULL, NULL, inst, NULL);
   create_controls();
+  page_color_update();
   settings_to_window();
   show_page(0);
   wchar_t exe[MAX_PATH];
