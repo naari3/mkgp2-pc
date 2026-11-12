@@ -825,10 +825,12 @@ static const char* cache_check(const char* appName) {
  * real shape every frame. */
 static bool s_wide;
 void mkgp2pc_wide_frame(float k); /* gx_shim.cpp */
+extern unsigned mkgp2pc_wide_retrace; /* for its trace lines */
 static void wide_frame(void) {
   if (!s_wide) {
     return;
   }
+  mkgp2pc_wide_retrace = (unsigned)s_retrace;
   AuroraWindowSize size = aurora_get_window_size();
   if (size.fb_width == 0 || size.fb_height == 0) {
     return;
