@@ -28,6 +28,15 @@ void mkgp2pc_script_tick(uint32_t retrace); /* port/nogfx/input_script.c */
 
 void mkgp2pc_jvs_set_switches(const uint8_t* bytes, int count);
 void mkgp2pc_jvs_set_analog(int channel, uint16_t value);
+uint16_t mkgp2pc_jvs_steer_raw(float position); /* port/platform/triforce/jvs_controls.c */
+uint16_t mkgp2pc_jvs_pedal_raw(int brake, float position);
+/* input_pad.c: a game controller or wheel, with positions between the ends */
+void mkgp2pc_pad_init(const char* const* names, int count, void (*fire)(int action, bool down));
+void mkgp2pc_pad_start(void);
+void mkgp2pc_pad_event(const SDL_Event* e);
+void mkgp2pc_pad_poll(void);
+bool mkgp2pc_pad_axes(float* steer, float* accel, float* brake);
+int mkgp2pc_pad_script(const char* cmd);
 void mkgp2pc_jvs_add_coin(int slot);
 void mkgp2pc_baseboard_set_operator_switches(uint8_t pressed);
 void mkgp2pc_card_insert(void);
@@ -54,6 +63,9 @@ typedef void (*RetraceCallback)(uint32_t retraceCount);
  * These are the defaults; MKGP2PC_KEYS changes them (see key_event).
  * Once a key has been used the keyboard owns the inputs; until then a
  * script (MKGP2PC_SCRIPT) may drive them.
+ * A game controller or wheel gives the wheel and the pedals every position
+ * in between and has buttons for the same actions (input_pad.c,
+ * MKGP2PC_PAD); keys and controller work side by side.
  */
 static bool s_keyLeft, s_keyRight, s_keyAccel, s_keyBrake, s_keyItem, s_keyTest, s_keyService;
 /* buttons the cabinet does not have: the developers' scenes read them (docs/port/debug.md) */
@@ -423,6 +435,7 @@ static int script_extra(const char* cmd) {
     *(volatile int*)8 = 1;
   } else if (strcmp(cmd, "abort") == 0) {
     abort();
+  } else if (mkgp2pc_pad_script(cmd)) { /* the test controller (input_pad.c) */
   } else if (strcmp(cmd, "debug") == 0) {
     mkgp2pc_debug_set(!mkgp2pc_debug_on());
   } else if (strcmp(cmd, "debugpage") == 0) {
@@ -512,9 +525,10 @@ static void key_map_load(void) {
   }
 }
 
-static void key_event(const SDL_Event* e) {
-  bool down = e->type == SDL_EVENT_KEY_DOWN;
-  bool press = down && !e->key.repeat;
+/* e: a key going down or up. NULL: a controller's button for padAction. */
+static void input_event(const SDL_Event* e, int padAction, bool padDown) {
+  bool down = e != NULL ? e->type == SDL_EVENT_KEY_DOWN : padDown;
+  bool press = e != NULL ? down && !e->key.repeat : padDown;
   bool control = false;
   if (mkgp2pc_menu_is_open()) {
     /* The menu has the keyboard: the arrow keys, Enter and Esc always work,
@@ -544,8 +558,8 @@ static void key_event(const SDL_Event* e) {
     return;
   }
   for (int action = 0; action < KEY_ACTIONS; action++) {
-    bool hit = false;
-    for (int i = 0; i < KEYS_PER_ACTION; i++) {
+    bool hit = e == NULL && action == padAction;
+    for (int i = 0; e != NULL && i < KEYS_PER_ACTION; i++) {
       hit |= s_keyMap[action][i] != 0 && s_keyMap[action][i] == (int)e->key.scancode;
     }
     if (!hit) {
@@ -638,8 +652,13 @@ static void key_event(const SDL_Event* e) {
   }
 }
 
+static void key_event(const SDL_Event* e) { input_event(e, -1, false); }
+static void pad_action(int action, bool down) { input_event(NULL, action, down); }
+
 static void keyboard_tick(void) {
-  if (!s_keyboardUsed) {
+  float padSteer = 0.0f, padAccel = 0.0f, padBrake = 0.0f;
+  bool pad = mkgp2pc_pad_axes(&padSteer, &padAccel, &padBrake);
+  if (!s_keyboardUsed && !pad) {
     return;
   }
   int target = s_keyLeft == s_keyRight ? 0 : s_keyRight ? 0x7FFF : -0x7FFF;
@@ -649,9 +668,19 @@ static void keyboard_tick(void) {
   } else if (s_wheel > target) {
     s_wheel = s_wheel - step < target ? target : s_wheel - step;
   }
-  rec_analog(0, (uint16_t)(0x8000 + s_wheel));
-  rec_analog(1, s_keyAccel ? 0xFFFF : 0);
-  rec_analog(2, s_keyBrake ? 0xFFFF : 0);
+  if (pad) {
+    /* The keys still work: their wheel adds to the controller's, a pedal
+     * key is the pedal to the floor. 0x5000: what the game takes as full
+     * lock (JvsInput_SetSteeringCalibration). */
+    float steer = padSteer + (float)s_wheel / (float)0x5000;
+    rec_analog(0, mkgp2pc_jvs_steer_raw(steer));
+    rec_analog(1, s_keyAccel ? 0xFFFF : mkgp2pc_jvs_pedal_raw(0, padAccel));
+    rec_analog(2, s_keyBrake ? 0xFFFF : mkgp2pc_jvs_pedal_raw(1, padBrake));
+  } else {
+    rec_analog(0, (uint16_t)(0x8000 + s_wheel));
+    rec_analog(1, s_keyAccel ? 0xFFFF : 0);
+    rec_analog(2, s_keyBrake ? 0xFFFF : 0);
+  }
   /* Second switch byte of player 1: the item button (0x20) and the cancel
    * button (0x02, the "Mario button" by the user's word 2026-11-12; game
    * bits 0x8400 in kRawGameMap_Raw0, "leave / previous" in the developers'
@@ -940,6 +969,23 @@ static void wide_frame(void) {
   float k = ((float)size.fb_width / (float)size.fb_height) / (4.0f / 3.0f);
   mkgp2pc_wide_frame(k > 1.001f ? k : 1.0f);
 }
+/* One line in the log when the window's client area is not the size of the
+ * picture drawn into it (the band around the picture is then not ours to
+ * paint): looked at once, two seconds in, when the window has settled. */
+static void window_size_check(void) {
+  if (s_retrace != 120 || s_window == NULL) {
+    return;
+  }
+  int w = 0, h = 0;
+  SDL_GetWindowSizeInPixels(s_window, &w, &h);
+  AuroraWindowSize size = aurora_get_window_size();
+  if ((uint32_t)w != size.native_fb_width || (uint32_t)h != size.native_fb_height) {
+    fprintf(stderr, "window: client area %dx%d, picture %ux%u\n", w, h, (unsigned)size.native_fb_width,
+            (unsigned)size.native_fb_height);
+  } else {
+    fprintf(stderr, "window: client area %dx%d\n", w, h);
+  }
+}
 /* Anti-aliasing (docs/port/antialiasing.md). Two means, both the rendering
  * library's own, both off unless asked for:
  *   MKGP2PC_MSAA=4  four samples per pixel at the edges of polygons;
@@ -1059,6 +1105,7 @@ int __wrap_main(int argc, char** argv) {
   setvbuf(stderr, NULL, _IONBF, 0);
   s_fast = getenv("MKGP2PC_FAST") != NULL; /* start at full speed, as after F10 */
   key_map_load();
+  mkgp2pc_pad_init(s_actionNames, KEY_ACTIONS, &pad_action);
   const char* limit = getenv("MKGP2PC_FRAMES");
   if (limit != NULL) {
     s_frameLimit = strtol(limit, NULL, 10);
@@ -1068,6 +1115,7 @@ int __wrap_main(int argc, char** argv) {
   config.cachePath = cache_check(config.appName);
   s_window = aurora_initialize(argc, argv, &config).window;
   mkgp2pc_hires_init();
+  mkgp2pc_pad_start();
 #ifdef _WIN32
   /* Every change of the window's size on Windows (drag, maximize) ended in
    * webgpu_dawn.dll, in the surface reconfiguration that Aurora's present
@@ -1075,7 +1123,18 @@ int __wrap_main(int argc, char** argv) {
    * Until that is understood the window keeps its size; MKGP2PC_SCALE sets
    * it, MKGP2PC_RESIZABLE=1 gives the frame back. */
   if (s_window != NULL && getenv("MKGP2PC_RESIZABLE") == NULL) {
+    /* SDL only swaps the style bits (SetWindowLong); the window keeps its
+     * outer size, and when Windows next works the frame out the thinner
+     * fixed frame leaves a client area 10 pixels wider and higher than the
+     * picture (1930x1090 around 1920x1080): a white band on all four sides
+     * (screenshot 2026-11-12). Setting the size again makes SDL place the
+     * window for the new frame, so the client area is the picture's size. */
+    int w = 0, h = 0;
+    SDL_GetWindowSize(s_window, &w, &h);
     SDL_SetWindowResizable(s_window, false);
+    if (w > 0 && h > 0) {
+      SDL_SetWindowSize(s_window, w, h);
+    }
   }
 #endif
   if (s_wide) {
@@ -1200,8 +1259,12 @@ static void pump_events(void) {
         (event->sdl.type == SDL_EVENT_KEY_DOWN || event->sdl.type == SDL_EVENT_KEY_UP)) {
       key_event(&event->sdl);
     }
+    if (event->type == AURORA_SDL_EVENT) {
+      mkgp2pc_pad_event(&event->sdl);
+    }
     ++event;
   }
+  mkgp2pc_pad_poll();
 }
 
 /*
@@ -1477,6 +1540,7 @@ void VIWaitForRetrace(void) {
   }
   int level = OSDisableInterrupts();
   s_retrace++;
+  window_size_check();
   mkgp2pc_script_tick(s_retrace);
   mkgp2pc_mediaboard_tick();
   keyboard_tick();

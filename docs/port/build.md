@@ -351,6 +351,9 @@ is used, `MKGP2PC_SCRIPT` may drive the inputs. Not tested with a real
 keyboard yet (the cloud build machine has no input device); the same input
 calls driven by the script steer and accelerate the kart.
 
+A game controller or racing wheel gives the wheel and the pedals the
+positions in between: [controller.md](controller.md).
+
 ## Magnetic card
 
 `port/platform/triforce/card_reader.c` stands in for the cabinet's card unit
@@ -371,7 +374,11 @@ program is started from (`MKGP2PC_CARD_FILE` names another file).
   stand-in turns the game's camera option off during the power-on checks.
 - `MKGP2PC_SCALE=N` opens the window at N times 640x480. On Windows the
   window cannot be resized or maximized (`MKGP2PC_RESIZABLE=1` allows it
-  again): every size change ended in `webgpu_dawn.dll` + 0xb6b58, on the
+  again; taking the resizable frame away is followed by setting the
+  window's size once more, because SDL only swaps the style bits and the
+  client area otherwise ends 10 pixels wider and higher than the picture,
+  a white band on all four sides; `window:` in the log gives the client
+  area two seconds in): every size change ended in `webgpu_dawn.dll` + 0xb6b58, on the
   render worker thread, below `Surface::Configure` called from
   `aurora::gfx::present::submit` (crash record of 2026-11-12 04:44 JST,
   build 2502a6b). The cause is a fault in the first 32-bit Dawn package
