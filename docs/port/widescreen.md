@@ -13,6 +13,16 @@ default. The settings program has the item (表示 page).
   (more is visible to the left and right). Culling follows.
 - The 2D layer (HUD, menus, text) keeps its shape and its 4:3 layout in the
   middle of the screen and is clipped to that 4:3 area.
+- Except while it moves across the left or right edge (2026-11-12, after
+  the user's report that UI leaving towards the screen edge vanished in the
+  middle of the screen): a 2D primitive that reaches beyond the edge of the
+  4:3 area is moved outwards by (share of its width beyond the edge) x
+  (width of a side area), so it is where the game put it while inside and
+  just off the real screen when the game has it just off the 4:3 one. One
+  that is as wide as the 4:3 picture is stretched instead, wherever it is.
+  A primitive that has rested in the same place for more than 6 frames is
+  clipped as before: layout pieces that rest across the edge (the left end
+  of the title bars) would otherwise come apart.
 - Whole-screen 2D (fades, the saved frame of transitions, full-width
   backgrounds and bars) is stretched over the full width. Tiled backgrounds
   (the star pattern behind the menus) get their edge columns repeated out to
@@ -55,8 +65,10 @@ Known gaps:
   not bring anything back there, so it is not the frustum test; whether the
   game leaves that ground out by another rule (course section visibility)
   or the course simply ends there is not established.
-- Elements that slide in from outside the screen appear at the edge of the
-  4:3 area, not at the screen edge.
+- Sliding elements made of several pieces (the title bar swinging in) can
+  show a piece apart from the rest for a few frames, because each primitive
+  is moved by its own share; and a piece that comes to rest across the edge
+  goes back to its clipped place when it stops.
 - The HUD is not moved to the screen edges (option C below).
 - View-blocking item effects and other whole-screen effects have only been
   seen as far as the recorded session shows them.

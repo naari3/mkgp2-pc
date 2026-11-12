@@ -405,6 +405,11 @@ program is started from (`MKGP2PC_CARD_FILE` names another file).
   `pipeline_cache.db` plus `initial_pipeline_cache.db` from the executable's
   folder, if there is one (`port/tools/pipeline_list.py`,
   `port/tools/pipeline_sweep.sh`; census.md section 36).
+- `MKGP2PC_STALL_MS=N`: when the game's own part of a frame runs longer
+  than N milliseconds (150; `0` turns it off), a second thread writes every
+  thread's stack to `dumps/stall_f<retrace>/stacks.txt` and a `stall:` line
+  to the log, at most 20 times a run. Says where a stall is that the
+  `spike:` line cannot explain.
 - `MKGP2PC_SPIKE_MS=N`: frames longer than N milliseconds get a `spike:`
   line in the log with where the time went (default 25; 0 turns it off).
   Fields: comment above `spike_log` in port/gfx/video_aurora.c, background

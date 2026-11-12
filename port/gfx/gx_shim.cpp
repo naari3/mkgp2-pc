@@ -1205,6 +1205,9 @@ void __wrap_GXParam4f32(const f32 x, const f32 y, const f32 z, const f32 w) {
  *    background are repeated outwards. Everything else keeps its shape in
  *    the middle and is clipped to the 4:3 picture (the scissor moves with
  *    it), so parts that the arcade screen hid beyond its edges stay hidden.
+ *    Except what is moving across the left or right edge: that is moved
+ *    outwards so that it leaves or enters at the real edge of the screen
+ *    (mkgp2pc_wide_end).
  *  - MKGP2PC_TRACE_WIDE=1 prints how each kept primitive was classified.
  *  - GXGetProjectionv gives back what the game set, not the narrowed
  *    matrix: the game saves and restores projections with it, and
@@ -1213,6 +1216,7 @@ void __wrap_GXParam4f32(const f32 x, const f32 y, const f32 z, const f32 w) {
  */
 extern "C" {
 float mkgp2pc_wide_k = 1.0f;
+unsigned mkgp2pc_wide_retrace;
 bool mkgp2pc_wide_on, mkgp2pc_wide_capture;
 void __real_GXSetViewport(f32 left, f32 top, f32 wd, f32 ht, f32 nearz, f32 farz);
 void __real_GXSetViewportJitter(f32 left, f32 top, f32 wd, f32 ht, f32 nearz, f32 farz, u32 field);
@@ -1246,7 +1250,10 @@ u32 sScis[4] = {0, 0, 640, 480};
  * stays on its text and nothing drawn outside the 4:3 picture (parts the
  * arcade screen never showed) appears in the side areas. The 3D scene and
  * the stretched whole-screen draws keep the scissor as the game gave it. */
-void apply_scissor(bool narrow) {
+void apply_scissor(bool narrow, bool open = false) {
+  if (open && sScis[0] == 0 && sScis[0] + sScis[2] >= 640) {
+    narrow = false;
+  }
   if (!narrow) {
     __real_GXSetScissor(sScis[0], sScis[1], sScis[2], sScis[3]);
     return;
@@ -1271,7 +1278,7 @@ void send_projection(bool narrow, float shift = 0.0f, bool clip = true) {
   }
   __real_GXSetProjection(m, sProjType);
   if (wide_on()) {
-    apply_scissor(narrow && clip && sProjType != GX_PERSPECTIVE);
+    apply_scissor(narrow && sProjType != GX_PERSPECTIVE, !clip);
   }
 }
 
@@ -1597,7 +1604,14 @@ static std::tuple<int, int, int, int> tile_key(const WideQuad& q) {
   return {static_cast<int>(std::lround(q.lo * 500)), static_cast<int>(std::lround(q.hi * 500)),
           static_cast<int>(std::lround(q.ylo * 500)), static_cast<int>(std::lround(q.yhi * 500))};
 }
+typedef std::tuple<int, int, int, int> WideStillKey;
+static std::map<WideStillKey, int> sStillWas, sStillNow;
+enum { kStillFrames = 6 };
 void wide_tiles_frame(void) {
+  if (!sStillNow.empty() || !sQuads.empty()) { /* a frame that drew something */
+    sStillWas.swap(sStillNow);
+    sStillNow.clear();
+  }
   sTiles.clear();
   for (size_t i = 0; i < sQuads.size(); i++) {
     const WideQuad& q = sQuads[i];
@@ -1659,58 +1673,104 @@ void mkgp2pc_wide_end(void) {
     return;
   }
   const float (*mv)[4] = sMtx[sCurMtx];
-  int runFirst = 0;
-  bool runFull = false;
   const int groups = sWideVerts / per;
-  for (int g = 0; g <= groups; g++) {
-    bool full = false;
-    if (g < groups) {
-      float lo = 1e9f, hi = -1e9f, ylo = 1e9f, yhi = -1e9f;
-      for (int v = g * per; v < (g + 1) * per; v++) {
-        float p[3] = {0, 0, 0};
-        for (int c = 0; c < sWidePosN; c++) {
-          std::memcpy(&p[c], &sWide[pos[v] + c].bits, 4);
-        }
-        const float ex = mv[0][0] * p[0] + mv[0][1] * p[1] + mv[0][2] * p[2] + mv[0][3];
-        const float ey = mv[1][0] * p[0] + mv[1][1] * p[1] + mv[1][2] * p[2] + mv[1][3];
-        const float x = sProj[0][0] * ex + sProj[0][1] * ey + sProj[0][3];
-        const float y = sProj[1][0] * ex + sProj[1][1] * ey + sProj[1][3];
-        lo = x < lo ? x : lo;
-        hi = x > hi ? x : hi;
-        ylo = y < ylo ? y : ylo;
-        yhi = y > yhi ? y : yhi;
+  /* 0: keeps its place, 1: stretched over the whole width, 2: moved outwards */
+  std::vector<u8> kind(groups + 1u, 0);
+  float outLo = 1e9f, outHi = -1e9f, outYlo = 1e9f, outYhi = -1e9f;
+  for (int g = 0; g < groups; g++) {
+    float lo = 1e9f, hi = -1e9f, ylo = 1e9f, yhi = -1e9f;
+    for (int v = g * per; v < (g + 1) * per; v++) {
+      float p[3] = {0, 0, 0};
+      for (int c = 0; c < sWidePosN; c++) {
+        std::memcpy(&p[c], &sWide[pos[v] + c].bits, 4);
       }
-      if (per == 4 && groups == 1 && sQuads.size() < 4096) {
-        const WideQuad q{lo, hi, ylo, yhi};
-        sQuads.push_back(q);
-        if (sTiles.count(tile_key(q)) != 0) {
-          /* an edge tile of a background grid: draw it, then its copies */
+      const float ex = mv[0][0] * p[0] + mv[0][1] * p[1] + mv[0][2] * p[2] + mv[0][3];
+      const float ey = mv[1][0] * p[0] + mv[1][1] * p[1] + mv[1][2] * p[2] + mv[1][3];
+      const float x = sProj[0][0] * ex + sProj[0][1] * ey + sProj[0][3];
+      const float y = sProj[1][0] * ex + sProj[1][1] * ey + sProj[1][3];
+      lo = x < lo ? x : lo;
+      hi = x > hi ? x : hi;
+      ylo = y < ylo ? y : ylo;
+      yhi = y > yhi ? y : yhi;
+    }
+    if (per == 4 && groups == 1 && sQuads.size() < 4096) {
+      const WideQuad q{lo, hi, ylo, yhi};
+      sQuads.push_back(q);
+      if (sTiles.count(tile_key(q)) != 0) {
+        /* an edge tile of a background grid: draw it, then its copies */
+        wide_replay(start[0], start[per], per);
+        const float w = hi - lo, dir = lo < 0 ? -1.0f : 1.0f;
+        for (int n = 1; n < 32 && 1.0f + (n - 1) * w < mkgp2pc_wide_k; n++) {
+          send_projection(true, dir * n * w, false);
           wide_replay(start[0], start[per], per);
-          const float w = hi - lo, dir = lo < 0 ? -1.0f : 1.0f;
-          for (int n = 1; n < 32 && 1.0f + (n - 1) * w < mkgp2pc_wide_k; n++) {
-            send_projection(true, dir * n * w, false);
-            wide_replay(start[0], start[per], per);
-          }
-          send_projection(true);
-          return;
         }
-      }
-      full = lo <= -0.98f && hi >= 0.98f;
-      if (wide_trace()) {
-        fprintf(stderr, "wide: %x n %d group %d x %.3f..%.3f mtx %u%s\n", sWideType, sWideVerts, g, lo, hi, sCurMtx, full ? " FULL" : "");
-      }
-    }
-    if (g == groups || (g > runFirst && full != runFull)) {
-      if (runFull) {
-        send_projection(false);
-      }
-      wide_replay(start[runFirst * per], start[g * per], static_cast<u16>((g - runFirst) * per));
-      if (runFull) {
         send_projection(true);
+        return;
       }
-      runFirst = g;
     }
-    runFull = full;
+    /* As wide as the picture: stretched, wherever it is, so that a band
+     * or a curtain that slides away keeps covering up to the real edge. */
+    kind[g] = hi - lo >= 1.96f;
+    if (kind[g] == 0) {
+      outLo = lo < outLo ? lo : outLo;
+      outHi = hi > outHi ? hi : outHi;
+      outYlo = ylo < outYlo ? ylo : outYlo;
+      outYhi = yhi > outYhi ? yhi : outYhi;
+    }
+    if (wide_trace()) {
+      fprintf(stderr, "wide: %x n %d group %d x %.3f..%.3f mtx %u%s\n", sWideType, sWideVerts, g, lo, hi, sCurMtx, kind[g] ? " FULL" : "");
+    }
+  }
+  /* Something narrower that reaches beyond the left or right edge of the
+   * 4:3 picture is on its way out of (or into) the screen, or parked
+   * outside. It is moved outwards by the share of it that is beyond the
+   * edge, times the width of a side area: unchanged while it is inside,
+   * just outside the real edge when it is just outside the 4:3 one. The
+   * primitive moves as a whole.
+   * Only while it moves, though. Parts of the screen layout that rest
+   * across the edge (the left end of a title bar, made of several pieces)
+   * would come apart, so a primitive that has been in the same place for
+   * kStillFrames frames keeps its place and is clipped at the 4:3 edge. */
+  float shift = 0.0f;
+  if (outHi > outLo && (outHi > 1.0f || outLo < -1.0f)) {
+    const float w = outHi - outLo;
+    float over = (outHi > 1.0f ? outHi - 1.0f : 0.0f) - (outLo < -1.0f ? -1.0f - outLo : 0.0f);
+    over = over > w ? w : over < -w ? -w : over;
+    shift = (mkgp2pc_wide_k - 1.0f) * over / w;
+    const WideStillKey key{static_cast<int>(std::lround(outLo * 4000)), static_cast<int>(std::lround(outHi * 4000)),
+                           static_cast<int>(std::lround(outYlo * 4000)), static_cast<int>(std::lround(outYhi * 4000))};
+    const auto was = sStillWas.find(key);
+    const int frames = was != sStillWas.end() ? was->second + 1 : 1;
+    int& now = sStillNow[key];
+    now = frames > now ? frames : now;
+    if (frames > kStillFrames) {
+      shift = 0.0f;
+    }
+    if (wide_trace()) {
+      fprintf(stderr, "wide: moved by %.3f (x %.3f..%.3f) retrace %u\n", shift, outLo, outHi, mkgp2pc_wide_retrace);
+    }
+  }
+  if (shift != 0.0f) {
+    for (int g = 0; g < groups; g++) {
+      kind[g] = kind[g] == 0 ? 2 : kind[g];
+    }
+  }
+  int runFirst = 0;
+  for (int g = 1; g <= groups; g++) {
+    if (g < groups && kind[g] == kind[runFirst]) {
+      continue;
+    }
+    const u8 k = kind[runFirst];
+    if (k == 1) {
+      send_projection(false);
+    } else if (k == 2) {
+      send_projection(true, shift, false);
+    }
+    wide_replay(start[runFirst * per], start[g * per], static_cast<u16>((g - runFirst) * per));
+    if (k != 0) {
+      send_projection(true);
+    }
+    runFirst = g;
   }
 }
 }
