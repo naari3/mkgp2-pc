@@ -11,6 +11,8 @@ stand-in for the game program (window, all five pages, saving, the key
 dialog, starting, log, exit code). Not yet run on Windows. `MKGP2PC_KEYS`
 in the game was checked by compiling and by running its parser alone, not in
 a running game.
+The コントローラ page (added 2026-11-12) was tried the same way under Wine,
+with a controller made in software (controller.md); no real controller yet.
 
 ## How it works
 
@@ -60,6 +62,7 @@ window. Empty fields show their default as grey text.
 | 通信 | first port | `MKGP2PC_LINK_PORT` |
 | 通信 | room name and rendezvous server for play between distant PCs (internet_play.md) | `MKGP2PC_LINK_ROOM`, `MKGP2PC_LINK_SERVER` |
 | キー | two keys per action | `MKGP2PC_KEYS` |
+| コントローラ | game controller or wheel: on / off, which one, one source per action, steering dead zone and range (controller.md) | `MKGP2PC_PAD` |
 | その他 | free lines `NAME=VALUE` (applied last, so they win) | any |
 
 Variables for investigation (`MKGP2PC_TRACE_*`, `MKGP2PC_SCRIPT`,
@@ -116,7 +119,7 @@ are the defaults the variable is not set at all.
 `mkgp2-pc.ini`, UTF-16 with a byte order mark (the Windows profile functions
 keep a file in the encoding it starts with; this keeps non-ASCII paths
 intact). Sections: `[settings]`, `[keys]` (`action=usage1,usage2`, 0 = none),
-`[env]` (the free lines). Deleting the file gives the defaults back. The
+`[pad]` (controller.md), `[env]` (the free lines). Deleting the file gives the defaults back. The
 build never writes it, so it survives rebuilding into the same folder.
 
 ## Building

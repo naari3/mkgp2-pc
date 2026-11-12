@@ -28,6 +28,7 @@ clean-up.
 | [`debug.md`](debug.md) | The game's own debug output, overlay pages and developers' scene list, and the switches that bring them back |
 | [`internet_play.md`](internet_play.md) | Play between distant PCs without opening ports: room name, STUN, hole punching, the rendezvous Worker in `port/server/rendezvous`, what was tested |
 | [`launcher.md`](launcher.md) | The settings program `mkgp2-launcher.exe`: what it sets, the ini file, `MKGP2PC_KEYS`, how it is built |
+| [`controller.md`](controller.md) | Game controllers and racing wheels: the wheel and pedals as analog values, what the game expects on the JVS channels, `MKGP2PC_PAD`, the settings page, what was tested |
 
 ## What goes where
 
