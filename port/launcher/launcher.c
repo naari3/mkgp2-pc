@@ -46,16 +46,16 @@ static const KeyAction kActions[] = {
     {L"right", L"ハンドル 右", {79, 0}},
     {L"accel", L"アクセル", {82, 29}},
     {L"brake", L"ブレーキ", {81, 27}},
-    {L"item", L"アイテムボタン (メニューの決定)", {44, 40}},
-    {L"coin", L"コイン投入", {34, 6}},
-    {L"card", L"カードを入れる", {12, 0}},
-    {L"test", L"テストボタン", {58, 0}},
-    {L"service", L"サービスボタン", {59, 0}},
-    {L"pause", L"一時停止 / 再開", {19, 0}},
-    {L"step", L"コマ送り (一時停止中)", {18, 0}},
-    {L"fast", L"全速の切り替え", {67, 0}},
-    {L"fasthold", L"全速 (押している間)", {43, 0}},
-    {L"dump", L"ダンプを書き出す", {66, 0}},
+    {L"item", L"アイテム", {44, 40}},
+    {L"coin", L"コイン", {34, 6}},
+    {L"card", L"カード挿入", {12, 0}},
+    {L"test", L"テスト", {58, 0}},
+    {L"service", L"サービス", {59, 0}},
+    {L"pause", L"一時停止", {19, 0}},
+    {L"step", L"コマ送り", {18, 0}},
+    {L"fast", L"全速 (切り替え)", {67, 0}},
+    {L"fasthold", L"全速 (押下中)", {43, 0}},
+    {L"dump", L"ダンプ", {66, 0}},
 };
 #define ACTIONS LEN(kActions)
 
@@ -257,7 +257,7 @@ static const struct {
 };
 
 static const wchar_t* key_name(int usage, wchar_t* buf, int size) {
-  if (usage == 0) return L"(なし)";
+  if (usage == 0) return L"";
   if (usage >= 4 && usage <= 29) {
     swprintf(buf, size, L"%c", L'A' + usage - 4);
   } else if (usage >= 30 && usage <= 39) {
@@ -350,11 +350,11 @@ static HANDLE start_game(const Settings* s, wchar_t* error, int errorSize) {
   dir_path(exe, GAME_EXE);
   dir_path(log, LOG_NAME);
   if (!file_exists(exe)) {
-    swprintf(error, errorSize, L"ゲーム本体が見つかりません。\n%ls\n\nこのプログラムを " GAME_EXE L" と同じフォルダーに置いてください。", exe);
+    swprintf(error, errorSize, L"ゲーム本体が見つかりません。\n%ls", exe);
     return NULL;
   }
   if (s->iso[0] == 0 || !file_exists(s->iso)) {
-    swprintf(error, errorSize, L"ISO ファイルが見つかりません。「基本」の ISO ファイルを選んでください。\n%ls", s->iso);
+    swprintf(error, errorSize, L"ISO ファイルが見つかりません。\n%ls", s->iso);
     return NULL;
   }
   apply_environment(s);
@@ -365,7 +365,7 @@ static HANDLE start_game(const Settings* s, wchar_t* error, int errorSize) {
   HANDLE in = CreateFileW(L"NUL", GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, &sa, OPEN_EXISTING, 0, NULL);
   if (out == INVALID_HANDLE_VALUE) {
     if (in != INVALID_HANDLE_VALUE) CloseHandle(in);
-    swprintf(error, errorSize, L"ログを書けません (ゲームが既に動いていませんか)。\n%ls", log);
+    swprintf(error, errorSize, L"ログを書けません。\n%ls", log);
     return NULL;
   }
   STARTUPINFOW si;
@@ -430,7 +430,7 @@ static int g_pageCount[PAGES];
 static HANDLE g_game;
 
 static const wchar_t* const kBackendIds[] = {L"", L"d3d12", L"d3d11", L"vulkan", L"opengl"};
-static const wchar_t* const kBackendNames[] = {L"自動 (通常は Direct3D 12)", L"Direct3D 12", L"Direct3D 11", L"Vulkan", L"OpenGL"};
+static const wchar_t* const kBackendNames[] = {L"自動", L"Direct3D 12", L"Direct3D 11", L"Vulkan", L"OpenGL"};
 
 static int S(int v) { return MulDiv(v, g_dpi, 96); }
 
@@ -501,7 +501,7 @@ static void scale_fill(int wide, int scale) {
     wchar_t text[48];
     int height = 480 * list[i] / 100;
     int width = wide ? (height * 16 / 9 + 1) & ~1 : height * 4 / 3;
-    swprintf(text, LEN(text), L"%d x %d (%g 倍)", width, height, list[i] / 100.0);
+    swprintf(text, LEN(text), L"%d x %d", width, height);
     SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)text);
     if (abs(list[i] - scale) < abs(list[best] - scale)) best = i;
   }
@@ -533,29 +533,27 @@ static void create_controls(void) {
 
   /* 基本 */
   y = 48;
-  label(0, L"ISO ファイル (Mario Kart Arcade GP 2 のディスクイメージ)", X, y, W, 18);
+  label(0, L"ISO ファイル", X, y, W, 18);
   edit(0, X, y + 20, W - 88, ID_ISO);
-  button(0, L"参照...", X + W - 80, y + 19, 80, ID_ISO_BROWSE);
+  button(0, L"ISO を選ぶ", X + W - 80, y + 19, 80, ID_ISO_BROWSE);
   y += 64;
-  check(0, L"カードを使う (ゲーム中に「カードを入れる」キーで挿入します)", X, y, W, ID_CARD);
-  label(0, L"カードのファイル (空欄なら下に薄く出ている、このフォルダーの card.bin を使います。新しいカードで始めるには、まだ無いファイル名を書きます)", X, y + 28, W, 36);
+  check(0, L"カードを使う", X, y, W, ID_CARD);
+  label(0, L"カードのファイル", X, y + 28, W, 18);
   {
     /* the empty field shows where the card is then taken from */
-    HWND e = edit(0, X, y + 66, W - 88, ID_CARD_FILE);
-    SendMessageW(e, 0x1501 /* EM_SETCUEBANNER */, TRUE, (LPARAM)L"card.bin (このプログラムと同じフォルダー)");
+    HWND e = edit(0, X, y + 48, W - 88, ID_CARD_FILE);
+    SendMessageW(e, 0x1501 /* EM_SETCUEBANNER */, TRUE, (LPARAM)L"card.bin");
   }
-  button(0, L"参照...", X + W - 80, y + 65, 80, ID_CARD_BROWSE);
-  y += 112;
-  check(0, L"ゲームを起動したらこの画面を閉じる", X, y, W, ID_CLOSE_ON_START);
-  label(0, L"設定はこのフォルダーの " INI_NAME L" に保存されます。ゲームのログは " LOG_NAME L" です。", X, y + 36, W, 36);
+  button(0, L"カードを選ぶ", X + W - 80, y + 47, 80, ID_CARD_BROWSE);
+  y += 92;
+  check(0, L"起動後に閉じる", X, y, W, ID_CLOSE_ON_START);
 
   /* 表示 */
   y = 48;
   label(1, L"画面の比率", X, y + 3, 110, 18);
   HWND c = combo(1, X + 116, y, 220, ID_ASPECT);
-  SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)L"4:3 (元のゲームどおり)");
-  SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)L"16:9 (ワイド)");
-  label(1, L"16:9 はゲーム側の対応待ちです", X + 344, y + 3, W - 344, 18);
+  SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)L"4:3");
+  SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)L"16:9 (未対応)");
   y += 34;
   label(1, L"窓の大きさ", X, y + 3, 110, 18);
   combo(1, X + 116, y, 220, ID_SCALE);
@@ -566,37 +564,34 @@ static void create_controls(void) {
     SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)kBackendNames[i]);
   }
   y += 40;
-  check(1, L"カートの影をなめらかにする (外すと元のゲームどおりの粗い影)", X, y, W, ID_SHADOW);
+  check(1, L"影をなめらかにする", X, y, W, ID_SHADOW);
   y += 28;
-  check(1, L"最初から全速で動かす (全速の切り替えキーを押したのと同じ)", X, y, W, ID_FAST);
+  check(1, L"全速で開始", X, y, W, ID_FAST);
   y += 28;
-  check(1, L"コイン集計の表示をディスクのまま (英語) にする", X, y, W, ID_GOODS);
+  check(1, L"コイン集計を英語で表示", X, y, W, ID_GOODS);
   y += 28;
-  check(1, L"描画の準備を待たずに表示する (場面の変わり目でモデルが遅れて現れます)", X, y, W, ID_ASYNC);
+  check(1, L"描画の準備を待たない", X, y, W, ID_ASYNC);
   y += 28;
-  check(1, L"窓の大きさをマウスで変えられるようにする", X, y, W, ID_RESIZABLE);
-  label(1, L"注意: 現在は窓の大きさを変えるとゲームが落ちることがあります。大きさは上の「窓の大きさ」で選ぶのが安全です。", X + 18, y + 22, W - 18, 36);
+  check(1, L"窓のサイズ変更を許可 (不安定)", X, y, W, ID_RESIZABLE);
 
   /* 通信 */
   y = 48;
-  check(2, L"筐体間通信を使う (同じ LAN の他の PC と対戦)", X, y, W, ID_LINK);
+  check(2, L"筐体間通信", X, y, W, ID_LINK);
   y += 34;
-  label(2, L"筐体番号 (PCB ID)", X, y + 3, 130, 18);
+  label(2, L"PCB ID", X, y + 3, 130, 18);
   c = combo(2, X + 136, y, 80, ID_PCB);
   for (int i = 1; i <= 4; i++) {
     wchar_t text[8];
     swprintf(text, LEN(text), L"%d", i);
     SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)text);
   }
-  label(2, L"一緒に遊ぶ PC ごとに違う番号にしてください。", X + 228, y + 3, W - 228, 18);
   y += 40;
-  label(2, L"相手の場所 (空欄なら自動で探します。例: 2=192.168.1.20,3=pc3)", X, y, W, 18);
-  edit(2, X, y + 20, W, ID_PEERS);
+  label(2, L"接続先", X, y, W, 18);
+  SendMessageW(edit(2, X, y + 20, W, ID_PEERS), 0x1501, TRUE, (LPARAM)L"2=192.168.1.20,3=pc3");
   y += 58;
-  label(2, L"ポート番号の先頭 (空欄なら 29500。全員同じにします)", X, y + 3, 330, 18);
-  edit(2, X + 336, y, 80, ID_PORT);
+  label(2, L"ポート", X, y + 3, 130, 18);
+  SendMessageW(edit(2, X + 136, y, 80, ID_PORT), 0x1501, TRUE, (LPARAM)L"29500");
   y += 40;
-  label(2, L"初回はファイアウォールの確認が出ることがあります。プライベート ネットワークで許可してください。", X, y, W, 36);
 
   /* キー */
   HWND list = mk(3, WC_LISTVIEWW, L"", LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS | LVS_NOSORTHEADER | WS_TABSTOP, WS_EX_CLIENTEDGE,
@@ -625,22 +620,20 @@ static void create_controls(void) {
   button(3, L"キー 2 を変更", X + 104, 338, 100, ID_KEY_SET2);
   button(3, L"キー 1 を外す", X + 208, 338, 92, ID_KEY_CLEAR1);
   button(3, L"キー 2 を外す", X + 304, 338, 92, ID_KEY_CLEAR2);
-  button(3, L"初期設定に戻す", X + 400, 338, 112, ID_KEY_RESET);
-  label(3, L"操作を選んでボタンを押すか、行をダブルクリックします。", X, 372, W, 18);
+  button(3, L"キーを初期化", X + 400, 338, 112, ID_KEY_RESET);
 
   /* その他 */
   y = 48;
-  label(4, L"追加の環境変数 (調査用。1 行に 1 つ「名前=値」。上の設定より優先されます)", X, y, W, 18);
+  label(4, L"追加の環境変数 (名前=値)", X, y, W, 18);
   mk(4, L"EDIT", L"", ES_MULTILINE | ES_AUTOVSCROLL | ES_AUTOHSCROLL | ES_WANTRETURN | WS_VSCROLL | WS_TABSTOP, WS_EX_CLIENTEDGE, X, y + 22,
      W, 200, ID_EXTRA);
-  label(4, L"例: MKGP2PC_TRACE_LINK=1", X, y + 228, W, 18);
   button(4, L"ログを開く", X, y + 262, 120, ID_OPEN_LOG);
   button(4, L"フォルダーを開く", X + 128, y + 262, 140, ID_OPEN_FOLDER);
 
   /* below the tabs */
   mk(-1, L"STATIC", L"", SS_LEFT | SS_ENDELLIPSIS | WS_VISIBLE, 0, 12, 426, 300, 20, ID_STATUS);
   mk(-1, L"BUTTON", L"保存", BS_PUSHBUTTON | WS_TABSTOP | WS_VISIBLE, 0, 320, 420, 90, 30, ID_SAVE);
-  mk(-1, L"BUTTON", L"保存して起動", BS_DEFPUSHBUTTON | WS_TABSTOP | WS_VISIBLE, 0, 416, 420, 136, 30, ID_START);
+  mk(-1, L"BUTTON", L"ゲームを起動", BS_DEFPUSHBUTTON | WS_TABSTOP | WS_VISIBLE, 0, 416, 420, 136, 30, ID_START);
   /* Children are made front to back; the tab control has to be behind
    * what stands on it (it clips them out of its own drawing). */
   SetWindowPos(g_tab, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
@@ -696,10 +689,10 @@ static void window_to_settings(void) {
 static int save_from_window(void) {
   window_to_settings();
   if (!save_settings(&g_set)) {
-    MessageBoxW(g_wnd, L"設定を保存できませんでした。\n" INI_NAME L" に書き込めるか確認してください。", L"mkgp2-pc 設定", MB_ICONWARNING);
+    MessageBoxW(g_wnd, L"設定を保存できませんでした。\n" INI_NAME, L"mkgp2-pc 設定", MB_ICONWARNING);
     return 0;
   }
-  set_status(L"設定を保存しました。");
+  set_status(L"保存しました");
   return 1;
 }
 
@@ -738,7 +731,7 @@ static LRESULT CALLBACK capture_proc(HWND wnd, UINT msg, WPARAM wp, LPARAM lp) {
       g_captured = usage;
       g_captureDone = 1;
     } else {
-      SetWindowTextW(GetDlgItem(wnd, 1), L"そのキーは使えません。別のキーを押してください。\n(Esc でやめる)");
+      SetWindowTextW(GetDlgItem(wnd, 1), L"そのキーは使えません");
     }
     return 0;
   }
@@ -763,7 +756,7 @@ static int capture_key(const wchar_t* what) {
   int w = S(360), h = S(130);
   HWND wnd = CreateWindowExW(WS_EX_DLGMODALFRAME, L"Mkgp2KeyCapture", L"キーの割り当て", WS_POPUP | WS_CAPTION | WS_SYSMENU,
                              (rc.left + rc.right - w) / 2, (rc.top + rc.bottom - h) / 2, w, h, g_wnd, NULL, g_inst, NULL);
-  swprintf(text, LEN(text), L"「%ls」に使うキーを押してください。\n(Esc でやめる)", what);
+  swprintf(text, LEN(text), L"%ls のキーを押す", what);
   HWND st = CreateWindowExW(0, L"STATIC", text, WS_CHILD | WS_VISIBLE | SS_CENTER, S(10), S(24), w - S(36), S(60), wnd, (HMENU)1,
                             g_inst, NULL);
   SendMessageW(st, WM_SETFONT, (WPARAM)g_font, TRUE);
@@ -791,7 +784,7 @@ static int selected_action(void) {
 static void key_change(int slot, int ask) {
   int action = selected_action();
   if (action < 0 || action >= ACTIONS) {
-    set_status(L"先に一覧から操作を選んでください。");
+    set_status(L"操作を選んでください");
     return;
   }
   int usage = 0;
@@ -807,14 +800,14 @@ static void key_change(int slot, int ask) {
   }
   g_set.keys[action][slot] = usage;
   keys_fill();
-  set_status(L"キーを変更しました (「保存」で確定)。");
+  set_status(L"");
 }
 
 /* ---- main window -------------------------------------------------------- */
 
 static void game_started(void) {
   EnableWindow(GetDlgItem(g_wnd, ID_START), FALSE);
-  set_status(L"ゲームを実行中です。");
+  set_status(L"実行中");
   SetTimer(g_wnd, TIMER_GAME, 500, NULL);
 }
 
@@ -828,9 +821,9 @@ static void game_poll(void) {
   log_exit_code(code);
   wchar_t text[96];
   if (code >= 0x80000000u) {
-    swprintf(text, LEN(text), L"ゲームが異常終了しました (コード 0x%08lX)。", (unsigned long)code);
+    swprintf(text, LEN(text), L"異常終了 (0x%08lX)", (unsigned long)code);
   } else {
-    swprintf(text, LEN(text), L"ゲームが終了しました (コード %lu)。", (unsigned long)code);
+    swprintf(text, LEN(text), L"終了 (コード %lu)", (unsigned long)code);
   }
   set_status(text);
   EnableWindow(GetDlgItem(g_wnd, ID_START), TRUE);
@@ -840,7 +833,7 @@ static void open_path(const wchar_t* name) {
   wchar_t path[MAX_PATH];
   dir_path(path, name);
   if ((INT_PTR)ShellExecuteW(g_wnd, L"open", path, NULL, g_dir, SW_SHOWNORMAL) <= 32) {
-    set_status(L"開けませんでした (まだ無いのかもしれません)。");
+    set_status(L"開けませんでした");
   }
 }
 
@@ -883,7 +876,7 @@ static LRESULT CALLBACK main_proc(HWND wnd, UINT msg, WPARAM wp, LPARAM lp) {
     case ID_KEY_RESET:
       defaults_keys(&g_set);
       keys_fill();
-      set_status(L"キーを初期設定に戻しました (「保存」で確定)。");
+      set_status(L"");
       break;
     case ID_OPEN_LOG: open_path(LOG_NAME); break;
     case ID_OPEN_FOLDER: open_path(L""); break;
@@ -970,7 +963,7 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE prev, PWSTR cmd, int show) {
   wchar_t exe[MAX_PATH];
   dir_path(exe, GAME_EXE);
   if (!file_exists(exe)) {
-    set_status(L"このフォルダーに " GAME_EXE L" がありません。");
+    set_status( GAME_EXE L" がありません");
   }
   ShowWindow(g_wnd, show);
   UpdateWindow(g_wnd);

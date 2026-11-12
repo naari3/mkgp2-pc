@@ -16,7 +16,7 @@ a running game.
 
 The game program reads its settings from environment variables at start-up
 and has no settings file. The settings program does not change that: on
-"保存して起動" it writes the ini file, sets the variables in its own
+"ゲームを起動" it writes the ini file, sets the variables in its own
 environment (clearing the ones that are off, so that variables left in the
 shell do not leak in), and starts `mkgp2-gfx.exe` with
 
@@ -32,6 +32,10 @@ without showing the window (for a shortcut); it does not wait, so no exit
 code is written then. `run-gfx.cmd` still works and ignores the ini file.
 
 ## Pages and what they set
+
+The window carries labels and controls only, no explanatory sentences (the
+user's wish, 2026-11-12): what a setting does is written here, not in the
+window. Empty fields show their default as grey text.
 
 | page | item | variable |
 |---|---|---|
