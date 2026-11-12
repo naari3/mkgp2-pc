@@ -19,8 +19,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-uint32_t VIGetRetraceCount(void);
-
 int mkgp2pc_boot_fast;
 
 int mkgp2pc_boot_skip(void) {
@@ -35,6 +33,7 @@ int mkgp2pc_boot_skip(void) {
 /* 1 before the device check, 0 when the start-up screens are over. */
 void mkgp2pc_boot_phase(int on) {
   mkgp2pc_boot_fast = on && mkgp2pc_boot_skip();
-  fprintf(stderr, "boot: start-up screens %s at retrace %u%s\n", on ? "begin" : "end", (unsigned)VIGetRetraceCount(),
-          mkgp2pc_boot_skip() ? " (MKGP2PC_BOOT_SKIP)" : "");
+  /* (no retrace number here: the count lives in the video layer, and a port
+   * object that calls into it does not link on Windows) */
+  fprintf(stderr, "boot: start-up screens %s%s\n", on ? "begin" : "end", mkgp2pc_boot_skip() ? " (MKGP2PC_BOOT_SKIP)" : "");
 }

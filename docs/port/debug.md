@@ -116,7 +116,7 @@ for each of the other four, passed on only while debugging is on:
 | `item` (Space) | 0x2000 | 0x6001 | select, change a value, next |
 | `devup` (PageUp) | 0x8000 | 0x40 | cursor up |
 | `devdown` (PageDown) | 0x4000 | 0x80 | cursor down |
-| `devstart` (End) | 0x0200 | 0x8400 | start / leave / previous |
+| `devstart` (End) | 0x0200 | 0x8400 | start / leave / previous. The same switch is the cabinet's cancel ("Mario") button: the key action `cancel` (Left Shift; not Backspace, which the port menu work uses for "one screen back") sends it without debugging on |
 | `devsub` (Home) | 0x1000 | 0x6002 | second button (Miyazaki's scenes) |
 | `service` (F2) | operator | 0x800 | cursor down in some lists, play / stop in viewers |
 | brake held + `item` | | 0x80 | the game's own combination for "down" |

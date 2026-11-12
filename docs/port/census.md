@@ -1551,6 +1551,50 @@ materials); whether it may live in this public repository is the owner's
 decision. Until then it is kept outside it and copied next to the
 executable.
 
+### First Windows run with the list (2026-11-12, build f2fa4360)
+
+- Start: `367 rows merged`, Dawn pruned 5 entries before the game, no
+  `shaders:` line. The compiled blobs of the earlier run were still in
+  `dawn_cache.db`, so the background pass was over before retrace 1 and the
+  hold had nothing to do. The hold now says so (`shaders: nothing to prepare
+  at retrace N (M pipelines ready)`), otherwise that case looks like a hold
+  that never ran.
+- 30836 retraces of play: no pipeline stall outside a loading window. Five
+  inside one: 855 ms (+14), 328 ms (+5), 110 ms (+1), 109 ms (+1),
+  172 ms (+10). All 31 were states the list had not met.
+- The user's own list had grown from 306 to 546 rows in one afternoon of
+  play, 174 of them missing from the 410-row list (367 + cloud cup sweep).
+  Merged: 583 GX pipelines. A list made by playing does not converge fast:
+  menus, card screens, items, network versus and the award scene each add
+  some, and the attract demo sweep reaches none of those.
+- Why so many (583 configs counted): 334 distinct TEV/channel/texgen
+  set-ups (with the vertex attributes blanked), 466 distinct shader configs
+  with them, 31 distinct depth/blend/cull tails. Aurora fetches vertices in
+  the shader, so every attribute layout (offset, stride, frac, byte order)
+  is its own WGSL text, but that only explains 466 against 334: the bulk
+  is the game's own material variety. No cheap merge exists short of a
+  general ("uber") shader, which Aurora does not have.
+- Cost per new pipeline on D3D12: 61 ms each in the +14 batch (WGSL to
+  HLSL to DXC), 17 ms each in the +10 batch (shader text already in Dawn's
+  blob cache, only the pipeline object new). The Windows build has Dawn's
+  Vulkan backend compiled in (`MKGP2PC_BACKEND=vulkan`, launcher field),
+  which has no DXC step. Not timed yet.
+
+### Second Windows run, 593 pipelines ready (2026-11-12, build 72a0266f)
+
+- Start: `shaders: 133 pipelines prepared before the game in 0.2 s`, then
+  `nothing to prepare at retrace 2 (593 pipelines ready)`. 31458 retraces:
+  two pipeline stalls, both in loading windows (91 ms +3, 287 ms +3).
+- In the race: one stall of 1129 ms at retrace 14716 that is none of the
+  known causes (pipelines +0, disc 0.2 ms, lock 0, all of it in the game's
+  part of the frame), and two frames of 38 and 40 ms spent in a 6 KB and a
+  13 KB disc read (34 to 37 ms each: the read itself was slow, not big).
+- The spike line cannot say where such a stall sits, so a stall watch was
+  added: `MKGP2PC_STALL_MS` (150), stacks of every thread in
+  `dumps/stall_f<retrace>/stacks.txt` while the game's thread is stuck.
+  Linux check: the 1.5 s first frame is caught 65 ms in, main thread shown
+  in `StrPcb_Init`. Not run on Windows.
+
 ## 39. A ripple strip standing in the sky on the night Mario cup course (2026-11-12)
 
 Report from play on Windows (build 0c3e815, which has section 38's

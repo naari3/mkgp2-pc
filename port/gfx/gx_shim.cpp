@@ -38,6 +38,7 @@
 #include <aurora/texture.hpp>
 
 #include <cmath>
+#include <cstdarg>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -304,6 +305,169 @@ extern "C" void __wrap_GXSetTevKColor(u32 id, GXColor color) {
   }
   __real_GXSetTevKColor(id, color);
 }
+/*
+ * The frame's draw commands, for dumps (docs/port/dumps.md,
+ * port/tools/gx_fifo.py). Aurora's GX functions do not draw: they write the
+ * console's command stream (BP / CP / XF register loads, vertex data, and
+ * Aurora's own commands for what the console passed as addresses) into a
+ * buffer that a worker thread works through. That buffer is copied here as
+ * it grows, so that a dump can say what was sent for a frame, in order.
+ *
+ * The buffer is emptied inside some calls (GXDrawDone, the copies, the end
+ * of the frame). Before each of those known here the new bytes are taken
+ * and the buffer is emptied by hand (AuroraGXSync), so what such a call
+ * writes itself starts at zero again; a note names the call. Anywhere else
+ * a buffer that became shorter is recorded as "emptied unseen" (the bytes
+ * since the last look are missing).
+ *
+ * File: "MKGX1\0\0\0", then records: u32 kind, u32 length, payload
+ * (little-endian). Kind 0: stream bytes. 1: a note (text). 2: the vertex
+ * description and formats in force at the frame's start (21 attribute
+ * types, then 8 formats x 12 attributes x (count, type, shift)).
+ * MKGP2PC_DUMP_GX=0 switches the copying off.
+ */
+namespace aurora::gx::fifo {
+const uint8_t* get_buffer_data();
+uint32_t get_buffer_size();
+} // namespace aurora::gx::fifo
+extern "C" {
+typedef struct gzFile_s* gzFile; /* zlib without its header, as in diag.c */
+gzFile gzopen(const char* path, const char* mode);
+int gzwrite(gzFile file, const void* buf, unsigned len);
+int gzclose(gzFile file);
+}
+namespace {
+std::vector<uint8_t> sGxNow, sGxLast;
+uint32_t sGxSeen;
+bool sGxNeedState = true;
+int sGxOn = -1;
+bool gxlog_on() {
+  if (sGxOn < 0) {
+    const char* v = getenv("MKGP2PC_DUMP_GX");
+    sGxOn = v == nullptr || strcmp(v, "0") != 0;
+  }
+  return sGxOn != 0;
+}
+void gxlog_record(u32 kind, const void* data, u32 size) {
+  const u32 head[2] = {kind, size};
+  const auto* h = reinterpret_cast<const uint8_t*>(head);
+  sGxNow.insert(sGxNow.end(), h, h + 8);
+  const auto* d = static_cast<const uint8_t*>(data);
+  sGxNow.insert(sGxNow.end(), d, d + size);
+}
+void gxlog_state() {
+  uint8_t st[21 + 8 * 12 * 3];
+  for (int a = 0; a < 21; a++) {
+    GXAttrType t = GX_NONE;
+    GXGetVtxDesc(static_cast<GXAttr>(a), &t);
+    st[a] = static_cast<uint8_t>(t);
+  }
+  uint8_t* o = st + 21;
+  for (int f = 0; f < 8; f++) {
+    for (int a = GX_VA_POS; a <= GX_VA_TEX7; a++) {
+      GXCompCnt cnt = static_cast<GXCompCnt>(0);
+      GXCompType type = static_cast<GXCompType>(0);
+      u8 shift = 0;
+      GXGetVtxAttrFmt(static_cast<GXVtxFmt>(f), static_cast<GXAttr>(a), &cnt, &type, &shift);
+      *o++ = static_cast<uint8_t>(cnt);
+      *o++ = static_cast<uint8_t>(type);
+      *o++ = shift;
+    }
+  }
+  gxlog_record(2, st, sizeof(st));
+}
+void gxlog_sample() {
+  if (!gxlog_on()) {
+    return;
+  }
+  if (sGxNeedState) {
+    sGxNeedState = false;
+    gxlog_state();
+  }
+  const uint32_t size = aurora::gx::fifo::get_buffer_size();
+  if (size < sGxSeen) {
+    static const char text[] = "emptied unseen: commands since the last look are missing";
+    gxlog_record(1, text, sizeof(text) - 1);
+    sGxSeen = 0;
+  }
+  if (size > sGxSeen) {
+    gxlog_record(0, aurora::gx::fifo::get_buffer_data() + sGxSeen, size - sGxSeen);
+    sGxSeen = size;
+  }
+}
+/* around a call that empties the buffer itself */
+void gxlog_before_emptying() {
+  if (!gxlog_on()) {
+    return;
+  }
+  gxlog_sample();
+  AuroraGXSync();
+  sGxSeen = 0;
+}
+void gxlog_after_emptying(const char* fmt, ...) {
+  if (!gxlog_on()) {
+    return;
+  }
+  const uint32_t size = aurora::gx::fifo::get_buffer_size();
+  if (size != 0) {
+    /* all of the call's own commands, or those after its emptying */
+    gxlog_record(0, aurora::gx::fifo::get_buffer_data(), size);
+  }
+  sGxSeen = size;
+  char text[160];
+  va_list ap;
+  va_start(ap, fmt);
+  const int n = vsnprintf(text, sizeof(text), fmt, ap);
+  va_end(ap);
+  gxlog_record(1, text, static_cast<u32>(n < 0 ? 0 : n >= static_cast<int>(sizeof(text)) ? sizeof(text) - 1 : n));
+}
+void gxlog_file(const char* dir, const char* name, const std::vector<uint8_t>& bytes) {
+  char path[700];
+  snprintf(path, sizeof(path), "%s/%s", dir, name);
+  gzFile z = gzopen(path, "wb1");
+  if (z == nullptr) {
+    return;
+  }
+  gzwrite(z, "MKGX1\0\0\0", 8);
+  for (size_t at = 0; at < bytes.size();) {
+    const size_t n = bytes.size() - at < (1u << 24) ? bytes.size() - at : (1u << 24);
+    gzwrite(z, bytes.data() + at, static_cast<unsigned>(n));
+    at += n;
+  }
+  gzclose(z);
+}
+} // namespace
+/* video_aurora.c: before the frame is handed over (retrace: for the note) */
+extern "C" void mkgp2pc_gxlog_frame_end(void) { gxlog_sample(); }
+/* ... and after: the frame's record becomes "the frame before" */
+extern "C" void mkgp2pc_gxlog_frame_next(void) {
+  if (!gxlog_on()) {
+    return;
+  }
+  sGxLast.swap(sGxNow);
+  sGxNow.clear();
+  sGxSeen = 0;
+  sGxNeedState = true;
+}
+/* gx_fifo.bin.gz: the frame so far (at F9: the whole frame, the dump is made
+ * at its end). withLast (a crash): gx_fifo_prev.bin.gz, the frame before. */
+extern "C" void mkgp2pc_gxlog_write(const char* dir, int withLast) {
+  if (!gxlog_on()) {
+    return;
+  }
+  gxlog_sample();
+  gxlog_file(dir, "gx_fifo.bin.gz", sGxNow);
+  if (withLast) {
+    gxlog_file(dir, "gx_fifo_prev.bin.gz", sGxLast);
+  }
+}
+extern "C" void __real_GXDrawDone(void);
+extern "C" void __wrap_GXDrawDone(void) {
+  gxlog_before_emptying();
+  __real_GXDrawDone();
+  gxlog_after_emptying("GXDrawDone");
+}
+
 extern "C" bool mkgp2pc_skip_draw;
 extern "C" void __wrap_GXCallDisplayList(const void* list, u32 nbytes) {
   if (mkgp2pc_skip_draw) {
@@ -340,6 +504,7 @@ extern "C" void __wrap_GXCallDisplayList(const void* list, u32 nbytes) {
     }
   }
   __real_GXCallDisplayList(list, nbytes);
+  gxlog_sample();
 }
 /* video_aurora.c: at the end of each frame, and when a dump is written. */
 extern "C" void mkgp2pc_shadow_record_frame(void) {
@@ -825,6 +990,7 @@ void __wrap_GXEnd(void) {
   }
   if (!mkgp2pc_skip_draw) {
     __real_GXEnd();
+    gxlog_sample();
   }
 }
 void __real_GXBegin(GXPrimitive type, GXVtxFmt vtxfmt, u16 nverts);
@@ -841,12 +1007,16 @@ void __wrap_GXCopyTex(void* dest, GXBool clear) {
     static int show = -1;
     if (show < 0) show = getenv("MKGP2PC_SHOW_COPY") != nullptr;
     if (show) { /* MKGP2PC_SHOW_COPY=1, debugging: the copied image stays on screen instead of the scene */
+      gxlog_before_emptying();
       __real_GXCopyTex(dest, GX_FALSE);
+      gxlog_after_emptying("GXCopyTex dest %p (shown instead of the scene)", dest);
       mkgp2pc_skip_draw = true;
       s_showHold = true;
       return;
     }
+    gxlog_before_emptying();
     __real_GXCopyTex(dest, clear);
+    gxlog_after_emptying("GXCopyTex dest %p clear %d", dest, (int)clear);
   }
 }
 void __real_GXCopyDisp(void* dest, GXBool clear);
@@ -856,7 +1026,9 @@ void __wrap_GXCopyDisp(void* dest, GXBool clear) {
     mkgp2pc_skip_draw = false;
   }
   if (!mkgp2pc_skip_draw) {
+    gxlog_before_emptying();
     __real_GXCopyDisp(dest, clear);
+    gxlog_after_emptying("GXCopyDisp dest %p clear %d", dest, (int)clear);
   }
 }
 }
@@ -1025,6 +1197,9 @@ void __wrap_GXParam4f32(const f32 x, const f32 y, const f32 z, const f32 w) {
  *    background are repeated outwards. Everything else keeps its shape in
  *    the middle and is clipped to the 4:3 picture (the scissor moves with
  *    it), so parts that the arcade screen hid beyond its edges stay hidden.
+ *    Except what is moving across the left or right edge: that is moved
+ *    outwards so that it leaves or enters at the real edge of the screen
+ *    (mkgp2pc_wide_end).
  *  - MKGP2PC_TRACE_WIDE=1 prints how each kept primitive was classified.
  *  - GXGetProjectionv gives back what the game set, not the narrowed
  *    matrix: the game saves and restores projections with it, and
@@ -1033,6 +1208,7 @@ void __wrap_GXParam4f32(const f32 x, const f32 y, const f32 z, const f32 w) {
  */
 extern "C" {
 float mkgp2pc_wide_k = 1.0f;
+unsigned mkgp2pc_wide_retrace;
 bool mkgp2pc_wide_on, mkgp2pc_wide_capture;
 void __real_GXSetViewport(f32 left, f32 top, f32 wd, f32 ht, f32 nearz, f32 farz);
 void __real_GXSetViewportJitter(f32 left, f32 top, f32 wd, f32 ht, f32 nearz, f32 farz, u32 field);
@@ -1066,7 +1242,10 @@ u32 sScis[4] = {0, 0, 640, 480};
  * stays on its text and nothing drawn outside the 4:3 picture (parts the
  * arcade screen never showed) appears in the side areas. The 3D scene and
  * the stretched whole-screen draws keep the scissor as the game gave it. */
-void apply_scissor(bool narrow) {
+void apply_scissor(bool narrow, bool open = false) {
+  if (open && sScis[0] == 0 && sScis[0] + sScis[2] >= 640) {
+    narrow = false;
+  }
   if (!narrow) {
     __real_GXSetScissor(sScis[0], sScis[1], sScis[2], sScis[3]);
     return;
@@ -1091,7 +1270,7 @@ void send_projection(bool narrow, float shift = 0.0f, bool clip = true) {
   }
   __real_GXSetProjection(m, sProjType);
   if (wide_on()) {
-    apply_scissor(narrow && clip && sProjType != GX_PERSPECTIVE);
+    apply_scissor(narrow && sProjType != GX_PERSPECTIVE, !clip);
   }
 }
 
@@ -1417,7 +1596,14 @@ static std::tuple<int, int, int, int> tile_key(const WideQuad& q) {
   return {static_cast<int>(std::lround(q.lo * 500)), static_cast<int>(std::lround(q.hi * 500)),
           static_cast<int>(std::lround(q.ylo * 500)), static_cast<int>(std::lround(q.yhi * 500))};
 }
+typedef std::tuple<int, int, int, int> WideStillKey;
+static std::map<WideStillKey, int> sStillWas, sStillNow;
+enum { kStillFrames = 6 };
 void wide_tiles_frame(void) {
+  if (!sStillNow.empty() || !sQuads.empty()) { /* a frame that drew something */
+    sStillWas.swap(sStillNow);
+    sStillNow.clear();
+  }
   sTiles.clear();
   for (size_t i = 0; i < sQuads.size(); i++) {
     const WideQuad& q = sQuads[i];
@@ -1479,58 +1665,104 @@ void mkgp2pc_wide_end(void) {
     return;
   }
   const float (*mv)[4] = sMtx[sCurMtx];
-  int runFirst = 0;
-  bool runFull = false;
   const int groups = sWideVerts / per;
-  for (int g = 0; g <= groups; g++) {
-    bool full = false;
-    if (g < groups) {
-      float lo = 1e9f, hi = -1e9f, ylo = 1e9f, yhi = -1e9f;
-      for (int v = g * per; v < (g + 1) * per; v++) {
-        float p[3] = {0, 0, 0};
-        for (int c = 0; c < sWidePosN; c++) {
-          std::memcpy(&p[c], &sWide[pos[v] + c].bits, 4);
-        }
-        const float ex = mv[0][0] * p[0] + mv[0][1] * p[1] + mv[0][2] * p[2] + mv[0][3];
-        const float ey = mv[1][0] * p[0] + mv[1][1] * p[1] + mv[1][2] * p[2] + mv[1][3];
-        const float x = sProj[0][0] * ex + sProj[0][1] * ey + sProj[0][3];
-        const float y = sProj[1][0] * ex + sProj[1][1] * ey + sProj[1][3];
-        lo = x < lo ? x : lo;
-        hi = x > hi ? x : hi;
-        ylo = y < ylo ? y : ylo;
-        yhi = y > yhi ? y : yhi;
+  /* 0: keeps its place, 1: stretched over the whole width, 2: moved outwards */
+  std::vector<u8> kind(groups + 1u, 0);
+  float outLo = 1e9f, outHi = -1e9f, outYlo = 1e9f, outYhi = -1e9f;
+  for (int g = 0; g < groups; g++) {
+    float lo = 1e9f, hi = -1e9f, ylo = 1e9f, yhi = -1e9f;
+    for (int v = g * per; v < (g + 1) * per; v++) {
+      float p[3] = {0, 0, 0};
+      for (int c = 0; c < sWidePosN; c++) {
+        std::memcpy(&p[c], &sWide[pos[v] + c].bits, 4);
       }
-      if (per == 4 && groups == 1 && sQuads.size() < 4096) {
-        const WideQuad q{lo, hi, ylo, yhi};
-        sQuads.push_back(q);
-        if (sTiles.count(tile_key(q)) != 0) {
-          /* an edge tile of a background grid: draw it, then its copies */
+      const float ex = mv[0][0] * p[0] + mv[0][1] * p[1] + mv[0][2] * p[2] + mv[0][3];
+      const float ey = mv[1][0] * p[0] + mv[1][1] * p[1] + mv[1][2] * p[2] + mv[1][3];
+      const float x = sProj[0][0] * ex + sProj[0][1] * ey + sProj[0][3];
+      const float y = sProj[1][0] * ex + sProj[1][1] * ey + sProj[1][3];
+      lo = x < lo ? x : lo;
+      hi = x > hi ? x : hi;
+      ylo = y < ylo ? y : ylo;
+      yhi = y > yhi ? y : yhi;
+    }
+    if (per == 4 && groups == 1 && sQuads.size() < 4096) {
+      const WideQuad q{lo, hi, ylo, yhi};
+      sQuads.push_back(q);
+      if (sTiles.count(tile_key(q)) != 0) {
+        /* an edge tile of a background grid: draw it, then its copies */
+        wide_replay(start[0], start[per], per);
+        const float w = hi - lo, dir = lo < 0 ? -1.0f : 1.0f;
+        for (int n = 1; n < 32 && 1.0f + (n - 1) * w < mkgp2pc_wide_k; n++) {
+          send_projection(true, dir * n * w, false);
           wide_replay(start[0], start[per], per);
-          const float w = hi - lo, dir = lo < 0 ? -1.0f : 1.0f;
-          for (int n = 1; n < 32 && 1.0f + (n - 1) * w < mkgp2pc_wide_k; n++) {
-            send_projection(true, dir * n * w, false);
-            wide_replay(start[0], start[per], per);
-          }
-          send_projection(true);
-          return;
         }
-      }
-      full = lo <= -0.98f && hi >= 0.98f;
-      if (wide_trace()) {
-        fprintf(stderr, "wide: %x n %d group %d x %.3f..%.3f mtx %u%s\n", sWideType, sWideVerts, g, lo, hi, sCurMtx, full ? " FULL" : "");
-      }
-    }
-    if (g == groups || (g > runFirst && full != runFull)) {
-      if (runFull) {
-        send_projection(false);
-      }
-      wide_replay(start[runFirst * per], start[g * per], static_cast<u16>((g - runFirst) * per));
-      if (runFull) {
         send_projection(true);
+        return;
       }
-      runFirst = g;
     }
-    runFull = full;
+    /* As wide as the picture: stretched, wherever it is, so that a band
+     * or a curtain that slides away keeps covering up to the real edge. */
+    kind[g] = hi - lo >= 1.96f;
+    if (kind[g] == 0) {
+      outLo = lo < outLo ? lo : outLo;
+      outHi = hi > outHi ? hi : outHi;
+      outYlo = ylo < outYlo ? ylo : outYlo;
+      outYhi = yhi > outYhi ? yhi : outYhi;
+    }
+    if (wide_trace()) {
+      fprintf(stderr, "wide: %x n %d group %d x %.3f..%.3f mtx %u%s\n", sWideType, sWideVerts, g, lo, hi, sCurMtx, kind[g] ? " FULL" : "");
+    }
+  }
+  /* Something narrower that reaches beyond the left or right edge of the
+   * 4:3 picture is on its way out of (or into) the screen, or parked
+   * outside. It is moved outwards by the share of it that is beyond the
+   * edge, times the width of a side area: unchanged while it is inside,
+   * just outside the real edge when it is just outside the 4:3 one. The
+   * primitive moves as a whole.
+   * Only while it moves, though. Parts of the screen layout that rest
+   * across the edge (the left end of a title bar, made of several pieces)
+   * would come apart, so a primitive that has been in the same place for
+   * kStillFrames frames keeps its place and is clipped at the 4:3 edge. */
+  float shift = 0.0f;
+  if (outHi > outLo && (outHi > 1.0f || outLo < -1.0f)) {
+    const float w = outHi - outLo;
+    float over = (outHi > 1.0f ? outHi - 1.0f : 0.0f) - (outLo < -1.0f ? -1.0f - outLo : 0.0f);
+    over = over > w ? w : over < -w ? -w : over;
+    shift = (mkgp2pc_wide_k - 1.0f) * over / w;
+    const WideStillKey key{static_cast<int>(std::lround(outLo * 4000)), static_cast<int>(std::lround(outHi * 4000)),
+                           static_cast<int>(std::lround(outYlo * 4000)), static_cast<int>(std::lround(outYhi * 4000))};
+    const auto was = sStillWas.find(key);
+    const int frames = was != sStillWas.end() ? was->second + 1 : 1;
+    int& now = sStillNow[key];
+    now = frames > now ? frames : now;
+    if (frames > kStillFrames) {
+      shift = 0.0f;
+    }
+    if (wide_trace()) {
+      fprintf(stderr, "wide: moved by %.3f (x %.3f..%.3f) retrace %u\n", shift, outLo, outHi, mkgp2pc_wide_retrace);
+    }
+  }
+  if (shift != 0.0f) {
+    for (int g = 0; g < groups; g++) {
+      kind[g] = kind[g] == 0 ? 2 : kind[g];
+    }
+  }
+  int runFirst = 0;
+  for (int g = 1; g <= groups; g++) {
+    if (g < groups && kind[g] == kind[runFirst]) {
+      continue;
+    }
+    const u8 k = kind[runFirst];
+    if (k == 1) {
+      send_projection(false);
+    } else if (k == 2) {
+      send_projection(true, shift, false);
+    }
+    wide_replay(start[runFirst * per], start[g * per], static_cast<u16>((g - runFirst) * per));
+    if (k != 0) {
+      send_projection(true);
+    }
+    runFirst = g;
   }
 }
 }
