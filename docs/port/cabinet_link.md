@@ -35,6 +35,7 @@ it has to be allowed on private networks.
 | `MKGP2PC_LINK_PEERS=2=192.168.1.20,3=pc3:29566` | where the other cabinets are, by hand: host name or address, optionally `:port`. For networks that drop broadcasts and for play over the internet. The cabinets not named are still found by their announcements |
 | `MKGP2PC_LINK_PORT=29500` | base of the port numbers (see below); the same on all copies |
 | `MKGP2PC_LINK_PACE=0` | the arcade program's own rule for when the host waits for a client (see "How a race is kept in step") |
+| `MKGP2PC_LINK_START=0` | no cabinet holds its countdown to even out the start (see "The start") |
 | `MKGP2PC_LINK_OWNKART=0` | the arcade program's way of moving a client's kart: only the host drives it (see "Every cabinet drives its own kart"). Either side can set it; the race then runs the old way for that client |
 | `MKGP2PC_TRACE_LINK=1` | log connections and, every five seconds, the traffic; `2` logs every command |
 
@@ -322,14 +323,44 @@ What this does not solve, and what only play by people can judge:
   another does not shows as a kart that spins on one screen and not on the
   other; the positions stay those its own cabinet reports.
 - The host judges order and the finish from what it sees, and it sees its
-  own kart now and the others one way late. A client also starts later than
-  the host by the way of the start signal. So the host is ahead by about a
-  round trip in its own judgement. Before this change the same time was a
-  client's input delay throughout the race. Delaying each cabinet's start
-  by what it is nearer to the host than the farthest one would even it out
-  (not done).
+  own kart now and the others late. The next section evens that out at the
+  start; a connection whose delay changes during the race shifts it again.
 - A client that has no host frame still stands still for those retraces,
   its own kart included.
+
+### The start (2026-11-12)
+
+The host releases the countdown on all cabinets with one signal. It sees it
+at once, a client one way later, and where the client's kart is reaches the
+host another way later. With every cabinet driving its own kart, the host's
+kart would leave a round trip before a client's on the host, where order
+and finish are judged (measured at 50 ms one way: 166 ms, ten frames).
+
+So every cabinet holds its countdown a little longer after the signal
+(`mkgp2pc_link_start_due` in `netlink.c`, called from the same patch): all
+of them one second, in which they find out who drives its own kart; then the
+host by the longest trip of all clients, and a client by what its own trip
+is shorter than that. A trip is the round trip the connections measure plus
+50 ms for the frames in which the signal and a sample wait their turn
+(measured: 150 to 167 ms at a round trip of 109 ms, 100 ms at about 50).
+The host tells each client its time in the two unused bytes at +0x26 of the
+kart's entry in its frame. At most 500 ms. `MKGP2PC_LINK_START=0`: nobody
+holds anything.
+
+Measured on the host (`MKGP2PC_TRACE_LINK=1` logs when each kart first
+leaves its place; full throttle on all copies from before the countdown):
+
+| network | host held | client held | on the host, the karts leave |
+|---|---|---|---|
+| 50 ms one way, `MKGP2PC_LINK_START=0` | 0 | 0 | client 166 ms after the host |
+| 20 ms, 0..5 ms jitter | 99 ms | 0 | in the same frame |
+| 50 ms | 157 ms | 0 | 15 ms apart (one frame) |
+| 100 ms, 0..20 ms jitter, 3 % loss | 269 ms | 0 | in the same frame |
+| three copies: one client 10 ms from the host, one 45 ms (mean) | 147 ms | 70 ms and 0 | within one frame (both clients' the frame before the host's) |
+
+On a client's screen its own kart leaves about a round trip before the
+host's: every screen shows its own kart now and the others earlier. The
+host's view is the one the ranks come from.
 
 ### Measured with delay added, TCP and the arcade waiting rule (2026-11-11)
 
