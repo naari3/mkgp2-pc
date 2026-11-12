@@ -96,4 +96,7 @@ cp port/gfx/package/run-gfx.cmd port/gfx/package/KEYS.txt "$DIST/"
 
 step "Settings program (mkgp2-launcher.exe, docs/port/launcher.md)"
 port/launcher/build.sh "$DIST"
+
+step "Texture maker (mkgp2-hires.exe, docs/port/hires_textures.md)"
+port/hires/build.sh "$DIST"
 ls -l "$DIST"

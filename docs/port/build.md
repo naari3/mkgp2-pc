@@ -400,6 +400,12 @@ program is started from (`MKGP2PC_CARD_FILE` names another file).
   frame); in a running race a draw with a new pipeline is left out for the
   few frames its compilation takes. `always` waits every time, `never`
   (or the older `MKGP2PC_ASYNC_PIPELINES=1`) never. census.md section 36.
+- `MKGP2PC_NO_SHADER_WAIT=1`: by default the game is held at its start until
+  every pipeline of Aurora's list is compiled (title bar: "preparing
+  shaders, N left"); this starts it at once. The list is the user's own
+  `pipeline_cache.db` plus `initial_pipeline_cache.db` from the executable's
+  folder, if there is one (`port/tools/pipeline_list.py`,
+  `port/tools/pipeline_sweep.sh`; census.md section 36).
 - `MKGP2PC_SPIKE_MS=N`: frames longer than N milliseconds get a `spike:`
   line in the log with where the time went (default 25; 0 turns it off).
   Fields: comment above `spike_log` in port/gfx/video_aurora.c, background

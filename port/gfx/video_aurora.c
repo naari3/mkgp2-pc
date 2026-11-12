@@ -222,6 +222,7 @@ static uint32_t s_shotW, s_shotH;
 static char s_shotPath[600];
 static int s_dumpCount;
 static bool s_fast, s_fastHeld; /* F10 and Tab: no frame limit */
+extern int mkgp2pc_boot_fast;   /* the same during start-up (port/platform/runtime/boot_skip.c) */
 
 void mkgp2pc_shadow_record_frame(void);  /* gx_shim.cpp */
 void mkgp2pc_shadow_record_write(FILE* f);
@@ -773,22 +774,87 @@ static void cache_check_file(const char* dir, const char* name, bool reported, b
           moved ? "set aside as .broken, a new one is started (shaders are compiled again once)"
                 : "and could not be moved away: this run has no shader cache");
 }
-static void cache_check(const char* appName) {
-  if (getenv("MKGP2PC_NO_CACHE_CHECK") != NULL) {
-    return;
+/*
+ * One game at a time per cache folder. Two copies running together (two
+ * cabinets on one PC for the link) used to share the two files; SQLite is
+ * meant to cope with that, but the copies are also ended with
+ * TerminateProcess (quit_now, a reset) in the middle of whatever they are
+ * writing, and the files did get damaged on the one PC where both happened
+ * (2026-11-12, cause not proven). The first copy takes a lock file in the
+ * user directory and uses the directory itself; a copy that finds the lock
+ * taken uses the sub-folder copy2 (then copy3, copy4) with caches of its
+ * own. The operating system drops the lock when the process ends, however
+ * it ends.
+ */
+#ifdef _WIN32
+__declspec(dllimport) void* __stdcall CreateFileA(const char* name, unsigned long access, unsigned long share,
+                                                  void* security, unsigned long creation, unsigned long flags,
+                                                  void* templateFile);
+static bool cache_lock(const char* path) {
+  /* GENERIC_WRITE, no sharing, OPEN_ALWAYS; the handle is kept for good */
+  return CreateFileA(path, 0x40000000ul, 0, NULL, 4, 0x80, NULL) != (void*)(intptr_t)-1;
+}
+#else
+#include <fcntl.h>
+#include <sys/file.h>
+#include <unistd.h>
+static bool cache_lock(const char* path) {
+  int fd = open(path, O_RDWR | O_CREAT, 0644);
+  if (fd < 0) {
+    return true; /* cannot tell: behave as the only copy */
   }
-  char* dir = SDL_GetPrefPath(NULL, appName); /* what Aurora uses when no cache path is given */
+  if (flock(fd, LOCK_EX | LOCK_NB) != 0) {
+    close(fd);
+    return false;
+  }
+  return true;
+}
+#endif
+/* The folder for this copy's caches; NULL when it is Aurora's default (the
+ * user directory). The string stays allocated: Aurora keeps the pointer. */
+static const char* cache_check(const char* appName) {
+  char* base = SDL_GetPrefPath(NULL, appName); /* what Aurora uses when no cache path is given */
+  char* dir = base;
+  char lock[1100];
+  if (base == NULL) {
+    return NULL;
+  }
+  for (int copy = 1; copy <= 4; copy++) {
+    if (copy > 1) {
+      size_t size = strlen(base) + 16;
+      dir = (char*)SDL_malloc(size);
+#ifdef _WIN32
+      snprintf(dir, size, "%scopy%d\\", base, copy);
+#else
+      snprintf(dir, size, "%scopy%d/", base, copy);
+#endif
+      SDL_CreateDirectory(dir);
+    }
+    snprintf(lock, sizeof(lock), "%srunning.lock", dir);
+    if (cache_lock(lock)) {
+      break;
+    }
+    if (copy > 1) {
+      SDL_free(dir);
+    }
+    dir = NULL;
+  }
   if (dir == NULL) {
-    return;
+    fprintf(stderr, "cache: four copies are running already; this one shares the first one's caches\n");
+    dir = base;
+  } else if (dir != base) {
+    fprintf(stderr, "cache: another copy is running; this one keeps its caches in %s\n", dir);
   }
-  Uint64 start = SDL_GetTicksNS();
-  snprintf(s_cacheMarker, sizeof(s_cacheMarker), "%scache_damaged", dir);
-  bool reported = SDL_GetPathInfo(s_cacheMarker, NULL);
-  cache_check_file(dir, "dawn_cache.db", reported, false);
-  cache_check_file(dir, "pipeline_cache.db", reported, true);
-  SDL_RemovePath(s_cacheMarker);
-  fprintf(stderr, "cache: %s checked in %.0f ms\n", dir, (double)(SDL_GetTicksNS() - start) / 1e6);
-  SDL_free(dir);
+  if (getenv("MKGP2PC_NO_CACHE_CHECK") == NULL) {
+    Uint64 start = SDL_GetTicksNS();
+    snprintf(s_cacheMarker, sizeof(s_cacheMarker), "%scache_damaged", dir);
+    bool reported = SDL_GetPathInfo(s_cacheMarker, NULL);
+    cache_check_file(dir, "dawn_cache.db", reported, false);
+    cache_check_file(dir, "pipeline_cache.db", reported, true);
+    SDL_RemovePath(s_cacheMarker);
+    fprintf(stderr, "cache: %s checked in %.0f ms\n", dir, (double)(SDL_GetTicksNS() - start) / 1e6);
+  }
+  return dir != base ? dir : NULL;
 }
 
 /* Wide picture (MKGP2PC_ASPECT, docs/port/widescreen.md). The rendering
@@ -878,7 +944,7 @@ int __wrap_main(int argc, char** argv) {
   }
   mkgp2pc_script_extra = &script_extra;
   mkgp2pc_script_record = &rec_script;
-  cache_check(config.appName);
+  config.cachePath = cache_check(config.appName);
   s_window = aurora_initialize(argc, argv, &config).window;
   mkgp2pc_hires_init();
 #ifdef _WIN32
@@ -948,7 +1014,7 @@ static void frame_limit(void) {
     off = getenv("MKGP2PC_NOLIMIT") != NULL;
   }
   s_limitWanted = 0;
-  if (off || s_fast || s_fastHeld) {
+  if (off || s_fast || s_fastHeld || mkgp2pc_boot_fast) {
     next = 0; /* the pace starts afresh when the limit comes back */
     return;
   }
@@ -970,7 +1036,7 @@ static void frame_limit(void) {
 extern bool mkgp2pc_skip_draw;
 static bool show_next_frame(void) {
   static Uint64 shown;
-  if (!(s_fast || s_fastHeld) || s_paused || s_dumpWanted) {
+  if (!(s_fast || s_fastHeld || mkgp2pc_boot_fast) || s_paused || s_dumpWanted) {
     shown = 0;
     return true;
   }
@@ -1067,6 +1133,61 @@ static void spike_log(const Uint64 t[7], bool skip) {
   lockNs = lockNow;
 }
 
+/*
+ * Shaders before the game. Aurora queues every pipeline of its list
+ * (pipeline_cache.db, merged at each start with initial_pipeline_cache.db
+ * from the executable's folder) for its pipeline thread when it starts. The
+ * game is held at its first retraces until that queue is empty, so that
+ * none of the listed pipelines is compiled while the game runs. With the
+ * compiled blobs in dawn_cache.db this is a second or less; without them (first
+ * start on a machine, new driver) every pipeline is compiled, 60 to 90 ms
+ * each on D3D12. The title bar counts down meanwhile.
+ * MKGP2PC_NO_SHADER_WAIT=1 lets the game start at once as before.
+ */
+static void shader_wait(void) {
+  static int off = -1;
+  const AuroraStats* stats = aurora_get_stats();
+  if (off < 0) {
+    off = getenv("MKGP2PC_NO_SHADER_WAIT") != NULL;
+  }
+  uint32_t first = stats->queuedPipelines;
+  if (off || first == 0) {
+    return;
+  }
+  Uint64 start = SDL_GetTicksNS(), moved = start, titled = 0;
+  uint32_t last = first;
+  char* title = s_window != NULL ? SDL_strdup(SDL_GetWindowTitle(s_window)) : NULL;
+  for (;;) {
+    uint32_t left = stats->queuedPipelines;
+    Uint64 now = SDL_GetTicksNS();
+    if (left == 0) {
+      break;
+    }
+    if (left != last) {
+      last = left;
+      moved = now;
+    } else if (now - moved > 20000000000ull) {
+      fprintf(stderr, "shaders: no progress for 20 s with %u left; the game starts without waiting\n", (unsigned)left);
+      break;
+    }
+    if (s_window != NULL && now - titled > 200000000ull) {
+      char text[128];
+      titled = now;
+      snprintf(text, sizeof(text), "%s - preparing shaders, %u left", title != NULL ? title : "mkgp2-pc",
+               (unsigned)left);
+      SDL_SetWindowTitle(s_window, text);
+    }
+    pump_events();
+    SDL_Delay(5);
+  }
+  if (s_window != NULL && title != NULL) {
+    SDL_SetWindowTitle(s_window, title);
+  }
+  SDL_free(title);
+  fprintf(stderr, "shaders: %u pipelines prepared before the game in %.1f s\n", (unsigned)(first - stats->queuedPipelines),
+          (double)(SDL_GetTicksNS() - start) / 1e9);
+}
+
 void VIWaitForRetrace(void) {
   static Uint64 lastReturn;
   Uint64 t[7];
@@ -1135,6 +1256,10 @@ void VIWaitForRetrace(void) {
   OSRestoreInterrupts(level);
   if (s_frameLimit >= 0 && (long)s_retrace >= s_frameLimit) {
     quit_now();
+  }
+  if (s_retrace <= 3) {
+    shader_wait();
+    skip = true;
   }
   t[5] = SDL_GetTicksNS();
   if (!s_inFrame) {

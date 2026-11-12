@@ -60,6 +60,8 @@ void __real_GXInvalidateTexAll(void);
 void __real_GXSetChanAmbColor(GXChannelID, GXColor);
 void __real_GXSetChanMatColor(GXChannelID, GXColor);
 uint32_t mkgp2pc_array_extent(const void* base);
+void mkgp2pc_array_forget(const void* base, uint32_t size);
+void* __real_OSAllocFromHeap(int heap, u32 size);
 extern unsigned mkgp2pc_data_generation;
 }
 
@@ -184,6 +186,17 @@ void __wrap_GXLoadTlut(const GameTlutObj* o, u32 idx) {
   GXTlutObj real;
   __real_GXInitTlutObj(&real, o->data, static_cast<GXTlutFmt>(o->format), o->entries);
   __real_GXLoadTlut(&real, idx);
+}
+
+/* Every block of the game's heap comes from here. What the archive
+ * conversion recorded about those addresses belongs to an archive that has
+ * been freed since. */
+void* __wrap_OSAllocFromHeap(int heap, u32 size) {
+  void* p = __real_OSAllocFromHeap(heap, size);
+  if (p != nullptr) {
+    mkgp2pc_array_forget(p, size);
+  }
+  return p;
 }
 
 void __wrap_GXSetArray(u32 attr, const void* base, u8 stride) {
