@@ -152,10 +152,6 @@ static int game_view(Mkgp2pcMenuView* v) {
   v->footer = m.footer();
   v->count = m.rows(v->text, v->kind, v->value, MKGP2PC_MENU_ROWS, &v->more_above, &v->more_below);
   v->cursor = m.cursor();
-  for (int i = 0; i < MKGP2PC_MENU_ROWS; i++) {
-    v->value[i] = nullptr;
-  }
-  v->more_above = v->more_below = 0;
   return 1;
 }
 
