@@ -44,6 +44,7 @@
 #include <map>
 #include <set>
 #include <tuple>
+#include <vector>
 
 extern "C" {
 void __real_GXInitTexObj(GXTexObj*, const void*, u16, u16, GXTexFmt, GXTexWrapMode, GXTexWrapMode, GXBool);
@@ -268,15 +269,18 @@ ShadowDraw sShadowNow[16], sShadowLast[16];
 int sShadowNowCount, sShadowLastCount;
 } // namespace
 
+void mkgp2pc_wide_projection(void); /* below: sends sProj, corrected for a wide picture */
 extern "C" void __wrap_GXSetProjection(const void* mtx, u32 type) {
   std::memcpy(sProj, mtx, sizeof(sProj));
   sProjType = type;
-  __real_GXSetProjection(mtx, type);
+  mkgp2pc_wide_projection();
 }
+void mkgp2pc_wide_posmtx(const void* mtx, u32 id);
 extern "C" void __wrap_GXLoadPosMtxImm(const void* mtx, u32 id) {
   if (id == 0) {
     std::memcpy(sPosMtx, mtx, sizeof(sPosMtx));
   }
+  mkgp2pc_wide_posmtx(mtx, id);
   __real_GXLoadPosMtxImm(mtx, id);
 }
 extern "C" void __wrap_GXSetTevKColor(u32 id, GXColor color) {
@@ -360,226 +364,457 @@ extern "C" void __wrap_HSD_ShadowSetSize(void* shadow, u16 width, u16 height) {
 // what the game last set. Presenting every frame at full speed ended inside
 // webgpu_dawn.dll on Windows within seconds (2026-11-11).
 bool mkgp2pc_skip_draw = false;
+// A wide picture (MKGP2PC_ASPECT, see "Wide picture" below) follows the
+// vertex stream: every value goes through mkgp2pc_wide_value, which keeps
+// the 2D primitives back (answer true: the value is not to be sent on).
+extern "C" bool mkgp2pc_wide_on, mkgp2pc_wide_capture;
+extern "C" bool mkgp2pc_wide_value(unsigned size, u32 bits);
+static inline u32 wide_bits(f32 v) { u32 b; std::memcpy(&b, &v, 4); return b; }
 extern "C" {
 void __real_GXPosition3f32(f32 x, f32 y, f32 z);
 void __wrap_GXPosition3f32(f32 x, f32 y, f32 z) {
+  if (mkgp2pc_wide_on) {
+    const bool kept = mkgp2pc_wide_capture;
+    mkgp2pc_wide_value(4, wide_bits(x));
+    mkgp2pc_wide_value(4, wide_bits(y));
+    mkgp2pc_wide_value(4, wide_bits(z));
+    if (kept) {
+      return;
+    }
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXPosition3f32(x, y, z);
   }
 }
 void __real_GXPosition3u16(u16 x, u16 y, u16 z);
 void __wrap_GXPosition3u16(u16 x, u16 y, u16 z) {
+  if (mkgp2pc_wide_on) {
+    const bool kept = mkgp2pc_wide_capture;
+    mkgp2pc_wide_value(2, (u16)x);
+    mkgp2pc_wide_value(2, (u16)y);
+    mkgp2pc_wide_value(2, (u16)z);
+    if (kept) {
+      return;
+    }
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXPosition3u16(x, y, z);
   }
 }
 void __real_GXPosition3s16(s16 x, s16 y, s16 z);
 void __wrap_GXPosition3s16(s16 x, s16 y, s16 z) {
+  if (mkgp2pc_wide_on) {
+    const bool kept = mkgp2pc_wide_capture;
+    mkgp2pc_wide_value(2, (u16)x);
+    mkgp2pc_wide_value(2, (u16)y);
+    mkgp2pc_wide_value(2, (u16)z);
+    if (kept) {
+      return;
+    }
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXPosition3s16(x, y, z);
   }
 }
 void __real_GXPosition3u8(u8 x, u8 y, u8 z);
 void __wrap_GXPosition3u8(u8 x, u8 y, u8 z) {
+  if (mkgp2pc_wide_on) {
+    const bool kept = mkgp2pc_wide_capture;
+    mkgp2pc_wide_value(1, (u8)x);
+    mkgp2pc_wide_value(1, (u8)y);
+    mkgp2pc_wide_value(1, (u8)z);
+    if (kept) {
+      return;
+    }
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXPosition3u8(x, y, z);
   }
 }
 void __real_GXPosition3s8(s8 x, s8 y, s8 z);
 void __wrap_GXPosition3s8(s8 x, s8 y, s8 z) {
+  if (mkgp2pc_wide_on) {
+    const bool kept = mkgp2pc_wide_capture;
+    mkgp2pc_wide_value(1, (u8)x);
+    mkgp2pc_wide_value(1, (u8)y);
+    mkgp2pc_wide_value(1, (u8)z);
+    if (kept) {
+      return;
+    }
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXPosition3s8(x, y, z);
   }
 }
 void __real_GXPosition2f32(f32 x, f32 y);
 void __wrap_GXPosition2f32(f32 x, f32 y) {
+  if (mkgp2pc_wide_on) {
+    const bool kept = mkgp2pc_wide_capture;
+    mkgp2pc_wide_value(4, wide_bits(x));
+    mkgp2pc_wide_value(4, wide_bits(y));
+    if (kept) {
+      return;
+    }
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXPosition2f32(x, y);
   }
 }
 void __real_GXPosition2u16(u16 x, u16 y);
 void __wrap_GXPosition2u16(u16 x, u16 y) {
+  if (mkgp2pc_wide_on) {
+    const bool kept = mkgp2pc_wide_capture;
+    mkgp2pc_wide_value(2, (u16)x);
+    mkgp2pc_wide_value(2, (u16)y);
+    if (kept) {
+      return;
+    }
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXPosition2u16(x, y);
   }
 }
 void __real_GXPosition2s16(s16 x, s16 y);
 void __wrap_GXPosition2s16(s16 x, s16 y) {
+  if (mkgp2pc_wide_on) {
+    const bool kept = mkgp2pc_wide_capture;
+    mkgp2pc_wide_value(2, (u16)x);
+    mkgp2pc_wide_value(2, (u16)y);
+    if (kept) {
+      return;
+    }
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXPosition2s16(x, y);
   }
 }
 void __real_GXPosition2u8(u8 x, u8 y);
 void __wrap_GXPosition2u8(u8 x, u8 y) {
+  if (mkgp2pc_wide_on) {
+    const bool kept = mkgp2pc_wide_capture;
+    mkgp2pc_wide_value(1, (u8)x);
+    mkgp2pc_wide_value(1, (u8)y);
+    if (kept) {
+      return;
+    }
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXPosition2u8(x, y);
   }
 }
 void __real_GXPosition2s8(s8 x, s8 y);
 void __wrap_GXPosition2s8(s8 x, s8 y) {
+  if (mkgp2pc_wide_on) {
+    const bool kept = mkgp2pc_wide_capture;
+    mkgp2pc_wide_value(1, (u8)x);
+    mkgp2pc_wide_value(1, (u8)y);
+    if (kept) {
+      return;
+    }
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXPosition2s8(x, y);
   }
 }
 void __real_GXPosition1x16(u16 index);
 void __wrap_GXPosition1x16(u16 index) {
+  if (mkgp2pc_wide_on && mkgp2pc_wide_value(2, (u16)index)) {
+    return;
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXPosition1x16(index);
   }
 }
 void __real_GXPosition1x8(u8 index);
 void __wrap_GXPosition1x8(u8 index) {
+  if (mkgp2pc_wide_on && mkgp2pc_wide_value(1, (u8)index)) {
+    return;
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXPosition1x8(index);
   }
 }
 void __real_GXNormal3f32(f32 x, f32 y, f32 z);
 void __wrap_GXNormal3f32(f32 x, f32 y, f32 z) {
+  if (mkgp2pc_wide_on) {
+    const bool kept = mkgp2pc_wide_capture;
+    mkgp2pc_wide_value(4, wide_bits(x));
+    mkgp2pc_wide_value(4, wide_bits(y));
+    mkgp2pc_wide_value(4, wide_bits(z));
+    if (kept) {
+      return;
+    }
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXNormal3f32(x, y, z);
   }
 }
 void __real_GXNormal3s16(s16 x, s16 y, s16 z);
 void __wrap_GXNormal3s16(s16 x, s16 y, s16 z) {
+  if (mkgp2pc_wide_on) {
+    const bool kept = mkgp2pc_wide_capture;
+    mkgp2pc_wide_value(2, (u16)x);
+    mkgp2pc_wide_value(2, (u16)y);
+    mkgp2pc_wide_value(2, (u16)z);
+    if (kept) {
+      return;
+    }
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXNormal3s16(x, y, z);
   }
 }
 void __real_GXNormal3s8(s8 x, s8 y, s8 z);
 void __wrap_GXNormal3s8(s8 x, s8 y, s8 z) {
+  if (mkgp2pc_wide_on) {
+    const bool kept = mkgp2pc_wide_capture;
+    mkgp2pc_wide_value(1, (u8)x);
+    mkgp2pc_wide_value(1, (u8)y);
+    mkgp2pc_wide_value(1, (u8)z);
+    if (kept) {
+      return;
+    }
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXNormal3s8(x, y, z);
   }
 }
 void __real_GXNormal1x16(u16 index);
 void __wrap_GXNormal1x16(u16 index) {
+  if (mkgp2pc_wide_on && mkgp2pc_wide_value(2, (u16)index)) {
+    return;
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXNormal1x16(index);
   }
 }
 void __real_GXNormal1x8(u8 index);
 void __wrap_GXNormal1x8(u8 index) {
+  if (mkgp2pc_wide_on && mkgp2pc_wide_value(1, (u8)index)) {
+    return;
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXNormal1x8(index);
   }
 }
 void __real_GXColor4u8(u8 r, u8 g, u8 b, u8 a);
 void __wrap_GXColor4u8(u8 r, u8 g, u8 b, u8 a) {
+  if (mkgp2pc_wide_on) {
+    const bool kept = mkgp2pc_wide_capture;
+    mkgp2pc_wide_value(1, (u8)r);
+    mkgp2pc_wide_value(1, (u8)g);
+    mkgp2pc_wide_value(1, (u8)b);
+    mkgp2pc_wide_value(1, (u8)a);
+    if (kept) {
+      return;
+    }
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXColor4u8(r, g, b, a);
   }
 }
 void __real_GXColor3u8(u8 r, u8 g, u8 b);
 void __wrap_GXColor3u8(u8 r, u8 g, u8 b) {
+  if (mkgp2pc_wide_on) {
+    const bool kept = mkgp2pc_wide_capture;
+    mkgp2pc_wide_value(1, (u8)r);
+    mkgp2pc_wide_value(1, (u8)g);
+    mkgp2pc_wide_value(1, (u8)b);
+    if (kept) {
+      return;
+    }
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXColor3u8(r, g, b);
   }
 }
 void __real_GXColor1u32(u32 clr);
 void __wrap_GXColor1u32(u32 clr) {
+  if (mkgp2pc_wide_on && mkgp2pc_wide_value(4, (u32)clr)) {
+    return;
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXColor1u32(clr);
   }
 }
 void __real_GXColor1u16(u16 clr);
 void __wrap_GXColor1u16(u16 clr) {
+  if (mkgp2pc_wide_on && mkgp2pc_wide_value(2, (u16)clr)) {
+    return;
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXColor1u16(clr);
   }
 }
 void __real_GXColor1x16(u16 index);
 void __wrap_GXColor1x16(u16 index) {
+  if (mkgp2pc_wide_on && mkgp2pc_wide_value(2, (u16)index)) {
+    return;
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXColor1x16(index);
   }
 }
 void __real_GXColor1x8(u8 index);
 void __wrap_GXColor1x8(u8 index) {
+  if (mkgp2pc_wide_on && mkgp2pc_wide_value(1, (u8)index)) {
+    return;
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXColor1x8(index);
   }
 }
 void __real_GXTexCoord2f32(f32 s, f32 t);
 void __wrap_GXTexCoord2f32(f32 s, f32 t) {
+  if (mkgp2pc_wide_on) {
+    const bool kept = mkgp2pc_wide_capture;
+    mkgp2pc_wide_value(4, wide_bits(s));
+    mkgp2pc_wide_value(4, wide_bits(t));
+    if (kept) {
+      return;
+    }
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXTexCoord2f32(s, t);
   }
 }
 void __real_GXTexCoord2u16(u16 s, u16 t);
 void __wrap_GXTexCoord2u16(u16 s, u16 t) {
+  if (mkgp2pc_wide_on) {
+    const bool kept = mkgp2pc_wide_capture;
+    mkgp2pc_wide_value(2, (u16)s);
+    mkgp2pc_wide_value(2, (u16)t);
+    if (kept) {
+      return;
+    }
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXTexCoord2u16(s, t);
   }
 }
 void __real_GXTexCoord2s16(s16 s, s16 t);
 void __wrap_GXTexCoord2s16(s16 s, s16 t) {
+  if (mkgp2pc_wide_on) {
+    const bool kept = mkgp2pc_wide_capture;
+    mkgp2pc_wide_value(2, (u16)s);
+    mkgp2pc_wide_value(2, (u16)t);
+    if (kept) {
+      return;
+    }
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXTexCoord2s16(s, t);
   }
 }
 void __real_GXTexCoord2u8(u8 s, u8 t);
 void __wrap_GXTexCoord2u8(u8 s, u8 t) {
+  if (mkgp2pc_wide_on) {
+    const bool kept = mkgp2pc_wide_capture;
+    mkgp2pc_wide_value(1, (u8)s);
+    mkgp2pc_wide_value(1, (u8)t);
+    if (kept) {
+      return;
+    }
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXTexCoord2u8(s, t);
   }
 }
 void __real_GXTexCoord2s8(s8 s, s8 t);
 void __wrap_GXTexCoord2s8(s8 s, s8 t) {
+  if (mkgp2pc_wide_on) {
+    const bool kept = mkgp2pc_wide_capture;
+    mkgp2pc_wide_value(1, (u8)s);
+    mkgp2pc_wide_value(1, (u8)t);
+    if (kept) {
+      return;
+    }
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXTexCoord2s8(s, t);
   }
 }
 void __real_GXTexCoord1f32(f32 s);
 void __wrap_GXTexCoord1f32(f32 s) {
+  if (mkgp2pc_wide_on && mkgp2pc_wide_value(4, wide_bits(s))) {
+    return;
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXTexCoord1f32(s);
   }
 }
 void __real_GXTexCoord1u16(u16 s);
 void __wrap_GXTexCoord1u16(u16 s) {
+  if (mkgp2pc_wide_on && mkgp2pc_wide_value(2, (u16)s)) {
+    return;
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXTexCoord1u16(s);
   }
 }
 void __real_GXTexCoord1s16(s16 s);
 void __wrap_GXTexCoord1s16(s16 s) {
+  if (mkgp2pc_wide_on && mkgp2pc_wide_value(2, (u16)s)) {
+    return;
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXTexCoord1s16(s);
   }
 }
 void __real_GXTexCoord1u8(u8 s);
 void __wrap_GXTexCoord1u8(u8 s) {
+  if (mkgp2pc_wide_on && mkgp2pc_wide_value(1, (u8)s)) {
+    return;
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXTexCoord1u8(s);
   }
 }
 void __real_GXTexCoord1s8(s8 s);
 void __wrap_GXTexCoord1s8(s8 s) {
+  if (mkgp2pc_wide_on && mkgp2pc_wide_value(1, (u8)s)) {
+    return;
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXTexCoord1s8(s);
   }
 }
 void __real_GXTexCoord1x16(u16 index);
 void __wrap_GXTexCoord1x16(u16 index) {
+  if (mkgp2pc_wide_on && mkgp2pc_wide_value(2, (u16)index)) {
+    return;
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXTexCoord1x16(index);
   }
 }
 void __real_GXTexCoord1x8(u8 index);
 void __wrap_GXTexCoord1x8(u8 index) {
+  if (mkgp2pc_wide_on && mkgp2pc_wide_value(1, (u8)index)) {
+    return;
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXTexCoord1x8(index);
   }
 }
 void __real_GXEnd(void);
+bool mkgp2pc_wide_begin(GXPrimitive type, GXVtxFmt vtxfmt, u16 nverts);
+void mkgp2pc_wide_end(void);
 void __wrap_GXEnd(void) {
+  if (mkgp2pc_wide_on) {
+    const bool kept = mkgp2pc_wide_capture;
+    
+    if (kept) {
+      return;
+    }
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXEnd();
   }
 }
 void __real_GXBegin(GXPrimitive type, GXVtxFmt vtxfmt, u16 nverts);
 void __wrap_GXBegin(GXPrimitive type, GXVtxFmt vtxfmt, u16 nverts) {
-  if (!mkgp2pc_skip_draw) {
+  if (!mkgp2pc_skip_draw && !mkgp2pc_wide_begin(type, vtxfmt, nverts)) {
     __real_GXBegin(type, vtxfmt, nverts);
   }
 }
@@ -614,80 +849,666 @@ void __wrap_GXCopyDisp(void* dest, GXBool clear) {
 extern "C" {
 void __real_GXCmd1u8(const u8 x);
 void __wrap_GXCmd1u8(const u8 x) {
+  if (mkgp2pc_wide_on && mkgp2pc_wide_value(1, (u8)x)) {
+    return;
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXCmd1u8(x);
   }
 }
 void __real_GXCmd1u16(const u16 x);
 void __wrap_GXCmd1u16(const u16 x) {
+  if (mkgp2pc_wide_on && mkgp2pc_wide_value(2, (u16)x)) {
+    return;
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXCmd1u16(x);
   }
 }
 void __real_GXCmd1u32(const u32 x);
 void __wrap_GXCmd1u32(const u32 x) {
+  if (mkgp2pc_wide_on && mkgp2pc_wide_value(4, (u32)x)) {
+    return;
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXCmd1u32(x);
   }
 }
 void __real_GXCmd1u64(const u64 x);
 void __wrap_GXCmd1u64(const u64 x) {
+  if (mkgp2pc_wide_on) {
+    const bool kept = mkgp2pc_wide_capture;
+    mkgp2pc_wide_value(4, (u32)(x >> 32));
+    mkgp2pc_wide_value(4, (u32)x);
+    if (kept) {
+      return;
+    }
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXCmd1u64(x);
   }
 }
 void __real_GXParam1u8(const u8 x);
 void __wrap_GXParam1u8(const u8 x) {
+  if (mkgp2pc_wide_on && mkgp2pc_wide_value(1, (u8)x)) {
+    return;
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXParam1u8(x);
   }
 }
 void __real_GXParam1u16(const u16 x);
 void __wrap_GXParam1u16(const u16 x) {
+  if (mkgp2pc_wide_on && mkgp2pc_wide_value(2, (u16)x)) {
+    return;
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXParam1u16(x);
   }
 }
 void __real_GXParam1u32(const u32 x);
 void __wrap_GXParam1u32(const u32 x) {
+  if (mkgp2pc_wide_on && mkgp2pc_wide_value(4, (u32)x)) {
+    return;
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXParam1u32(x);
   }
 }
 void __real_GXParam1s8(const s8 x);
 void __wrap_GXParam1s8(const s8 x) {
+  if (mkgp2pc_wide_on && mkgp2pc_wide_value(1, (u8)x)) {
+    return;
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXParam1s8(x);
   }
 }
 void __real_GXParam1s16(const s16 x);
 void __wrap_GXParam1s16(const s16 x) {
+  if (mkgp2pc_wide_on && mkgp2pc_wide_value(2, (u16)x)) {
+    return;
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXParam1s16(x);
   }
 }
 void __real_GXParam1s32(const s32 x);
 void __wrap_GXParam1s32(const s32 x) {
+  if (mkgp2pc_wide_on && mkgp2pc_wide_value(4, (u32)x)) {
+    return;
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXParam1s32(x);
   }
 }
 void __real_GXParam1f32(const f32 x);
 void __wrap_GXParam1f32(const f32 x) {
+  if (mkgp2pc_wide_on && mkgp2pc_wide_value(4, wide_bits(x))) {
+    return;
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXParam1f32(x);
   }
 }
 void __real_GXParam3f32(const f32 x, const f32 y, const f32 z);
 void __wrap_GXParam3f32(const f32 x, const f32 y, const f32 z) {
+  if (mkgp2pc_wide_on) {
+    const bool kept = mkgp2pc_wide_capture;
+    mkgp2pc_wide_value(4, wide_bits(x));
+    mkgp2pc_wide_value(4, wide_bits(y));
+    mkgp2pc_wide_value(4, wide_bits(z));
+    if (kept) {
+      return;
+    }
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXParam3f32(x, y, z);
   }
 }
 void __real_GXParam4f32(const f32 x, const f32 y, const f32 z, const f32 w);
 void __wrap_GXParam4f32(const f32 x, const f32 y, const f32 z, const f32 w) {
+  if (mkgp2pc_wide_on) {
+    const bool kept = mkgp2pc_wide_capture;
+    mkgp2pc_wide_value(4, wide_bits(x));
+    mkgp2pc_wide_value(4, wide_bits(y));
+    mkgp2pc_wide_value(4, wide_bits(z));
+    mkgp2pc_wide_value(4, wide_bits(w));
+    if (kept) {
+      return;
+    }
+  }
   if (!mkgp2pc_skip_draw) {
     __real_GXParam4f32(x, y, z, w);
+  }
+}
+}
+
+/*
+ * Wide picture (MKGP2PC_ASPECT=16:9, docs/port/widescreen.md).
+ *
+ * The window and the frame buffer are wider than 4:3 and the rendering
+ * library spreads the game's 640x480 over all of it (viewport policy
+ * "stretch", video_aurora.c). mkgp2pc_wide_k is how much too wide that
+ * makes everything: (width / height) / (4 / 3), 1 when the feature is off.
+ *
+ * Every projection the game sets while its viewport is the whole screen is
+ * narrowed by that factor about the centre. The 4:3 picture then sits
+ * undistorted in the middle, and because nothing clips at its edges, the 3D
+ * scene simply continues into the side areas: same vertical field of view,
+ * more to the left and right. Draws into part of the frame buffer (the kart
+ * shadow image, pictures rendered for textures) are not touched.
+ *
+ * What the game still does for 4:3 and what is done about it:
+ *  - Its culling frustum (fn_8013879C, built from the camera's aspect) would
+ *    drop objects inside the side areas: the aspect it is given is widened.
+ *  - 2D primitives (orthographic projection, vertices written one by one)
+ *    are kept until their last vertex has come. A quad (or triangle, or
+ *    whole strip) that reaches from the left edge of the 4:3 picture to the
+ *    right edge is drawn stretched over the whole width: backgrounds,
+ *    fades, the saved frame of a transition. The edge tiles of a tiled
+ *    background are repeated outwards. Everything else keeps its shape in
+ *    the middle and is clipped to the 4:3 picture (the scissor moves with
+ *    it), so parts that the arcade screen hid beyond its edges stay hidden.
+ *  - MKGP2PC_TRACE_WIDE=1 prints how each kept primitive was classified.
+ *  - GXGetProjectionv gives back what the game set, not the narrowed
+ *    matrix: the game saves and restores projections with it, and
+ *    CObj_ProjectPoint computes 640x480 positions with it, which then land
+ *    where the 2D layer draws them.
+ */
+extern "C" {
+float mkgp2pc_wide_k = 1.0f;
+bool mkgp2pc_wide_on, mkgp2pc_wide_capture;
+void __real_GXSetViewport(f32 left, f32 top, f32 wd, f32 ht, f32 nearz, f32 farz);
+void __real_GXSetViewportJitter(f32 left, f32 top, f32 wd, f32 ht, f32 nearz, f32 farz, u32 field);
+void __real_GXSetCurrentMtx(u32 id);
+void __real_GXSetScissor(u32 left, u32 top, u32 wd, u32 ht);
+void __real_fn_8013879C(float* frustum, float fovy, float aspect, float zfar, float znear);
+}
+namespace {
+bool sFullView = true;
+bool sProjSet;
+float sMtx[10][3][4];
+u32 sCurMtx;
+struct WideValue {
+  u8 size;
+  u32 bits;
+};
+std::vector<WideValue> sWide;
+u32 sWideBytes, sWideWant;
+GXPrimitive sWideType;
+GXVtxFmt sWideFmt;
+u16 sWideVerts;
+int sWidePosOff; /* byte offset of the position in a vertex */
+int sWidePosN;   /* 2 or 3 floats */
+
+bool wide_on() { return mkgp2pc_wide_k > 1.001f; }
+
+u32 sScis[4] = {0, 0, 640, 480};
+
+/* The game's scissor is in 640x480 units like everything else. For the 2D
+ * layer it is moved with the narrowed picture, so that a clipping window
+ * stays on its text and nothing drawn outside the 4:3 picture (parts the
+ * arcade screen never showed) appears in the side areas. The 3D scene and
+ * the stretched whole-screen draws keep the scissor as the game gave it. */
+void apply_scissor(bool narrow) {
+  if (!narrow) {
+    __real_GXSetScissor(sScis[0], sScis[1], sScis[2], sScis[3]);
+    return;
+  }
+  const float s = 1.0f / mkgp2pc_wide_k;
+  const float l = std::floor(320.0f + (static_cast<float>(sScis[0]) - 320.0f) * s);
+  const float r = std::ceil(320.0f + (static_cast<float>(sScis[0] + sScis[2]) - 320.0f) * s);
+  __real_GXSetScissor(static_cast<u32>(l), sScis[1], static_cast<u32>(r - l), sScis[3]);
+}
+
+/* shift: added to x after the game's projection (in units of the 4:3
+ * picture, 2 is its width), before the narrowing. */
+void send_projection(bool narrow, float shift = 0.0f, bool clip = true) {
+  float m[4][4];
+  std::memcpy(m, sProj, sizeof(m));
+  if (narrow) {
+    const float s = 1.0f / mkgp2pc_wide_k;
+    m[0][3] += shift;
+    for (int c = 0; c < 4; c++) {
+      m[0][c] *= s;
+    }
+  }
+  __real_GXSetProjection(m, sProjType);
+  if (wide_on()) {
+    apply_scissor(narrow && clip && sProjType != GX_PERSPECTIVE);
+  }
+}
+
+void view_changed(f32 left, f32 top, f32 wd, f32 ht) {
+  const bool full = left <= 0.5f && top <= 0.5f && wd >= 639.5f && ht >= 479.5f;
+  if (full != sFullView) {
+    sFullView = full;
+    if (sProjSet && wide_on()) {
+      send_projection(full);
+    }
+  }
+}
+
+void wide_replay(size_t first, size_t last, u16 nverts) {
+  __real_GXBegin(sWideType, sWideFmt, nverts);
+  for (size_t i = first; i < last; i++) {
+    const WideValue& v = sWide[i];
+    if (v.size == 1) {
+      __real_GXParam1u8(static_cast<u8>(v.bits));
+    } else if (v.size == 2) {
+      __real_GXParam1u16(static_cast<u16>(v.bits));
+    } else {
+      __real_GXParam1u32(v.bits);
+    }
+  }
+  __real_GXEnd();
+}
+} // namespace
+
+void mkgp2pc_wide_projection(void) {
+  sProjSet = true;
+  send_projection(wide_on() && sFullView);
+}
+void mkgp2pc_wide_posmtx(const void* mtx, u32 id) {
+  if (id % 3 == 0 && id / 3 < 10) {
+    std::memcpy(sMtx[id / 3], mtx, sizeof(sMtx[0]));
+  }
+}
+
+extern "C" {
+void __wrap_GXSetViewport(f32 left, f32 top, f32 wd, f32 ht, f32 nearz, f32 farz) {
+  view_changed(left, top, wd, ht);
+  __real_GXSetViewport(left, top, wd, ht, nearz, farz);
+}
+void __wrap_GXSetViewportJitter(f32 left, f32 top, f32 wd, f32 ht, f32 nearz, f32 farz, u32 field) {
+  view_changed(left, top, wd, ht);
+  __real_GXSetViewportJitter(left, top, wd, ht, nearz, farz, field);
+}
+void __wrap_GXSetScissor(u32 left, u32 top, u32 wd, u32 ht) {
+  sScis[0] = left;
+  sScis[1] = top;
+  sScis[2] = wd;
+  sScis[3] = ht;
+  apply_scissor(wide_on() && sFullView && sProjSet && sProjType != GX_PERSPECTIVE);
+}
+void __wrap_GXGetScissor(u32* left, u32* top, u32* wd, u32* ht) {
+  *left = sScis[0];
+  *top = sScis[1];
+  *wd = sScis[2];
+  *ht = sScis[3];
+}
+void __wrap_GXSetCurrentMtx(u32 id) {
+  sCurMtx = id / 3 < 10 ? id / 3 : 0;
+  __real_GXSetCurrentMtx(id);
+}
+/* The game's own values, in the layout of the SDK (type, then six
+ * numbers). */
+void __wrap_GXGetProjectionv(f32* p) {
+  const bool ortho = sProjType != GX_PERSPECTIVE;
+  p[0] = ortho ? 1.0f : 0.0f;
+  p[1] = sProj[0][0];
+  p[2] = ortho ? sProj[0][3] : sProj[0][2];
+  p[3] = sProj[1][1];
+  p[4] = ortho ? sProj[1][3] : sProj[1][2];
+  p[5] = sProj[2][2];
+  p[6] = sProj[2][3];
+}
+void __wrap_GXSetProjectionv(const f32* p) {
+  const bool ortho = p[0] != 0.0f;
+  std::memset(sProj, 0, sizeof(sProj));
+  sProj[0][0] = p[1];
+  sProj[0][ortho ? 3 : 2] = p[2];
+  sProj[1][1] = p[3];
+  sProj[1][ortho ? 3 : 2] = p[4];
+  sProj[2][2] = p[5];
+  sProj[2][3] = p[6];
+  if (ortho) {
+    sProj[3][3] = 1.0f;
+  } else {
+    sProj[3][2] = -1.0f;
+  }
+  sProjType = ortho ? GX_ORTHOGRAPHIC : GX_PERSPECTIVE;
+  mkgp2pc_wide_projection();
+}
+void __wrap_fn_8013879C(float* frustum, float fovy, float aspect, float zfar, float znear) {
+  __real_fn_8013879C(frustum, fovy, aspect * mkgp2pc_wide_k, zfar, znear);
+}
+
+void mkgp2pc_wide_end(void);
+static u32 wide_vertex_size(GXVtxFmt fmt);
+static bool wide_start(GXPrimitive type, GXVtxFmt vtxfmt, u16 nverts);
+/* The game also starts primitives by writing the command itself (0x80 and
+ * up, then the vertex count) instead of calling GXBegin, and sends register
+ * loads the same way. To tell a draw command from data, the commands of the
+ * stream are followed: sRawStage says what the next value is, sRawLeft how
+ * many bytes of the current command are still to come. A value that does
+ * not fit ends the following until the next frame (sRawStage = kRawLost);
+ * primitives started with GXBegin are still handled then. */
+enum { kRawCommand, kRawData, kRawXfHead, kRawCountKept, kRawCount, kRawLost };
+static int sRawStage = kRawCommand;
+static u32 sRawLeft;
+static u8 sRawDraw;
+static bool wide_trace();
+bool mkgp2pc_wide_value(unsigned size, u32 bits) {
+  if (mkgp2pc_skip_draw) {
+    return false; /* a frame that is not shown: the caller drops the value */
+  }
+  if (sRawStage != kRawLost && wide_trace()) {
+    static int was = kRawCommand;
+    if (was != kRawLost && sRawStage == kRawLost) fprintf(stderr, "wide: command stream lost\n");
+    was = sRawStage;
+  }
+  if (mkgp2pc_wide_capture) {
+    sWide.push_back({static_cast<u8>(size), bits});
+    sWideBytes += size;
+    /* The game does not always call GXEnd (it is empty in the SDK): the
+     * primitive is complete when its last vertex is. */
+    if (sWideBytes >= sWideWant) {
+      mkgp2pc_wide_end();
+    }
+    return true;
+  }
+  switch (sRawStage) {
+  case kRawData:
+    if (size > sRawLeft) {
+      sRawStage = kRawLost;
+    } else if ((sRawLeft -= size) == 0) {
+      sRawStage = kRawCommand;
+    }
+    return false;
+  case kRawXfHead:
+    if (size != 4) {
+      sRawStage = kRawLost;
+    } else {
+      sRawLeft = 4 * (((bits >> 16) & 0xF) + 1);
+      sRawStage = kRawData;
+    }
+    return false;
+  case kRawCountKept:
+  case kRawCount: {
+    const bool kept = sRawStage == kRawCountKept;
+    const GXPrimitive type = static_cast<GXPrimitive>(sRawDraw & 0xF8);
+    const GXVtxFmt fmt = static_cast<GXVtxFmt>(sRawDraw & 7);
+    sRawStage = kRawCommand;
+    if (size != 2) {
+      sRawStage = kRawLost;
+    } else if (kept && bits != 0 && wide_start(type, fmt, static_cast<u16>(bits))) {
+      return true;
+    } else if (bits != 0) {
+      sRawLeft = wide_vertex_size(fmt) * bits;
+      sRawStage = sRawLeft != 0 ? kRawData : kRawCommand;
+    }
+    if (kept) { /* the command was held back: send it after all */
+      __real_GXParam1u8(sRawDraw);
+    }
+    return false;
+  }
+  case kRawCommand:
+    if (size != 1) {
+      sRawStage = kRawLost;
+      return false;
+    }
+    if (bits >= 0x80 && bits < 0xC0) {
+      if (wide_trace()) fprintf(stderr, "wide: draw command %x written directly (full view %d, projection %u)\n", bits, sFullView, sProjType);
+      sRawDraw = static_cast<u8>(bits);
+      const bool keep = sFullView && sProjType != GX_PERSPECTIVE;
+      sRawStage = keep ? kRawCountKept : kRawCount;
+      return keep;
+    }
+    sRawLeft = 0;
+    if (bits == 0x10) {
+      sRawStage = kRawXfHead;
+    } else if (bits == 0x08) {
+      sRawLeft = 5;
+    } else if (bits == 0x61 || bits == 0x20 || bits == 0x28 || bits == 0x30 || bits == 0x38) {
+      sRawLeft = 4;
+    } else if (bits == 0x40) {
+      sRawLeft = 8;
+    } else if (bits != 0x00 && bits != 0x48) {
+      if (wide_trace()) fprintf(stderr, "wide: command stream lost at %x\n", bits);
+      sRawStage = kRawLost;
+    }
+    if (sRawLeft != 0) {
+      sRawStage = kRawData;
+    }
+    return false;
+  default:
+    return false;
+  }
+}
+/* Called at the start of every frame (video_aurora.c). */
+void wide_tiles_frame(void);
+void mkgp2pc_wide_frame(float k) {
+  wide_tiles_frame();
+  mkgp2pc_wide_k = k;
+  mkgp2pc_wide_on = k > 1.001f;
+  if (!mkgp2pc_wide_capture) {
+    sRawStage = kRawCommand;
+    sRawLeft = 0;
+  }
+}
+
+/* Bytes of one vertex in the stream, from the vertex description. */
+static u32 wide_vertex_size(GXVtxFmt fmt) {
+  static const u8 compSize[] = {1, 1, 2, 2, 4};
+  static const u8 colorSize[] = {2, 3, 4, 2, 3, 4};
+  u32 size = 0;
+  for (int a = GX_VA_PNMTXIDX; a <= GX_VA_TEX7; a++) {
+    GXAttrType t;
+    GXGetVtxDesc(static_cast<GXAttr>(a), &t);
+    if (t == GX_NONE) {
+      continue;
+    }
+    if (a < GX_VA_POS || t == GX_INDEX8) {
+      size += 1;
+      continue;
+    }
+    if (t == GX_INDEX16) {
+      size += 2;
+      continue;
+    }
+    GXCompCnt cnt;
+    GXCompType comp;
+    u8 shift;
+    GXGetVtxAttrFmt(fmt, static_cast<GXAttr>(a), &cnt, &comp, &shift);
+    const u32 c = static_cast<u32>(comp);
+    if (a == GX_VA_CLR0 || a == GX_VA_CLR1) {
+      size += c < 6 ? colorSize[c] : 4;
+    } else {
+      const u32 n = a == GX_VA_POS ? (cnt == GX_POS_XY ? 2 : 3) : a == GX_VA_NRM ? (cnt == GX_NRM_XYZ ? 3 : 9) : (cnt == GX_TEX_S ? 1 : 2);
+      size += n * (c < 5 ? compSize[c] : 4);
+    }
+  }
+  return size;
+}
+
+static bool wide_trace() {
+  static int v = -1;
+  if (v < 0) v = getenv("MKGP2PC_TRACE_WIDE") != nullptr;
+  return v != 0;
+}
+bool mkgp2pc_wide_begin(GXPrimitive type, GXVtxFmt vtxfmt, u16 nverts) {
+  if (!wide_on()) {
+    return false;
+  }
+  if (mkgp2pc_wide_capture) {
+    mkgp2pc_wide_end(); /* an unfinished primitive: sent as it is */
+  }
+  if (!sFullView || sProjType == GX_PERSPECTIVE || nverts == 0 || nverts == GX_AUTO || !wide_start(type, vtxfmt, nverts)) {
+    /* not kept: its vertices pass through as data */
+    sRawLeft = nverts == GX_AUTO ? 0 : wide_vertex_size(vtxfmt) * nverts;
+    sRawStage = nverts == GX_AUTO ? kRawLost : sRawLeft != 0 ? kRawData : kRawCommand;
+    return false;
+  }
+  return true;
+}
+static bool wide_start(GXPrimitive type, GXVtxFmt vtxfmt, u16 nverts) {
+  /* where the position is in a vertex: after the matrix indices */
+  int off = 0;
+  for (int a = GX_VA_PNMTXIDX; a < GX_VA_POS; a++) {
+    GXAttrType t;
+    GXGetVtxDesc(static_cast<GXAttr>(a), &t);
+    off += t != GX_NONE;
+  }
+  GXAttrType posType;
+  GXGetVtxDesc(GX_VA_POS, &posType);
+  GXCompCnt cnt;
+  GXCompType comp;
+  u8 shift;
+  GXGetVtxAttrFmt(vtxfmt, GX_VA_POS, &cnt, &comp, &shift);
+  if (posType != GX_DIRECT || comp != GX_F32) {
+    if (wide_trace()) {
+      fprintf(stderr, "wide: begin %x n %d not kept (position type %d comp %d)\n", type, nverts, posType, comp);
+    }
+    return false;
+  }
+  sWideWant = wide_vertex_size(vtxfmt) * nverts;
+  sWidePosOff = off;
+  sWidePosN = cnt == GX_POS_XY ? 2 : 3;
+  sWideType = type;
+  sWideFmt = vtxfmt;
+  sWideVerts = nverts;
+  sWide.clear();
+  sWideBytes = 0;
+  mkgp2pc_wide_capture = true;
+  return true;
+}
+
+/*
+ * Backgrounds laid out of tiles (the star pattern behind the menus is a
+ * grid of 64x64 quads, one GXBegin each). No single quad spans the picture,
+ * so nothing is stretched; instead the tiles of the outermost columns are
+ * drawn again further out until the side areas are covered. A tile is a
+ * quad that touches the left or right edge of the 4:3 picture exactly and
+ * has a neighbour of the same size and height next to it, drawn right
+ * before or after it. Whether a quad has such a neighbour is only known
+ * after the frame, so the tiles found in one frame are the ones repeated in
+ * the next.
+ */
+struct WideQuad {
+  float lo, hi, ylo, yhi;
+};
+static std::vector<WideQuad> sQuads;
+static std::set<std::tuple<int, int, int, int>> sTiles;
+static std::tuple<int, int, int, int> tile_key(const WideQuad& q) {
+  return {static_cast<int>(std::lround(q.lo * 500)), static_cast<int>(std::lround(q.hi * 500)),
+          static_cast<int>(std::lround(q.ylo * 500)), static_cast<int>(std::lround(q.yhi * 500))};
+}
+void wide_tiles_frame(void) {
+  sTiles.clear();
+  for (size_t i = 0; i < sQuads.size(); i++) {
+    const WideQuad& q = sQuads[i];
+    const float w = q.hi - q.lo;
+    const bool left = std::fabs(q.lo + 1.0f) < 0.004f, right = std::fabs(q.hi - 1.0f) < 0.004f;
+    if (!(left || right) || w > 0.5f || w < 0.02f) {
+      continue;
+    }
+    for (int d = -1; d <= 1; d += 2) {
+      if ((d < 0 && i == 0) || (d > 0 && i + 1 == sQuads.size())) {
+        continue;
+      }
+      const WideQuad& n = sQuads[i + d];
+      const bool same = std::fabs((n.hi - n.lo) - w) < 0.004f && std::fabs(n.ylo - q.ylo) < 0.004f && std::fabs(n.yhi - q.yhi) < 0.004f;
+      if (same && ((left && std::fabs(n.lo - q.hi) < 0.004f) || (right && std::fabs(n.hi - q.lo) < 0.004f))) {
+        sTiles.insert(tile_key(q));
+      }
+    }
+  }
+  sQuads.clear();
+}
+
+void mkgp2pc_wide_end(void) {
+  mkgp2pc_wide_capture = false;
+  if (sWideBytes != sWideWant) {
+    wide_replay(0, sWide.size(), sWideVerts);
+    return;
+  }
+  const u32 vsize = sWideBytes / sWideVerts;
+  const u16 per = sWideType == GX_QUADS ? 4 : sWideType == GX_TRIANGLES ? 3 : sWideVerts;
+  bool ok = sWideBytes % sWideVerts == 0 && vsize >= static_cast<u32>(sWidePosOff + 4 * sWidePosN) &&
+            sWideVerts % per == 0;
+  /* first value of each vertex, and of its position */
+  std::vector<u32> start(sWideVerts + 1u, 0), pos(sWideVerts, 0);
+  if (ok) {
+    u32 byte = 0, v = 0;
+    for (u32 i = 0; i < sWide.size() && ok; i++) {
+      const u32 in = byte - v * vsize;
+      if (in == 0) {
+        start[v] = i;
+      }
+      if (in == static_cast<u32>(sWidePosOff)) {
+        pos[v] = i;
+        for (int c = 0; c < sWidePosN; c++) {
+          ok = ok && i + c < sWide.size() && sWide[i + c].size == 4;
+        }
+      }
+      byte += sWide[i].size;
+      if (byte > (v + 1) * vsize) {
+        ok = false; /* a value across two vertices */
+      } else if (byte == (v + 1) * vsize) {
+        v++;
+      }
+    }
+    start[sWideVerts] = static_cast<u32>(sWide.size());
+  }
+  if (!ok) {
+    wide_replay(0, sWide.size(), sWideVerts);
+    return;
+  }
+  const float (*mv)[4] = sMtx[sCurMtx];
+  int runFirst = 0;
+  bool runFull = false;
+  const int groups = sWideVerts / per;
+  for (int g = 0; g <= groups; g++) {
+    bool full = false;
+    if (g < groups) {
+      float lo = 1e9f, hi = -1e9f, ylo = 1e9f, yhi = -1e9f;
+      for (int v = g * per; v < (g + 1) * per; v++) {
+        float p[3] = {0, 0, 0};
+        for (int c = 0; c < sWidePosN; c++) {
+          std::memcpy(&p[c], &sWide[pos[v] + c].bits, 4);
+        }
+        const float ex = mv[0][0] * p[0] + mv[0][1] * p[1] + mv[0][2] * p[2] + mv[0][3];
+        const float ey = mv[1][0] * p[0] + mv[1][1] * p[1] + mv[1][2] * p[2] + mv[1][3];
+        const float x = sProj[0][0] * ex + sProj[0][1] * ey + sProj[0][3];
+        const float y = sProj[1][0] * ex + sProj[1][1] * ey + sProj[1][3];
+        lo = x < lo ? x : lo;
+        hi = x > hi ? x : hi;
+        ylo = y < ylo ? y : ylo;
+        yhi = y > yhi ? y : yhi;
+      }
+      if (per == 4 && groups == 1 && sQuads.size() < 4096) {
+        const WideQuad q{lo, hi, ylo, yhi};
+        sQuads.push_back(q);
+        if (sTiles.count(tile_key(q)) != 0) {
+          /* an edge tile of a background grid: draw it, then its copies */
+          wide_replay(start[0], start[per], per);
+          const float w = hi - lo, dir = lo < 0 ? -1.0f : 1.0f;
+          for (int n = 1; n < 32 && 1.0f + (n - 1) * w < mkgp2pc_wide_k; n++) {
+            send_projection(true, dir * n * w, false);
+            wide_replay(start[0], start[per], per);
+          }
+          send_projection(true);
+          return;
+        }
+      }
+      full = lo <= -0.98f && hi >= 0.98f;
+      if (wide_trace()) {
+        fprintf(stderr, "wide: %x n %d group %d x %.3f..%.3f mtx %u%s\n", sWideType, sWideVerts, g, lo, hi, sCurMtx, full ? " FULL" : "");
+      }
+    }
+    if (g == groups || (g > runFirst && full != runFull)) {
+      if (runFull) {
+        send_projection(false);
+      }
+      wide_replay(start[runFirst * per], start[g * per], static_cast<u16>((g - runFirst) * per));
+      if (runFull) {
+        send_projection(true);
+      }
+      runFirst = g;
+    }
+    runFull = full;
   }
 }
 }

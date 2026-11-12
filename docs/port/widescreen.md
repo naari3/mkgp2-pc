@@ -1,4 +1,72 @@
-# 16:9 display: survey (2026-11-11)
+# 16:9 display
+
+## State (2026-11-12): implemented as an option, checked on Linux only
+
+`MKGP2PC_ASPECT=16:9` (any `W:H` wider than 4:3, up to 4:1; `16:10`, `21:9`)
+turns the wide picture on. Unset or `4:3` is the picture as before, and the
+default. The settings program has the item (表示 page).
+
+- Window: height = 480 x `MKGP2PC_SCALE`, width = height x W / H rounded
+  down and then up to an even number. `MKGP2PC_SCALE` takes fractions now:
+  1 = 854x480, 1.5 = 1280x720, 2.25 = 1920x1080, 3 = 2560x1440.
+- The 3D scene fills the whole width at the same vertical field of view
+  (more is visible to the left and right). Culling follows.
+- The 2D layer (HUD, menus, text) keeps its shape and its 4:3 layout in the
+  middle of the screen and is clipped to that 4:3 area.
+- Whole-screen 2D (fades, the saved frame of transitions, full-width
+  backgrounds and bars) is stretched over the full width. Tiled backgrounds
+  (the star pattern behind the menus) get their edge columns repeated out to
+  the sides.
+- Scenes whose background is neither (a 3D model, or pieces that do not
+  form a grid) show the clear colour, usually black, at the sides.
+
+Code: `port/gfx/gx_shim.cpp` ("Wide picture"), `port/gfx/video_aurora.c`
+(`wide_frame`, window size), wrapped names in `port/tools/link_census.py`.
+No game source is changed and there is no source patch.
+
+How it works, in one paragraph: Aurora's viewport policy "stretch" spreads
+the game's 640x480 over the wide frame buffer. Every projection the game
+sets while its viewport is the full screen is then narrowed in x by
+`k = (width / height) / (4 / 3)` about the centre, which puts the undistorted
+4:3 picture in the middle; since nothing clips the 3D scene at the 4:3
+edges, it continues into the side areas. The camera is not touched, so
+`GXProject` positions (rival face markers) still match the 2D layer. The
+game's culling frustum gets its aspect multiplied by `k` (wrapper around
+`fn_8013879C`). 2D primitives are held back until complete, classified by
+their horizontal extent, and sent with the stretched or the narrowed
+projection. `GXGetProjectionv` and `GXGetScissor` answer with the game's own
+values.
+
+Checked (2026-11-12, 32-bit Linux, Xvfb with software GL, a recorded play
+session replayed in both shapes and compared frame by frame at 24 points:
+class, character, cup and course selection, a full Yoshi Park race):
+4:3 output unchanged; 16:9 menus centred with the star background filling
+the sides; race in 16:9 with the HUD in the middle.
+
+**Not checked: Windows.** The code is the same on both systems, but it has
+not been built or run there, and D3D12 has not seen the "stretch" policy
+from this port yet.
+
+Known gaps:
+
+- Elements that slide in from outside the screen appear at the edge of the
+  4:3 area, not at the screen edge.
+- The HUD is not moved to the screen edges (option C below).
+- View-blocking item effects and other whole-screen effects have only been
+  seen as far as the recorded session shows them.
+- Draws that reach the renderer as display lists under an orthographic
+  projection (HSD-drawn 2D) are centred and clipped but never stretched.
+- `MKGP2PC_RESIZABLE=1`: the factor follows the window's shape every frame,
+  so any shape works in principle; resizing itself still crashes on Windows
+  (build.md).
+
+`MKGP2PC_TRACE_WIDE=1` prints how each held-back primitive was classified.
+
+The rest of this file is the survey written before the implementation.
+
+---
+
+# Survey (2026-11-11)
 
 Question: what does it take to show the PC port in 16:9 instead of the
 arcade's 4:3? This is a reading of the sources (mkgp2-pc `2502a6b`, Aurora

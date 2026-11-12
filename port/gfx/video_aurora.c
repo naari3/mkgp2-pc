@@ -311,6 +311,7 @@ extern int (*mkgp2pc_script_extra)(const char* cmd);
 static int script_extra(const char* cmd) {
   if (strcmp(cmd, "pause") == 0) {
     s_paused = !s_paused;
+    fprintf(stderr, "script: %s at retrace %u\n", s_paused ? "paused" : "resumed", (unsigned)s_retrace);
   } else if (strcmp(cmd, "step") == 0) {
     s_step = true;
   } else if (strcmp(cmd, "dump") == 0) {
@@ -585,6 +586,24 @@ static void cache_check(const char* appName) {
   SDL_free(dir);
 }
 
+/* Wide picture (MKGP2PC_ASPECT, docs/port/widescreen.md). The rendering
+ * library is told to let the frame buffer take the window's shape and to
+ * spread the game's 640x480 over it; gx_shim.cpp narrows the game's
+ * projections again by mkgp2pc_wide_k, which follows the frame buffer's
+ * real shape every frame. */
+static bool s_wide;
+void mkgp2pc_wide_frame(float k); /* gx_shim.cpp */
+static void wide_frame(void) {
+  if (!s_wide) {
+    return;
+  }
+  AuroraWindowSize size = aurora_get_window_size();
+  if (size.fb_width == 0 || size.fb_height == 0) {
+    return;
+  }
+  float k = ((float)size.fb_width / (float)size.fb_height) / (4.0f / 3.0f);
+  mkgp2pc_wide_frame(k > 1.001f ? k : 1.0f);
+}
 void mkgp2pc_crash_log_install(void); /* shot_win32.c */
 int __wrap_main(int argc, char** argv) {
   mkgp2pc_crash_log_install();
@@ -592,14 +611,31 @@ int __wrap_main(int argc, char** argv) {
   memset(&config, 0, sizeof(config));
   config.appName = "mkgp2-pc";
   config.logCallback = &log_callback;
-  /* MKGP2PC_SCALE=2 opens a 1280x960 window, and so on. */
+  /* MKGP2PC_SCALE: the window's height in units of 480 lines (2 opens
+   * 1280x960); fractions are taken (1.5 is 720 lines). MKGP2PC_ASPECT=16:9
+   * (any W:H wider than 4:3) asks for a wide picture: the window gets that
+   * shape and wide_frame() above does the rest. Width: height x W / H,
+   * rounded down, then up to an even number (854, 1280, 1706, 1920). */
   const char* scaleText = getenv("MKGP2PC_SCALE");
-  long scale = scaleText != NULL ? strtol(scaleText, NULL, 10) : 1;
-  if (scale < 1 || scale > 8) {
+  double scale = scaleText != NULL ? strtod(scaleText, NULL) : 1;
+  if (!(scale >= 0.5 && scale <= 8)) {
     scale = 1;
   }
-  config.windowWidth = 640 * (uint32_t)scale;
-  config.windowHeight = 480 * (uint32_t)scale;
+  int aspectW = 4, aspectH = 3;
+  const char* aspectText = getenv("MKGP2PC_ASPECT");
+  if (aspectText != NULL) {
+    int w = 0, h = 0;
+    if (sscanf(aspectText, "%d:%d", &w, &h) == 2 && w > 0 && h > 0 && w * 3 > h * 4 && w <= h * 4) {
+      aspectW = w;
+      aspectH = h;
+      s_wide = true;
+    } else if (strcmp(aspectText, "4:3") != 0) {
+      fprintf(stderr, "MKGP2PC_ASPECT: '%s' is not a shape wider than 4:3 (W:H); using 4:3\n", aspectText);
+    }
+  }
+  config.windowHeight = (uint32_t)(480 * scale + 0.5);
+  config.windowWidth = (uint32_t)((uint64_t)config.windowHeight * aspectW / aspectH);
+  config.windowWidth += config.windowWidth & 1;
   /* MKGP2PC_BACKEND picks the rendering backend instead of Aurora's own
    * order (Windows: d3d12 first). */
   const char* backend = getenv("MKGP2PC_BACKEND");
@@ -638,8 +674,13 @@ int __wrap_main(int argc, char** argv) {
     SDL_SetWindowResizable(s_window, false);
   }
 #endif
+  if (s_wide) {
+    AuroraSetViewportPolicy(AURORA_VIEWPORT_STRETCH);
+    fprintf(stderr, "wide picture: %d:%d, window %ux%u\n", aspectW, aspectH, config.windowWidth, config.windowHeight);
+  }
   s_inFrame = aurora_begin_frame();
   begin_frame_state();
+  wide_frame();
   return __real_main(argc, argv);
 }
 
@@ -846,6 +887,7 @@ void VIWaitForRetrace(void) {
   if (!s_inFrame) {
     s_inFrame = aurora_begin_frame();
     begin_frame_state();
+    wide_frame();
   }
   mkgp2pc_skip_draw = s_inFrame && !show_next_frame();
   t[6] = lastReturn = SDL_GetTicksNS();
