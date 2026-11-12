@@ -1,0 +1,18 @@
+--- a/src/triforce/amsys.c
++++ b/src/triforce/amsys.c
+@@ -434,7 +434,14 @@ void fn_80294448(void) {
+     OSCreateThread(&amsys_bss_806A1DB8.thread, (void* (*)(void*))fn_80294340, rxq, rxq, 0x1000, 8, 1);
+     OSResumeThread(&amsys_bss_806A1DB8.thread);
+     fn_8028D704(fn_8029440C);
+-    fn_8028D6EC(fn_802943D0);
++    /* port: no send hook. The hook hands the channel to the send thread
++     * above, which has the higher priority: on the console it runs at once
++     * and the packet is out before OSSendMessage returns. A host thread
++     * wakes up whenever the system gets to it; a caller that had given up
++     * waiting (amsock.c counts loop turns) had freed the channel by then
++     * and the thread sent from a channel without a device (NULL in
++     * fn_8028C1B8). Without the hook amnet sends in the caller's thread
++     * (SendChan), which is the console's order of events. */
+ }
+ 
+ s32 fn_802946A4(u8 id) {
