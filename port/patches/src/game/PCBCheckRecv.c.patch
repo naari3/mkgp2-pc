@@ -1,6 +1,34 @@
 --- a/src/game/PCBCheckRecv.c
 +++ b/src/game/PCBCheckRecv.c
-@@ -1173,6 +1173,14 @@ int BootPCBCheck_Init(void) {
+@@ -759,6 +759,14 @@ int PCBComm_UpdateSyncPhase1(void)
+             PCBCheckRecv_bss_806D11C0[0] -= lbl_806D3164;
+             if (truncate) PCBCheckRecv_bss_806D11C0[0] = (int)PCBCheckRecv_bss_806D11C0[0];
+             if (reset) PCBCheckRecv_bss_806D11C0[0] = lbl_806D316C;
++#ifndef __MWERKS__
++            /* PC port: a network game's entry screen stays open until the
++             * button (port/platform/triforce/linkflow.c). */
++            {
++                extern float mkgp2pc_linkflow_lobby_timer(float timer, int pressed);
++                PCBCheckRecv_bss_806D11C0[0] = mkgp2pc_linkflow_lobby_timer(PCBCheckRecv_bss_806D11C0[0], truncate);
++            }
++#endif
+             timer = PCBCheckRecv_bss_806D11C0[0];
+             {
+                 unsigned char *out = g_pcbSyncTable;
+@@ -772,6 +780,12 @@ int PCBComm_UpdateSyncPhase1(void)
+             }
+         }
+         if (idle) PCBCheckRecv_bss_806D11C0[0] = lbl_806D316C;
++#ifndef __MWERKS__
++        if (idle) {
++            extern void mkgp2pc_linkflow_lobby_empty(void);
++            mkgp2pc_linkflow_lobby_empty();
++        }
++#endif
+     }
+     return 1;
+ }
+@@ -1173,6 +1187,14 @@ int BootPCBCheck_Init(void) {
      SetSyncTarget(0x36);
      PCBCheck_StateSet(g_pcbListener);
      PCBCheckRecv_bss_806D11BC = 0xE10;
