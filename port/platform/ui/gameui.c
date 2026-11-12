@@ -630,7 +630,7 @@ typedef struct Style {
 } Style;
 /* White window, white text with its outline, title and headings in the
  * light blue of the game's labels, the chosen row yellow on an orange glow. */
-static const Style kStyle = {1,          0x40C8FFFF, 0xFFFFFFFF, 0xFFE820FF, 0xFFFFFF50, 0x40C8FFFF,
+static const Style kStyle = {1,          0x40C8FFFF, 0xFFFFFFFF, 0xFFE820FF, 0xA8B4C8D0, 0x40C8FFFF,
                              0x38A0FF70, 0xFFFFFFFF, 0xFFFFFFC0, 0xFF900000, 1.12f};
 
 /* The window's way in, after the game's message window (MsgPopup): from
@@ -702,12 +702,17 @@ void mkgp2pc_gameui_list(const char* title, const char* const* rows, const int* 
   const float cx = 320.0f, cy = 240.0f;
   const float rowH = 30.0f, headH = 24.0f, gapH = 10.0f;
   unsigned int dim = age < 10 ? (unsigned int)(0x7F * age / 10) : 0x7F;
-  float listH = 0.0f, widest = 0.0f, widestValue = 0.0f, inner, sheetW, sheetH, y, grow;
+  float listH = 0.0f, widest = 0.0f, widestHead = 0.0f, widestValue = 0.0f, inner, sheetW, sheetH, y, grow;
   int i, split = 0;
   const Style* st = &kStyle;
   for (i = 0; i < count; i++) {
     float w = mkgp2pc_gameui_text_width(kinds[i] == 2 ? GAMEUI_FONT_16 : GAMEUI_FONT_24, 1.0f, rows[i]);
-    if (w > widest) {
+    if (kinds[i] == 2) {
+      /* a heading spans the row; it does not push the values out */
+      if (w > widestHead) {
+        widestHead = w;
+      }
+    } else if (w > widest) {
       widest = w;
     }
     if (values != NULL && values[i] != NULL) {
@@ -719,9 +724,16 @@ void mkgp2pc_gameui_list(const char* title, const char* const* rows, const int* 
     }
     listH += kinds[i] != 2 ? rowH : (rows[i][0] ? headH : gapH);
   }
-  inner = widest + (split ? widestValue + 48.0f : 0.0f) + 24.0f;
+  inner = widest + (split ? widestValue + 48.0f : 0.0f);
+  if (inner < widestHead) {
+    inner = widestHead;
+  }
+  inner += 24.0f;
   if (inner < 300.0f) {
     inner = 300.0f;
+  }
+  if (inner > 528.0f) {
+    inner = 528.0f; /* the window stays inside the 4:3 picture */
   }
   sheetW = inner + 96.0f;
   sheetH = listH + 134.0f;
