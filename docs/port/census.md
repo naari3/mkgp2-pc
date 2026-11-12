@@ -1580,6 +1580,21 @@ executable.
   Vulkan backend compiled in (`MKGP2PC_BACKEND=vulkan`, launcher field),
   which has no DXC step. Not timed yet.
 
+### Second Windows run, 593 pipelines ready (2026-11-12, build 72a0266f)
+
+- Start: `shaders: 133 pipelines prepared before the game in 0.2 s`, then
+  `nothing to prepare at retrace 2 (593 pipelines ready)`. 31458 retraces:
+  two pipeline stalls, both in loading windows (91 ms +3, 287 ms +3).
+- In the race: one stall of 1129 ms at retrace 14716 that is none of the
+  known causes (pipelines +0, disc 0.2 ms, lock 0, all of it in the game's
+  part of the frame), and two frames of 38 and 40 ms spent in a 6 KB and a
+  13 KB disc read (34 to 37 ms each: the read itself was slow, not big).
+- The spike line cannot say where such a stall sits, so a stall watch was
+  added: `MKGP2PC_STALL_MS` (150), stacks of every thread in
+  `dumps/stall_f<retrace>/stacks.txt` while the game's thread is stuck.
+  Linux check: the 1.5 s first frame is caught 65 ms in, main thread shown
+  in `StrPcb_Init`. Not run on Windows.
+
 ## 39. A ripple strip standing in the sky on the night Mario cup course (2026-11-12)
 
 Report from play on Windows (build 0c3e815, which has section 38's
