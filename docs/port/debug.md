@@ -144,9 +144,31 @@ back; page 0 is none.
 | 19 Ending | plays | by itself, to the scene list |
 
 Read from the sources; tried on Linux: the scene list (up, down, select),
-Yokome's list (up, down, leave), the race set-up page up to End. After End
-on the race set-up page the race loaded and the program then crashed or
-showed a black picture; not looked into yet.
+Yokome's list (up, down, leave), the race set-up page with End (the race
+loads and runs).
+
+### What the race set-up page can ask for and the game cannot do
+
+The page offers every character, kart type and item number, also the
+combinations the normal game never builds. Two of them crashed (Windows,
+2026-11-12) and are caught by the port now, each with an `OSPanic` line in
+the log:
+
+- kart type GOLD with WALUIGI or MAMETCH: `gold_waluigi.dat` and
+  `gold_mametch.dat` on the disc are copies of `gold_mario.dat` (same size,
+  joints named `mario_cart_*`). `KartDriver_InitFull` looks for
+  `waluigi_cart_*`, finds no joint and reads through a null pointer. The
+  port gives these two the normal kart
+  (`port/patches/src/game/SetCourseParams.c.patch`).
+- an item whose number reaches the AI's hit reaction table unconverted:
+  `lbl_8049BC30` has 159 entries, the callers accept numbers up to 0x114,
+  and a number past the end read the kart tuning floats behind the table as
+  a steering action number. The port treats such a number as entry 0, no
+  reaction (`port/patches/src/game/fn_801DB800.c.patch`). The log line names
+  the item number. Not tried: which item it was is not known.
+
+Both are in the arcade program itself; whether the cabinet would stop the
+same way was not tried.
 
 A scene started from here gets none of the state the normal flow sets up
 before it (player data, course, card).
