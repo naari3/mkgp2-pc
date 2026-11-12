@@ -87,6 +87,7 @@ typedef struct {
   int bootSkip;
   wchar_t camera[256]; /* MKGP2PC_CAMERA: "" none, otherwise a device's name */
   int wide;            /* 16:9 instead of 4:3 */
+  int wideHudEdge;     /* 16:9: the race HUD at the edges, not where 4:3 has it */
   int scale;           /* window height in hundredths of 480 lines: 150 = 720 */
   wchar_t backend[16]; /* "" = the library's own choice */
   int resizable;
@@ -164,6 +165,11 @@ static void load_settings(Settings* s) {
   s->bootSkip = ini_int(L"boot_skip", 0) != 0;
   ini_str(L"camera", s->camera, LEN(s->camera));
   s->wide = ini_int(L"wide", 0) != 0;
+  {
+    wchar_t text[16] = L"";
+    ini_str(L"wide_hud", text, LEN(text));
+    s->wideHudEdge = wcscmp(text, L"edge") == 0;
+  }
   {
     wchar_t text[16] = L"1";
     ini_str(L"scale", text, LEN(text));
@@ -244,6 +250,7 @@ static int save_settings(const Settings* s) {
   put_int(L"boot_skip", s->bootSkip);
   put_str(L"camera", s->camera);
   put_int(L"wide", s->wide);
+  put_str(L"wide_hud", s->wideHudEdge ? L"edge" : L"center");
   {
     wchar_t text[16];
     swprintf(text, LEN(text), L"%g", s->scale / 100.0);
@@ -362,6 +369,7 @@ static void apply_environment(const Settings* s) {
   swprintf(text, LEN(text), L"%g", s->scale / 100.0);
   env_text(L"MKGP2PC_SCALE", s->scale != 100 ? text : NULL);
   env_text(L"MKGP2PC_ASPECT", s->wide ? L"16:9" : NULL);
+  env_text(L"MKGP2PC_WIDE_HUD", s->wide && s->wideHudEdge ? L"edge" : NULL);
   env_text(L"MKGP2PC_BACKEND", s->backend);
   env_flag(L"MKGP2PC_RESIZABLE", s->resizable);
   env_flag(L"MKGP2PC_SHADOW_NEAREST", !s->shadowSmooth);
@@ -511,7 +519,7 @@ static void log_exit_code(DWORD code) {
 enum {
   ID_TAB = 100, ID_SAVE, ID_START, ID_STATUS,
   ID_ISO, ID_ISO_BROWSE, ID_CARD, ID_CARD_FILE, ID_CARD_BROWSE, ID_CLOSE_ON_START, ID_BOOT_SKIP, ID_CAMERA,
-  ID_ASPECT, ID_SCALE, ID_BACKEND, ID_RESIZABLE, ID_SHADOW, ID_FAST, ID_ASYNC, ID_GOODS, ID_HIRES, ID_HIRES_MAKE, ID_AA,
+  ID_ASPECT, ID_WIDE_HUD, ID_SCALE, ID_BACKEND, ID_RESIZABLE, ID_SHADOW, ID_FAST, ID_ASYNC, ID_GOODS, ID_HIRES, ID_HIRES_MAKE, ID_AA,
   ID_LINK, ID_PCB, ID_PEERS, ID_PORT, ID_ROOM, ID_SERVER,
   ID_KEYS, ID_KEY_SET1, ID_KEY_SET2, ID_KEY_CLEAR1, ID_KEY_CLEAR2, ID_KEY_RESET,
   ID_EXTRA, ID_OPEN_LOG, ID_OPEN_FOLDER,
@@ -667,6 +675,9 @@ static void create_controls(void) {
   HWND c = combo(1, X + 116, y, 220, ID_ASPECT);
   SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)L"4:3");
   SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)L"16:9");
+  c = combo(1, X + 344, y, W - 344, ID_WIDE_HUD);
+  SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)L"HUD は中央");
+  SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)L"HUD は両端 (未対応)");
   y += 34;
   label(1, L"窓の大きさ", X, y + 3, 110, 18);
   combo(1, X + 116, y, 220, ID_SCALE);
@@ -899,6 +910,8 @@ static void settings_to_window(void) {
   CheckDlgButton(g_wnd, ID_BOOT_SKIP, g_set.bootSkip);
   camera_fill(g_set.camera, 0);
   SendDlgItemMessageW(g_wnd, ID_ASPECT, CB_SETCURSEL, (WPARAM)g_set.wide, 0);
+  SendDlgItemMessageW(g_wnd, ID_WIDE_HUD, CB_SETCURSEL, (WPARAM)g_set.wideHudEdge, 0);
+  EnableWindow(GetDlgItem(g_wnd, ID_WIDE_HUD), g_set.wide);
   scale_fill(g_set.wide, g_set.scale);
   int backend = 0;
   for (int i = 0; i < LEN(kBackendIds); i++) {
@@ -936,6 +949,7 @@ static void window_to_settings(void) {
   camera_selected(g_set.camera, LEN(g_set.camera));
   g_set.scale = scale_selected();
   g_set.wide = SendDlgItemMessageW(g_wnd, ID_ASPECT, CB_GETCURSEL, 0, 0) == 1;
+  g_set.wideHudEdge = SendDlgItemMessageW(g_wnd, ID_WIDE_HUD, CB_GETCURSEL, 0, 0) == 1;
   int backend = (int)SendDlgItemMessageW(g_wnd, ID_BACKEND, CB_GETCURSEL, 0, 0);
   wcscpy(g_set.backend, kBackendIds[backend < 0 || backend >= LEN(kBackendIds) ? 0 : backend]);
   g_set.resizable = checked(ID_RESIZABLE);
@@ -1756,6 +1770,7 @@ static LRESULT CALLBACK main_proc(HWND wnd, UINT msg, WPARAM wp, LPARAM lp) {
       if (HIWORD(wp) == CBN_SELCHANGE) {
         /* the list still shows the other ratio's sizes: read with that one */
         int wide = SendDlgItemMessageW(wnd, ID_ASPECT, CB_GETCURSEL, 0, 0) == 1;
+        EnableWindow(GetDlgItem(wnd, ID_WIDE_HUD), wide);
         int i = (int)SendDlgItemMessageW(wnd, ID_SCALE, CB_GETCURSEL, 0, 0);
         scale_fill(wide, scale_list(!wide)[i < 0 || i >= SCALE_CHOICES ? 0 : i]);
       }
