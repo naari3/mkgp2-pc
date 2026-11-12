@@ -1,8 +1,8 @@
---- a/src/game/misc3d/fn_8016E7E4.c	2026-11-12 05:41:24.381731320 +0000
-+++ b/src/game/misc3d/fn_8016E7E4.c	2026-11-12 05:41:24.397260000 +0000
+--- a/src/game/misc3d/fn_8016E7E4.c	2026-11-12 06:06:20.620033817 +0000
++++ b/src/game/misc3d/fn_8016E7E4.c	2026-11-12 06:06:20.634528407 +0000
 @@ -1,4 +1,11 @@
 -#include "game/types/Node.h"
-+/* PC port: the nodes are CoursePropNode objects built by C++ code
++/* PC port: the nodes are clKPCharaData objects built by C++ code
 + * (mapeffect/CoursePropCtor.cpp). MWCC puts the vtable pointer after the
 + * data members declared before the first virtual (+0x10), the host compiler
 + * puts it first, so `next` is one pointer further in. */
@@ -11,5 +11,5 @@
 +    struct Node *next;
 +} Node;
  
- void fn_8016E7E4(Node *n, Node *item) {
+ extern "C" void fn_8016E7E4(Node *n, Node *item) {
      if (n->next != 0) {
