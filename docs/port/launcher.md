@@ -1,0 +1,110 @@
+# Settings program (mkgp2-launcher.exe)
+
+`mkgp2-launcher.exe` is a small Windows program that sits next to
+`mkgp2-gfx.exe`. It shows the port's settings as a window (texts in
+Japanese), keeps them in `mkgp2-pc.ini` in the same folder and starts the
+game with them. Source: `port/launcher/launcher.c` (plain Win32, one file, no
+game code and no library of the port).
+
+State 2026-11-12: built with MinGW and tried under Wine on Linux with a
+stand-in for the game program (window, all five pages, saving, the key
+dialog, starting, log, exit code). Not yet run on Windows. `MKGP2PC_KEYS`
+in the game was checked by compiling and by running its parser alone, not in
+a running game.
+
+## How it works
+
+The game program reads its settings from environment variables at start-up
+and has no settings file. The settings program does not change that: on
+"保存して起動" it writes the ini file, sets the variables in its own
+environment (clearing the ones that are off, so that variables left in the
+shell do not leak in), and starts `mkgp2-gfx.exe` with
+
+- the program's folder as the current folder (`card.bin`, `dumps\`),
+- standard output and error going to `gfx.log` (overwritten on every start,
+  as `run-gfx.cmd` does),
+- no console window (`CREATE_NO_WINDOW`).
+
+While the game runs the start button is disabled; when it ends the exit code
+is shown and appended to `gfx.log` as `exit code N` (hexadecimal for crash
+codes). `mkgp2-launcher.exe --run` starts the game with the saved settings
+without showing the window (for a shortcut); it does not wait, so no exit
+code is written then. `run-gfx.cmd` still works and ignores the ini file.
+
+## Pages and what they set
+
+| page | item | variable |
+|---|---|---|
+| 基本 | ISO file | `MKGP2_ISO` |
+| 基本 | use the card unit (off = `0`) | `MKGP2PC_CARD` |
+| 基本 | card file (empty = `card.bin` in the folder) | `MKGP2PC_CARD_FILE` |
+| 基本 | close this window after starting | (launcher only) |
+| 表示 | window size 1x to 6x of 640x480 | `MKGP2PC_SCALE` |
+| 表示 | rendering backend (automatic, d3d12, d3d11, vulkan, opengl) | `MKGP2PC_BACKEND` |
+| 表示 | smooth kart shadow (off = `1`) | `MKGP2PC_SHADOW_NEAREST` |
+| 表示 | start at full speed | `MKGP2PC_FAST` |
+| 表示 | coin tally popups as on the disc (English) | `MKGP2PC_GOODS_DISC` |
+| 表示 | do not wait for pipelines | `MKGP2PC_ASYNC_PIPELINES` |
+| 表示 | resizable window (crashes are known, see build.md) | `MKGP2PC_RESIZABLE` |
+| 通信 | cabinet link on (off = `0`) | `MKGP2PC_LINK` |
+| 通信 | cabinet number 1-4 | `MKGP2PC_PCB_ID` |
+| 通信 | where the other cabinets are | `MKGP2PC_LINK_PEERS` |
+| 通信 | first port | `MKGP2PC_LINK_PORT` |
+| キー | two keys per action | `MKGP2PC_KEYS` |
+| その他 | free lines `NAME=VALUE` (applied last, so they win) | any |
+
+Variables for investigation (`MKGP2PC_TRACE_*`, `MKGP2PC_SCRIPT`,
+`MKGP2PC_FRAMES`, ...) have no control of their own; they go into the free
+lines of the last page.
+
+## Keys: `MKGP2PC_KEYS`
+
+Read by `key_map_load` in `port/gfx/video_aurora.c`:
+
+    MKGP2PC_KEYS=accel=A;brake=S,Left Shift;coin=
+
+`action=key[,key...]` separated by `;`, up to four keys per action. Actions
+not named keep their default keys; nothing after `=` leaves an action without
+a key. Actions: `left right accel brake item coin card test service pause
+step fast fasthold dump`. A key is an SDL scancode name (`A`, `Left`, `F9`,
+`Keypad 5`) or the scancode number, which is the USB keyboard usage (4 = A).
+A single character is always a name (`5` is the key 5), so numbers are
+written with two digits (`04`). Scancodes name physical keys: the layout does
+not matter.
+
+The settings program writes numbers. It gets them from the scan code of the
+Windows key message through its own table (`kScanToUsage`), and shows them
+with its own names (Japanese keyboard legends where they differ). A key
+given to one action is taken away from the action that had it. If all keys
+are the defaults the variable is not set at all.
+
+## The ini file
+
+`mkgp2-pc.ini`, UTF-16 with a byte order mark (the Windows profile functions
+keep a file in the encoding it starts with; this keeps non-ASCII paths
+intact). Sections: `[settings]`, `[keys]` (`action=usage1,usage2`, 0 = none),
+`[env]` (the free lines). Deleting the file gives the defaults back. The
+build never writes it, so it survives rebuilding into the same folder.
+
+## Building
+
+    port/launcher/build.sh [output directory]
+
+needs only `i686-w64-mingw32-gcc` and `i686-w64-mingw32-windres` (both in
+the container of `port/docker`); a few seconds. `port/docker/build-win32.sh`
+runs it and puts the program into `dist`. The manifest (`launcher.manifest`)
+asks for the themed common controls and system DPI awareness.
+
+Looking at it without Windows: `wine mkgp2-launcher.exe` under Xvfb. Wine
+has no Japanese font of its own; copying a Japanese font into the prefix's
+`windows/Fonts` and naming it under
+`HKCU\Software\Wine\Fonts\Replacements` for `Tahoma` makes the texts
+readable.
+
+## Why a separate program
+
+The alternative was a menu inside the game window (Aurora carries Dear
+ImGui). Window size and backend are needed before the window exists, the ISO
+path before anything runs, and a menu drawn through the same renderer does
+not help when rendering is what fails. A separate program also needs no
+change in the game beyond the key table.

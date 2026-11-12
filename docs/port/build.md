@@ -194,7 +194,8 @@ container).
 ```
 
 The result is `build\pc-gfx-win\dist` of the Windows clone: `mkgp2-gfx.exe`,
-the six DLLs, `run-gfx.cmd` and `KEYS.txt` (the same set as the zip
+the six DLLs, `run-gfx.cmd`, `KEYS.txt` and `mkgp2-launcher.exe` (the settings
+window, [launcher.md](launcher.md)) (the same set as the zip
 described below). Start it with `run-gfx.cmd "path to the ISO"`, or set
 `MKGP2_ISO` and run the executable.
 
