@@ -6,6 +6,7 @@
  */
 #include <aurora/aurora.h>
 #include <aurora/event.h>
+#include <aurora/gfx.h>
 #include <SDL3/SDL.h>
 #include <dolphin/gx.h>
 
@@ -511,6 +512,79 @@ static void begin_frame_state(void) {
     AuroraSetDrawsBlocking(blocking != 0);
   }
 }
+/*
+ * Aurora keeps two SQLite files in the user directory (%APPDATA%\mkgp2-pc,
+ * ~/.local/share/mkgp2-pc): pipeline_cache.db, the list of pipelines seen so
+ * far (compiled in the background at the next start), and dawn_cache.db, the
+ * compiled shaders and pipelines themselves. When a file is damaged Aurora
+ * says so once in the log and goes on WITHOUT that cache, at every start:
+ * with dawn_cache.db gone every shader is compiled again in every run, and
+ * since draws wait for their pipeline (begin_frame_state) each compilation
+ * the game runs into is a stall (found 2026-11-12 on Windows: "database disk
+ * image is malformed", docs/port/census.md section 36). So the files are
+ * checked before Aurora opens them; a damaged one is set aside as
+ * <name>.broken and Aurora starts a new one. sqlite3 is in the link for
+ * Aurora; the four declarations stand for its header.
+ */
+typedef struct sqlite3 sqlite3;
+int sqlite3_open_v2(const char* filename, sqlite3** db, int flags, const char* vfs);
+int sqlite3_exec(sqlite3* db, const char* sql, int (*callback)(void*, int, char**, char**), void* arg, char** error);
+int sqlite3_close(sqlite3* db);
+const char* sqlite3_errmsg(sqlite3* db);
+static int cache_check_row(void* state, int count, char** values, char** names) {
+  (void)names;
+  *(int*)state = count >= 1 && values[0] != NULL && strcmp(values[0], "ok") == 0 ? 1 : 2;
+  return 0;
+}
+static void cache_check_file(const char* dir, const char* name) {
+  char path[1024], other[1040];
+  sqlite3* db = NULL;
+  int state = 0; /* 1: the check said ok */
+  char why[200] = "";
+  snprintf(path, sizeof(path), "%s%s", dir, name);
+  if (!SDL_GetPathInfo(path, NULL)) {
+    return; /* first start */
+  }
+  if (sqlite3_open_v2(path, &db, 2 /* SQLITE_OPEN_READWRITE */, NULL) != 0 ||
+      sqlite3_exec(db, "PRAGMA quick_check(1);", cache_check_row, &state, NULL) != 0) {
+    snprintf(why, sizeof(why), "%s", db != NULL ? sqlite3_errmsg(db) : "cannot open");
+    state = 2;
+  }
+  if (db != NULL) {
+    sqlite3_close(db);
+  }
+  if (state == 1) {
+    return;
+  }
+  snprintf(other, sizeof(other), "%s.broken", path);
+  SDL_RemovePath(other);
+  bool moved = SDL_RenamePath(path, other);
+  if (!moved) {
+    moved = SDL_RemovePath(path);
+  }
+  snprintf(other, sizeof(other), "%s-wal", path);
+  SDL_RemovePath(other);
+  snprintf(other, sizeof(other), "%s-shm", path);
+  SDL_RemovePath(other);
+  fprintf(stderr, "cache: %s is damaged (%s); %s\n", path, why[0] ? why : "failed the check",
+          moved ? "set aside as .broken, a new one is started (shaders are compiled again once)"
+                : "and could not be moved away: this run has no shader cache");
+}
+static void cache_check(const char* appName) {
+  if (getenv("MKGP2PC_NO_CACHE_CHECK") != NULL) {
+    return;
+  }
+  char* dir = SDL_GetPrefPath(NULL, appName); /* what Aurora uses when no cache path is given */
+  if (dir == NULL) {
+    return;
+  }
+  Uint64 start = SDL_GetTicksNS();
+  cache_check_file(dir, "dawn_cache.db");
+  cache_check_file(dir, "pipeline_cache.db");
+  fprintf(stderr, "cache: %s checked in %.0f ms\n", dir, (double)(SDL_GetTicksNS() - start) / 1e6);
+  SDL_free(dir);
+}
+
 void mkgp2pc_crash_log_install(void); /* shot_win32.c */
 int __wrap_main(int argc, char** argv) {
   mkgp2pc_crash_log_install();
@@ -552,6 +626,7 @@ int __wrap_main(int argc, char** argv) {
   }
   mkgp2pc_script_extra = &script_extra;
   mkgp2pc_script_record = &rec_script;
+  cache_check(config.appName);
   s_window = aurora_initialize(argc, argv, &config).window;
 #ifdef _WIN32
   /* Every change of the window's size on Windows (drag, maximize) ended in
@@ -595,6 +670,7 @@ static void quit_now(void) {
   _exit(0);
 }
 
+static Uint64 s_limitWanted; /* how long the last frame_limit meant to sleep */
 static void frame_limit(void) {
   static Uint64 next;
   static int off = -1;
@@ -602,6 +678,7 @@ static void frame_limit(void) {
   if (off < 0) {
     off = getenv("MKGP2PC_NOLIMIT") != NULL;
   }
+  s_limitWanted = 0;
   if (off || s_fast || s_fastHeld) {
     next = 0; /* the pace starts afresh when the limit comes back */
     return;
@@ -611,6 +688,7 @@ static void frame_limit(void) {
     next = now; /* first frame, or too far behind to catch up */
   }
   if (now < next) {
+    s_limitWanted = next - now;
     SDL_DelayNS(next - now);
   }
   next += period;
@@ -661,7 +739,69 @@ static void pump_events(void) {
   }
 }
 
+/*
+ * Frame-time log. A frame that takes longer than MKGP2PC_SPIKE_MS
+ * milliseconds from one return of VIWaitForRetrace to the next (default 25,
+ * one and a half frames; 0 turns the log off) gets one line in the log:
+ *
+ *   spike: retrace 5120 frame 212.4 ms: game 196.0 end 0.3 events 0.1
+ *          sleep 0.0 (late 0.0) retrace 0.2 begin 15.8 | pipelines +3
+ *          (12 waiting) disc 0.0 ms 0 KB lock 0.4 ms
+ *
+ *   game      the game's own frame: logic and its drawing calls. A draw whose
+ *             pipeline is not compiled yet waits in here (begin_frame_state);
+ *             "pipelines +N" says how many were compiled during the frame.
+ *   end       handing the frame to the rendering thread
+ *   events    window events, dump bookkeeping
+ *   sleep     the frame limiter; "late" is how much longer than asked
+ *   retrace   the retrace callbacks (inputs, media board, link, the game's)
+ *   begin     waiting for the rendering thread to give a frame back: long
+ *             when the GPU side is behind
+ *   disc      reads from the disc image during the frame, on any thread
+ *   lock      time this thread waited for the "interrupts off" lock while
+ *             the sound or another thread held it
+ * Scene loads are long frames too and are listed like any other. Frames in
+ * which the game was paused or a dump was made are left out.
+ */
+uint64_t mkgp2pc_perf_lock_wait_ns(void);                   /* port/nogfx/os_thread.c */
+extern uint64_t mkgp2pc_perf_dvd_ns, mkgp2pc_perf_dvd_bytes; /* port/nogfx/dvd_min.c */
+static void spike_log(const Uint64 t[7], bool skip) {
+  static double limitMs = -1.0;
+  static uint32_t pipelines, lines;
+  static uint64_t dvdNs, dvdBytes, lockNs;
+  const AuroraStats* stats = aurora_get_stats();
+  uint64_t lockNow = mkgp2pc_perf_lock_wait_ns();
+  if (limitMs < 0.0) {
+    const char* text = getenv("MKGP2PC_SPIKE_MS");
+    limitMs = text != NULL ? strtod(text, NULL) : 25.0;
+  }
+#define MS(a, b) ((double)((b) - (a)) / 1e6)
+  if (!skip && limitMs > 0.0 && t[0] != 0 && MS(t[0], t[6]) > limitMs && lines < 20000) {
+    double slept = MS(t[3], t[4]);
+    double late = slept - (double)s_limitWanted / 1e6;
+    lines++;
+    fprintf(stderr,
+            "spike: retrace %u frame %.1f ms: game %.1f end %.1f events %.1f sleep %.1f (late %.1f) retrace %.1f "
+            "begin %.1f | pipelines +%u (%u waiting) disc %.1f ms %u KB lock %.1f ms%s\n",
+            (unsigned)s_retrace, MS(t[0], t[6]), MS(t[0], t[1]), MS(t[1], t[2]), MS(t[2], t[3]), slept,
+            late > 0.0 ? late : 0.0, MS(t[4], t[5]), MS(t[5], t[6]), (unsigned)(stats->createdPipelines - pipelines),
+            (unsigned)stats->queuedPipelines, (double)(mkgp2pc_perf_dvd_ns - dvdNs) / 1e6,
+            (unsigned)((mkgp2pc_perf_dvd_bytes - dvdBytes) >> 10), (double)(lockNow - lockNs) / 1e6,
+            s_fast || s_fastHeld ? " [full speed]" : "");
+  }
+#undef MS
+  pipelines = stats->createdPipelines;
+  dvdNs = mkgp2pc_perf_dvd_ns;
+  dvdBytes = mkgp2pc_perf_dvd_bytes;
+  lockNs = lockNow;
+}
+
 void VIWaitForRetrace(void) {
+  static Uint64 lastReturn;
+  Uint64 t[7];
+  bool skip = s_paused || s_dumpWanted || s_shotWait != 0;
+  t[0] = lastReturn;
+  t[1] = SDL_GetTicksNS();
   if (s_inFrame && !mkgp2pc_skip_draw) {
     /* One picture at a time: a dump asked for while the last one's picture
      * is still on its way is made on the first frame after it. */
@@ -673,16 +813,20 @@ void VIWaitForRetrace(void) {
     aurora_end_frame();
     s_inFrame = false;
   }
+  t[2] = SDL_GetTicksNS();
   pump_events();
   dump_poll();
   s_step = false;
+  skip |= s_paused;
   while (s_paused && !s_step) {
     SDL_Delay(10);
     pump_events();
     dump_poll();
   }
   mkgp2pc_audio_frame();
+  t[3] = SDL_GetTicksNS();
   frame_limit();
+  t[4] = SDL_GetTicksNS();
   int level = OSDisableInterrupts();
   s_retrace++;
   mkgp2pc_script_tick(s_retrace);
@@ -698,9 +842,12 @@ void VIWaitForRetrace(void) {
   if (s_frameLimit >= 0 && (long)s_retrace >= s_frameLimit) {
     quit_now();
   }
+  t[5] = SDL_GetTicksNS();
   if (!s_inFrame) {
     s_inFrame = aurora_begin_frame();
     begin_frame_state();
   }
   mkgp2pc_skip_draw = s_inFrame && !show_next_frame();
+  t[6] = lastReturn = SDL_GetTicksNS();
+  spike_log(t, skip);
 }

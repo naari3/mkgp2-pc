@@ -29,10 +29,26 @@ static pthread_mutex_t s_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t s_wake = PTHREAD_COND_INITIALIZER; /* one condition for every sleeper */
 static __thread int s_depth;
 
+/* Time the calling thread has spent waiting for the lock while another
+ * thread (sound, a loader, the alarm timer) held it. The clock is read only
+ * when the lock is not free. For the frame-time log (port/gfx/video_aurora.c). */
+static __thread uint64_t s_lockWaitNs;
+uint64_t mkgp2pc_perf_lock_wait_ns(void) { return s_lockWaitNs; }
+static void lock_timed(void) {
+  struct timespec a, b;
+  if (pthread_mutex_trylock(&s_lock) == 0) {
+    return;
+  }
+  clock_gettime(CLOCK_MONOTONIC, &a);
+  pthread_mutex_lock(&s_lock);
+  clock_gettime(CLOCK_MONOTONIC, &b);
+  s_lockWaitNs += (uint64_t)((int64_t)(b.tv_sec - a.tv_sec) * 1000000000ll + (b.tv_nsec - a.tv_nsec));
+}
+
 int OSDisableInterrupts(void) {
   int was = s_depth == 0;
   if (was) {
-    pthread_mutex_lock(&s_lock);
+    lock_timed();
     s_depth = 1;
   }
   return was; /* "interrupts were enabled" */

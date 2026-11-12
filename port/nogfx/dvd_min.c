@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 
 #ifdef _WIN32
@@ -166,8 +167,17 @@ int DVDClose(DVDFileInfo* fi) {
   return 1;
 }
 
+/* Reads complete inside the call, on the thread that asked: time and bytes
+ * are counted for the frame-time log (port/gfx/video_aurora.c). Counted on
+ * every thread; a loader thread's reads show up too. */
+uint64_t mkgp2pc_perf_dvd_ns, mkgp2pc_perf_dvd_bytes;
 static int32_t read_at(void* addr, int32_t length, uint32_t offset) {
+  struct timespec t0, t1;
+  clock_gettime(CLOCK_MONOTONIC, &t0);
   ssize_t n = disc() ? pread(s_fd, addr, (size_t)length, (off_t)offset) : -1;
+  clock_gettime(CLOCK_MONOTONIC, &t1);
+  mkgp2pc_perf_dvd_ns += (uint64_t)((int64_t)(t1.tv_sec - t0.tv_sec) * 1000000000ll + (t1.tv_nsec - t0.tv_nsec));
+  mkgp2pc_perf_dvd_bytes += (uint64_t)(length > 0 ? length : 0);
   if (n < 0) {
     memset(addr, 0, (size_t)length);
     return -1;
