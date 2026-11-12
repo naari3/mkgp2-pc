@@ -85,9 +85,9 @@ mkgp2pc_gameui_end();                    /* once, when it closes */
   bytes each), so its characters are loaded once. `begin` / `end` bracket
   what is loaded; one screen at a time.
 - `mkgp2pc_gameui_choice(title, items, count, cursor, age)` is a whole
-  screen: the picture darkened, the blue panel coming up as the game's
-  message windows do, a title, the items side by side with the name entry
-  cursor behind the chosen one, and the wheel and pedal hints. Input stays
+  screen: the picture darkened, the window coming up as the game's
+  message windows do, a title, the items side by side with the cursor
+  glow behind the chosen one, and the wheel and pedal hints. Input stays
   with the caller.
 - `mkgp2pc_gameui_hint_button(x, y, frame, caption)`: the flashing item
   button with a caption in the 64 pixel font (kana and Latin only).
@@ -98,8 +98,8 @@ mkgp2pc_gameui_end();                    /* once, when it closes */
   small headings), optionally a value at the right of a row (then the labels
   stand at the left), marks that the list goes on above or below, the cursor
   on the chosen row, two small lines underneath.
-- `mkgp2pc_gameui_sheet(x, y, width, height)`: what the port's screens write
-  on. `mkgp2pc_gameui_frame(res, w, h, edge, mirror, ...)` draws any frame
+- `mkgp2pc_gameui_white_sheet(x, y, width, height)`: what the port's screens
+  write on. `mkgp2pc_gameui_frame(res, w, h, edge, mirror, ...)` draws any frame
   picture at any size without stretching it (corners as they are, sides and
   middle repeated); `mkgp2pc_gameui_cursor` is the glow and the arrow.
 
@@ -116,17 +116,25 @@ what the rule is now:
   queued sprite can show a part of its picture: `SpriteHandle_CreateEx`
   returns the handle, whose four screen corners and two texture corners are
   then set (`piece()` in gameui.c).
-- **Text needs a dark ground.** The 16 and 24 pixel fonts are a white (or
-  tinted) body with a black outline, drawn as two textures; a dark tint
+- **The fonts cannot be made dark.** The 16 and 24 pixel fonts are a white
+  (or tinted) body with a black outline, drawn as two textures; a dark tint
   turns a character into a blot, so "black text" is not to be had from
-  them, and white text on the white windows or on the pale blue panel
-  reads poorly. The game itself puts text of these fonts on dark or
-  saturated grounds and uses finished pictures for everything on its white
-  windows. So the port's sheet is the game's dark caption bubble with a
-  dark fill under it (the bubble is see-through), white text, titles in the
-  pale blue of the game's screen titles.
-- The cursor is the game's window cursor (glow and arrow); the glow is
-  tinted blue so that the white text stays readable on it.
+  them.
+- The second version (PR 56) therefore used the game's dark caption bubble
+  0x72D with a dark fill and white text. The owner: readable, but nothing
+  like the game's design. Three variants were shown next to the game's own
+  yes/no cards and class selection
+  (`/mnt/project-files/port/gameui/menu_variants_linux.png`, not in the
+  repository); the owner chose the white window with white outlined text,
+  and asked for the window to be half see-through.
+- **What it is now** (`kStyle`, `mkgp2pc_gameui_white_sheet`): the white
+  dotted window 0x72E of the yes/no cards over its shadow 0x72F, drawn with
+  alpha 0xA8 so that the stopped game shows through; text white with its
+  outline (the outline is what keeps it readable on the pale window);
+  title, headings and rules in the light blue of the game's labels; the
+  chosen row yellow, a little larger, on the window glow 0x8CE tinted
+  orange, with the striped arrow 0x8CD. `mkgp2pc_gameui_sheet` (the dark
+  bubble) is still there but no screen uses it.
 - The picture behind is darkened with 0x7F as the game's message windows
   do (`MsgPopup`).
 
