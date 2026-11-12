@@ -1551,6 +1551,74 @@ materials); whether it may live in this public repository is the owner's
 decision. Until then it is kept outside it and copied next to the
 executable.
 
+### First Windows run with the list (2026-11-12, build f2fa4360)
+
+- Start: `367 rows merged`, Dawn pruned 5 entries before the game, no
+  `shaders:` line. The compiled blobs of the earlier run were still in
+  `dawn_cache.db`, so the background pass was over before retrace 1 and the
+  hold had nothing to do. The hold now says so (`shaders: nothing to prepare
+  at retrace N (M pipelines ready)`), otherwise that case looks like a hold
+  that never ran.
+- 30836 retraces of play: no pipeline stall outside a loading window. Five
+  inside one: 855 ms (+14), 328 ms (+5), 110 ms (+1), 109 ms (+1),
+  172 ms (+10). All 31 were states the list had not met.
+- The user's own list had grown from 306 to 546 rows in one afternoon of
+  play, 174 of them missing from the 410-row list (367 + cloud cup sweep).
+  Merged: 583 GX pipelines. A list made by playing does not converge fast:
+  menus, card screens, items, network versus and the award scene each add
+  some, and the attract demo sweep reaches none of those.
+- Why so many (583 configs counted): 334 distinct TEV/channel/texgen
+  set-ups (with the vertex attributes blanked), 466 distinct shader configs
+  with them, 31 distinct depth/blend/cull tails. Aurora fetches vertices in
+  the shader, so every attribute layout (offset, stride, frac, byte order)
+  is its own WGSL text, but that only explains 466 against 334: the bulk
+  is the game's own material variety. No cheap merge exists short of a
+  general ("uber") shader, which Aurora does not have.
+- Cost per new pipeline on D3D12: 61 ms each in the +14 batch (WGSL to
+  HLSL to DXC), 17 ms each in the +10 batch (shader text already in Dawn's
+  blob cache, only the pipeline object new). The Windows build has Dawn's
+  Vulkan backend compiled in (`MKGP2PC_BACKEND=vulkan`, launcher field),
+  which has no DXC step. Not timed yet.
+
+### The list in the repository (2026-11-12)
+
+- `port/gfx/package/initial_pipeline_cache.db`: 592 GX pipelines (the
+  user's lists from Windows play, the rows saved from a damaged list, a
+  Linux replay, 32 attract-demo runs over every cup). naari3 agreed to
+  having it in the public repository. It holds render-state records only:
+  one table of fixed-size configuration blobs (TEV stages, channels,
+  texgens, vertex layout, blend and depth state) with a hash and the frame
+  number of first use. No texture, model, file name or path is in it
+  (checked: no printable string beyond the table definition).
+- Builds: `build-win32.sh` puts it in the output directory, `wsl-build.sh`
+  in the destination. A list already there is merged with it, never
+  replaced. `build-linux32.sh` copies it next to the executable if none is
+  there.
+- Refreshing it: collect `pipeline_cache.db` files (the user directory,
+  `%APPDATA%\mkgp2-pc` or `~/.local/share/mkgp2-pc`, after play; or
+  `port/tools/pipeline_sweep.sh` for the attract demo over every cup) and
+  run `python3 -I port/tools/pipeline_list.py -o
+  port/gfx/package/initial_pipeline_cache.db
+  port/gfx/package/initial_pipeline_cache.db LIST...`. Lists from any
+  machine and either system mix. After a change of Aurora's pipeline
+  config version the old rows are dropped by the tool and the list has to
+  be collected again.
+
+### Second Windows run, 593 pipelines ready (2026-11-12, build 72a0266f)
+
+- Start: `shaders: 133 pipelines prepared before the game in 0.2 s`, then
+  `nothing to prepare at retrace 2 (593 pipelines ready)`. 31458 retraces:
+  two pipeline stalls, both in loading windows (91 ms +3, 287 ms +3).
+- In the race: one stall of 1129 ms at retrace 14716 that is none of the
+  known causes (pipelines +0, disc 0.2 ms, lock 0, all of it in the game's
+  part of the frame), and two frames of 38 and 40 ms spent in a 6 KB and a
+  13 KB disc read (34 to 37 ms each: the read itself was slow, not big).
+- The spike line cannot say where such a stall sits, so a stall watch was
+  added: `MKGP2PC_STALL_MS` (150), stacks of every thread in
+  `dumps/stall_f<retrace>/stacks.txt` while the game's thread is stuck.
+  Linux check: the 1.5 s first frame is caught 65 ms in, main thread shown
+  in `StrPcb_Init`. Not run on Windows.
+
 ## 39. A ripple strip standing in the sky on the night Mario cup course (2026-11-12)
 
 Report from play on Windows (build 0c3e815, which has section 38's
@@ -1589,3 +1657,69 @@ crescent with the ripple texture stands in the sky at the upper right.
   one silently plays without the card and lands in another cup).
 - Seen on the way and left: thin red horizontal quads at the karts' grid
   places at the start of this course (Linux too).
+
+## 40. Guide pictures of the attract demo repeated sideways (2026-11-12)
+
+- Seen on Windows (build f2fa4360) in the "game explanation" part of the
+  attract demo: about ten steering wheels overlapping at the top, a row of
+  cut-off glyphs, three wheels at the bottom right. Same picture on Linux
+  with scripted `pause` lines at retraces 17200, 17500 and 17800 of an
+  untouched attract loop (`MKGP2PC_FAST=1 MKGP2PC_LINK=0`).
+- Cause: `SprEntry` in src/game/Scene_8014E0C4.cpp, the 80-entry table of
+  attract sprites (`Scene_8014E0C4_rodata_803644D0`), held each sprite's
+  origin on its texture as `char name[8]` filled with the big-endian bytes
+  of two floats. `SprScene::Draw` hands that field to `fn_801F6D58`, which
+  reads x, y, width, height as floats. On a little-endian host x and y came
+  out as denormals, so every sprite of the table was cut from the top-left
+  corner of its sheet with the right size. The steering wheel is what sits
+  in that corner of the guide sheet.
+- Correction: the field is `float x, y` and the table is written with float
+  literals. Same bytes under MWCC (`Scene_8014E0C4.o` and `main.dol`
+  unchanged), so the change went to mkgp2-decomp (PR 6180) and is carried
+  here as the same edit. Checked on Linux at the three retraces: speech
+  balloon with its text, the "ゲーム説明" banner, the aiming mark. Not
+  checked on Windows.
+- Not covered by `port/tools/data_width_census.py`, which compares the
+  element types of a definition and its declarations; here the definition
+  and the declaration agreed and the reader was a function taking `void *`.
+  A search of `src/` for brace-enclosed byte lists that look like big-endian
+  floats inside table rows found only this table. Whole pools written as
+  byte arrays (`Cave16ACtor_rodata_8036CF68`, `Jungle16ACtor_rodata_8036CA00`,
+  `CGameCoin_8012BF5C_rodata_80356730`, `resultscene_rodata_803682B0`,
+  `lbl_803776C8`) hold floats in the same form; how each is read on the host
+  was not examined here.
+
+## 41. A bluish half-tube that stays beside the driver's hand (2026-11-12)
+
+Report from play on Windows (build 72a0266f, dump `001_f18897`, just after
+the goal, 16:9, high-resolution textures on): something bluish white stands
+next to the hand the driver throws items with and never goes away.
+
+- What it is: the model of `swing_effect.dat`, the short streak the game
+  shows when an item is thrown (`KartFx_BoostChargeIconTick`,
+  src/game/KartFxChargeIcon.cpp, effect model 14). In the dumped frame it is
+  drawn 27 times: 23 times with the same matrix at the player's kart, 3 and 1
+  times at two other karts (`gx_fifo.py <dump> --at 367,262`; three triangle
+  strips of 59, 23 and 47 vertices, additive blending, so the copies add up
+  to white). One copy per item thrown; none was ever removed.
+- The fault: the effect model table `lbl_8041BC00` (152 rows of 20 bytes:
+  archive name, `mode` byte, last frame, `loop` byte) was written as an
+  array of pointers with the two bytes as `(char *)0x1000000`.
+  `VfxSlot_TickAnim` reads `mode` as a byte: 1 on the console, 0 here. Mode 0
+  lets the model's animation run freely and never sets the slot's state to
+  "ended", and the effect frees itself only on that state. 25 rows have mode
+  1 and 14 of them loop, so other play-once effects were touched as well
+  (they ran on instead of stopping at their last frame).
+- Correction: upstream 39d9b89, the table is `EffectModelRow[152]` with the
+  two fields as bytes (main.dol unchanged). The upstream search for such
+  tables (`tools/port_abi/byte_words.py`) had not looked at `char *` tables;
+  with that added this table was the only new hit.
+- Check (Linux, the dump's input replayed; on Linux the race runs at other
+  frames, so only one item gets thrown): before, the model is drawn once in
+  every sampled frame from retrace 12200 to 17000 (80 s); after, in none,
+  and `DrawEffect_Free` is reached from the effect's tick (never before).
+  Not checked on Windows. High-resolution textures play no part: the copies
+  are in the game's draw commands.
+- New in `gx_fifo.py`: `--at X,Y` lists the draws whose bounding box on the
+  640x480 picture holds a point, from the matrices and projection in the
+  record and the vertex arrays in the dump's memory.

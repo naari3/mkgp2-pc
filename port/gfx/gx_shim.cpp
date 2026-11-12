@@ -38,6 +38,7 @@
 #include <aurora/texture.hpp>
 
 #include <cmath>
+#include <cstdarg>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -199,6 +200,9 @@ void* __wrap_OSAllocFromHeap(int heap, u32 size) {
   return p;
 }
 
+/* the position array, for the wide picture's look into display lists */
+static const u8* mkgp2pc_wide_pos_array;
+static u32 mkgp2pc_wide_pos_stride;
 void __wrap_GXSetArray(u32 attr, const void* base, u8 stride) {
   const uintptr_t end = 0x83000000u;
   uint32_t size = mkgp2pc_array_extent(base);
@@ -208,6 +212,10 @@ void __wrap_GXSetArray(u32 attr, const void* base, u8 stride) {
     if (at < end && at + size > end) {
       size = static_cast<uint32_t>(end - at);
     }
+  }
+  if (attr == GX_VA_POS) {
+    mkgp2pc_wide_pos_array = static_cast<const u8*>(base);
+    mkgp2pc_wide_pos_stride = stride;
   }
   __real_GXSetArray(static_cast<GXAttr>(attr), base, size, stride, false);
 }
@@ -285,9 +293,14 @@ int sShadowNowCount, sShadowLastCount;
 } // namespace
 
 void mkgp2pc_wide_projection(void); /* below: sends sProj, corrected for a wide picture */
+bool wide_list_before(const void* list, u32 nbytes);
+void wide_list_after(void);
+void wide_census_projection(void* caller);
+void wide_census_draw(int kind);
 extern "C" void __wrap_GXSetProjection(const void* mtx, u32 type) {
   std::memcpy(sProj, mtx, sizeof(sProj));
   sProjType = type;
+  wide_census_projection(__builtin_return_address(0));
   mkgp2pc_wide_projection();
 }
 void mkgp2pc_wide_posmtx(const void* mtx, u32 id);
@@ -304,11 +317,175 @@ extern "C" void __wrap_GXSetTevKColor(u32 id, GXColor color) {
   }
   __real_GXSetTevKColor(id, color);
 }
+/*
+ * The frame's draw commands, for dumps (docs/port/dumps.md,
+ * port/tools/gx_fifo.py). Aurora's GX functions do not draw: they write the
+ * console's command stream (BP / CP / XF register loads, vertex data, and
+ * Aurora's own commands for what the console passed as addresses) into a
+ * buffer that a worker thread works through. That buffer is copied here as
+ * it grows, so that a dump can say what was sent for a frame, in order.
+ *
+ * The buffer is emptied inside some calls (GXDrawDone, the copies, the end
+ * of the frame). Before each of those known here the new bytes are taken
+ * and the buffer is emptied by hand (AuroraGXSync), so what such a call
+ * writes itself starts at zero again; a note names the call. Anywhere else
+ * a buffer that became shorter is recorded as "emptied unseen" (the bytes
+ * since the last look are missing).
+ *
+ * File: "MKGX1\0\0\0", then records: u32 kind, u32 length, payload
+ * (little-endian). Kind 0: stream bytes. 1: a note (text). 2: the vertex
+ * description and formats in force at the frame's start (21 attribute
+ * types, then 8 formats x 12 attributes x (count, type, shift)).
+ * MKGP2PC_DUMP_GX=0 switches the copying off.
+ */
+namespace aurora::gx::fifo {
+const uint8_t* get_buffer_data();
+uint32_t get_buffer_size();
+} // namespace aurora::gx::fifo
+extern "C" {
+typedef struct gzFile_s* gzFile; /* zlib without its header, as in diag.c */
+gzFile gzopen(const char* path, const char* mode);
+int gzwrite(gzFile file, const void* buf, unsigned len);
+int gzclose(gzFile file);
+}
+namespace {
+std::vector<uint8_t> sGxNow, sGxLast;
+uint32_t sGxSeen;
+bool sGxNeedState = true;
+int sGxOn = -1;
+bool gxlog_on() {
+  if (sGxOn < 0) {
+    const char* v = getenv("MKGP2PC_DUMP_GX");
+    sGxOn = v == nullptr || strcmp(v, "0") != 0;
+  }
+  return sGxOn != 0;
+}
+void gxlog_record(u32 kind, const void* data, u32 size) {
+  const u32 head[2] = {kind, size};
+  const auto* h = reinterpret_cast<const uint8_t*>(head);
+  sGxNow.insert(sGxNow.end(), h, h + 8);
+  const auto* d = static_cast<const uint8_t*>(data);
+  sGxNow.insert(sGxNow.end(), d, d + size);
+}
+void gxlog_state() {
+  uint8_t st[21 + 8 * 12 * 3];
+  for (int a = 0; a < 21; a++) {
+    GXAttrType t = GX_NONE;
+    GXGetVtxDesc(static_cast<GXAttr>(a), &t);
+    st[a] = static_cast<uint8_t>(t);
+  }
+  uint8_t* o = st + 21;
+  for (int f = 0; f < 8; f++) {
+    for (int a = GX_VA_POS; a <= GX_VA_TEX7; a++) {
+      GXCompCnt cnt = static_cast<GXCompCnt>(0);
+      GXCompType type = static_cast<GXCompType>(0);
+      u8 shift = 0;
+      GXGetVtxAttrFmt(static_cast<GXVtxFmt>(f), static_cast<GXAttr>(a), &cnt, &type, &shift);
+      *o++ = static_cast<uint8_t>(cnt);
+      *o++ = static_cast<uint8_t>(type);
+      *o++ = shift;
+    }
+  }
+  gxlog_record(2, st, sizeof(st));
+}
+void gxlog_sample() {
+  if (!gxlog_on()) {
+    return;
+  }
+  if (sGxNeedState) {
+    sGxNeedState = false;
+    gxlog_state();
+  }
+  const uint32_t size = aurora::gx::fifo::get_buffer_size();
+  if (size < sGxSeen) {
+    static const char text[] = "emptied unseen: commands since the last look are missing";
+    gxlog_record(1, text, sizeof(text) - 1);
+    sGxSeen = 0;
+  }
+  if (size > sGxSeen) {
+    gxlog_record(0, aurora::gx::fifo::get_buffer_data() + sGxSeen, size - sGxSeen);
+    sGxSeen = size;
+  }
+}
+/* around a call that empties the buffer itself */
+void gxlog_before_emptying() {
+  if (!gxlog_on()) {
+    return;
+  }
+  gxlog_sample();
+  AuroraGXSync();
+  sGxSeen = 0;
+}
+void gxlog_after_emptying(const char* fmt, ...) {
+  if (!gxlog_on()) {
+    return;
+  }
+  const uint32_t size = aurora::gx::fifo::get_buffer_size();
+  if (size != 0) {
+    /* all of the call's own commands, or those after its emptying */
+    gxlog_record(0, aurora::gx::fifo::get_buffer_data(), size);
+  }
+  sGxSeen = size;
+  char text[160];
+  va_list ap;
+  va_start(ap, fmt);
+  const int n = vsnprintf(text, sizeof(text), fmt, ap);
+  va_end(ap);
+  gxlog_record(1, text, static_cast<u32>(n < 0 ? 0 : n >= static_cast<int>(sizeof(text)) ? sizeof(text) - 1 : n));
+}
+void gxlog_file(const char* dir, const char* name, const std::vector<uint8_t>& bytes) {
+  char path[700];
+  snprintf(path, sizeof(path), "%s/%s", dir, name);
+  gzFile z = gzopen(path, "wb1");
+  if (z == nullptr) {
+    return;
+  }
+  gzwrite(z, "MKGX1\0\0\0", 8);
+  for (size_t at = 0; at < bytes.size();) {
+    const size_t n = bytes.size() - at < (1u << 24) ? bytes.size() - at : (1u << 24);
+    gzwrite(z, bytes.data() + at, static_cast<unsigned>(n));
+    at += n;
+  }
+  gzclose(z);
+}
+} // namespace
+/* video_aurora.c: before the frame is handed over (retrace: for the note) */
+extern "C" void mkgp2pc_gxlog_frame_end(void) { gxlog_sample(); }
+/* ... and after: the frame's record becomes "the frame before" */
+extern "C" void mkgp2pc_gxlog_frame_next(void) {
+  if (!gxlog_on()) {
+    return;
+  }
+  sGxLast.swap(sGxNow);
+  sGxNow.clear();
+  sGxSeen = 0;
+  sGxNeedState = true;
+}
+/* gx_fifo.bin.gz: the frame so far (at F9: the whole frame, the dump is made
+ * at its end). withLast (a crash): gx_fifo_prev.bin.gz, the frame before. */
+extern "C" void mkgp2pc_gxlog_write(const char* dir, int withLast) {
+  if (!gxlog_on()) {
+    return;
+  }
+  gxlog_sample();
+  gxlog_file(dir, "gx_fifo.bin.gz", sGxNow);
+  if (withLast) {
+    gxlog_file(dir, "gx_fifo_prev.bin.gz", sGxLast);
+  }
+}
+extern "C" void __real_GXDrawDone(void);
+extern "C" void __wrap_GXDrawDone(void) {
+  gxlog_before_emptying();
+  __real_GXDrawDone();
+  gxlog_after_emptying("GXDrawDone");
+}
+
 extern "C" bool mkgp2pc_skip_draw;
 extern "C" void __wrap_GXCallDisplayList(const void* list, u32 nbytes) {
   if (mkgp2pc_skip_draw) {
     return;
   }
+  wide_census_draw(5);
   if (mkgp2pc_board_texture && nbytes == 32 && sShadowNowCount < 16) {
     ShadowDraw& d = sShadowNow[sShadowNowCount++];
     std::memcpy(d.mv, sPosMtx, sizeof(d.mv));
@@ -339,7 +516,12 @@ extern "C" void __wrap_GXCallDisplayList(const void* list, u32 nbytes) {
       d.kAlpha[i] = sKColor[i].a;
     }
   }
+  const bool wide = wide_list_before(list, nbytes);
   __real_GXCallDisplayList(list, nbytes);
+  if (wide) {
+    wide_list_after();
+  }
+  gxlog_sample();
 }
 /* video_aurora.c: at the end of each frame, and when a dump is written. */
 extern "C" void mkgp2pc_shadow_record_frame(void) {
@@ -825,6 +1007,7 @@ void __wrap_GXEnd(void) {
   }
   if (!mkgp2pc_skip_draw) {
     __real_GXEnd();
+    gxlog_sample();
   }
 }
 void __real_GXBegin(GXPrimitive type, GXVtxFmt vtxfmt, u16 nverts);
@@ -841,12 +1024,16 @@ void __wrap_GXCopyTex(void* dest, GXBool clear) {
     static int show = -1;
     if (show < 0) show = getenv("MKGP2PC_SHOW_COPY") != nullptr;
     if (show) { /* MKGP2PC_SHOW_COPY=1, debugging: the copied image stays on screen instead of the scene */
+      gxlog_before_emptying();
       __real_GXCopyTex(dest, GX_FALSE);
+      gxlog_after_emptying("GXCopyTex dest %p (shown instead of the scene)", dest);
       mkgp2pc_skip_draw = true;
       s_showHold = true;
       return;
     }
+    gxlog_before_emptying();
     __real_GXCopyTex(dest, clear);
+    gxlog_after_emptying("GXCopyTex dest %p clear %d", dest, (int)clear);
   }
 }
 void __real_GXCopyDisp(void* dest, GXBool clear);
@@ -856,7 +1043,9 @@ void __wrap_GXCopyDisp(void* dest, GXBool clear) {
     mkgp2pc_skip_draw = false;
   }
   if (!mkgp2pc_skip_draw) {
+    gxlog_before_emptying();
     __real_GXCopyDisp(dest, clear);
+    gxlog_after_emptying("GXCopyDisp dest %p clear %d", dest, (int)clear);
   }
 }
 }
@@ -1025,6 +1214,13 @@ void __wrap_GXParam4f32(const f32 x, const f32 y, const f32 z, const f32 w) {
  *    background are repeated outwards. Everything else keeps its shape in
  *    the middle and is clipped to the 4:3 picture (the scissor moves with
  *    it), so parts that the arcade screen hid beyond its edges stay hidden.
+ *    Except what is moving across the left or right edge: that is moved
+ *    outwards so that it leaves or enters at the real edge of the screen
+ *    (mkgp2pc_wide_end).
+ *  - Whole-screen images cut into several quads (rows) and models drawn as
+ *    display lists under the 2D projection (the dash effect) are stretched
+ *    like single full-width quads. The full list of rules and of the code
+ *    that draws in screen space: docs/port/widescreen.md, "Census".
  *  - MKGP2PC_TRACE_WIDE=1 prints how each kept primitive was classified.
  *  - GXGetProjectionv gives back what the game set, not the narrowed
  *    matrix: the game saves and restores projections with it, and
@@ -1033,6 +1229,7 @@ void __wrap_GXParam4f32(const f32 x, const f32 y, const f32 z, const f32 w) {
  */
 extern "C" {
 float mkgp2pc_wide_k = 1.0f;
+unsigned mkgp2pc_wide_retrace;
 bool mkgp2pc_wide_on, mkgp2pc_wide_capture;
 void __real_GXSetViewport(f32 left, f32 top, f32 wd, f32 ht, f32 nearz, f32 farz);
 void __real_GXSetViewportJitter(f32 left, f32 top, f32 wd, f32 ht, f32 nearz, f32 farz, u32 field);
@@ -1066,7 +1263,10 @@ u32 sScis[4] = {0, 0, 640, 480};
  * stays on its text and nothing drawn outside the 4:3 picture (parts the
  * arcade screen never showed) appears in the side areas. The 3D scene and
  * the stretched whole-screen draws keep the scissor as the game gave it. */
-void apply_scissor(bool narrow) {
+void apply_scissor(bool narrow, bool open = false) {
+  if (open && sScis[0] == 0 && sScis[0] + sScis[2] >= 640) {
+    narrow = false;
+  }
   if (!narrow) {
     __real_GXSetScissor(sScis[0], sScis[1], sScis[2], sScis[3]);
     return;
@@ -1091,7 +1291,7 @@ void send_projection(bool narrow, float shift = 0.0f, bool clip = true) {
   }
   __real_GXSetProjection(m, sProjType);
   if (wide_on()) {
-    apply_scissor(narrow && clip && sProjType != GX_PERSPECTIVE);
+    apply_scissor(narrow && sProjType != GX_PERSPECTIVE, !clip);
   }
 }
 
@@ -1184,6 +1384,7 @@ void __wrap_GXSetProjectionv(const f32* p) {
     sProj[3][2] = -1.0f;
   }
   sProjType = ortho ? GX_ORTHOGRAPHIC : GX_PERSPECTIVE;
+  wide_census_projection(__builtin_return_address(0));
   mkgp2pc_wide_projection();
 }
 void __wrap_fn_8013879C(float* frustum, float fovy, float aspect, float zfar, float znear) {
@@ -1197,6 +1398,92 @@ void __wrap_fn_8013879C(float* frustum, float fovy, float aspect, float zfar, fl
   __real_fn_8013879C(frustum, fovy, aspect * mkgp2pc_wide_k * (mkgp2pc_wide_on ? extra : 1.0f), zfar, znear);
 }
 
+}
+/*
+ * MKGP2PC_WIDE_CENSUS=1: which code sets the projections of a session, and
+ * what is drawn under each (docs/port/widescreen.md, "Census"). A line when
+ * a projection is first seen and the whole table every 1000 retraces:
+ *   census: <caller> ortho|persp <m00> <m11> full|part: frames N first A
+ *   last B kept K stretched S moved M tiles T passed P lists L
+ * <caller> is the offset of the call in the executable (addr2line -f -e).
+ * kept, stretched, moved, tiles: 2D primitives by how mkgp2pc_wide_end
+ * treated them; passed: primitives it did not look at; lists: display
+ * lists.
+ */
+#if defined(__linux__)
+#include <dlfcn.h>
+#endif
+namespace {
+struct CensusKey {
+  uintptr_t caller;
+  u32 type;
+  int m00, m11;
+  bool full;
+  bool operator<(const CensusKey& o) const {
+    return std::tie(caller, type, m00, m11, full) < std::tie(o.caller, o.type, o.m00, o.m11, o.full);
+  }
+};
+struct CensusRow {
+  unsigned frames, first, last, n[6];
+};
+std::map<CensusKey, CensusRow> sCensus;
+uintptr_t sCensusCaller;
+bool census_on() {
+  static int v = -1;
+  if (v < 0) v = getenv("MKGP2PC_WIDE_CENSUS") != nullptr;
+  return v != 0;
+}
+void census_print(const CensusKey& k, const CensusRow& r) {
+  fprintf(stderr, "census: %lx %s %.4f %.4f %s: frames %u first %u last %u kept %u stretched %u moved %u tiles %u passed %u lists %u\n",
+          static_cast<unsigned long>(k.caller), k.type == GX_PERSPECTIVE ? "persp" : "ortho", k.m00 / 10000.0, k.m11 / 10000.0,
+          k.full ? "full" : "part", r.frames, r.first, r.last, r.n[0], r.n[1], r.n[2], r.n[3], r.n[4], r.n[5]);
+}
+} // namespace
+void wide_census_projection(void* caller) {
+  if (!census_on()) {
+    return;
+  }
+  uintptr_t a = reinterpret_cast<uintptr_t>(caller);
+#if defined(__linux__)
+  Dl_info info;
+  if (dladdr(caller, &info) != 0) {
+    a -= reinterpret_cast<uintptr_t>(info.dli_fbase);
+  }
+#endif
+  sCensusCaller = a;
+}
+void wide_census_draw(int kind) {
+  if (!census_on()) {
+    return;
+  }
+  const CensusKey k{sCensusCaller, sProjType, static_cast<int>(std::lround(sProj[0][0] * 10000)),
+                    static_cast<int>(std::lround(sProj[1][1] * 10000)), sFullView};
+  auto it = sCensus.find(k);
+  if (it == sCensus.end()) {
+    it = sCensus.insert({k, CensusRow{}}).first;
+    it->second.first = mkgp2pc_wide_retrace;
+    it->second.last = ~0u;
+    fprintf(stderr, "census: new at retrace %u: ", mkgp2pc_wide_retrace);
+    census_print(k, it->second);
+  }
+  CensusRow& r = it->second;
+  if (r.last != mkgp2pc_wide_retrace) {
+    r.last = mkgp2pc_wide_retrace;
+    r.frames++;
+  }
+  r.n[kind]++;
+}
+static void wide_census_frame() {
+  static unsigned next = 1000;
+  if (census_on() && mkgp2pc_wide_retrace >= next) {
+    next = mkgp2pc_wide_retrace + 1000;
+    fprintf(stderr, "census: table at retrace %u\n", mkgp2pc_wide_retrace);
+    for (const auto& e : sCensus) {
+      census_print(e.first, e.second);
+    }
+  }
+}
+extern "C" {
 void mkgp2pc_wide_end(void);
 static u32 wide_vertex_size(GXVtxFmt fmt);
 static bool wide_start(GXPrimitive type, GXVtxFmt vtxfmt, u16 nverts);
@@ -1303,6 +1590,7 @@ bool mkgp2pc_wide_value(unsigned size, u32 bits) {
 void wide_tiles_frame(void);
 void mkgp2pc_wide_frame(float k) {
   wide_tiles_frame();
+  wide_census_frame();
   mkgp2pc_wide_k = k;
   mkgp2pc_wide_on = k > 1.001f;
   if (!mkgp2pc_wide_capture) {
@@ -1359,6 +1647,7 @@ bool mkgp2pc_wide_begin(GXPrimitive type, GXVtxFmt vtxfmt, u16 nverts) {
   }
   if (!sFullView || sProjType == GX_PERSPECTIVE || nverts == 0 || nverts == GX_AUTO || !wide_start(type, vtxfmt, nverts)) {
     /* not kept: its vertices pass through as data */
+    wide_census_draw(4);
     sRawLeft = nverts == GX_AUTO ? 0 : wide_vertex_size(vtxfmt) * nverts;
     sRawStage = nverts == GX_AUTO ? kRawLost : sRawLeft != 0 ? kRawData : kRawCommand;
     return false;
@@ -1413,12 +1702,51 @@ struct WideQuad {
 };
 static std::vector<WideQuad> sQuads;
 static std::set<std::tuple<int, int, int, int>> sTiles;
+static std::set<std::tuple<int, int, int, int>> sRows;
 static std::tuple<int, int, int, int> tile_key(const WideQuad& q) {
   return {static_cast<int>(std::lround(q.lo * 500)), static_cast<int>(std::lround(q.hi * 500)),
           static_cast<int>(std::lround(q.ylo * 500)), static_cast<int>(std::lround(q.yhi * 500))};
 }
+typedef std::tuple<int, int, int, int> WideStillKey;
+static std::map<WideStillKey, int> sStillWas, sStillNow;
+enum { kStillFrames = 6 };
 void wide_tiles_frame(void) {
+  if (!sStillNow.empty() || !sQuads.empty()) { /* a frame that drew something */
+    sStillWas.swap(sStillNow);
+    sStillNow.clear();
+  }
   sTiles.clear();
+  /* Rows: consecutive quads of the same height that continue each other
+   * from the left edge of the 4:3 picture to the right one. A whole-screen
+   * image is drawn like that when it is cut into textures (640 = 512 +
+   * 128). Its quads are stretched together like a single full-width one.
+   * Rows of three or more equal quads are tile grids and left to the tile
+   * rule below. */
+  sRows.clear();
+  for (size_t i = 0; i < sQuads.size();) {
+    size_t j = i + 1;
+    float lo = sQuads[i].lo, hi = sQuads[i].hi;
+    bool equal = true;
+    while (j < sQuads.size()) {
+      const WideQuad& a = sQuads[j - 1];
+      const WideQuad& n = sQuads[j];
+      const bool level = std::fabs(n.ylo - a.ylo) < 0.004f && std::fabs(n.yhi - a.yhi) < 0.004f;
+      if (!level || !(std::fabs(n.lo - a.hi) < 0.004f || std::fabs(n.hi - a.lo) < 0.004f)) {
+        break;
+      }
+      equal = equal && std::fabs((n.hi - n.lo) - (a.hi - a.lo)) < 0.004f;
+      lo = n.lo < lo ? n.lo : lo;
+      hi = n.hi > hi ? n.hi : hi;
+      j++;
+    }
+    const bool grid = equal && j - i >= 3 && sQuads[i].hi - sQuads[i].lo <= 0.5f;
+    if (j - i >= 2 && !grid && lo <= -0.98f && hi >= 0.98f) {
+      for (size_t q = i; q < j; q++) {
+        sRows.insert(tile_key(sQuads[q]));
+      }
+    }
+    i = j;
+  }
   for (size_t i = 0; i < sQuads.size(); i++) {
     const WideQuad& q = sQuads[i];
     const float w = q.hi - q.lo;
@@ -1479,61 +1807,212 @@ void mkgp2pc_wide_end(void) {
     return;
   }
   const float (*mv)[4] = sMtx[sCurMtx];
-  int runFirst = 0;
-  bool runFull = false;
   const int groups = sWideVerts / per;
-  for (int g = 0; g <= groups; g++) {
-    bool full = false;
-    if (g < groups) {
-      float lo = 1e9f, hi = -1e9f, ylo = 1e9f, yhi = -1e9f;
-      for (int v = g * per; v < (g + 1) * per; v++) {
-        float p[3] = {0, 0, 0};
-        for (int c = 0; c < sWidePosN; c++) {
-          std::memcpy(&p[c], &sWide[pos[v] + c].bits, 4);
-        }
-        const float ex = mv[0][0] * p[0] + mv[0][1] * p[1] + mv[0][2] * p[2] + mv[0][3];
-        const float ey = mv[1][0] * p[0] + mv[1][1] * p[1] + mv[1][2] * p[2] + mv[1][3];
-        const float x = sProj[0][0] * ex + sProj[0][1] * ey + sProj[0][3];
-        const float y = sProj[1][0] * ex + sProj[1][1] * ey + sProj[1][3];
-        lo = x < lo ? x : lo;
-        hi = x > hi ? x : hi;
-        ylo = y < ylo ? y : ylo;
-        yhi = y > yhi ? y : yhi;
+  /* 0: keeps its place, 1: stretched over the whole width, 2: moved outwards */
+  std::vector<u8> kind(groups + 1u, 0);
+  float outLo = 1e9f, outHi = -1e9f, outYlo = 1e9f, outYhi = -1e9f;
+  for (int g = 0; g < groups; g++) {
+    float lo = 1e9f, hi = -1e9f, ylo = 1e9f, yhi = -1e9f;
+    for (int v = g * per; v < (g + 1) * per; v++) {
+      float p[3] = {0, 0, 0};
+      for (int c = 0; c < sWidePosN; c++) {
+        std::memcpy(&p[c], &sWide[pos[v] + c].bits, 4);
       }
-      if (per == 4 && groups == 1 && sQuads.size() < 4096) {
-        const WideQuad q{lo, hi, ylo, yhi};
-        sQuads.push_back(q);
-        if (sTiles.count(tile_key(q)) != 0) {
-          /* an edge tile of a background grid: draw it, then its copies */
+      const float ex = mv[0][0] * p[0] + mv[0][1] * p[1] + mv[0][2] * p[2] + mv[0][3];
+      const float ey = mv[1][0] * p[0] + mv[1][1] * p[1] + mv[1][2] * p[2] + mv[1][3];
+      const float x = sProj[0][0] * ex + sProj[0][1] * ey + sProj[0][3];
+      const float y = sProj[1][0] * ex + sProj[1][1] * ey + sProj[1][3];
+      lo = x < lo ? x : lo;
+      hi = x > hi ? x : hi;
+      ylo = y < ylo ? y : ylo;
+      yhi = y > yhi ? y : yhi;
+    }
+    if (per == 4 && groups == 1 && sQuads.size() < 4096) {
+      const WideQuad q{lo, hi, ylo, yhi};
+      sQuads.push_back(q);
+      if (sTiles.count(tile_key(q)) != 0) {
+        /* an edge tile of a background grid: draw it, then its copies */
+        wide_census_draw(3);
+        wide_replay(start[0], start[per], per);
+        const float w = hi - lo, dir = lo < 0 ? -1.0f : 1.0f;
+        for (int n = 1; n < 32 && 1.0f + (n - 1) * w < mkgp2pc_wide_k; n++) {
+          send_projection(true, dir * n * w, false);
           wide_replay(start[0], start[per], per);
-          const float w = hi - lo, dir = lo < 0 ? -1.0f : 1.0f;
-          for (int n = 1; n < 32 && 1.0f + (n - 1) * w < mkgp2pc_wide_k; n++) {
-            send_projection(true, dir * n * w, false);
-            wide_replay(start[0], start[per], per);
-          }
-          send_projection(true);
-          return;
         }
-      }
-      full = lo <= -0.98f && hi >= 0.98f;
-      if (wide_trace()) {
-        fprintf(stderr, "wide: %x n %d group %d x %.3f..%.3f mtx %u%s\n", sWideType, sWideVerts, g, lo, hi, sCurMtx, full ? " FULL" : "");
-      }
-    }
-    if (g == groups || (g > runFirst && full != runFull)) {
-      if (runFull) {
-        send_projection(false);
-      }
-      wide_replay(start[runFirst * per], start[g * per], static_cast<u16>((g - runFirst) * per));
-      if (runFull) {
         send_projection(true);
+        return;
       }
-      runFirst = g;
     }
-    runFull = full;
+    /* As wide as the picture: stretched, wherever it is, so that a band
+     * or a curtain that slides away keeps covering up to the real edge. */
+    kind[g] = hi - lo >= 1.96f || (per == 4 && groups == 1 && sRows.count(tile_key(WideQuad{lo, hi, ylo, yhi})) != 0);
+    if (kind[g] == 0) {
+      outLo = lo < outLo ? lo : outLo;
+      outHi = hi > outHi ? hi : outHi;
+      outYlo = ylo < outYlo ? ylo : outYlo;
+      outYhi = yhi > outYhi ? yhi : outYhi;
+    }
+    if (wide_trace()) {
+      fprintf(stderr, "wide: %x n %d group %d x %.3f..%.3f mtx %u%s\n", sWideType, sWideVerts, g, lo, hi, sCurMtx, kind[g] ? " FULL" : "");
+    }
+  }
+  /* Something narrower that reaches beyond the left or right edge of the
+   * 4:3 picture is on its way out of (or into) the screen, or parked
+   * outside. It is moved outwards by the share of it that is beyond the
+   * edge, times the width of a side area: unchanged while it is inside,
+   * just outside the real edge when it is just outside the 4:3 one. The
+   * primitive moves as a whole.
+   * Only while it moves, though. Parts of the screen layout that rest
+   * across the edge (the left end of a title bar, made of several pieces)
+   * would come apart, so a primitive that has been in the same place for
+   * kStillFrames frames keeps its place and is clipped at the 4:3 edge. */
+  float shift = 0.0f;
+  if (outHi > outLo && (outHi > 1.0f || outLo < -1.0f)) {
+    const float w = outHi - outLo;
+    float over = (outHi > 1.0f ? outHi - 1.0f : 0.0f) - (outLo < -1.0f ? -1.0f - outLo : 0.0f);
+    over = over > w ? w : over < -w ? -w : over;
+    shift = (mkgp2pc_wide_k - 1.0f) * over / w;
+    const WideStillKey key{static_cast<int>(std::lround(outLo * 4000)), static_cast<int>(std::lround(outHi * 4000)),
+                           static_cast<int>(std::lround(outYlo * 4000)), static_cast<int>(std::lround(outYhi * 4000))};
+    const auto was = sStillWas.find(key);
+    const int frames = was != sStillWas.end() ? was->second + 1 : 1;
+    int& now = sStillNow[key];
+    now = frames > now ? frames : now;
+    if (frames > kStillFrames) {
+      shift = 0.0f;
+    }
+    if (wide_trace()) {
+      fprintf(stderr, "wide: moved by %.3f (x %.3f..%.3f) retrace %u\n", shift, outLo, outHi, mkgp2pc_wide_retrace);
+    }
+  }
+  if (shift != 0.0f) {
+    for (int g = 0; g < groups; g++) {
+      kind[g] = kind[g] == 0 ? 2 : kind[g];
+    }
+  }
+  int runFirst = 0;
+  for (int g = 1; g <= groups; g++) {
+    if (g < groups && kind[g] == kind[runFirst]) {
+      continue;
+    }
+    const u8 k = kind[runFirst];
+    wide_census_draw(k);
+    if (k == 1) {
+      send_projection(false);
+    } else if (k == 2) {
+      send_projection(true, shift, false);
+    }
+    wide_replay(start[runFirst * per], start[g * per], static_cast<u16>((g - runFirst) * per));
+    if (k != 0) {
+      send_projection(true);
+    }
+    runFirst = g;
   }
 }
 }
+
+/*
+ * Display lists under the 2D projection: models the game draws into its
+ * overlay (screen effects made as models rather than sprites). The list is
+ * read for the positions it draws, as far as it only holds draw commands,
+ * and treated as one primitive: as wide as the 4:3 picture, stretched.
+ */
+static bool wide_list_extent(const u8* p, u32 n, float& lo, float& hi) {
+  GXAttrType posType, mtxType;
+  GXGetVtxDesc(GX_VA_POS, &posType);
+  GXGetVtxDesc(GX_VA_PNMTXIDX, &mtxType);
+  int off = 0;
+  for (int a = GX_VA_PNMTXIDX; a < GX_VA_POS; a++) {
+    GXAttrType t;
+    GXGetVtxDesc(static_cast<GXAttr>(a), &t);
+    off += t != GX_NONE;
+  }
+  if (posType == GX_NONE || (posType != GX_DIRECT && mkgp2pc_wide_pos_array == nullptr)) {
+    return false;
+  }
+  lo = 1e9f;
+  hi = -1e9f;
+  u32 i = 0;
+  while (i < n) {
+    const u8 op = p[i];
+    if (op == 0) {
+      i++;
+      continue;
+    }
+    if (op < 0x80 || op >= 0xC0 || i + 3 > n) {
+      return false;
+    }
+    const GXVtxFmt fmt = static_cast<GXVtxFmt>(op & 7);
+    const u32 count = (p[i + 1] << 8) | p[i + 2];
+    const u32 vsize = wide_vertex_size(fmt);
+    i += 3;
+    if (vsize == 0 || i + count * vsize > n) {
+      return false;
+    }
+    GXCompCnt cnt;
+    GXCompType comp;
+    u8 shift;
+    GXGetVtxAttrFmt(fmt, GX_VA_POS, &cnt, &comp, &shift);
+    const int ncomp = cnt == GX_POS_XY ? 2 : 3;
+    for (u32 v = 0; v < count; v++, i += vsize) {
+      const u8* at = p + i + off;
+      if (posType == GX_INDEX8) {
+        at = mkgp2pc_wide_pos_array + at[0] * mkgp2pc_wide_pos_stride;
+      } else if (posType == GX_INDEX16) {
+        at = mkgp2pc_wide_pos_array + ((at[0] << 8) | at[1]) * mkgp2pc_wide_pos_stride;
+      }
+      float c[3] = {0, 0, 0};
+      for (int k = 0; k < ncomp; k++) {
+        if (comp == GX_F32) {
+          const u32 bits = (at[0] << 24) | (at[1] << 16) | (at[2] << 8) | at[3];
+          std::memcpy(&c[k], &bits, 4);
+          at += 4;
+        } else if (comp == GX_S16 || comp == GX_U16) {
+          const u16 raw = static_cast<u16>((at[0] << 8) | at[1]);
+          c[k] = (comp == GX_S16 ? static_cast<float>(static_cast<s16>(raw)) : static_cast<float>(raw)) / static_cast<float>(1 << shift);
+          at += 2;
+        } else {
+          c[k] = (comp == GX_S8 ? static_cast<float>(static_cast<s8>(at[0])) : static_cast<float>(at[0])) / static_cast<float>(1 << shift);
+          at += 1;
+        }
+      }
+      u32 m = sCurMtx;
+      if (mtxType != GX_NONE) {
+        m = p[i] / 3;
+        if (m >= 10) {
+          return false;
+        }
+      }
+      const float (*mv)[4] = sMtx[m];
+      const float ex = mv[0][0] * c[0] + mv[0][1] * c[1] + mv[0][2] * c[2] + mv[0][3];
+      const float ey = mv[1][0] * c[0] + mv[1][1] * c[1] + mv[1][2] * c[2] + mv[1][3];
+      const float x = sProj[0][0] * ex + sProj[0][1] * ey + sProj[0][3];
+      lo = x < lo ? x : lo;
+      hi = x > hi ? x : hi;
+    }
+  }
+  return hi >= lo;
+}
+bool wide_list_before(const void* list, u32 nbytes) {
+  if (!wide_on() || !sFullView || sProjType == GX_PERSPECTIVE) {
+    return false;
+  }
+  float lo, hi;
+  const bool ok = wide_list_extent(static_cast<const u8*>(list), nbytes, lo, hi);
+  if (wide_trace()) {
+    if (ok) {
+      fprintf(stderr, "wide: list %u bytes x %.3f..%.3f retrace %u\n", nbytes, lo, hi, mkgp2pc_wide_retrace);
+    } else {
+      fprintf(stderr, "wide: list %u bytes not read, retrace %u\n", nbytes, mkgp2pc_wide_retrace);
+    }
+  }
+  if (!ok || hi - lo < 1.96f) {
+    return false;
+  }
+  send_projection(false);
+  return true;
+}
+void wide_list_after(void) { send_projection(true); }
 
 /*
  * High-resolution 2D textures (docs/port/hires_textures.md).

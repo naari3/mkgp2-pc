@@ -61,3 +61,6 @@ tmp_probe/
 .psweep_w*
 .shapesweep_dbg*
 dumps/
+
+# PC port: the player's own files
+backup_ram.bin*

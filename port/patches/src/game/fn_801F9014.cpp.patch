@@ -1,0 +1,79 @@
+--- a/src/game/fn_801F9014.cpp
++++ b/src/game/fn_801F9014.cpp
+@@ -6,11 +6,61 @@ extern "C" void OSRestoreInterrupts(int);
+ extern "C" unsigned short *wcscpy(unsigned short *, const unsigned short *);
+ extern "C" int vsprintf(char *, const char *, va_list);
+ 
+-static inline unsigned short LookupWide(const char *cursor) {
++/* PC: this function is given two kinds of text. Card names are 16-bit codes
++ * (native words here). The game also hands it ordinary Shift-JIS char strings
++ * (course names, prompts), which are the same bytes as 16-bit codes on the
++ * console only. PORT_WORD reads the word at the cursor either way, and
++ * PortMisses counts the characters the glyph table does not have under one
++ * reading; the reading with fewer is the text's. Equal counts: a card name
++ * has no one-byte character, so a text that has one under the native
++ * reading is a char string (docs/port/text_encoding.md). */
++#define PORT_WORD(p, bytes) \
++    ((bytes) ? (unsigned short)(((const unsigned char *)(p))[0] << 8 | ((const unsigned char *)(p))[1]) \
++             : *(const unsigned short *)(p))
++
++static int PortMisses(const char *text, int bytes, int *narrow) {
++    const char *p;
++    int misses = 0;
++    int i;
++    *narrow = 0;
++    for (p = text; *p; ++p) {
++        unsigned short word = PORT_WORD(p, bytes);
++        if (word & 0x8000) {
++            if (p[1] == 0) {
++                return misses + 1;
++            }
++            for (i = 0; i < 654; ++i) {
++                if (word == lbl_804E5590[i].code) {
++                    break;
++                }
++            }
++            misses += i == 654;
++            ++p;
++        } else if (*p != '\n') {
++            for (i = 654; i < 739; ++i) {
++                if ((unsigned char)*p == lbl_804E5590[i].code) {
++                    break;
++                }
++            }
++            misses += i == 739;
++            ++*narrow;
++        }
++    }
++    return misses;
++}
++
++static int PortIsCharString(const char *text) {
++    int narrowBytes, narrowNative;
++    int asBytes = PortMisses(text, 1, &narrowBytes);
++    int asNative = PortMisses(text, 0, &narrowNative);
++    return asBytes < asNative || (asBytes == asNative && narrowNative > 0);
++}
++
++static inline unsigned short LookupWide(const char *cursor, int bytes) {
+     int glyph = 0;
+     int i;
+     for (i = 0; i < 654; ++i) {
+-        if (*(const unsigned short *)cursor == lbl_804E5590[i].code) {
++        if (PORT_WORD(cursor, bytes) == lbl_804E5590[i].code) {
+             glyph = lbl_804E5590[i].card;
+             break;
+         }
+@@ -33,9 +66,10 @@ static inline unsigned short LookupNarrow(const char *cursor) {
+ static inline void DecodeText(TextDraw801F *self, char *cursor) {
+     unsigned short *out = self->glyphs;
+     int count = 0;
++    int bytes = PortIsCharString(cursor);
+     for (; *cursor && count < 255; ++count, ++out, ++cursor) {
+-        if (*(unsigned short *)cursor & 0x8000) {
+-            *out = LookupWide(cursor);
++        if (PORT_WORD(cursor, bytes) & 0x8000) {
++            *out = LookupWide(cursor, bytes);
+             ++cursor;
+         } else if (*cursor == '\n') {
+             *out = 0xC000;

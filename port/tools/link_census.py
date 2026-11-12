@@ -27,6 +27,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import compile_census as cc  # noqa: E402
 import source_patches  # noqa: E402
+import sjis_literals  # noqa: E402
 import mwcc_cxx_abi
 import mwcc_byvalue
 import mwcc_data_layout  # noqa: E402
@@ -65,6 +66,8 @@ GFX_WRAPPED = ("GXInitTexObj", "GXInitTexObjCI", "GXInitTexObjLOD", "GXLoadTexOb
                "GXSetViewport", "GXSetViewportJitter", "GXSetCurrentMtx", "GXSetScissor", "GXGetScissor", "GXGetProjectionv", "GXSetProjectionv", "GXCallDisplayList", "GXSetTevKColor",
                # dropped on frames that are not shown (full speed, gx_shim.cpp)
                "GXBegin", "GXCopyTex", "GXCopyDisp",
+               # the draw commands of a frame, copied for dumps (gx_shim.cpp)
+               "GXDrawDone",
                "GXPosition3f32", "GXPosition3u16", "GXPosition3s16", "GXPosition3u8", "GXPosition3s8", "GXPosition2f32", "GXPosition2u16", "GXPosition2s16", "GXPosition2u8", "GXPosition2s8", "GXPosition1x16", "GXPosition1x8",
                "GXNormal3f32", "GXNormal3s16", "GXNormal3s8", "GXNormal1x16", "GXNormal1x8", "GXColor4u8", "GXColor3u8", "GXColor1u32", "GXColor1u16", "GXColor1x16", "GXColor1x8",
                "GXTexCoord2f32", "GXTexCoord2u16", "GXTexCoord2s16", "GXTexCoord2u8", "GXTexCoord2s8", "GXTexCoord1f32", "GXTexCoord1u16", "GXTexCoord1s16", "GXTexCoord1u8", "GXTexCoord1s8", "GXTexCoord1x16", "GXTexCoord1x8", "GXEnd",
@@ -144,7 +147,7 @@ def link_gfx_windows(stubs, thunks, cxxrt, replaced, aurora_fns, aurora_data, po
             continue   # needs Dawn's headers: CMake compiles it
         o = os.path.join(OUT, "gfx__" + os.path.basename(src) + ".o")
         cxx = src.endswith(".cpp")
-        r = subprocess.run(["clang++" if cxx else "clang", "-target", WIN_TARGET, "-femulated-tls", "-O2", "-g", "-msse2", "-c", src, "-o", o,
+        r = subprocess.run(["clang++" if cxx else "clang", "-target", WIN_TARGET, "-femulated-tls", "-O2", "-g", "-fno-omit-frame-pointer", "-msse2", "-c", src, "-o", o,
                             "-DAURORA", "-DAURORA_ENABLE_GX", "-DTARGET_PC=1", "-I" + os.path.join(aurora, "include")]
                            + ["-I" + d for d in sdl_inc + imgui_inc]
                            + (["-std=gnu++20", "-femulated-tls"] if cxx else []), capture_output=True, text=True)
@@ -301,6 +304,14 @@ def compile_one(path, target):
     if source_patches.patched_source(path, patched):
         src_abs = c_in = patched
         cmd += ["-I", os.path.dirname(os.path.join(ROOT, path))]
+    # Shift-JIS literals (port/tools/sjis_literals.py): the matching build
+    # converts each file to Shift-JIS before MWCC sees it; here the text of
+    # the literals is converted, after the patches, into one more copy
+    sjis = obj[:-2] + ".sjis" + os.path.splitext(path)[1]
+    if sjis_literals.converted_source(path, src_abs, sjis):
+        if c_in == path:
+            cmd += ["-I", os.path.dirname(os.path.join(ROOT, path))]
+        src_abs = c_in = sjis
     src_in = c_in
     if path.endswith(".cpp"):
         keep = sorted(set(re.findall(r'^extern "C" inline [\w \*]+?\b(\w+)\(', open(os.path.join(ROOT, path), encoding="utf-8", errors="replace").read(), re.M)))
@@ -824,6 +835,13 @@ def main():
         WIN, target = True, WIN_TARGET
         OUT = os.path.join(ROOT, "build", "pc-gfx-win" if GFX else "pc-census-win")
     os.makedirs(OUT, exist_ok=True)
+
+    # only the units themselves are converted; text in a header would stay
+    # UTF-8 without anyone noticing
+    stray = sjis_literals.included_literals()
+    if stray:
+        raise SystemExit("text outside ASCII in the literals of an included file; port/tools/sjis_literals.py "
+                         "converts units only (docs/port/text_encoding.md):\n  " + "\n  ".join(stray))
 
     files = []
     for d in args.dirs:

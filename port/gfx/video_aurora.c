@@ -9,6 +9,7 @@
 #include <aurora/gfx.h>
 #include <SDL3/SDL.h>
 #include <dolphin/gx.h>
+#include <dolphin/vi.h>
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -19,6 +20,10 @@
 int OSDisableInterrupts(void);
 int OSRestoreInterrupts(int);
 void mkgp2pc_mediaboard_tick(void); /* port/platform/triforce/mediaboard.c */
+/* port/platform/triforce/baseboard.c: the backup memory and its file */
+void mkgp2pc_baseboard_flush(void);
+int mkgp2pc_baseboard_save_start(const char* path);
+const char* mkgp2pc_baseboard_file(void);
 void mkgp2pc_script_tick(uint32_t retrace); /* port/nogfx/input_script.c */
 
 void mkgp2pc_jvs_set_switches(const uint8_t* bytes, int count);
@@ -36,6 +41,7 @@ typedef void (*RetraceCallback)(uint32_t retraceCount);
  *   up or Z        accelerator pedal
  *   down or X      brake pedal
  *   space, enter   item button (also "decide" in the menus)
+ *   left shift     cancel button ("Mario button")
  *   5 or C         coin
  *   I              put the card (card.bin) into the card unit
  *   F1 / F2        test / service button of the cabinet
@@ -50,6 +56,7 @@ typedef void (*RetraceCallback)(uint32_t retraceCount);
 static bool s_keyLeft, s_keyRight, s_keyAccel, s_keyBrake, s_keyItem, s_keyTest, s_keyService;
 /* buttons the cabinet does not have: the developers' scenes read them (docs/port/debug.md) */
 static bool s_keyDevUp, s_keyDevDown, s_keyDevStart, s_keyDevSub;
+static bool s_keyCancel;
 static bool s_keyboardUsed;
 static int s_wheel; /* -0x7FFF .. 0x7FFF */
 
@@ -62,6 +69,9 @@ static int s_wheel; /* -0x7FFF .. 0x7FFF */
  *               MKGP2PC_SCRIPT_FILE=<that file> plays it back, which brings
  *               another machine to the same retrace with the same inputs
  *   state.txt   retrace number, whether paused, the environment settings
+ *   frame_small.jpg  the same picture, at most 640 wide
+ *   stacks.txt, memory.txt, mem1.bin.gz, image.bin.gz, symbols.txt.gz
+ *               where every thread was and the game's memory (diag.c)
  * The retrace count does not advance while paused, so a recording made with
  * pauses plays back without them.
  */
@@ -147,6 +157,9 @@ static void png_chunk(FILE* f, const char* type, const uint8_t* data, uint32_t l
   fwrite(data, 1, len, f);
   fwrite(tail, 1, 4, f);
 }
+/* zlib without its header (see port/gfx/diag.c) */
+unsigned long compressBound(unsigned long sourceLen);
+int compress2(unsigned char* dest, unsigned long* destLen, const unsigned char* source, unsigned long sourceLen, int level);
 static bool png_write(const char* path, const uint8_t* rgba, uint32_t w, uint32_t h) {
   FILE* f = fopen(path, "wb");
   if (f == NULL) {
@@ -154,8 +167,7 @@ static bool png_write(const char* path, const uint8_t* rgba, uint32_t w, uint32_
   }
   const uint32_t row = 1 + w * 3;
   const uint32_t raw = row * h;
-  const uint32_t blocks = (raw + 65534) / 65535;
-  const uint32_t zlen = 2 + raw + blocks * 5 + 4;
+  unsigned long zlen = compressBound(raw);
   uint8_t* z = (uint8_t*)malloc(zlen);
   uint8_t* scan = (uint8_t*)malloc(raw);
   if (z == NULL || scan == NULL) {
@@ -164,7 +176,6 @@ static bool png_write(const char* path, const uint8_t* rgba, uint32_t w, uint32_
     free(scan);
     return false;
   }
-  uint32_t a = 1, b = 0;
   for (uint32_t y = 0; y < h; y++) {
     uint8_t* d = scan + y * row;
     *d++ = 0;
@@ -175,27 +186,12 @@ static bool png_write(const char* path, const uint8_t* rgba, uint32_t w, uint32_
       *d++ = s[2];
     }
   }
-  for (uint32_t i = 0; i < raw; i++) {
-    a = (a + scan[i]) % 65521;
-    b = (b + a) % 65521;
+  if (compress2(z, &zlen, scan, raw, 6) != 0) {
+    fclose(f);
+    free(z);
+    free(scan);
+    return false;
   }
-  uint8_t* o = z;
-  *o++ = 0x78;
-  *o++ = 0x01;
-  for (uint32_t off = 0; off < raw; off += 65535) {
-    uint32_t n = raw - off < 65535 ? raw - off : 65535;
-    *o++ = off + n == raw;
-    *o++ = (uint8_t)n;
-    *o++ = (uint8_t)(n >> 8);
-    *o++ = (uint8_t)~n;
-    *o++ = (uint8_t)(~n >> 8);
-    memcpy(o, scan + off, n);
-    o += n;
-  }
-  *o++ = (uint8_t)(b >> 8);
-  *o++ = (uint8_t)b;
-  *o++ = (uint8_t)(a >> 8);
-  *o++ = (uint8_t)a;
   static const uint8_t sig[8] = {0x89, 'P', 'N', 'G', 13, 10, 26, 10};
   uint8_t ihdr[13] = {(uint8_t)(w >> 24), (uint8_t)(w >> 16), (uint8_t)(w >> 8), (uint8_t)w,
                       (uint8_t)(h >> 24), (uint8_t)(h >> 16), (uint8_t)(h >> 8), (uint8_t)h,
@@ -203,7 +199,7 @@ static bool png_write(const char* path, const uint8_t* rgba, uint32_t w, uint32_
                       0};
   fwrite(sig, 1, 8, f);
   png_chunk(f, "IHDR", ihdr, 13);
-  png_chunk(f, "IDAT", z, (uint32_t)(o - z));
+  png_chunk(f, "IDAT", z, (uint32_t)zlen);
   png_chunk(f, "IEND", ihdr, 0);
   fclose(f);
   free(z);
@@ -212,6 +208,12 @@ static bool png_write(const char* path, const uint8_t* rgba, uint32_t w, uint32_
 }
 
 bool mkgp2pc_window_shot(SDL_Window* window, uint8_t** rgba, uint32_t* width, uint32_t* height); /* shot_win32.c */
+bool mkgp2pc_jpeg_write(const char* path, const uint8_t* rgba, uint32_t w, uint32_t h, uint32_t maxWidth, int quality); /* jpeg_min.c */
+/* diag.c: stacks and memory for a dump, and the same when the program dies */
+void mkgp2pc_diag_install(void);
+void mkgp2pc_diag_dump(const char* dir);
+void mkgp2pc_diag_fatal(const char* why);
+extern void (*mkgp2pc_diag_extra)(const char* dir);
 static SDL_Window* s_window;
 static int s_shotWait; /* polls left before the window's own picture is taken instead */
 static AuroraReadbackStream s_shotStream;
@@ -220,8 +222,12 @@ static uint32_t s_shotW, s_shotH;
 static char s_shotPath[600];
 static int s_dumpCount;
 static bool s_fast, s_fastHeld; /* F10 and Tab: no frame limit */
+extern int mkgp2pc_boot_fast;   /* the same during start-up (port/platform/runtime/boot_skip.c) */
 
 void mkgp2pc_shadow_record_frame(void);  /* gx_shim.cpp */
+void mkgp2pc_gxlog_frame_end(void);      /* gx_shim.cpp: the frame's draw commands, for dumps */
+void mkgp2pc_gxlog_frame_next(void);
+void mkgp2pc_gxlog_write(const char* dir, int withLast);
 void mkgp2pc_shadow_record_write(FILE* f);
 /* the game's own debug facilities: port/platform/debug/debug.c, debug_overlay.cpp */
 int mkgp2pc_debug_on(void);
@@ -242,17 +248,23 @@ static void dump_text(const char* dir) {
     }
     fclose(f);
   }
+  /* the backup memory as this run found it (a file MKGP2PC_BACKUP_FILE can
+   * name): with input.txt, what a replay needs to start from the same
+   * records and settings */
+  snprintf(path, sizeof(path), "%s/backup_start.bin", dir);
+  mkgp2pc_baseboard_save_start(path);
   snprintf(path, sizeof(path), "%s/state.txt", dir);
   f = fopen(path, "w");
   if (f != NULL) {
     static const char* const names[] = {"MKGP2PC_SCRIPT", "MKGP2PC_SCRIPT_FILE", "MKGP2PC_NOLIMIT", "MKGP2PC_FRAMES",
-                                       "MKGP2PC_CARD", "MKGP2PC_CARD_FILE"};
+                                       "MKGP2PC_CARD", "MKGP2PC_CARD_FILE", "MKGP2PC_BACKUP"};
     fprintf(f, "retrace %u\npaused %d\nframe.png shows retrace %u\n", (unsigned)s_retrace, (int)s_paused,
             (unsigned)s_retrace + 1);
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < 7; i++) {
       const char* v = getenv(names[i]);
       fprintf(f, "%s=%s\n", names[i], v ? v : "");
     }
+    fprintf(f, "backup memory file=%s\n", mkgp2pc_baseboard_file());
     mkgp2pc_shadow_record_write(f);
     /* what the game's debug overlay says on this frame */
     for (int i = 0;; i++) {
@@ -267,6 +279,12 @@ static void dump_text(const char* dir) {
   }
 }
 
+/* diag.c calls this for a crash folder */
+static void crash_extra(const char* dir) {
+  dump_text(dir);
+  mkgp2pc_gxlog_write(dir, 1);
+}
+
 /* Called with the frame drawn and not yet handed over. */
 static void dump_capture(void) {
   const char* base = getenv("MKGP2PC_DUMP_DIR");
@@ -278,6 +296,8 @@ static void dump_capture(void) {
   snprintf(dir, sizeof(dir), "%s/%03d_f%u", base, ++s_dumpCount, (unsigned)s_retrace);
   SDL_CreateDirectory(dir);
   dump_text(dir);
+  mkgp2pc_gxlog_write(dir, 0);
+  mkgp2pc_diag_dump(dir);
   if (s_shotStream == 0) {
     s_shotStream = AuroraReadbackCreateStream();
   }
@@ -292,13 +312,21 @@ static void dump_capture(void) {
   }
   snprintf(s_shotPath, sizeof(s_shotPath), "%s/frame.png", dir);
   s_shotWait = 40;
-  fprintf(stderr, "dump: %s (inputs and state written)\n", dir);
+  fprintf(stderr, "dump: %s (inputs, state, stacks and memory written)\n", dir);
 }
 
 /* The picture arrives when the GPU has finished with that frame. Where
  * Aurora cannot read back (it says so in the log at start-up) the window's
  * own picture is taken after a short wait: the frame on screen then, which
  * is the dumped one when paused and a slightly later one when running. */
+static bool shot_write(const uint8_t* rgba, uint32_t w, uint32_t h) {
+  char small[640];
+  size_t n = strlen(s_shotPath);
+  /* beside frame.png: at most 640 wide, some tens of KB */
+  snprintf(small, sizeof(small), "%.*s_small.jpg", (int)(n > 4 ? n - 4 : n), s_shotPath);
+  mkgp2pc_jpeg_write(small, rgba, w, h, 640, 80);
+  return png_write(s_shotPath, rgba, w, h);
+}
 static void dump_poll(void) {
   if (s_shotWait == 0) {
     return;
@@ -307,7 +335,7 @@ static void dump_poll(void) {
   if (s_shotPixels != NULL) {
     AuroraReadbackDest dest = {(uint64_t)s_dumpCount, s_shotPixels, s_shotW * s_shotH * 4, GX_FALSE};
     if (AuroraReadbackGet(s_shotStream, &dest, 1) && dest.found) {
-      ok = png_write(s_shotPath, s_shotPixels, s_shotW, s_shotH);
+      ok = shot_write(s_shotPixels, s_shotW, s_shotH);
       s_shotWait = 1;
     }
   }
@@ -318,7 +346,7 @@ static void dump_poll(void) {
     uint8_t* pixels = NULL;
     uint32_t w = 0, h = 0;
     if (mkgp2pc_window_shot(s_window, &pixels, &w, &h)) {
-      ok = png_write(s_shotPath, pixels, w, h);
+      ok = shot_write(pixels, w, h);
       free(pixels);
     }
   }
@@ -336,6 +364,11 @@ static int script_extra(const char* cmd) {
     s_step = true;
   } else if (strcmp(cmd, "dump") == 0) {
     s_dumpWanted = true;
+  } else if (strcmp(cmd, "crash") == 0) {
+    /* to try the crash folder (docs/port/dumps.md): a write to address 8 */
+    *(volatile int*)8 = 1;
+  } else if (strcmp(cmd, "abort") == 0) {
+    abort();
   } else if (strcmp(cmd, "debug") == 0) {
     mkgp2pc_debug_set(!mkgp2pc_debug_on());
   } else if (strcmp(cmd, "debugpage") == 0) {
@@ -361,7 +394,7 @@ enum {
   KEY_LEFT, KEY_RIGHT, KEY_ACCEL, KEY_BRAKE, KEY_ITEM, KEY_TEST, KEY_SERVICE,
   KEY_COIN, KEY_CARD, KEY_PAUSE, KEY_STEP, KEY_FAST, KEY_FASTHOLD, KEY_DUMP,
   KEY_HIRES, KEY_DEBUG, KEY_DEBUGPAGE,
-  KEY_DEVUP, KEY_DEVDOWN, KEY_DEVSTART, KEY_DEVSUB,
+  KEY_DEVUP, KEY_DEVDOWN, KEY_DEVSTART, KEY_DEVSUB, KEY_CANCEL,
   KEY_ACTIONS
 };
 #define KEYS_PER_ACTION 4
@@ -369,7 +402,7 @@ static const char* const s_actionNames[KEY_ACTIONS] = {
     "left", "right", "accel", "brake", "item", "test", "service",
     "coin", "card", "pause", "step", "fast", "fasthold", "dump", "hires",
     "debug", "debugpage",
-    "devup", "devdown", "devstart", "devsub"};
+    "devup", "devdown", "devstart", "devsub", "cancel"};
 static int s_keyMap[KEY_ACTIONS][KEYS_PER_ACTION] = {
     {SDL_SCANCODE_LEFT}, {SDL_SCANCODE_RIGHT}, {SDL_SCANCODE_UP, SDL_SCANCODE_Z},
     {SDL_SCANCODE_DOWN, SDL_SCANCODE_X}, {SDL_SCANCODE_SPACE, SDL_SCANCODE_RETURN},
@@ -377,7 +410,8 @@ static int s_keyMap[KEY_ACTIONS][KEYS_PER_ACTION] = {
     {SDL_SCANCODE_I}, {SDL_SCANCODE_P}, {SDL_SCANCODE_O}, {SDL_SCANCODE_F10},
     {SDL_SCANCODE_TAB}, {SDL_SCANCODE_F9}, {SDL_SCANCODE_F8},
     {SDL_SCANCODE_F3}, {SDL_SCANCODE_F4},
-    {SDL_SCANCODE_PAGEUP}, {SDL_SCANCODE_PAGEDOWN}, {SDL_SCANCODE_END}, {SDL_SCANCODE_HOME}};
+    {SDL_SCANCODE_PAGEUP}, {SDL_SCANCODE_PAGEDOWN}, {SDL_SCANCODE_END}, {SDL_SCANCODE_HOME},
+    {SDL_SCANCODE_LSHIFT}};
 
 void mkgp2pc_hires_init(void); /* gx_shim.cpp */
 void mkgp2pc_hires_toggle(void);
@@ -446,6 +480,7 @@ static void key_event(const SDL_Event* e) {
     case KEY_DEVDOWN: s_keyDevDown = down; control = true; break;
     case KEY_DEVSTART: s_keyDevStart = down; control = true; break;
     case KEY_DEVSUB: s_keyDevSub = down; control = true; break;
+    case KEY_CANCEL: s_keyCancel = down; control = true; break;
     case KEY_TEST: s_keyTest = down; control = true; break;
     case KEY_SERVICE: s_keyService = down; control = true; break;
     case KEY_COIN:
@@ -526,17 +561,19 @@ static void keyboard_tick(void) {
   rec_analog(0, (uint16_t)(0x8000 + s_wheel));
   rec_analog(1, s_keyAccel ? 0xFFFF : 0);
   rec_analog(2, s_keyBrake ? 0xFFFF : 0);
-  /* Second switch byte of player 1. The cabinet wires only the item button
-   * (0x20). The game's table kRawGameMap_Raw0 also knows 0x80, 0x40, 0x10
-   * and 0x02, which the developers' scenes use as up, down, a second button
-   * and start / leave; they are passed on only while debugging is on, so
-   * that a stray key cannot do anything in a normal game. */
+  /* Second switch byte of player 1: the item button (0x20) and the cancel
+   * button (0x02, the "Mario button" by the user's word 2026-11-12; game
+   * bits 0x8400 in kRawGameMap_Raw0, "leave / previous" in the developers'
+   * scenes). The table also knows 0x80, 0x40 and 0x10, which the
+   * developers' scenes use as up, down and a second button; those and the
+   * End key's 0x02 are passed on only while debugging is on, so that a
+   * stray key cannot do anything in a normal game. */
   uint8_t dev = 0;
   if (mkgp2pc_debug_on()) {
     dev = (uint8_t)((s_keyDevUp ? 0x80 : 0) | (s_keyDevDown ? 0x40 : 0) | (s_keyDevSub ? 0x10 : 0) |
                     (s_keyDevStart ? 0x02 : 0));
   }
-  rec_switch((uint8_t)((s_keyItem ? 0x20 : 0) | dev));
+  rec_switch((uint8_t)((s_keyItem ? 0x20 : 0) | (s_keyCancel ? 0x02 : 0) | dev));
   /* 0x01: the DIP switch that skips the card reader, printer and camera */
   rec_operator((uint8_t)((mkgp2pc_card_enabled() ? 0 : 0x01) | (s_keyTest ? 0x40 : 0) | (s_keyService ? 0x80 : 0)));
 }
@@ -562,6 +599,10 @@ static void log_callback(AuroraLogLevel level, const char* module, const char* m
     s_cacheMarker[0] = 0;
   }
   if (level == LOG_FATAL) {
+    /* where the game was when the library gave up: the log and a crash folder */
+    char why[400];
+    snprintf(why, sizeof(why), "fatal message of %s: %s", module, message);
+    mkgp2pc_diag_fatal(why);
     abort();
   }
 }
@@ -795,10 +836,12 @@ static const char* cache_check(const char* appName) {
  * real shape every frame. */
 static bool s_wide;
 void mkgp2pc_wide_frame(float k); /* gx_shim.cpp */
+extern unsigned mkgp2pc_wide_retrace; /* for its trace lines */
 static void wide_frame(void) {
   if (!s_wide) {
     return;
   }
+  mkgp2pc_wide_retrace = (unsigned)s_retrace;
   AuroraWindowSize size = aurora_get_window_size();
   if (size.fb_width == 0 || size.fb_height == 0) {
     return;
@@ -823,10 +866,49 @@ static void window_size_check(void) {
     fprintf(stderr, "window: client area %dx%d\n", w, h);
   }
 }
-void mkgp2pc_crash_log_install(void); /* shot_win32.c */
+/* Anti-aliasing (docs/port/antialiasing.md). Two means, both the rendering
+ * library's own, both off unless asked for:
+ *   MKGP2PC_MSAA=4  four samples per pixel at the edges of polygons;
+ *   MKGP2PC_SSAA=F  the whole picture drawn F times as wide and as high as
+ *                   the window (1 < F <= 4, fractions allowed) and brought
+ *                   down to it when shown.
+ * The frame buffer's size is given to the library as a multiple of the
+ * game's own frame buffer height, so the factor is worked out from the
+ * window's real height, again whenever that changes. */
+static double s_ssaa = 1;
+static void ssaa_frame(void) {
+  static uint32_t wantW, wantH;
+  static float scaleSet;
+  static int tries;
+  if (s_ssaa <= 1) {
+    return;
+  }
+  AuroraWindowSize size = aurora_get_window_size();
+  if (size.native_fb_height == 0 || size.fb_height == 0) {
+    return;
+  }
+  uint32_t want = (uint32_t)(size.native_fb_height * s_ssaa + 0.5);
+  if (size.native_fb_height != wantH || size.native_fb_width != wantW) {
+    wantH = size.native_fb_height;
+    wantW = size.native_fb_width;
+    tries = 0;
+  }
+  uint32_t off = size.fb_height > want ? size.fb_height - want : want - size.fb_height;
+  if (off <= 1 || tries >= 4) {
+    return;
+  }
+  /* the game's frame buffer height, seen through the scale in force */
+  double base = scaleSet > 0 ? size.fb_height / (double)scaleSet : 480.0;
+  scaleSet = (float)(want / base);
+  tries++;
+  VISetFrameBufferScale(scaleSet);
+  fprintf(stderr, "anti-aliasing: frame buffer %ux%u for a window of %ux%u (factor %g)\n",
+          (unsigned)(size.native_fb_width * s_ssaa + 0.5), want, size.native_fb_width, size.native_fb_height, s_ssaa);
+}
 static void quit_now(void);
 int __wrap_main(int argc, char** argv) {
-  mkgp2pc_crash_log_install();
+  mkgp2pc_diag_install();
+  mkgp2pc_diag_extra = &crash_extra;
   AuroraConfig config;
   memset(&config, 0, sizeof(config));
   config.appName = "mkgp2-pc";
@@ -865,6 +947,23 @@ int __wrap_main(int argc, char** argv) {
     else if (strcmp(backend, "vulkan") == 0) config.desiredBackend = BACKEND_VULKAN;
     else if (strcmp(backend, "opengl") == 0) config.desiredBackend = BACKEND_OPENGL;
     else fprintf(stderr, "MKGP2PC_BACKEND: unknown backend '%s'\n", backend);
+  }
+  const char* msaaText = getenv("MKGP2PC_MSAA");
+  if (msaaText != NULL && msaaText[0] != 0 && strcmp(msaaText, "0") != 0 && strcmp(msaaText, "1") != 0) {
+    /* WebGPU knows one and four samples only */
+    if (strcmp(msaaText, "4") != 0) {
+      fprintf(stderr, "MKGP2PC_MSAA: '%s' taken as 4 (the only count there is)\n", msaaText);
+    }
+    config.msaa = 4;
+  }
+  const char* ssaaText = getenv("MKGP2PC_SSAA");
+  if (ssaaText != NULL && ssaaText[0] != 0) {
+    double f = strtod(ssaaText, NULL);
+    if (f >= 1 && f <= 4) {
+      s_ssaa = f;
+    } else {
+      fprintf(stderr, "MKGP2PC_SSAA: '%s' is not a factor from 1 to 4; not used\n", ssaaText);
+    }
   }
   /* (0, 0) would put the client area in the screen corner and the title
    * bar above the screen: nothing to drag the window by. Negative leaves
@@ -910,6 +1009,14 @@ int __wrap_main(int argc, char** argv) {
     AuroraSetViewportPolicy(AURORA_VIEWPORT_STRETCH);
     fprintf(stderr, "wide picture: %d:%d, window %ux%u\n", aspectW, aspectH, config.windowWidth, config.windowHeight);
   }
+  if (config.msaa > 1 || s_ssaa > 1) {
+    fprintf(stderr, "anti-aliasing: MSAA %s, supersampling %g\n", config.msaa > 1 ? "4x" : "off", s_ssaa);
+  }
+  if (s_ssaa > 1) {
+    /* each window pixel is the mean of the frame buffer pixels under it */
+    aurora_set_resampler(SAMPLER_AREA);
+  }
+  ssaa_frame();
   s_inFrame = aurora_begin_frame();
   begin_frame_state();
   wide_frame();
@@ -944,6 +1051,7 @@ __declspec(dllimport) int __stdcall TerminateProcess(void* process, unsigned int
 #include <unistd.h>
 #endif
 static void quit_now(void) {
+  mkgp2pc_baseboard_flush(); /* the backup memory file is up to date */
   fflush(NULL);
 #ifdef _WIN32
   TerminateProcess(GetCurrentProcess(), 0);
@@ -960,7 +1068,7 @@ static void frame_limit(void) {
     off = getenv("MKGP2PC_NOLIMIT") != NULL;
   }
   s_limitWanted = 0;
-  if (off || s_fast || s_fastHeld) {
+  if (off || s_fast || s_fastHeld || mkgp2pc_boot_fast) {
     next = 0; /* the pace starts afresh when the limit comes back */
     return;
   }
@@ -982,7 +1090,7 @@ static void frame_limit(void) {
 extern bool mkgp2pc_skip_draw;
 static bool show_next_frame(void) {
   static Uint64 shown;
-  if (!(s_fast || s_fastHeld) || s_paused || s_dumpWanted) {
+  if (!(s_fast || s_fastHeld || mkgp2pc_boot_fast) || s_paused || s_dumpWanted) {
     shown = 0;
     return true;
   }
@@ -1098,6 +1206,14 @@ static void shader_wait(void) {
   }
   uint32_t first = stats->queuedPipelines;
   if (off || first == 0) {
+    static bool said;
+    if (!off && !said) {
+      /* Say so, or a log without a "shaders:" line cannot be told from a
+         start where the wait never ran. */
+      fprintf(stderr, "shaders: nothing to prepare at retrace %u (%u pipelines ready)\n",
+              s_retrace, stats->createdPipelines);
+    }
+    said = true;
     return;
   }
   Uint64 start = SDL_GetTicksNS(), moved = start, titled = 0;
@@ -1134,12 +1250,77 @@ static void shader_wait(void) {
           (double)(SDL_GetTicksNS() - start) / 1e9);
 }
 
+/* The stall watch. The spike log says how long the game's own part of a
+   frame took but not where; a stall there that is neither pipelines nor the
+   disc leaves no trace. A second thread looks every 20 ms at when the game
+   last left VIWaitForRetrace and, once that is longer ago than
+   MKGP2PC_STALL_MS (150; 0 turns the watch off), writes every thread's stack
+   to dumps/stall_<retrace>/stacks.txt, at most 20 times a run. Only the time
+   between two calls of VIWaitForRetrace is watched, so pauses, dumps and
+   the shader hold at the start do not count. */
+void mkgp2pc_diag_prepare(void);
+void mkgp2pc_diag_stall(const char* dir, const char* why);
+static SDL_AtomicInt s_stallBeat; /* ms tick the game got control at, 0: not watched */
+static SDL_AtomicInt s_stallRetrace;
+static int s_stallMs = -1;
+
+static int SDLCALL stall_thread(void* arg) {
+  int written = 0, reported = 0;
+  (void)arg;
+  mkgp2pc_diag_prepare();
+  while (written < 20) {
+    SDL_Delay(20);
+    int beat = SDL_GetAtomicInt(&s_stallBeat);
+    int now = (int)(SDL_GetTicks() & 0x7fffffff);
+    if (beat == 0 || beat == reported || now - beat < s_stallMs) {
+      continue;
+    }
+    unsigned retrace = (unsigned)SDL_GetAtomicInt(&s_stallRetrace);
+    const char* base = getenv("MKGP2PC_DUMP_DIR");
+    char dir[512], why[128];
+    if (base == NULL || *base == 0) {
+      base = "dumps";
+    }
+    SDL_CreateDirectory(base);
+    snprintf(dir, sizeof(dir), "%s/stall_f%u", base, retrace);
+    SDL_CreateDirectory(dir);
+    snprintf(why, sizeof(why), "the game's thread has not reached the next retrace for %d ms (after retrace %u)",
+             now - beat, retrace);
+    mkgp2pc_diag_stall(dir, why);
+    fprintf(stderr, "stall: after retrace %u the game is stuck for %d ms, stacks in %s\n", retrace, now - beat, dir);
+    reported = beat;
+    written++;
+  }
+  return 0;
+}
+
+static void stall_beat(bool gameRuns) {
+  if (s_stallMs < 0) {
+    const char* v = getenv("MKGP2PC_STALL_MS");
+    s_stallMs = v != NULL ? atoi(v) : 150;
+    if (s_stallMs > 0) {
+      SDL_Thread* th = SDL_CreateThread(stall_thread, "stall watch", NULL);
+      if (th != NULL) {
+        SDL_DetachThread(th);
+      } else {
+        s_stallMs = 0;
+      }
+    }
+  }
+  if (s_stallMs > 0) {
+    int now = (int)(SDL_GetTicks() & 0x7fffffff);
+    SDL_SetAtomicInt(&s_stallRetrace, (int)s_retrace);
+    SDL_SetAtomicInt(&s_stallBeat, gameRuns ? (now != 0 ? now : 1) : 0);
+  }
+}
+
 void VIWaitForRetrace(void) {
   static Uint64 lastReturn;
   Uint64 t[7];
   bool skip = s_paused || s_dumpWanted || s_shotWait != 0;
   t[0] = lastReturn;
   t[1] = SDL_GetTicksNS();
+  stall_beat(false);
   if (s_inFrame && !mkgp2pc_skip_draw) {
     /* One picture at a time: a dump asked for while the last one's picture
      * is still on its way is made on the first frame after it. */
@@ -1148,8 +1329,10 @@ void VIWaitForRetrace(void) {
       dump_capture();
     }
     mkgp2pc_shadow_record_frame();
+    mkgp2pc_gxlog_frame_end();
     mkgp2pc_debug_overlay_draw();
     aurora_end_frame();
+    mkgp2pc_gxlog_frame_next();
     s_inFrame = false;
   }
   t[2] = SDL_GetTicksNS();
@@ -1194,9 +1377,11 @@ void VIWaitForRetrace(void) {
   if (!s_inFrame) {
     s_inFrame = aurora_begin_frame();
     begin_frame_state();
+    ssaa_frame();
     wide_frame();
   }
   mkgp2pc_skip_draw = s_inFrame && !show_next_frame();
   t[6] = lastReturn = SDL_GetTicksNS();
   spike_log(t, skip);
+  stall_beat(true);
 }

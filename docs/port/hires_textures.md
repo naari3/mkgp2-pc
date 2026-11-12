@@ -3,7 +3,7 @@
 An option of the PC port: the game's 2D pictures (text fonts, sprites, HUD,
 menu art) are shown from enlarged copies instead of the textures on the
 disc. Off by default; the original look stays what the port shows unless
-asked. 3D model textures are not touched.
+asked. 3D model textures only on request (see below).
 
 State 2026-11-12 (second version, after the user rejected the first: see
 the generator section): written and tried on 32-bit Linux only (software GL under
@@ -25,19 +25,27 @@ uploaded.
 
 ## Using it
 
-1. Make the folder (once, several minutes; about 650 MB):
+1. Make the folder (once; several minutes; 650 to 850 MB). In the settings
+   program: 表示 page, button 作成... next to the check box. The window
+   that opens offers the method (内蔵フィルタ, or AI with one of two
+   Real-ESRGAN models) and the size (2 or 4 times), shows the progress and
+   can stop the run. It takes the disc image named on the 基本 page and
+   writes the folder `hires` next to the programs. Choosing AI asks once
+   before it downloads the enlarger (see "An outside enlarger").
 
-   ```powershell
-   .\port\docker\wsl-hires.ps1 -Iso 'C:\path\Mario Kart Arcade GP 2 (Japan).iso' -Distro Ubuntu-20.04
+   The window only starts `mkgp2-hires.exe`, which sits next to the game
+   and can be used alone:
+
+   ```
+   mkgp2-hires.exe --iso <image> --out hires [--scale 4]
+   mkgp2-hires.exe --iso <image> --out hires --ai realesrgan-x4plus-anime --work hires-ai --download
    ```
 
-   It runs `port/hires/make_hires.py` in the build container (WSL and
-   docker, as `wsl-build.ps1`) and writes `build\pc-gfx-win\dist\hires`,
-   next to `mkgp2-gfx.exe`. `-Scale 4` makes the sprites four times instead
-   of two (for windows larger than 1280x960; four times the disk space and
-   time). On Linux call the script directly:
-   `python3 port/hires/make_hires.py --iso <image> --out <folder>` (numpy,
-   Pillow; `xxhash` makes it faster).
+   On Linux build it with
+   `g++ -std=c++17 -O2 -pthread -o mkgp2-hires port/hires/mkgp2_hires.cpp`.
+   `port/hires/make_hires.py` (numpy, Pillow) is the same work in Python,
+   the version the filters were developed in; `port\docker\wsl-hires.ps1`
+   runs that one through WSL and docker.
 
 2. Switch it on: the check box on the settings program's 表示 page, or
    `MKGP2PC_HIRES=1`. The game reads the folder `hires` under the folder it
@@ -77,7 +85,30 @@ exact average).
 Because the naming is Dolphin's, a texture pack made for Dolphin from the
 same disc should load as well (not tried).
 
-### The generator (port/hires/make_hires.py)
+### The generator (port/hires/mkgp2_hires.cpp, port/hires/make_hires.py)
+
+Two programs that do the same. `mkgp2_hires.cpp` is the one handed out
+(`mkgp2-hires.exe`, built by `port/hires/build.sh` in the Windows build): one
+C++ file plus `stb_image.h` and `stb_image_write.h` (public domain) for PNG
+and zlib, no Python, nothing of the game or the port linked in. The user
+asked for it on 2026-11-12: the enlarged pictures may not be handed out, so
+every player has to be able to make them. `make_hires.py` came first and is
+kept for experiments. The description below holds for both.
+
+Checked against each other on the whole disc (Linux, 2026-11-12): the same
+10,518 file names; of 400 files compared, all but two agree to within
+rounding (the two are one character, ☆ of the 16 pixel font, whose likeness
+to the 24 pixel one is exactly on the threshold). The C++ program takes 6
+to 7 minutes on 4 cores, as the Python one; its PNG files are larger (850 MB
+against 630 MB).
+
+`mkgp2-hires.exe` prints lines for the settings program: `stage <name>`,
+`progress <0-100>`, `note <text>`, `error <text>`, `done <folder>`. It
+writes into `<folder>.making` and renames at the end, so a run that is
+stopped leaves the old folder untouched. It is a 32-bit program like the
+game: at most 6 million source texels are in work at a time (about 100
+bytes of memory each), and it is linked large-address-aware.
+
 
 Reads the disc image directly: the file table, every `*.tpl` (plain, or 8
 bytes followed by a zlib stream), and three tables of `main.dol` (the sprite
@@ -138,6 +169,41 @@ outline were not the game's. Do not bring a foreign typeface back.
 Measured on the cloud machine (4 cores): whole disc at x2 in 7 minutes,
 10,500 files, 630 MB.
 
+### Textures of the 3D models (`--models`, C++ program only)
+
+Off unless asked for (`mkgp2-hires --models`, the check box 3D のテクスチャも
+in the settings program's window; the user asked on 2026-11-12 whether the
+in-game textures can be done too). They go to `hires/models`; the game
+reads the folder with its subfolders, so nothing changes on its side.
+
+The textures are inside the model archives (`*.dat`, 1,918 files; HSD
+format: 0x20 byte header, data, a table of the offsets that hold pointers;
+most files are 8 bytes plus a zlib stream like the `*.tpl`). A texture is
+an image record {pointer to texels, u16 width, u16 height, u32 format, u32
+mip flag} that a texture object points at from offset 0x4C; the texture
+object's wrap modes are at 0x34 and 0x38. The program looks at every pointer
+of the table instead of walking the model tree. Found: 3,641 different
+textures, 97 million texels (CMPR 2,937, RGB5A3 441, RGBA8 240, RGB565 50,
+IA4 5; no palette formats), 265 with mip levels.
+
+- Repeating and mirrored textures are extended by 4 texels of what the wrap
+  mode puts beside them before enlarging, and cut back, so that no seam
+  shows where two copies meet.
+- Mip levels are written only where the original has them. A first try
+  gave every model texture a level of the original size: the start banner
+  of Yoshi Park then came out softer than the original, without the level
+  it is as sharp as the original.
+- Whole disc at x2: 2 minutes on 4 cores, 5,141 files, 580 MB.
+
+Tried on Linux (replay into a race on Yoshi Park, window 1280x960): the game
+runs and nothing is misplaced. **With the built-in filter the 3D picture is
+practically the same as the original**: most of these textures are CMPR
+(block compressed, rendered or painted pictures), where the filter is held
+back on purpose, and they are seen through perspective and motion. The
+user expected these to go through the neural enlarger (2026-11-12, "AI
+拡大してないの？"), see `--ai-models` below. Memory of the 32-bit game
+with a whole course's textures doubled has not been measured on Windows.
+
 ### An outside enlarger for the sprites
 
 A neural enlarger (Real-ESRGAN and the like) is the only way to more than
@@ -155,12 +221,15 @@ python3 port/hires/make_hires.py --iso <image> --out hires --import-sprites up
 Textures without a picture in `up` get the built-in filter; the fonts are
 made as above either way.
 
-On Windows `wsl-hires.ps1 -Ai` does all of it (the user asked for this on
-2026-11-12): export through the container into `build\hires-ai\src`,
-download of `realesrgan-ncnn-vulkan` v0.2.5.0 (BSD 3-clause; a Vulkan
-program, no Python or CUDA; kept in `build\hires-ai\tool`, nothing
-installed), both folders enlarged four times on the GPU into
-`build\hires-ai\up` (several GB), import. Models:
+`mkgp2-hires.exe --ai <model> --work <folder> [--download]` does all of it
+on Windows, and so does `wsl-hires.ps1 -Ai` with the Python program (the
+user asked for this on 2026-11-12): export into `<work>\src`, download of
+`realesrgan-ncnn-vulkan` v0.2.5.0 (BSD 3-clause; a Vulkan program, no Python
+or CUDA; unpacked into `<work>\tool`, nothing installed; only with
+`--download`, which the settings program passes after the player said yes),
+both folders enlarged four times on the GPU into `<work>\up` (several GB,
+deleted afterwards), import. The enlarger runs in a job object and dies with
+`mkgp2-hires.exe`. Models:
 
 - `realesrgan-x4plus-anime` (default; 6 residual blocks, 17 MB): trained on
   illustrations; suits flat-coloured art with outlines, which is most of
@@ -172,11 +241,53 @@ The program works in tiles, so video memory use stays at a few GB at most
 (`-Tile` sets the size). Both models redraw: small text and faces can change
 shape.
 
-Run once on the user's PC, 2026-11-12 (RTX 3060 Ti, default model): 586 s
+Run once on the user's PC through `wsl-hires.ps1 -Ai`, 2026-11-12 (RTX 3060
+Ti, default model): 586 s
 in all, of which 429 s enlarging (colour 2,694 pictures, alpha 1,286);
-`build\hires-ai\up` 2.4 GB; pack 10,518 files, 723 MB. **How the result
-looks in the game has not been judged yet.** The cloud machine may not run
+`build\hires-ai\up` 2.4 GB; pack 10,518 files, 723 MB. The user's first verdict: quite good, some
+odd places (halftone dots in logo backgrounds vanish, soft translucent
+edges turn wavy, gradients flatten). The cloud machine may not run
 the downloaded program, so there is no picture of it from there.
+
+`--ai-models <model>` (C++ program only) sends the 3D models' textures
+through the enlarger too, with a model of their own; the settings program
+passes `--ai-models realesrgan-x4plus` when an AI method is chosen and 3D
+のテクスチャも is ticked, since these are rendered and painted pictures.
+`--ai` and `--ai-models` are independent (one without the other leaves the
+other kind to the built-in filter). So that tiling textures still join,
+each is handed over with 8 texels of its surroundings on every side, taken
+the way the game addresses it (repeat, mirror or clamp), in `models-rgb`
+and `models-alpha`, and the margin is cut off again on import. That is
+about 1.3 times the texels of the plain textures (97 million before the
+margin), so expect the general model to take a multiple of the sprites'
+time. With a stand-in enlarger the
+imported pictures line up with the built-in ones (Linux, whole disc) and
+all four folders pass through the Windows program under Wine (which found
+that the enlarger was started with relative paths: fixed).
+
+Run on the user's PC, 2026-11-12 (RTX 3060 Ti, `--ai-models
+realesrgan-x4plus`, whole disc): 699 s, of which 480 s colour and 63 s
+alpha of the 3,641 model textures; generator peak 2.1 GB, enlarger 1.3 GB;
+`models` 5,141 files, 784 MB. In the game (Windows, 16:9, one indoor course
+raced): private bytes peak 711 MB. The user: "まあいい感じ", and course
+textures could go one step further.
+
+`--scale-courses 4` is that step: the enlarger's output is four times the
+original and was being halved; textures used by a course's own archive (name
+of two or three capitals and an underscore, `YIA_cake.dat`,
+`MR_highway_long_A.dat`; not `AT_`, the attract film) now keep it, unless a
+side would pass 2048 texels. Textures the original gives no mip levels get
+one here (the picture at twice the size), so the far parts of a course do
+not shimmer and nothing is softer than the x2 pack. Yoshi Park's 74 course
+textures go from 46 MB to 185 MB of texels. Tried on Linux with a stand-in
+enlarger only; not yet with the real one, not yet in the game.
+
+**`mkgp2-hires.exe --ai` itself (the download, the unpacking on Windows,
+starting the enlarger) has not been run anywhere yet.** Tried: the archive
+reader on Linux against `unzip` (same files), export and import with a
+stand-in enlarger on Linux, the rest of the program under Wine (whole disc
+with the built-in filter), and the settings program's window under Wine
+(start, progress, stop).
 
 ## Known limits
 

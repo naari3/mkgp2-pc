@@ -58,6 +58,13 @@ if [ -n "${MKGP2PC_DEPS:-}" ]; then
     "-DFETCHCONTENT_SOURCE_DIR_TRACY=$MKGP2PC_DEPS/tracy"
     "-DFETCHCONTENT_SOURCE_DIR_XXHASH=$MKGP2PC_DEPS/xxhash"
   )
+  # also taken from there when present (docs/port/build.md, "the exact
+  # environment"): zlib (zlib-ng), png, abseil, freetype, sqlite3
+  for pair in ZLIB:zlib PNG:png ABSEIL-CPP:abseil FREETYPE:freetype SQLITE3:sqlite3; do
+    if [ -d "$MKGP2PC_DEPS/${pair#*:}" ]; then
+      AURORA_ARGS+=("-DFETCHCONTENT_SOURCE_DIR_${pair%%:*}=$MKGP2PC_DEPS/${pair#*:}")
+    fi
+  done
 fi
 
 step "Aurora (standalone; link_census.py reads its symbol lists)"
@@ -93,7 +100,20 @@ for dll in webgpu_dawn.dll dxcompiler.dll dxil.dll SDL3.dll libpng16.dll libzlib
   cp "$found" "$DIST/"
 done
 cp port/gfx/package/run-gfx.cmd port/gfx/package/KEYS.txt "$DIST/"
+# The shader (pipeline) list Aurora merges at every start, so that no shader
+# is compiled in the middle of play (docs/port/census.md section 36). A list
+# already in the output directory is merged in, not replaced: it may hold
+# pipelines this one lacks.
+SEED=initial_pipeline_cache.db
+if [ -f "$DIST/$SEED" ] && python3 -I port/tools/pipeline_list.py -o "$DIST/$SEED.new" "$DIST/$SEED" "port/gfx/package/$SEED"; then
+  mv -f "$DIST/$SEED.new" "$DIST/$SEED"
+elif [ ! -f "$DIST/$SEED" ]; then
+  cp "port/gfx/package/$SEED" "$DIST/"
+fi
 
 step "Settings program (mkgp2-launcher.exe, docs/port/launcher.md)"
 port/launcher/build.sh "$DIST"
+
+step "Texture maker (mkgp2-hires.exe, docs/port/hires_textures.md)"
+port/hires/build.sh "$DIST"
 ls -l "$DIST"
