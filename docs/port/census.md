@@ -1550,3 +1550,42 @@ The shipped list is game-derived data (the render states of the game's
 materials); whether it may live in this public repository is the owner's
 decision. Until then it is kept outside it and copied next to the
 executable.
+
+## 39. A ripple strip standing in the sky on the night Mario cup course (2026-11-12)
+
+Report from play on Windows (build 0c3e815, which has section 38's
+correction; dump `002_f8686`, race start of an ura round, 16:9): a thin
+crescent with the ripple texture stands in the sky at the upper right.
+
+- Not the positions: with the race-start camera the blended buffers of
+  clRipple put all three strips on the sea (`y/-z` 0.2 to 0.26 of the view,
+  just under the horizon; a picture with and without the ripple part differs
+  only by a thin line there). Other things looked at and found in order: the
+  lighthouse beam (the white wedge that turns inside the arch), the airship
+  searchlights, the moon.
+- The fault: the size the port hands to Aurora with each vertex buffer.
+  `mkgp2pc_array_extent` (port/platform/data/hsd_archive.c) knows where the
+  vertex buffers of a converted archive end and keeps that by address. The
+  entries were dropped only when another archive was loaded over them, not
+  when the archive was freed. clRipple allocates its own position buffers
+  from the game's heap; one of them lay where a freed archive's vertex
+  buffer had been and was given that buffer's extent: on Linux
+  `ripple0.0`, 69 vertices = 828 bytes, extent 352 (an unknown buffer gets
+  64 KB). The vertices past the extent are then whatever Aurora reads there.
+  Which buffer is hit and by how much depends on what was loaded before, so
+  it differs between machines and sessions.
+- Correction: `OSAllocFromHeap` (the game's own, src/game/OSAlloc_Game.c)
+  is wrapped in port/gfx/gx_shim.cpp; every block it hands out has its
+  address range forgotten (`mkgp2pc_array_forget`), including the tail of a
+  recorded buffer that reaches into the block. No game source changed.
+- Check (Linux, same replay): the six ripple buffers have extent 0 (64 KB
+  default) and the model's own pool keeps its 3360; the table went from 369
+  to 294 entries at the race start, the rest being live archives. The
+  crescent itself never appeared on Linux, so whether this is all of the
+  Windows picture is not checked until that build is rebuilt and played.
+- Method worth keeping: `MKGP2PC_BOOT_CHECK=1 MKGP2PC_LINK_MODE=arcade`
+  makes a build with the network-versus screens follow an input script
+  recorded before them; an absolute path for `MKGP2PC_CARD_FILE` (a relative
+  one silently plays without the card and lands in another cup).
+- Seen on the way and left: thin red horizontal quads at the karts' grid
+  places at the start of this course (Linux too).

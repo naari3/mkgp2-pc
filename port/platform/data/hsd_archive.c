@@ -88,6 +88,25 @@ static void extent_drop(uintptr_t lo, uintptr_t hi) {
   s_nb_extents -= b - a;
 }
 
+/* The memory from `base` on is something else now (the game's heap handed
+ * it out again): the buffers recorded there are gone. Without this a buffer
+ * the game allocates itself, where an archive used to be, was given the
+ * extent of that archive's vertex buffer (docs/port/census.md section 39). */
+void mkgp2pc_array_forget(const void* base, uint32_t size) {
+  uintptr_t lo = (uintptr_t)base, hi = lo + size;
+  uint32_t i;
+  if (s_nb_extents == 0 || size == 0) {
+    return;
+  }
+  i = extent_find(lo);
+  if (i > 0 && lo - s_extents[i - 1].base < s_extents[i - 1].size) {
+    s_extents[i - 1].size = (uint32_t)(lo - s_extents[i - 1].base); /* began before, reached in */
+  }
+  if (i < s_nb_extents && s_extents[i].base < hi) {
+    extent_drop(lo, hi);
+  }
+}
+
 static void extent_add(uintptr_t base, uint32_t size) {
   uint32_t i = extent_find(base);
   if (i < s_nb_extents && s_extents[i].base == base) {
