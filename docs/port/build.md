@@ -421,6 +421,11 @@ themselves. `MKGP2PC_LINK=0` turns the link off. Ports (UDP 29564-29568), play
 between two networks (`MKGP2PC_LINK_PEERS`), the other settings, the protocol and what has been checked
 so far: [cabinet_link.md](cabinet_link.md).
 
+- `MKGP2PC_HIRES=1`: high-resolution 2D textures from the folder `hires`
+  (`MKGP2PC_HIRES_DIR` names another), `F8` switches while running. The
+  folder is made from the user's disc image; see
+  [hires_textures.md](hires_textures.md). Tried on Linux only.
+
 ## Pause, frame step and dumps (rendering executable)
 
 For stopping on a frame that looks wrong and handing it over:
