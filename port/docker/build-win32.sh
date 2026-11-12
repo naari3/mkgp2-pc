@@ -15,7 +15,7 @@ ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 cd "$ROOT"
 DIST=${1:-$ROOT/build/pc-gfx-win/dist}
 DIRS="game sound ui util resource triforce sysdolphin"
-DAWN_URL=https://github.com/naari3/mkgp2-pc/releases/download/dawn32-1155e0ed531126f33a1279afa029349651ca1c93/dawn-windows-x86.tar.gz
+DAWN_URL=https://github.com/naari3/mkgp2-pc/releases/download/dawn32-1155e0ed531126f33a1279afa029349651ca1c93-r2/dawn-windows-x86.tar.gz
 TOOLCHAIN=$ROOT/port/gfx/cmake/mingw-i686.cmake
 MINGW_LIB=/usr/i686-w64-mingw32/lib
 
