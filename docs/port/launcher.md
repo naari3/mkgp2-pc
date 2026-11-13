@@ -57,7 +57,7 @@ window. Empty fields show their default as grey text.
 | 基本 | close this window after starting | (launcher only) |
 | 基本 | camera: なし, or one of the cameras connected when the list is opened (by name); [camera.md](camera.md) | `MKGP2PC_CAMERA` |
 | 表示 | aspect 4:3 or 16:9 (4:3 = not set); what 16:9 does is in widescreen.md | `MKGP2PC_ASPECT` |
-| 表示 | 16:9 only (grey at 4:3): race HUD where 4:3 has it (centre, not set) or at the edges (`edge`); ini `wide_hud=center|edge` (widescreen.md) | `MKGP2PC_WIDE_HUD` |
+| 表示 | 16:9 only (grey at 4:3): race HUD and the corner parts of menu screens (title bar, timer, CREDIT) where 4:3 has them (centre, not set) or at the edges (`edge`); shown as UI は中央 / UI は両端; ini `wide_hud=center|edge` (widescreen.md) | `MKGP2PC_WIDE_HUD` |
 | 表示 | window size: height 480 x factor, width from the aspect. 4:3 offers 1 to 6, 16:9 offers 1, 1.5 (1280x720), 2, 2.25 (1920x1080), 3, 4.5. | `MKGP2PC_SCALE` |
 | 表示 | rendering backend (automatic, d3d12, d3d11, vulkan, opengl) | `MKGP2PC_BACKEND` |
 | 表示 | anti-aliasing: none, MSAA 4x, SSAA 2x, both (antialiasing.md) | `MKGP2PC_MSAA`, `MKGP2PC_SSAA` |

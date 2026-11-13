@@ -84,6 +84,46 @@ The rest of this file is the survey written before the implementation.
 
 ---
 
+## Menu screens at the screen edges (2026-11-13)
+
+Asked for by the user ("各種メニューのUIも16:9化させたい"). With the same
+setting as the race HUD below (`wide_hud=edge`), the parts of a menu screen
+that belong to its corners go out to the real edges; the middle (the
+choices, the info panel, the button hints) keeps its 4:3 place and shape.
+With `center` nothing changes.
+
+- Sprites carry no names and no grouping (`SpriteHandlePool.c` draws a
+  flat list), so the corner parts are told by **resource id**, the number
+  of the picture a sprite shows, which is the same in every run.
+  `port/patches/src/game/SpriteHandlePool.c.patch` makes `fn_8011E31C`
+  say which sprite it is about to draw (`mkgp2pc_wide_sprite`,
+  `mkgp2pc_wide_sprite_res`); the next primitive begun takes it
+  (`sWideRes`), and `menu_shift` in `gx_shim.cpp` decides:
+
+  | part | resource ids | goes |
+  | --- | --- | --- |
+  | title bar: body in 10 pixel slices, right end | 6263, 6262 | left |
+  | whatever lies with half its area or more on the bar (title text 688x, a cup's logo) | any | left, with the bar |
+  | countdown timer (ring 6177..6191, base 6207, TIME 6208, digits) | 6177..6229, only right of the middle | right |
+  | CREDIT(S) and its digits | 7520..7526, only right of the middle | right |
+
+  A moved part is moved by the full width of a side area and drawn with
+  the scissor open, as the HUD is.
+- Not done by position alone, on purpose: a glow around the first choice
+  of the round select rests across the left 4:3 edge, and the item panels
+  before a race reach to 20 pixels from the right edge; both belong to
+  the middle.
+- Seen (Linux, replay): class, character, cup and round select of the
+  Grand Prix flow, the screen before a race. Not seen: card screens, name
+  entry, time attack and versus menus, results, continue, the test menu.
+  Where those use the same bar, timer and CREDIT pictures they follow;
+  anything else stays in its 4:3 place. `MKGP2PC_TRACE_WIDE=1` prints
+  `wide: sprite 0 res <id>` after each sprite's primitive to find more.
+- Trap met on the way: a source patch that does not compile drops the whole
+  unit from the link without stopping the build (`NOT BUILT:` in the build
+  output, reason in `build/pc-gfx/<unit>.abi-error`); every sprite was a
+  stub then and the menus were black.
+
 ## Race HUD at the screen edges (2026-11-12)
 
 Asked for by the user: at 16:9, choose whether the race UI stays where it

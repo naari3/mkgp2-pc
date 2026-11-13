@@ -22,3 +22,9 @@ const Mkgp2PcBackendInfo* mkgp2pc_platform_backends(int* count) {
   }
   return s_backends;
 }
+
+/* The sprite the game is about to draw (pool index, resource id), written
+ * by the patched src/game/SpriteHandlePool.c and read by the rendering side
+ * for the wide picture (port/gfx/gx_shim.cpp). Defined here so that builds
+ * without rendering link too. */
+int mkgp2pc_wide_sprite = -1, mkgp2pc_wide_sprite_res;

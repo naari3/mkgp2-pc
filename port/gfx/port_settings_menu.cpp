@@ -204,10 +204,11 @@ ListMenu& graphics() {
         g_next.scale = list[cycle(at, dir, SCALES)];
         save_scale();
       }));
-  /* Where the race's HUD sits in a wide picture (gx_shim.cpp, widescreen.md):
+  /* Where the race HUD and the corner parts of menu screens sit in a wide
+   * picture (gx_shim.cpp, widescreen.md):
    * applies at once; there is nothing to choose in a 4:3 picture. */
   rows.push_back(Item::Setting(
-      Text{"Race HUD position", "レース中の UI の位置", "レース中のUIの位置"},
+      Text{"UI position", "UI の位置", "UIの位置"},
       [] { return mkgp2pc_wide_hud_get() ? Text{"Screen edges", "左右の端", "左右のはし"} : Text{"As in 4:3", "4:3 の位置", "4:3の位置"}; },
       [](int) {
         mkgp2pc_wide_hud_set(!mkgp2pc_wide_hud_get());
