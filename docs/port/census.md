@@ -1604,6 +1604,15 @@ executable.
   config version the old rows are dropped by the tool and the list has to
   be collected again.
 
+- 2026-11-13: 779 GX pipelines after merging the user's list of that day
+  (187 new: more play, MSAA 4x and SSAA on, x4 course textures). That run
+  (main 972bdd30, 13 min, 4 races) had `1310 pipelines ready` at the start
+  (each config once per render-target layout) and two pipeline stalls, both
+  at the entry to the first race (626 ms +5, 681 ms +10), none in races 2
+  to 4. The stall watch wrote `stall_f6042` and `stall_f6152` for them,
+  main thread in a condition wait (the compile), which is its first check
+  on Windows.
+
 ### Second Windows run, 593 pipelines ready (2026-11-12, build 72a0266f)
 
 - Start: `shaders: 133 pipelines prepared before the game in 0.2 s`, then
