@@ -70,7 +70,7 @@ English. The network, card, controller and ISO settings stay there too.
 |---|---|---|
 | 画面の比率 4:3 / 16:9 | `wide` (and `scale`, moved to the nearest size on offer) | next start |
 | 画面の大きさ (the settings program's six sizes for the aspect) | `scale` | next start |
-| レース中のUIの位置: 4:3の位置 / 左右のはし (widescreen.md); grey in a 4:3 picture | `wide_hud` | at once |
+| UIの位置 (race HUD and menu corner parts): 4:3の位置 / 左右のはし (widescreen.md); grey in a 4:3 picture | `wide_hud` | at once |
 | レンダリング: 自動, D3D12, D3D11, Vulkan, OpenGL | `backend` | next start |
 | アンチエイリアス: なし, MSAA 4x, SSAA 2x, both | `aa` | next start |
 | なめらかな影 | `shadow_smooth` | at once |

@@ -88,7 +88,7 @@ typedef struct {
   int bootSkip;
   wchar_t camera[256]; /* MKGP2PC_CAMERA: "" none, otherwise a device's name */
   int wide;            /* 16:9 instead of 4:3 */
-  int wideHudEdge;     /* 16:9: the race HUD at the edges, not where 4:3 has it */
+  int wideHudEdge;     /* 16:9: the race HUD and the menu screens' corner parts at the edges, not where 4:3 has them */
   int scale;           /* window height in hundredths of 480 lines: 150 = 720 */
   wchar_t backend[16]; /* "" = the library's own choice */
   int resizable;
@@ -695,8 +695,8 @@ static void create_controls(void) {
   SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)L"4:3");
   SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)L"16:9");
   c = combo(1, X + 344, y, W - 344, ID_WIDE_HUD);
-  SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)L"HUD は中央");
-  SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)L"HUD は両端");
+  SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)L"UI は中央");
+  SendMessageW(c, CB_ADDSTRING, 0, (LPARAM)L"UI は両端");
   y += 34;
   label(1, L"窓の大きさ", X, y + 3, 110, 18);
   combo(1, X + 116, y, 220, ID_SCALE);

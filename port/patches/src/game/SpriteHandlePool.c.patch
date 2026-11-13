@@ -1,0 +1,19 @@
+--- a/src/game/SpriteHandlePool.c
++++ b/src/game/SpriteHandlePool.c
+@@ -172,6 +172,7 @@
+ extern const SpriteUVTable SpriteHandlePool_rodata_803325D0;
+ extern SavedGXState SpriteHandle_bss_806573A0;
+ void fn_8011E31C(SpriteHandle *h);
++extern int mkgp2pc_wide_sprite, mkgp2pc_wide_sprite_res; /* port: pool index and resource of the sprite being drawn (wide picture, port/platform/platform.c) */
+ }
+ 
+ 
+@@ -208,6 +209,8 @@
+     int coord;
+     int map;
+ 
++    mkgp2pc_wide_sprite = (int)(h - g_SpriteHandlePool);
++    mkgp2pc_wide_sprite_res = *(const int *)((const char *)h + 0x10); /* the resource id (SpriteHandle.cpp) */
+     if (lbl_806D14F0 != h->posMode) {
+         modeChanged = 1;
+     }

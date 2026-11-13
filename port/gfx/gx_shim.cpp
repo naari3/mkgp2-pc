@@ -146,8 +146,13 @@ void mkgp2pc_shadow_smooth_set(int on) { sSmoothCopies = on != 0; }
 bool mkgp2pc_board_texture;
 extern const void* mkgp2pc_camera_texture;
 extern uint32_t mkgp2pc_camera_texture_serial;
+/* the image on texture map 0, for the wide picture's trace and rules */
+static GameTexObj sWideTexCopy;
+static const GameTexObj* sWideTex;
 void __wrap_GXLoadTexObj(GameTexObj* o, u32 id) {
   if (id == 0) {
+    sWideTexCopy = *o;
+    sWideTex = &sWideTexCopy;
     mkgp2pc_board_texture = o->width == 64 && o->height == 64 && o->format == 5;
   }
   const Key key{o->data, o->width, o->height, o->format, static_cast<uint8_t>(o->flags & (kMipmap | kIndexed)), o->tlut};
@@ -1707,6 +1712,58 @@ static bool wide_trace() {
 #if defined(__linux__)
 #include <execinfo.h>
 #endif
+/*
+ * Sprites (SpriteHandlePool.c, patched to say which one it is about to
+ * draw): the pool index and the resource id, which names the picture a
+ * sprite shows and is the same in every run. It belongs to the next
+ * primitive begun only.
+ */
+extern "C" {
+extern int mkgp2pc_wide_sprite, mkgp2pc_wide_sprite_res; /* port/platform/platform.c */
+}
+static int sWideRes = -1; /* resource id of the sprite the primitive being kept is, or -1 */
+/*
+ * Menu screens in a wide picture, with the same setting as the race HUD
+ * (mkgp2pc_wide_hud_get): the parts that belong to the screen's corners go
+ * out to the real edges, the middle keeps its place. Sprites have no names
+ * or groups, so the corner parts are told by resource id, from what the
+ * screens were seen to draw (docs/port/widescreen.md):
+ *   title bar (6262 its right end, 6263 its body in 10 pixel slices): left,
+ *     and with it any sprite that lies mostly on the bar (the title text,
+ *     a cup's logo);
+ *   countdown timer (6177..6229) and CREDIT(S) (7520..7526) while they
+ *     are in the right part of the picture: right.
+ */
+struct WideBox {
+  float lo = 1e9f, hi = -1e9f, ylo = 1e9f, yhi = -1e9f;
+};
+static WideBox sBarNow, sBarWas;
+static float wide_on_bar(const WideBox& b, float lo, float hi, float ylo, float yhi) {
+  const float w = (hi < b.hi ? hi : b.hi) - (lo > b.lo ? lo : b.lo);
+  const float h = (yhi < b.yhi ? yhi : b.yhi) - (ylo > b.ylo ? ylo : b.ylo);
+  const float area = (hi - lo) * (yhi - ylo);
+  return w > 0.0f && h > 0.0f && area > 0.0f ? w * h / area : 0.0f;
+}
+static float menu_shift(int res, float lo, float hi, float ylo, float yhi) {
+  if (res < 0 || sHudDepth > 0 || mkgp2pc_wide_hud_get() == 0) {
+    return 0.0f;
+  }
+  const float out = mkgp2pc_wide_k - 1.0f;
+  if (res == 6262 || res == 6263) {
+    sBarNow.lo = lo < sBarNow.lo ? lo : sBarNow.lo;
+    sBarNow.hi = hi > sBarNow.hi ? hi : sBarNow.hi;
+    sBarNow.ylo = ylo < sBarNow.ylo ? ylo : sBarNow.ylo;
+    sBarNow.yhi = yhi > sBarNow.yhi ? yhi : sBarNow.yhi;
+    return -out;
+  }
+  if (((res >= 6177 && res <= 6229) || (res >= 7520 && res <= 7526)) && lo + hi > 0.5f) {
+    return out;
+  }
+  if (wide_on_bar(sBarNow, lo, hi, ylo, yhi) >= 0.5f || wide_on_bar(sBarWas, lo, hi, ylo, yhi) >= 0.5f) {
+    return -out;
+  }
+  return 0.0f;
+}
 /* MKGP2PC_WIDE_STACK=<retrace>: the call stack of every 2D primitive begun
  * in that frame (addresses for nm -n), to find which code draws what. */
 static void wide_stack(u16 nverts) {
@@ -1730,6 +1787,8 @@ static void wide_stack(u16 nverts) {
 #endif
 }
 bool mkgp2pc_wide_begin(GXPrimitive type, GXVtxFmt vtxfmt, u16 nverts) {
+  sWideRes = mkgp2pc_wide_sprite >= 0 ? mkgp2pc_wide_sprite_res : -1;
+  mkgp2pc_wide_sprite = -1;
   if (!wide_on()) {
     return false;
   }
@@ -1803,6 +1862,8 @@ typedef std::tuple<int, int, int, int> WideStillKey;
 static std::map<WideStillKey, int> sStillWas, sStillNow;
 enum { kStillFrames = 6 };
 void wide_tiles_frame(void) {
+  sBarWas = sBarNow;
+  sBarNow = WideBox();
   if (!sStillNow.empty() || !sQuads.empty()) { /* a frame that drew something */
     sStillWas.swap(sStillNow);
     sStillNow.clear();
@@ -1860,6 +1921,21 @@ void wide_tiles_frame(void) {
   sQuads.clear();
 }
 
+/* An image's identity that is the same in every run: a hash of its size,
+ * format and first texels. */
+static u32 wide_tex_id() {
+  if (sWideTex == nullptr || sWideTex->data == nullptr) {
+    return 0;
+  }
+  u32 h = 2166136261u ^ (sWideTex->width << 16) ^ sWideTex->height ^ (static_cast<u32>(sWideTex->format) << 28);
+  const u8* p = static_cast<const u8*>(sWideTex->data);
+  const u32 texels = static_cast<u32>(sWideTex->width) * sWideTex->height;
+  const u32 n = texels / 2 < 512 ? texels / 2 : 512; /* at least 4 bits a texel in every format */
+  for (u32 i = 0; i < n; i++) {
+    h = (h ^ p[i]) * 16777619u;
+  }
+  return h;
+}
 void mkgp2pc_wide_end(void) {
   mkgp2pc_wide_capture = false;
   if (sWideBytes != sWideWant) {
@@ -1945,7 +2021,12 @@ void mkgp2pc_wide_end(void) {
       outYhi = yhi > outYhi ? yhi : outYhi;
     }
     if (wide_trace()) {
-      fprintf(stderr, "wide: %x n %d group %d x %.3f..%.3f mtx %u%s\n", sWideType, sWideVerts, g, lo, hi, sCurMtx, kind[g] ? " FULL" : "");
+      fprintf(stderr, "wide: %x n %d group %d x %.3f..%.3f mtx %u%s y %.3f..%.3f tex %ux%u %08x\n", sWideType, sWideVerts, g, lo, hi, sCurMtx,
+              kind[g] ? " FULL" : "", ylo, yhi, sWideTex != nullptr ? sWideTex->width : 0, sWideTex != nullptr ? sWideTex->height : 0,
+              wide_tex_id());
+      if (g == 0 && sWideRes >= 0) {
+        fprintf(stderr, "wide: sprite 0 res %d\n", sWideRes);
+      }
     }
   }
   /* Something narrower that reaches beyond the left or right edge of the
@@ -1959,7 +2040,10 @@ void mkgp2pc_wide_end(void) {
    * would come apart, so a primitive that has been in the same place for
    * kStillFrames frames keeps its place and is clipped at the 4:3 edge. */
   float shift = 0.0f;
-  if (hud_edge()) {
+  const float menu = outHi > outLo ? menu_shift(sWideRes, outLo, outHi, outYlo, outYhi) : 0.0f;
+  if (menu != 0.0f) {
+    shift = menu;
+  } else if (hud_edge()) {
     if (outHi >= outLo) {
       shift = hud_shift(outLo, outHi);
     }
